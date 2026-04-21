@@ -2,11 +2,11 @@
 ConfigLab — Multi-vendor Network Config Generator
 H3C Comware v7 (more vendors coming soon)
 """
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, send_from_directory, request, jsonify
 from flask_cors import CORS
 import os
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static")
 CORS(app)
 
 APP_NAME = "ConfigLab"
@@ -303,7 +303,7 @@ TEMPLATES = {
 # ==========================================================
 @app.route("/")
 def home():
-    return send_from_directory("static", "index.html")
+    return send_from_directory("static", "ConfigLab.html")
 def root():
     return jsonify({
         "status": "ok",
@@ -318,23 +318,11 @@ def vendors():
 
 @app.route("/generate", methods=["POST"])
 def generate():
-    def generate():
-    data = request.json
-    return jsonify({
-        "config": "CONFIG GENERATED BRO 🔥",
-        "lines": 1
-
-    })
+    return jsonify({"config": "OK 🔥", "lines": 1})
 
 @app.route("/templates")
 def templates():
-    return jsonify({
-        "basic": {
-            "name": "Basic Template",
-            "description": "Demo template",
-            "data": {}
-        }
-    })
+    return jsonify({})
 # ==========================================================
 if __name__ == "__main__":
     app.run()
