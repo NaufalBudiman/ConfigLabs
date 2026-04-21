@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ConfigLab — Network Configuration, Simplified</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b0d10;
+  --bg-2: #111418;
+  --surface: #15191f;
+  --surface-2: #1b2027;
+  --surface-hover: #222831;
+  --border: #232a34;
+  --border-strong: #2e3744;
+  --text: #e6e9ee;
+  --text-dim: #9aa3af;
+  --text-muted: #5b6472;
+  --accent: #7cf4c7;
+  --accent-2: #a8b5ff;
+  --accent-3: #ffb86b;
+  --danger: #ff6478;
+  --success: #7cf4c7;
+  --warning: #ffc857;
+  --glow: 0 0 40px rgba(124, 244, 199, 0.15);
+  --sans: 'Geist', system-ui, sans-serif;
+  --serif: 'Instrument Serif', Georgia, serif;
+  --mono: 'JetBrains Mono', monospace;
+  --radius: 12px;
+  --radius-lg: 20px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-theme="light"] {
+  --bg: #f8f6f1;
+  --bg-2: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f1ede3;
+  --surface-hover: #ebe6d8;
+  --border: #e4dfd0;
+  --border-strong: #d0c9b5;
+  --text: #1a1a1a;
+  --text-dim: #5a5a5a;
+  --text-muted: #8a8a8a;
+  --accent: #0f766e;
+  --accent-2: #4f46e5;
+  --accent-3: #ea580c;
+  --glow: 0 4px 20px rgba(15, 118, 110, 0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.3s var(--ease), color 0.3s var(--ease);
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 0;
+}
+
+nav {
+  position: sticky; top: 0; z-index: 50;
+  padding: 16px 32px;
+  background: color-mix(in srgb, var(--bg) 75%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.brand {
+  display: flex; align-items: center; gap: 12px;
+  font-weight: 600; font-size: 17px; letter-spacing: -0.3px;
+}
+
+.brand-logo {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: conic-gradient(from 180deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent));
+  display: grid; place-items: center;
+  position: relative;
+}
+.brand-logo::after {
+  content: '';
+  position: absolute; inset: 2px;
+  border-radius: 6px;
+  background: var(--bg);
+}
+.brand-logo svg {
+  position: relative; z-index: 1;
+  width: 18px; height: 18px;
+  color: var(--text);
+}
+
+.brand em {
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--accent);
+  font-weight: 400;
+}
+
+.nav-actions { display: flex; gap: 8px; align-items: center; }
+
+.chip {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  color: var(--text-dim);
+  display: inline-flex; align-items: center; gap: 6px;
+}
+
+.chip .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.icon-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: grid; place-items: center;
+  transition: all 0.2s var(--ease);
+  font-size: 16px;
+}
+.icon-btn:hover { background: var(--surface-hover); color: var(--text); border-color: var(--border-strong); }
+
+.container {
+  position: relative; z-index: 1;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px 32px 80px;
+}
+
+.hero {
+  text-align: center;
+  padding: 60px 0 40px;
+}
+
+.hero-tag {
+  display: inline-flex;
+  align-items: center; gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  margin-bottom: 28px;
+  animation: fadeUp 0.6s var(--ease) both;
+}
+
+.hero-tag .live {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
+.hero h1 {
+  font-size: clamp(40px, 6vw, 68px);
+  line-height: 1.02;
+  letter-spacing: -2px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  animation: fadeUp 0.7s var(--ease) 0.1s both;
+}
+
+.hero h1 .serif {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  padding-right: 4px;
+}
+
+.hero p {
+  color: var(--text-dim);
+  font-size: 18px;
+  max-width: 560px;
+  margin: 0 auto 32px;
+  animation: fadeUp 0.7s var(--ease) 0.2s both;
+}
+
+.vendor-pills {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  animation: fadeUp 0.7s var(--ease) 0.3s both;
+}
+
+.vendor-pill {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 12px;
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--mono);
+  color: var(--text-dim);
+  transition: all 0.2s;
+}
+
+.vendor-pill.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.vendor-pill .soon-badge {
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: var(--surface-hover);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  letter-spacing: 0.5px;
+}
+
+.vendor-pill.active .soon-badge {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  font-weight: 700;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.templates-section {
+  margin-bottom: 48px;
+  margin-top: 60px;
+  animation: fadeUp 0.7s var(--ease) 0.4s both;
+}
+
+.section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.section-head h2 {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.5px;
+}
+
+.section-head h2 em {
+  font-family: var(--serif); font-style: italic; color: var(--accent);
+  font-weight: 400;
+}
+
+.section-head .count {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.templates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.tpl {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+  position: relative;
+  overflow: hidden;
+}
+
+.tpl:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+.tpl-emoji { font-size: 26px; margin-bottom: 10px; display: block; }
+.tpl-name { font-weight: 500; font-size: 14px; margin-bottom: 4px; }
+.tpl-desc { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+
+.main-layout {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 960px) {
+  .main-layout { grid-template-columns: 1fr; }
+}
+
+.builder, .output-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  animation: fadeUp 0.7s var(--ease) 0.5s both;
+}
+
+.panel-head {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface-2);
+}
+
+.panel-title {
+  font-weight: 500;
+  font-size: 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+
+.panel-title .num {
+  font-family: var(--mono); font-size: 11px;
+  padding: 2px 8px; border-radius: 6px;
+  background: var(--bg); color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+
+.tabs {
+  display: flex; gap: 4px;
+  padding: 12px 12px 0;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.tab {
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.2s;
+  display: flex; align-items: center; gap: 6px;
+  white-space: nowrap;
+  position: relative;
+}
+
+.tab:hover { color: var(--text); background: var(--surface-hover); }
+
+.tab.active {
+  color: var(--text);
+  background: var(--surface);
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent);
+}
+
+.tab .badge {
+  font-family: var(--mono); font-size: 10px;
+  padding: 1px 6px; border-radius: 99px;
+  background: var(--accent); color: var(--bg);
+  font-weight: 700;
+}
+
+.panel-body { padding: 24px; }
+
+.tab-panel { display: none; animation: fadeIn 0.25s var(--ease); }
+.tab-panel.active { display: block; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.field { margin-bottom: 14px; }
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.field-row-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+label .hint { font-family: var(--mono); color: var(--text-muted); font-weight: 400; margin-left: 6px; }
+
+input, select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  outline: none;
+  transition: all 0.15s var(--ease);
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+input::placeholder { color: var(--text-muted); }
+
+.segmented {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.segmented button {
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 7px;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.segmented button:hover { color: var(--text); }
+.segmented button.active {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.repeater {
+  display: flex; flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.repeater-item {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  position: relative;
+  transition: border-color 0.2s;
+  animation: fadeIn 0.3s var(--ease);
+}
+
+.repeater-item:hover { border-color: var(--border-strong); }
+
+.repeater-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.repeater-title {
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.repeater-item .btn-remove {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-muted);
+  width: 24px; height: 24px; border-radius: 6px;
+  cursor: pointer; display: grid; place-items: center;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.repeater-item .btn-remove:hover { background: var(--danger); color: white; border-color: var(--danger); }
+
+.btn-add {
+  background: transparent;
+  border: 1px dashed var(--border-strong);
+  color: var(--text-dim);
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  width: 100%;
+  font-family: var(--sans); font-size: 13px;
+  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+
+.btn-add:hover { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 5%, transparent); }
+
+.check {
+  display: flex; align-items: center; gap: 8px;
+  cursor: pointer; user-select: none;
+  font-size: 13px; color: var(--text-dim);
+}
+
+.check input { width: auto; margin: 0; }
+
+.panel-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  display: flex; gap: 10px;
+  background: var(--surface-2);
+}
+
+.btn {
+  padding: 11px 18px;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--bg);
+  flex: 1;
+  font-weight: 600;
+  box-shadow: var(--glow);
+}
+
+.btn-primary:hover { transform: translateY(-1px); filter: brightness(1.05); }
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { background: var(--surface-hover); border-color: var(--border-strong); }
+
+.output-wrap { display: flex; flex-direction: column; min-height: 600px; }
+
+.output-toolbar {
+  display: flex; gap: 6px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.output-toolbar-left { display: flex; gap: 6px; }
+
+.tool-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 6px 10px;
+  border-radius: 7px;
+  font-family: var(--mono); font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.tool-btn:hover { color: var(--text); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.tool-btn.active { color: var(--accent); border-color: var(--accent); }
+
+.output {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.8;
+  background: var(--bg);
+}
+
+.output.empty {
+  color: var(--text-muted);
+  font-style: italic;
+  display: grid; place-items: center;
+  text-align: center;
+}
+
+.empty-art {
+  font-size: 48px; margin-bottom: 12px; display: block;
+  opacity: 0.5;
+}
+
+.line {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 14px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.line:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+.line .ln {
+  color: var(--text-muted);
+  user-select: none;
+  text-align: right;
+  font-size: 11px;
+}
+.line.comment .content { color: var(--text-muted); font-style: italic; }
+.line.cmd .kw { color: var(--accent-2); }
+.line.cmd .val { color: var(--accent); }
+
+.status-bar {
+  padding: 8px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  font-family: var(--mono); font-size: 11px;
+  color: var(--text-muted);
+  display: flex; justify-content: space-between; align-items: center;
+}
+
+.status-bar .s-dot {
+  display: inline-block;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text-muted);
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.status-bar.ok .s-dot { background: var(--success); box-shadow: 0 0 6px var(--success); }
+.status-bar.err .s-dot { background: var(--danger); }
+
+.history-drawer {
+  position: fixed;
+  top: 0; right: -420px;
+  width: 420px; max-width: 100%;
+  height: 100vh;
+  background: var(--bg-2);
+  border-left: 1px solid var(--border);
+  transition: right 0.4s var(--ease);
+  z-index: 100;
+  display: flex; flex-direction: column;
+}
+
+.history-drawer.open { right: 0; }
+
+.drawer-head {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.drawer-head h3 { font-size: 18px; font-weight: 500; }
+.drawer-head h3 em { font-family: var(--serif); font-style: italic; color: var(--accent); font-weight: 400; }
+
+.drawer-body {
+  flex: 1; overflow-y: auto; padding: 16px;
+}
+
+.history-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.history-item:hover { border-color: var(--accent); transform: translateX(-4px); }
+
+.history-item .h-time {
+  font-family: var(--mono); font-size: 11px;
+  color: var(--text-muted); margin-bottom: 6px;
+}
+.history-item .h-preview {
+  font-family: var(--mono); font-size: 12px;
+  color: var(--text-dim);
+  max-height: 60px; overflow: hidden;
+  white-space: pre-wrap;
+  position: relative;
+}
+.history-item .h-preview::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 30px;
+  background: linear-gradient(to bottom, transparent, var(--surface));
+}
+.history-empty { text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 13px; }
+
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  z-index: 99;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s;
+}
+.overlay.show { opacity: 1; pointer-events: auto; }
+
+.toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translate(-50%, 100px);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  padding: 12px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  z-index: 200;
+  transition: transform 0.3s var(--ease);
+  display: flex; align-items: center; gap: 10px;
+}
+
+.toast.show { transform: translate(-50%, 0); }
+.toast .t-icon {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--success); color: var(--bg);
+  display: grid; place-items: center; font-weight: 700; font-size: 11px;
+}
+
+footer {
+  margin-top: 80px;
+  padding: 40px 0;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+footer em { font-family: var(--serif); font-style: italic; color: var(--accent); }
+
+footer .footer-brand {
+  font-size: 15px;
+  color: var(--text);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+</style>
+</head>
+<body data-theme="dark">
+
+<nav>
+  <div class="brand">
+    <div class="brand-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/>
+        <path d="M8.5 2h7"/>
+        <path d="M7 16h10"/>
+      </svg>
+    </div>
+    <div>Config<em>Lab</em></div>
+  </div>
+  <div class="nav-actions">
+    <div class="chip"><span class="dot"></span><span id="backend-status">Connecting...</span></div>
+    <button class="icon-btn" onclick="toggleHistory()" title="History">🕐</button>
+    <button class="icon-btn" onclick="toggleTheme()" title="Theme" id="theme-btn">🌙</button>
+  </div>
+</nav>
+
+<div class="container">
+
+  <section class="hero">
+    <div class="hero-tag"><span class="live"></span> Live · H3C Comware v7 generator</div>
+    <h1>Network configuration,<br><span class="serif">without the pain.</span></h1>
+    <p>A lab for network engineers. Build production-ready configs visually — from VLAN to OSPF. No typos, no reference docs, no CLI headaches.</p>
+    <div class="vendor-pills">
+      <div class="vendor-pill active">🟢 H3C <span class="soon-badge">LIVE</span></div>
+      <div class="vendor-pill">Cisco <span class="soon-badge">SOON</span></div>
+      <div class="vendor-pill">Huawei <span class="soon-badge">SOON</span></div>
+      <div class="vendor-pill">Juniper <span class="soon-badge">SOON</span></div>
+      <div class="vendor-pill">Arista <span class="soon-badge">SOON</span></div>
+      <div class="vendor-pill">MikroTik <span class="soon-badge">SOON</span></div>
+    </div>
+  </section>
+
+  <section class="templates-section">
+    <div class="section-head">
+      <h2>Start from a <em>template</em></h2>
+      <span class="count" id="tpl-count">loading...</span>
+    </div>
+    <div class="templates-grid" id="templates-grid"></div>
+  </section>
+
+  <div class="main-layout">
+
+    <section class="builder">
+      <div class="panel-head">
+        <div class="panel-title">
+          <span class="num">01</span>
+          Configuration Builder
+        </div>
+        <button class="icon-btn" onclick="clearAll()" title="Clear all">🗑️</button>
+      </div>
+
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-tab="system">⚙️ System</button>
+        <button class="tab" data-tab="vlan">🔷 VLAN <span class="badge" id="b-vlan">0</span></button>
+        <button class="tab" data-tab="intf">🔌 Interfaces <span class="badge" id="b-intf">0</span></button>
+        <button class="tab" data-tab="dhcp">📡 DHCP <span class="badge" id="b-dhcp">0</span></button>
+        <button class="tab" data-tab="route">🛣️ Routing <span class="badge" id="b-route">0</span></button>
+        <button class="tab" data-tab="ospf">🧭 OSPF</button>
+        <button class="tab" data-tab="acl">🛡️ ACL <span class="badge" id="b-acl">0</span></button>
+      </div>
+
+      <div class="panel-body">
+
+        <div class="tab-panel active" id="pane-system">
+          <div class="field">
+            <label>Hostname <span class="hint">sysname</span></label>
+            <input id="sys-hostname" placeholder="e.g. SW-CORE-01">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>NTP Server <span class="hint">optional</span></label>
+              <input id="sys-ntp" placeholder="e.g. time.google.com">
+            </div>
+            <div class="field">
+              <label>Timezone <span class="hint">optional</span></label>
+              <input id="sys-tz" placeholder="e.g. WIB +07:00">
+            </div>
+          </div>
+          <div class="field">
+            <label>Login Banner <span class="hint">optional</span></label>
+            <input id="sys-banner" placeholder="Authorized users only">
+          </div>
+        </div>
+
+        <div class="tab-panel" id="pane-vlan">
+          <div class="repeater" id="rep-vlans"></div>
+          <button class="btn-add" onclick="addVlan()">＋ Add VLAN</button>
+        </div>
+
+        <div class="tab-panel" id="pane-intf">
+          <div class="repeater" id="rep-intfs"></div>
+          <button class="btn-add" onclick="addIntf()">＋ Add Interface</button>
+        </div>
+
+        <div class="tab-panel" id="pane-dhcp">
+          <div class="repeater" id="rep-dhcp"></div>
+          <button class="btn-add" onclick="addDhcp()">＋ Add DHCP Pool</button>
+        </div>
+
+        <div class="tab-panel" id="pane-route">
+          <div class="repeater" id="rep-routes"></div>
+          <button class="btn-add" onclick="addRoute()">＋ Add Static Route</button>
+        </div>
+
+        <div class="tab-panel" id="pane-ospf">
+          <div class="field-row">
+            <div class="field">
+              <label>Process ID <span class="hint">e.g. 1</span></label>
+              <input id="ospf-pid" placeholder="1">
+            </div>
+            <div class="field">
+              <label>Router ID <span class="hint">e.g. 1.1.1.1</span></label>
+              <input id="ospf-rid" placeholder="1.1.1.1">
+            </div>
+          </div>
+          <div class="field">
+            <label>Area <span class="hint">e.g. 0 for backbone</span></label>
+            <input id="ospf-area" placeholder="0">
+          </div>
+          <label style="margin-top:8px">Networks in this area</label>
+          <div class="repeater" id="rep-ospf-nets"></div>
+          <button class="btn-add" onclick="addOspfNet()">＋ Add Network</button>
+        </div>
+
+        <div class="tab-panel" id="pane-acl">
+          <div class="repeater" id="rep-acls"></div>
+          <button class="btn-add" onclick="addAcl()">＋ Add ACL</button>
+        </div>
+
+      </div>
+
+      <div class="panel-footer">
+        <button class="btn btn-secondary" onclick="loadExample()">✨ Example</button>
+        <button class="btn btn-primary" onclick="generate()">
+          ⚡ Generate Config
+          <span style="font-family:var(--mono);font-size:11px;opacity:0.7">⌘↵</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="output-wrap">
+      <div class="panel-head">
+        <div class="panel-title">
+          <span class="num">02</span>
+          CLI Output
+        </div>
+      </div>
+      <div class="output-toolbar">
+        <div class="output-toolbar-left">
+          <button class="tool-btn" onclick="copyConfig()">📋 Copy</button>
+          <button class="tool-btn" onclick="downloadConfig()">⬇ Download</button>
+        </div>
+        <div class="output-toolbar-left">
+          <button class="tool-btn active" id="toggle-ln" onclick="toggleLineNumbers()">#️⃣ Lines</button>
+          <button class="tool-btn active" id="toggle-hl" onclick="toggleHighlight()">✨ Highlight</button>
+        </div>
+      </div>
+      <div class="output empty" id="output">
+        <div>
+          <span class="empty-art">⌨️</span>
+          <div>Fill in the form and click <strong>Generate</strong></div>
+          <div style="font-size:11px; margin-top:8px">Or pick a template above to start fast</div>
+        </div>
+      </div>
+      <div class="status-bar" id="status">
+        <div><span class="s-dot"></span><span id="status-text">Ready</span></div>
+        <span id="line-info"></span>
+      </div>
+    </section>
+
+  </div>
+
+  <footer>
+    <div class="footer-brand">Config<em>Lab</em></div>
+    <div>Built with <em>care</em> for network engineers · H3C Comware v7</div>
+    <div style="margin-top:12px; font-size:11px; opacity:0.7">More vendors coming soon · Free forever</div>
+  </footer>
+</div>
+
+<div class="overlay" id="overlay" onclick="toggleHistory()"></div>
+<aside class="history-drawer" id="history-drawer">
+  <div class="drawer-head">
+    <h3>Config <em>History</em></h3>
+    <button class="icon-btn" onclick="toggleHistory()">✕</button>
+  </div>
+  <div class="drawer-body" id="history-body">
+    <div class="history-empty">No saved configs yet.<br>Generate something first!</div>
+  </div>
+</aside>
+
+<div class="toast" id="toast"><span class="t-icon">✓</span><span id="toast-msg">Done</span></div>
+
+<script>
+const API = '';
+const THEME_KEY = 'configlab_theme';
+const MAX_HIST = 20;
+
+let showLineNumbers = true;
+let showHighlight = true;
+let lastConfig = '';
+let history = [];
+
+function toggleTheme() {
+  const cur = document.body.dataset.theme;
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.body.dataset.theme = next;
+  document.getElementById('theme-btn').textContent = next === 'dark' ? '🌙' : '☀️';
+  try { localStorage.setItem(THEME_KEY, next); } catch(e){}
+}
+
+(function initTheme(){
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved) {
+      document.body.dataset.theme = saved;
+      document.getElementById('theme-btn').textContent = saved === 'dark' ? '🌙' : '☀️';
+    }
+  } catch(e){}
+})();
+
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('pane-' + t.dataset.tab).classList.add('active');
+  });
+});
+
+function makeItem(title, html) {
+  const div = document.createElement('div');
+  div.className = 'repeater-item';
+  div.innerHTML = `
+    <div class="repeater-head">
+      <div class="repeater-title">${title}</div>
+      <button class="btn-remove" onclick="this.closest('.repeater-item').remove(); updateBadges();">✕</button>
+    </div>
+    ${html}
+  `;
+  return div;
+}
+
+function addVlan(data = {}) {
+  const html = `
+    <div class="field-row-3">
+      <div class="field"><label>VLAN ID</label><input class="v-id" value="${data.vlan||''}" placeholder="10"></div>
+      <div class="field"><label>Name</label><input class="v-name" value="${data.name||''}" placeholder="USERS"></div>
+      <div class="field"><label>Gateway IP (CIDR)</label><input class="v-ip" value="${data.ip||''}" placeholder="10.10.10.1/24"></div>
+    </div>
+    <div class="field"><label>Description <span class="hint">optional</span></label><input class="v-desc" value="${data.description||''}" placeholder="Office user VLAN"></div>
+    <div class="field"><label>DHCP Relay Server <span class="hint">optional — for L3 VLANs</span></label><input class="v-relay" value="${data.dhcp_relay||''}" placeholder="10.10.100.10"></div>
+  `;
+  document.getElementById('rep-vlans').appendChild(makeItem('VLAN', html));
+  updateBadges();
+}
+
+function addIntf(data = {}) {
+  const mode = data.mode || 'access';
+  const html = `
+    <div class="field-row">
+      <div class="field"><label>Interface Name</label><input class="i-name" value="${data.interface||''}" placeholder="GigabitEthernet1/0/1"></div>
+      <div class="field"><label>Description</label><input class="i-desc" value="${data.description||''}" placeholder="Uplink to core"></div>
+    </div>
+    <div class="field">
+      <label>Port Mode</label>
+      <div class="segmented mode-seg">
+        <button type="button" data-mode="access" class="${mode==='access'?'active':''}">Access</button>
+        <button type="button" data-mode="trunk" class="${mode==='trunk'?'active':''}">Trunk</button>
+        <button type="button" data-mode="hybrid" class="${mode==='hybrid'?'active':''}">Hybrid</button>
+      </div>
+      <input type="hidden" class="i-mode" value="${mode}">
+    </div>
+    <div class="field i-vlan-wrap" style="display:${mode==='access'?'block':'none'}">
+      <label>Access VLAN</label><input class="i-vlan" value="${data.vlan||''}" placeholder="10">
+    </div>
+    <div class="field i-trunk-wrap" style="display:${mode==='trunk'?'block':'none'}">
+      <div class="field-row">
+        <div><label>Allowed VLANs</label><input class="i-allowed" value="${data.allowed||''}" placeholder="10 20 30"></div>
+        <div><label>Native (PVID)</label><input class="i-pvid" value="${data.pvid||''}" placeholder="1"></div>
+      </div>
+    </div>
+    <div class="field i-hybrid-wrap" style="display:${mode==='hybrid'?'block':'none'}">
+      <div class="field-row">
+        <div><label>Untagged VLANs</label><input class="i-untagged" value="${data.untagged||''}" placeholder="10"></div>
+        <div><label>Tagged VLANs</label><input class="i-tagged" value="${data.tagged||''}" placeholder="20 30"></div>
+      </div>
+    </div>
+    <div style="display:flex; gap:16px; margin-top:8px; flex-wrap:wrap">
+      <label class="check"><input type="checkbox" class="i-edge" ${data.stp_edge?'checked':''}> STP Edge Port</label>
+      <label class="check"><input type="checkbox" class="i-poe" ${data.poe?'checked':''}> PoE Enable</label>
+      <label class="check"><input type="checkbox" class="i-shut" ${data.shutdown?'checked':''}> Shutdown</label>
+    </div>
+  `;
+  const el = makeItem('Interface', html);
+  document.getElementById('rep-intfs').appendChild(el);
+  el.querySelectorAll('.mode-seg button').forEach(b => {
+    b.addEventListener('click', () => {
+      el.querySelectorAll('.mode-seg button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      el.querySelector('.i-mode').value = b.dataset.mode;
+      el.querySelector('.i-vlan-wrap').style.display = b.dataset.mode==='access'?'block':'none';
+      el.querySelector('.i-trunk-wrap').style.display = b.dataset.mode==='trunk'?'block':'none';
+      el.querySelector('.i-hybrid-wrap').style.display = b.dataset.mode==='hybrid'?'block':'none';
+    });
+  });
+  updateBadges();
+}
+
+function addDhcp(data = {}) {
+  const html = `
+    <div class="field-row">
+      <div class="field"><label>Pool Name</label><input class="d-name" value="${data.pool_name||''}" placeholder="USERS_POOL"></div>
+      <div class="field"><label>Lease (days)</label><input class="d-lease" value="${data.lease_days||'7'}" placeholder="7"></div>
+    </div>
+    <div class="field-row-3">
+      <div class="field"><label>Network</label><input class="d-net" value="${data.network||''}" placeholder="10.10.10.0"></div>
+      <div class="field"><label>CIDR</label><input class="d-cidr" value="${data.cidr||''}" placeholder="24"></div>
+      <div class="field"><label>Gateway</label><input class="d-gw" value="${data.gateway||''}" placeholder="10.10.10.1"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>DNS Servers</label><input class="d-dns" value="${data.dns||'8.8.8.8 1.1.1.1'}" placeholder="8.8.8.8 1.1.1.1"></div>
+      <div class="field"><label>Domain</label><input class="d-domain" value="${data.domain||''}" placeholder="company.local"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Exclude From</label><input class="d-ex-start" value="${data.exclude_start||''}" placeholder="10.10.10.1"></div>
+      <div class="field"><label>Exclude To</label><input class="d-ex-end" value="${data.exclude_end||''}" placeholder="10.10.10.20"></div>
+    </div>
+  `;
+  document.getElementById('rep-dhcp').appendChild(makeItem('DHCP Pool', html));
+  updateBadges();
+}
+
+function addRoute(data = {}) {
+  const html = `
+    <div class="field-row-3">
+      <div class="field"><label>Destination</label><input class="r-net" value="${data.network||''}" placeholder="0.0.0.0"></div>
+      <div class="field"><label>CIDR</label><input class="r-cidr" value="${data.cidr||''}" placeholder="0"></div>
+      <div class="field"><label>Next Hop</label><input class="r-nh" value="${data.next_hop||''}" placeholder="192.168.1.1"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Preference <span class="hint">optional</span></label><input class="r-pref" value="${data.preference||''}" placeholder="60"></div>
+      <div class="field"><label>Description</label><input class="r-desc" value="${data.description||''}" placeholder="Default route"></div>
+    </div>
+  `;
+  document.getElementById('rep-routes').appendChild(makeItem('Static Route', html));
+  updateBadges();
+}
+
+function addOspfNet(data = {}) {
+  const html = `
+    <div class="field-row">
+      <div class="field"><label>Network</label><input class="o-net" value="${data.network||''}" placeholder="10.0.0.0"></div>
+      <div class="field"><label>CIDR</label><input class="o-cidr" value="${data.cidr||''}" placeholder="16"></div>
+    </div>
+  `;
+  document.getElementById('rep-ospf-nets').appendChild(makeItem('OSPF Network', html));
+}
+
+function addAcl(data = {}) {
+  const rulesData = data.rules && data.rules.length ? data.rules : [{}];
+  const rulesHtml = rulesData.map((r, i) => `
+    <div class="field-row-3" style="margin-bottom:6px">
+      <input class="acl-rid" value="${r.rule_id||((i+1)*5)}" placeholder="5">
+      <select class="acl-act">
+        <option value="permit" ${r.action==='permit'?'selected':''}>permit</option>
+        <option value="deny" ${r.action==='deny'?'selected':''}>deny</option>
+      </select>
+      <input class="acl-src" value="${r.source||'any'}" placeholder="any or 10.10.10.0">
+    </div>
+  `).join('');
+  const html = `
+    <div class="field-row">
+      <div class="field"><label>ACL Number <span class="hint">2000–2999 basic · 3000–3999 advanced</span></label><input class="a-num" value="${data.acl_number||'3000'}" placeholder="3000"></div>
+    </div>
+    <label>Rules <span class="hint">rule-id · action · source</span></label>
+    <div class="acl-rules">${rulesHtml}</div>
+    <button class="btn-add" style="margin-top:8px" onclick="addAclRule(this)">＋ Add Rule</button>
+  `;
+  document.getElementById('rep-acls').appendChild(makeItem('ACL', html));
+  updateBadges();
+}
+
+function addAclRule(btn) {
+  const row = document.createElement('div');
+  row.className = 'field-row-3';
+  row.style.marginBottom = '6px';
+  row.innerHTML = '<input class="acl-rid" placeholder="10"><select class="acl-act"><option value="permit">permit</option><option value="deny">deny</option></select><input class="acl-src" placeholder="any">';
+  btn.previousElementSibling.appendChild(row);
+}
+
+function updateBadges() {
+  document.getElementById('b-vlan').textContent  = document.getElementById('rep-vlans').children.length;
+  document.getElementById('b-intf').textContent  = document.getElementById('rep-intfs').children.length;
+  document.getElementById('b-dhcp').textContent  = document.getElementById('rep-dhcp').children.length;
+  document.getElementById('b-route').textContent = document.getElementById('rep-routes').children.length;
+  document.getElementById('b-acl').textContent   = document.getElementById('rep-acls').children.length;
+}
+
+function collectData() {
+  const data = {};
+  const sys = {};
+  const hostname = document.getElementById('sys-hostname').value.trim();
+  if (hostname) sys.hostname = hostname;
+  const ntp = document.getElementById('sys-ntp').value.trim();
+  if (ntp) sys.ntp = ntp;
+  const tz = document.getElementById('sys-tz').value.trim();
+  if (tz) sys.timezone = tz;
+  const banner = document.getElementById('sys-banner').value.trim();
+  if (banner) sys.banner = banner;
+  if (Object.keys(sys).length) data.system = sys;
+
+  data.vlans = [...document.querySelectorAll('#rep-vlans .repeater-item')].map(el => ({
+    vlan: el.querySelector('.v-id').value.trim(),
+    name: el.querySelector('.v-name').value.trim(),
+    description: el.querySelector('.v-desc').value.trim(),
+    ip: el.querySelector('.v-ip').value.trim(),
+    dhcp_relay: el.querySelector('.v-relay').value.trim()
+  })).filter(v => v.vlan);
+
+  data.interfaces = [...document.querySelectorAll('#rep-intfs .repeater-item')].map(el => ({
+    interface: el.querySelector('.i-name').value.trim(),
+    description: el.querySelector('.i-desc').value.trim(),
+    mode: el.querySelector('.i-mode').value,
+    vlan: el.querySelector('.i-vlan').value.trim(),
+    allowed: el.querySelector('.i-allowed').value.trim(),
+    pvid: el.querySelector('.i-pvid').value.trim(),
+    untagged: el.querySelector('.i-untagged').value.trim(),
+    tagged: el.querySelector('.i-tagged').value.trim(),
+    stp_edge: el.querySelector('.i-edge').checked,
+    poe: el.querySelector('.i-poe').checked,
+    shutdown: el.querySelector('.i-shut').checked
+  })).filter(i => i.interface);
+
+  data.dhcp_pools = [...document.querySelectorAll('#rep-dhcp .repeater-item')].map(el => ({
+    pool_name: el.querySelector('.d-name').value.trim(),
+    network: el.querySelector('.d-net').value.trim(),
+    cidr: el.querySelector('.d-cidr').value.trim(),
+    gateway: el.querySelector('.d-gw').value.trim(),
+    dns: el.querySelector('.d-dns').value.trim(),
+    domain: el.querySelector('.d-domain').value.trim(),
+    lease_days: el.querySelector('.d-lease').value.trim(),
+    exclude_start: el.querySelector('.d-ex-start').value.trim(),
+    exclude_end: el.querySelector('.d-ex-end').value.trim()
+  })).filter(p => p.pool_name);
+
+  data.static_routes = [...document.querySelectorAll('#rep-routes .repeater-item')].map(el => ({
+    network: el.querySelector('.r-net').value.trim(),
+    cidr: el.querySelector('.r-cidr').value.trim(),
+    next_hop: el.querySelector('.r-nh').value.trim(),
+    preference: el.querySelector('.r-pref').value.trim(),
+    description: el.querySelector('.r-desc').value.trim()
+  })).filter(r => r.network && r.next_hop);
+
+  const opid = document.getElementById('ospf-pid').value.trim();
+  if (opid) {
+    const nets = [...document.querySelectorAll('#rep-ospf-nets .repeater-item')].map(el => ({
+      network: el.querySelector('.o-net').value.trim(),
+      cidr: el.querySelector('.o-cidr').value.trim()
+    })).filter(n => n.network);
+    data.ospf = {
+      process_id: opid,
+      router_id: document.getElementById('ospf-rid').value.trim(),
+      area: document.getElementById('ospf-area').value.trim(),
+      networks: nets
+    };
+  }
+
+  data.acls = [...document.querySelectorAll('#rep-acls .repeater-item')].map(el => {
+    const rules = [...el.querySelectorAll('.acl-rules .field-row-3')].map(rr => ({
+      rule_id: rr.querySelector('.acl-rid').value.trim(),
+      action: rr.querySelector('.acl-act').value,
+      source: rr.querySelector('.acl-src').value.trim()
+    })).filter(r => r.source);
+    return { acl_number: el.querySelector('.a-num').value.trim(), rules };
+  }).filter(a => a.acl_number);
+
+  return data;
+}
+
+function applyTemplate(data) {
+  clearAll(true);
+  if (data.system) {
+    document.getElementById('sys-hostname').value = data.system.hostname || '';
+    document.getElementById('sys-ntp').value = data.system.ntp || '';
+    document.getElementById('sys-tz').value = data.system.timezone || '';
+    document.getElementById('sys-banner').value = data.system.banner || '';
+  }
+  (data.vlans || []).forEach(v => addVlan(v));
+  (data.interfaces || []).forEach(i => addIntf(i));
+  (data.dhcp_pools || []).forEach(d => addDhcp(d));
+  (data.static_routes || []).forEach(r => addRoute(r));
+  if (data.ospf) {
+    document.getElementById('ospf-pid').value = data.ospf.process_id || '';
+    document.getElementById('ospf-rid').value = data.ospf.router_id || '';
+    document.getElementById('ospf-area').value = data.ospf.area || '';
+    (data.ospf.networks || []).forEach(n => addOspfNet(n));
+  }
+  (data.acls || []).forEach(a => addAcl(a));
+  updateBadges();
+  toast('Template loaded');
+}
+
+function clearAll(silent) {
+  ['sys-hostname','sys-ntp','sys-tz','sys-banner','ospf-pid','ospf-rid','ospf-area'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  ['rep-vlans','rep-intfs','rep-dhcp','rep-routes','rep-ospf-nets','rep-acls'].forEach(id => {
+    document.getElementById(id).innerHTML = '';
+  });
+  updateBadges();
+  if (!silent) {
+    document.getElementById('output').className = 'output empty';
+    document.getElementById('output').innerHTML = '<div><span class="empty-art">⌨️</span><div>Fill in the form and click <strong>Generate</strong></div></div>';
+    document.getElementById('line-info').textContent = '';
+    setStatus('Ready', '');
+    toast('Cleared');
+  }
+}
+
+function loadExample() {
+  applyTemplate({
+    system: { hostname: 'SW-DEMO-01' },
+    vlans: [
+      { vlan: '10', name: 'USERS', description: 'Office users', ip: '10.10.10.1/24' },
+      { vlan: '20', name: 'SERVERS', ip: '10.10.20.1/24' }
+    ],
+    interfaces: [
+      { interface: 'GigabitEthernet1/0/1', mode: 'access', vlan: '10', description: 'User port', stp_edge: true },
+      { interface: 'GigabitEthernet1/0/24', mode: 'trunk', allowed: '10 20', description: 'Uplink' }
+    ]
+  });
+}
+
+async function generate() {
+  const data = collectData();
+  if (!data.system && (!data.vlans || data.vlans.length === 0) && (!data.interfaces || data.interfaces.length === 0) &&
+      (!data.dhcp_pools || data.dhcp_pools.length === 0) && (!data.static_routes || data.static_routes.length === 0) &&
+      !data.ospf && (!data.acls || data.acls.length === 0)) {
+    toast('Add something first!', true);
+    return;
+  }
+  setStatus('Generating...', '');
+  try {
+    const res = await fetch(API + '/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Server error');
+    const result = await res.json();
+    lastConfig = result.config;
+    renderOutput(lastConfig);
+    setStatus('Generated ' + new Date().toLocaleTimeString(), 'ok');
+    document.getElementById('line-info').textContent = (result.lines || lastConfig.split('\n').length) + ' lines';
+    saveHistory(lastConfig);
+    toast('Config generated!');
+  } catch (e) {
+    setStatus('Backend offline — run python3 CloudLab.py', 'err');
+    toast('Cannot reach backend', true);
+  }
+}
+
+function renderOutput(text) {
+  const out = document.getElementById('output');
+  out.classList.remove('empty');
+  const lines = text.split('\n');
+  out.innerHTML = lines.map((line, i) => {
+    const ln = showLineNumbers ? `<span class="ln">${i+1}</span>` : '<span></span>';
+    let cls = 'line';
+    let content;
+    if (line.startsWith('#')) {
+      cls += ' comment';
+      content = escapeHtml(line);
+    } else {
+      cls += ' cmd';
+      content = showHighlight ? highlight(line) : escapeHtml(line);
+    }
+    return `<div class="${cls}">${ln}<span class="content">${content || '&nbsp;'}</span></div>`;
+  }).join('');
+}
+
+function highlight(line) {
+  let s = escapeHtml(line);
+  s = s.replace(/\b(system-view|vlan|name|description|interface|port|link-type|access|trunk|hybrid|permit|tagged|untagged|ip|address|route-static|dhcp|server|ip-pool|network|gateway-list|dns-list|expired|domain-name|forbidden-ip|ospf|router-id|area|acl|number|rule|source|any|mask|quit|save|force|sysname|header|ntp-service|unicast-server|clock|timezone|poe|enable|stp|edged-port|shutdown|undo|speed|duplex|pvid|relay|select|preference|from|to|deny|day|shell)\b/g,
+    '<span class="kw">$1</span>');
+  s = s.replace(/\b(\d{1,3}(?:\.\d{1,3}){3}(?:\/\d+)?)\b/g, '<span class="val">$1</span>');
+  return s;
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function setStatus(text, cls) {
+  const s = document.getElementById('status');
+  s.className = 'status-bar' + (cls ? ' ' + cls : '');
+  document.getElementById('status-text').textContent = text;
+}
+
+function toggleLineNumbers() {
+  showLineNumbers = !showLineNumbers;
+  document.getElementById('toggle-ln').classList.toggle('active', showLineNumbers);
+  if (lastConfig) renderOutput(lastConfig);
+}
+
+function toggleHighlight() {
+  showHighlight = !showHighlight;
+  document.getElementById('toggle-hl').classList.toggle('active', showHighlight);
+  if (lastConfig) renderOutput(lastConfig);
+}
+
+function copyConfig() {
+  if (!lastConfig) { toast('Nothing to copy yet', true); return; }
+  navigator.clipboard.writeText(lastConfig);
+  toast('Copied to clipboard');
+}
+
+function downloadConfig() {
+  if (!lastConfig) { toast('Nothing to download', true); return; }
+  const host = document.getElementById('sys-hostname').value.trim() || 'config';
+  const blob = new Blob([lastConfig], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${host}-configlab-${Date.now()}.txt`;
+  a.click();
+  toast('Downloaded!');
+}
+
+function toast(msg, isErr) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.querySelector('.t-icon').style.background = isErr ? 'var(--danger)' : 'var(--success)';
+  t.querySelector('.t-icon').textContent = isErr ? '!' : '✓';
+  t.classList.add('show');
+  clearTimeout(window._toastT);
+  window._toastT = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+function saveHistory(cfg) {
+  history.unshift({ time: Date.now(), config: cfg });
+  if (history.length > MAX_HIST) history = history.slice(0, MAX_HIST);
+  renderHistory();
+}
+
+function renderHistory() {
+  const body = document.getElementById('history-body');
+  if (history.length === 0) {
+    body.innerHTML = '<div class="history-empty">No saved configs yet.<br>Generate something first!</div>';
+    return;
+  }
+  body.innerHTML = history.map((h, i) => `
+    <div class="history-item" onclick="restoreHistory(${i})">
+      <div class="h-time">${new Date(h.time).toLocaleString()}</div>
+      <div class="h-preview">${escapeHtml(h.config.split('\n').slice(0,6).join('\n'))}</div>
+    </div>
+  `).join('');
+}
+
+function restoreHistory(i) {
+  if (!history[i]) return;
+  lastConfig = history[i].config;
+  renderOutput(lastConfig);
+  document.getElementById('line-info').textContent = lastConfig.split('\n').length + ' lines';
+  setStatus('Restored from ' + new Date(history[i].time).toLocaleTimeString(), 'ok');
+  toggleHistory();
+  toast('Restored');
+}
+
+function toggleHistory() {
+  document.getElementById('history-drawer').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
+
+async function loadTemplates() {
+  try {
+    const res = await fetch(API + '/templates');
+    const data = await res.json();
+    const grid = document.getElementById('templates-grid');
+    const keys = Object.keys(data);
+    document.getElementById('tpl-count').textContent = keys.length + ' ready to use';
+    grid.innerHTML = keys.map(k => {
+      const t = data[k];
+      const emojiMatch = t.name.match(/\p{Emoji}/u);
+      const emoji = emojiMatch ? emojiMatch[0] : '📋';
+      const name = t.name.replace(/\p{Emoji}/u, '').trim();
+      const safeData = JSON.stringify(t.data).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      return `
+        <div class="tpl" data-tpl="${safeData}">
+          <span class="tpl-emoji">${emoji}</span>
+          <div class="tpl-name">${name}</div>
+          <div class="tpl-desc">${t.description}</div>
+        </div>
+      `;
+    }).join('');
+    document.querySelectorAll('.tpl').forEach(el => {
+      el.addEventListener('click', () => {
+        try { applyTemplate(JSON.parse(el.dataset.tpl.replace(/&quot;/g,'"').replace(/&#39;/g,"'"))); }
+        catch(e){ console.error(e); }
+      });
+    });
+    document.getElementById('backend-status').textContent = 'Connected';
+  } catch (e) {
+    document.getElementById('backend-status').textContent = 'Offline';
+    document.querySelector('.chip .dot').style.background = 'var(--danger)';
+    document.getElementById('tpl-count').textContent = 'backend offline';
+    document.getElementById('templates-grid').innerHTML = '<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--text-muted)">⚠️ Start your backend: <code style="font-family:var(--mono);color:var(--accent)">python3 ConfigLab.py</code></div>';
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); generate(); }
+  if (e.key === 'Escape') {
+    document.getElementById('history-drawer').classList.remove('open');
+    document.getElementById('overlay').classList.remove('show');
+  }
+});
+
+loadTemplates();
+addVlan({ vlan: '10', name: 'USERS' });
+</script>
+</body>
+</html>
