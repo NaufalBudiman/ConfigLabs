@@ -4,15 +4,17 @@ Version 1.1.0 — Week 1 Fixes (Real H3C Syntax Compliance)
 
 What's new in v1.1:
 -------------------
-[FIX] DHCP server apply on VLAN interfaces (links pool to VLAN)
+[FIX] DHCP server apply on VLAN interfaces (links pool to SVI)
 [FIX] Replaced 'quit' with '#' as block separator (real H3C format)
 [FIX] Fixed 'Vlan-interface X' → 'Vlan-interfaceX' (no space)
 [FIX] Added 'undo port trunk permit vlan 1' on all trunks (security)
-[FIX] ACL: 'acl advanced N' + 'permit ip' + wildcard mask
-[FIX] OSPF router-id on same line, area 0.0.0.0 format
+[FIX] ACL: 'acl advanced N' / 'acl basic N' + 'permit ip' + wildcard mask
+[FIX] OSPF router-id on same line as 'ospf X' (real config style)
 [FIX] DHCP multiple forbidden-ip entries supported
-[NEW] VLAN range support (10 to 20)
+[NEW] Split architecture: VLANs (L2) and VLAN-interfaces (L3 SVI) separate
+[NEW] DHCP modes on SVI: none / server / relay / client
 [NEW] Feedback endpoint
+[NEW] SEO-friendly root response
 """
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -48,13 +50,12 @@ def cidr_to_wildcard(cidr):
     return ".".join([str((wildcard >> i) & 0xff) for i in [24, 16, 8, 0]])
 
 def format_area(area):
-    """Format OSPF area as 0.0.0.0 or a.b.c.d"""
+    """Format OSPF area as 0.0.0.0 dotted format"""
     area = str(area).strip()
     if not area:
         return "0.0.0.0"
     if "." in area:
         return area
-    # Convert plain number to dotted format
     try:
         n = int(area)
         return f"{(n >> 24) & 0xff}.{(n >> 16) & 0xff}.{(n >> 8) & 0xff}.{n & 0xff}"
@@ -62,10 +63,9 @@ def format_area(area):
         return area
 
 # ==========================================================
-# GENERATORS (H3C Comware v7 — verified syntax)
+# GENERATORS (H3C Comware v7 — real device syntax)
 # ==========================================================
 def gen_system_block(system):
-    """System-level global settings"""
     out = []
     if not system: return out
     if system.get("hostname"):
@@ -83,7 +83,7 @@ def gen_system_block(system):
     return out
 
 def gen_vlan_block(vlans):
-    """VLAN creation (L2 only, no IP)"""
+    """Pure L2 VLAN creation — no IP"""
     out = []
     for v in vlans:
         if not v.get("vlan"): continue
@@ -95,46 +95,41 @@ def gen_vlan_block(vlans):
         out.append("#")
     return out
 
-def gen_svi_block(vlans):
+def gen_svi_block(svis):
     """
-    Layer 3 SVI (Vlan-interface) with IP and DHCP options.
-    FIXED: No space between 'Vlan-interface' and number.
-    NEW: Supports dhcp_mode = server/relay/client + apply_pool.
+    Layer 3 VLAN interfaces (SVIs).
+    Real H3C syntax: 'interface Vlan-interfaceX' (no space).
+    Supports: static IP, DHCP server apply, DHCP relay, DHCP client.
     """
     out = []
-    for v in vlans:
-        if not (v.get("vlan") and v.get("ip")): continue
-        try:
-            ip_addr, cidr = v["ip"].split("/")
-            mask = cidr_to_mask(cidr)
-        except Exception:
-            continue
-        # No space here! Real H3C syntax.
-        out.append(f"interface Vlan-interface{v['vlan']}")
-        if v.get("description"):
-            out.append(f" description {v['description']}")
-        out.append(f" ip address {ip_addr} {mask}")
+    for s in svis:
+        if not s.get("vlan"): continue
+        out.append(f"interface Vlan-interface{s['vlan']}")
+        if s.get("description"):
+            out.append(f" description {s['description']}")
 
-        # DHCP mode on VLAN interface
-        dhcp_mode = v.get("dhcp_mode", "none")
-        if dhcp_mode == "server" and v.get("dhcp_apply_pool"):
-            # Most common pattern in real configs
-            out.append(f" dhcp server apply ip-pool {v['dhcp_apply_pool']}")
-        elif dhcp_mode == "relay" and v.get("dhcp_relay"):
-            out.append(f" dhcp select relay")
-            out.append(f" dhcp relay server-address {v['dhcp_relay']}")
-        elif dhcp_mode == "client":
-            # Override the static IP with dhcp-alloc if client mode is selected
-            # Remove the "ip address" line we added above
-            out.pop()  # pops the ip address line
+        dhcp_mode = s.get("dhcp_mode", "none")
+
+        # IP Address handling
+        if dhcp_mode == "client":
+            # Client mode: get IP from upstream DHCP
             out.append(f" ip address dhcp-alloc")
+        elif s.get("ip"):
+            try:
+                ip_addr, cidr = s["ip"].split("/")
+                mask = cidr_to_mask(cidr)
+                out.append(f" ip address {ip_addr} {mask}")
+            except Exception:
+                pass
 
-        # Legacy fallback: if dhcp_relay is set but no mode specified
-        if dhcp_mode == "none" and v.get("dhcp_relay"):
+        # DHCP mode handling
+        if dhcp_mode == "server" and s.get("dhcp_apply_pool"):
+            out.append(f" dhcp server apply ip-pool {s['dhcp_apply_pool']}")
+        elif dhcp_mode == "relay" and s.get("dhcp_relay"):
             out.append(f" dhcp select relay")
-            out.append(f" dhcp relay server-address {v['dhcp_relay']}")
+            out.append(f" dhcp relay server-address {s['dhcp_relay']}")
 
-        if v.get("shutdown"):
+        if s.get("shutdown"):
             out.append(" shutdown")
         out.append("#")
     return out
@@ -181,7 +176,7 @@ def gen_interface_block(interfaces):
 
 def gen_dhcp_pool_block(pools):
     """
-    DHCP server pools.
+    DHCP pools.
     FIXED: gateway-list before network (real H3C order).
     FIXED: Multiple forbidden-ip entries supported.
     """
@@ -192,7 +187,6 @@ def gen_dhcp_pool_block(pools):
     for p in pools:
         if not p.get("pool_name"): continue
         out.append(f"dhcp server ip-pool {p['pool_name']}")
-        # Real H3C config order: gateway first, then network
         if p.get("gateway"):
             out.append(f" gateway-list {p['gateway']}")
         if p.get("network") and p.get("cidr"):
@@ -204,27 +198,24 @@ def gen_dhcp_pool_block(pools):
             out.append(f" expired day {p['lease_days']}")
         if p.get("domain"):
             out.append(f" domain-name {p['domain']}")
-        # Multiple forbidden IPs (common real-world pattern)
-        # Accepts: single string "10.10.10.1" or list ["10.10.10.1", "10.10.10.2"]
+        # Multi-IP forbidden support (common real pattern)
         forbidden = p.get("forbidden_ips")
         if forbidden:
             if isinstance(forbidden, str):
-                # split space or newline separated
                 for ip in forbidden.replace(",", " ").split():
                     if ip.strip():
                         out.append(f" forbidden-ip {ip.strip()}")
             elif isinstance(forbidden, list):
                 for ip in forbidden:
-                    if ip.strip():
+                    if ip and ip.strip():
                         out.append(f" forbidden-ip {ip.strip()}")
-        # Legacy range-based exclusion (still supported)
+        # Legacy range
         if p.get("exclude_start") and p.get("exclude_end"):
             out.append(f" forbidden-ip {p['exclude_start']} {p['exclude_end']}")
         out.append("#")
     return out
 
 def gen_static_route_block(routes):
-    """Static routes — unchanged but cleaner"""
     out = []
     for r in routes:
         if not (r.get("network") and r.get("cidr") and r.get("next_hop")): continue
@@ -241,13 +232,11 @@ def gen_static_route_block(routes):
 
 def gen_ospf_block(ospf):
     """
-    OSPF routing.
-    FIXED: router-id on same line as 'ospf X' (real H3C style).
-    FIXED: area formatted as 0.0.0.0.
+    FIXED: router-id on same line as 'ospf X'.
+    FIXED: area in 0.0.0.0 format.
     """
     out = []
     if not ospf or not ospf.get("process_id"): return out
-    # Router-id on same line
     if ospf.get("router_id"):
         out.append(f"ospf {ospf['process_id']} router-id {ospf['router_id']}")
     else:
@@ -264,9 +253,8 @@ def gen_ospf_block(ospf):
 
 def gen_acl_block(acls):
     """
-    ACL generation.
-    FIXED: uses 'acl advanced N' for 3000-3999 and 'acl basic N' for 2000-2999.
-    FIXED: includes 'ip' protocol keyword and wildcard mask.
+    FIXED: Uses 'acl advanced N' for 3000-3999, 'acl basic N' for 2000-2999.
+    FIXED: Includes 'ip' protocol keyword and wildcard mask.
     """
     out = []
     for a in acls:
@@ -276,13 +264,12 @@ def gen_acl_block(acls):
             n = int(num)
         except:
             continue
-        # Determine keyword based on ACL number range
         if 2000 <= n <= 2999:
             acl_type = "basic"
         elif 3000 <= n <= 3999:
             acl_type = "advanced"
         else:
-            acl_type = "advanced"  # default fallback
+            acl_type = "advanced"
         out.append(f"acl {acl_type} {n}")
         if a.get("description"):
             out.append(f" description {a['description']}")
@@ -290,15 +277,12 @@ def gen_acl_block(acls):
             if rule.get("action") and rule.get("source"):
                 rid = rule.get('rule_id', '').strip()
                 action = rule['action']
-                protocol = rule.get("protocol", "ip")  # default to 'ip'
+                protocol = rule.get("protocol", "ip")
                 source = rule['source']
 
-                # Build rule line
                 if source.lower() == "any":
-                    line = f" rule {rid} {action} {protocol} source any".strip()
-                    line = " ".join(line.split())  # normalize spaces
+                    line = f" rule {rid} {action} {protocol} source any"
                 else:
-                    # Use wildcard if provided, else derive from CIDR if given
                     wildcard = rule.get("wildcard")
                     if not wildcard and "/" in source:
                         addr, cidr = source.split("/")
@@ -308,11 +292,9 @@ def gen_acl_block(acls):
                         line = f" rule {rid} {action} {protocol} source {source} {wildcard}"
                     else:
                         line = f" rule {rid} {action} {protocol} source {source} 0"
-                    # Clean up extra spaces
-                    line = " ".join(line.split())
-                    line = " " + line.lstrip()
 
-                # Optional destination
+                line = " " + " ".join(line.split())
+
                 if rule.get("destination"):
                     dest = rule["destination"]
                     dest_wc = rule.get("dest_wildcard", "0")
@@ -331,7 +313,7 @@ def gen_acl_block(acls):
 def generate_config(data):
     """
     Build the full H3C Comware v7 config.
-    Uses '#' as block separator (real config file format).
+    Real config format with '#' as block separator.
     """
     config = [
         "#",
@@ -341,7 +323,7 @@ def generate_config(data):
         "#",
     ]
 
-    # System block (global settings)
+    # System block
     system_out = gen_system_block(data.get("system"))
     if system_out:
         config.extend(system_out)
@@ -351,15 +333,15 @@ def generate_config(data):
     if vlans:
         config.extend(gen_vlan_block(vlans))
 
-    # DHCP Pools (must exist before VLAN interfaces reference them)
+    # DHCP Pools — before SVI so "dhcp server apply" references valid pools
     dhcp_out = gen_dhcp_pool_block(data.get("dhcp_pools", []))
     if dhcp_out:
         config.extend(dhcp_out)
 
-    # Layer 3 VLAN interfaces (SVIs) with DHCP apply
-    svi_out = gen_svi_block(vlans)
-    if svi_out:
-        config.extend(svi_out)
+    # VLAN Interfaces (SVIs - L3)
+    svis = data.get("svis", [])
+    if svis:
+        config.extend(gen_svi_block(svis))
 
     # Physical interfaces
     interfaces = data.get("interfaces", [])
@@ -386,7 +368,7 @@ def generate_config(data):
     return "\n".join(config)
 
 # ==========================================================
-# TEMPLATES — updated to use new dhcp_mode and dhcp_apply_pool
+# TEMPLATES
 # ==========================================================
 TEMPLATES = {
     "access_switch": {
@@ -410,9 +392,14 @@ TEMPLATES = {
         "data": {
             "system": {"hostname": "SW-CORE-01"},
             "vlans": [
-                {"vlan": "10", "name": "USERS", "ip": "10.10.10.1/24"},
-                {"vlan": "20", "name": "SERVERS", "ip": "10.10.20.1/24"},
-                {"vlan": "99", "name": "MGMT", "ip": "10.10.99.1/24"}
+                {"vlan": "10", "name": "USERS"},
+                {"vlan": "20", "name": "SERVERS"},
+                {"vlan": "99", "name": "MGMT"}
+            ],
+            "svis": [
+                {"vlan": "10", "description": "User gateway", "ip": "10.10.10.1/24"},
+                {"vlan": "20", "description": "Server gateway", "ip": "10.10.20.1/24"},
+                {"vlan": "99", "description": "Management", "ip": "10.10.99.1/24"}
             ],
             "interfaces": [
                 {"interface": "GigabitEthernet1/0/1", "mode": "trunk", "allowed": "10 20 99", "description": "Downlink"}
@@ -435,15 +422,13 @@ TEMPLATES = {
             ]
         }
     },
-    "dhcp_server_with_vlan": {
-        "name": "📡 DHCP on VLAN (L3 + Pool)",
-        "description": "VLAN interface with DHCP server apply — real-world setup",
+    "dhcp_server_vlan": {
+        "name": "📡 DHCP Server on VLAN",
+        "description": "VLAN + SVI + DHCP pool — full L3 server setup (real-world pattern!)",
         "data": {
-            "vlans": [{
-                "vlan": "10", "name": "USERS", "description": "Office users",
-                "ip": "10.10.10.1/24",
-                "dhcp_mode": "server", "dhcp_apply_pool": "USERS_POOL"
-            }],
+            "vlans": [
+                {"vlan": "10", "name": "USERS", "description": "Office users"}
+            ],
             "dhcp_pools": [{
                 "pool_name": "USERS_POOL",
                 "network": "10.10.10.0", "cidr": "24",
@@ -451,18 +436,21 @@ TEMPLATES = {
                 "dns": "8.8.8.8 1.1.1.1",
                 "lease_days": "7",
                 "forbidden_ips": "10.10.10.1 10.10.10.2 10.10.10.3"
+            }],
+            "svis": [{
+                "vlan": "10", "description": "Users gateway",
+                "ip": "10.10.10.1/24",
+                "dhcp_mode": "server", "dhcp_apply_pool": "USERS_POOL"
             }]
         }
     },
     "guest_wifi_vlan": {
         "name": "📶 Guest WiFi VLAN",
-        "description": "Isolated guest VLAN with DHCP and ACL",
+        "description": "Isolated guest VLAN with DHCP server + ACL",
         "data": {
-            "vlans": [{
-                "vlan": "200", "name": "GUEST_WIFI",
-                "ip": "192.168.200.1/24",
-                "dhcp_mode": "server", "dhcp_apply_pool": "GUEST_POOL"
-            }],
+            "vlans": [
+                {"vlan": "200", "name": "GUEST_WIFI", "description": "Guest WiFi isolation"}
+            ],
             "dhcp_pools": [{
                 "pool_name": "GUEST_POOL",
                 "network": "192.168.200.0", "cidr": "24",
@@ -471,9 +459,14 @@ TEMPLATES = {
                 "lease_days": "1",
                 "forbidden_ips": "192.168.200.1"
             }],
+            "svis": [{
+                "vlan": "200", "description": "Guest WiFi",
+                "ip": "192.168.200.1/24",
+                "dhcp_mode": "server", "dhcp_apply_pool": "GUEST_POOL"
+            }],
             "acls": [{
                 "acl_number": "3000",
-                "description": "Guest-WiFi-Isolation",
+                "description": "Guest-Isolation",
                 "rules": [
                     {"rule_id": "5", "action": "deny", "protocol": "ip", "source": "192.168.200.0", "wildcard": "0.0.0.255"},
                     {"rule_id": "10", "action": "permit", "protocol": "ip", "source": "any"}
@@ -496,11 +489,14 @@ TEMPLATES = {
         }
     },
     "dhcp_relay_vlan": {
-        "name": "↗️ DHCP Relay VLAN",
+        "name": "↗️ DHCP Relay",
         "description": "VLAN with DHCP Relay to central server",
         "data": {
-            "vlans": [{
-                "vlan": "50", "name": "BRANCH_USERS",
+            "vlans": [
+                {"vlan": "50", "name": "BRANCH_USERS", "description": "Branch office users"}
+            ],
+            "svis": [{
+                "vlan": "50", "description": "Branch gateway",
                 "ip": "172.16.50.1/24",
                 "dhcp_mode": "relay", "dhcp_relay": "10.10.100.10"
             }]
@@ -541,18 +537,17 @@ def templates():
 
 @app.route("/feedback", methods=["POST"])
 def feedback():
-    """Simple feedback endpoint — logs to console for now"""
+    """Simple feedback endpoint — logs to console"""
     try:
         data = request.json or {}
         msg = data.get("message", "")
         email = data.get("email", "anonymous")
-        print(f"[FEEDBACK] from={email} msg={msg[:200]}")
+        print(f"[FEEDBACK v{APP_VERSION}] from={email} msg={msg[:300]}")
         return jsonify({"success": True, "message": "Thanks for your feedback!"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
 
 # ==========================================================
 if __name__ == "__main__":
-    # Port 5002 for test bench (production uses Railway's PORT env var)
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=False)

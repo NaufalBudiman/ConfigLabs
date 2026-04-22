@@ -4,15 +4,17 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>ConfigLabs — Network Configuration, Simplified</title>
-<meta name="description" content="Free H3C Comware v7 config generator for network engineers. Generate VLAN, DHCP, OSPF, ACL configs visually. No typos, no CLI headaches."/>
-<meta name="keywords" content="H3C config generator, Comware CLI, VLAN generator, OSPF config, network automation, H3C templates"/>
+<meta name="description" content="Free H3C Comware v7 config generator. Build production-ready VLAN, DHCP, OSPF, ACL configs visually. No typos, no CLI headaches."/>
+<meta name="keywords" content="H3C config generator, Comware CLI, VLAN generator, OSPF config, network automation, H3C templates, DHCP generator"/>
+<meta name="author" content="ConfigLabs"/>
 <meta property="og:title" content="ConfigLabs — H3C Config Generator"/>
 <meta property="og:description" content="Build production-ready H3C configs visually in seconds."/>
 <meta property="og:type" content="website"/>
 <meta property="og:url" content="https://configlabs.online"/>
+<meta name="theme-color" content="#0b0d10"/>
 
-<!-- Favicon (embedded SVG) -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%237cf4c7'/%3E%3Cstop offset='50%25' stop-color='%23a8b5ff'/%3E%3Cstop offset='100%25' stop-color='%23ffb86b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='url(%23g)'/%3E%3Cg transform='translate(6 4)' fill='none' stroke='%230b0d10' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 0v7.5a2 2 0 0 1-.2.9L-1.3 18.6a1 1 0 0 0 .9 1.4h12.8a1 1 0 0 0 .9-1.4L8.2 8.4A2 2 0 0 1 8 7.5V0'/%3E%3Cpath d='M2.5 0h7'/%3E%3Cpath d='M1 14h10'/%3E%3C/g%3E%3C/svg%3E"/>
+<!-- Favicon (embedded SVG — matches brand logo) -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%237cf4c7'/%3E%3Cstop offset='50%25' stop-color='%23a8b5ff'/%3E%3Cstop offset='100%25' stop-color='%23ffb86b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='url(%23g)'/%3E%3Cg transform='translate(10 6)' fill='none' stroke='%230b0d10' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 0v7a2 2 0 0 1-.2.9L-3 17.5a1 1 0 0 0 .9 1.4H9.1a1 1 0 0 0 .9-1.4L5.2 7.9A2 2 0 0 1 5 7V0z'/%3E%3Cpath d='M0 0h6'/%3E%3Cpath d='M-1 13h8'/%3E%3C/g%3E%3C/svg%3E"/>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -162,6 +164,9 @@ textarea { resize: vertical; min-height: 80px; font-family: var(--sans); }
 .check { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; font-size: 13px; color: var(--text-dim); }
 .check input { width: auto; margin: 0; }
 
+.info-banner { background: color-mix(in srgb, var(--accent-2) 8%, var(--bg)); border: 1px solid color-mix(in srgb, var(--accent-2) 30%, var(--border)); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--text-dim); margin-bottom: 16px; display: flex; gap: 10px; align-items: flex-start; }
+.info-banner .icon { color: var(--accent-2); font-size: 14px; flex-shrink: 0; }
+
 .panel-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; background: var(--surface-2); }
 .btn { padding: 11px 18px; border: none; border-radius: 10px; font-family: var(--sans); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s var(--ease); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 .btn-primary { background: var(--accent); color: var(--bg); flex: 1; font-weight: 600; box-shadow: var(--glow); }
@@ -211,7 +216,7 @@ textarea { resize: vertical; min-height: 80px; font-family: var(--sans); }
 
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 150; opacity: 0; pointer-events: none; transition: opacity 0.25s; display: grid; place-items: center; padding: 20px; }
 .modal-overlay.show { opacity: 1; pointer-events: auto; }
-.modal { background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-lg); padding: 28px; max-width: 480px; width: 100%; transform: translateY(20px); transition: transform 0.25s var(--ease); }
+.modal { background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-lg); padding: 28px; max-width: 500px; width: 100%; transform: translateY(20px); transition: transform 0.25s var(--ease); max-height: 90vh; overflow-y: auto; }
 .modal-overlay.show .modal { transform: translateY(0); }
 .modal h2 { font-size: 22px; font-weight: 500; margin-bottom: 8px; letter-spacing: -0.5px; }
 .modal h2 em { font-family: var(--serif); font-style: italic; color: var(--accent); font-weight: 400; }
@@ -222,7 +227,7 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
 .footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 32px; margin-bottom: 32px; }
 @media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
 .footer-col h4 { font-family: var(--mono); font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px; font-weight: 500; }
-.footer-col a { display: block; color: var(--text-muted); text-decoration: none; font-size: 13px; padding: 4px 0; transition: color 0.15s; }
+.footer-col a { display: block; color: var(--text-muted); text-decoration: none; font-size: 13px; padding: 4px 0; transition: color 0.15s; cursor: pointer; }
 .footer-col a:hover { color: var(--accent); }
 .footer-col a::before { content: '→ '; opacity: 0.4; margin-right: 2px; }
 .footer-brand-block { font-size: 15px; color: var(--text); margin-bottom: 12px; font-weight: 500; }
@@ -230,8 +235,6 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
 .footer-tagline { color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 14px; }
 .legal { border-top: 1px solid var(--border); padding-top: 20px; text-align: center; font-size: 11px; color: var(--text-muted); line-height: 1.8; font-family: var(--mono); max-width: 900px; margin: 0 auto; }
 .legal strong { color: var(--text-dim); font-weight: 500; }
-.legal a { color: var(--text-dim); text-decoration: underline; text-decoration-color: var(--border-strong); }
-.legal a:hover { color: var(--accent); }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -294,6 +297,7 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
       <div class="tabs">
         <button class="tab active" data-tab="system">⚙️ System</button>
         <button class="tab" data-tab="vlan">🔷 VLAN <span class="badge" id="b-vlan">0</span></button>
+        <button class="tab" data-tab="svi">🌐 VLAN-interface <span class="badge" id="b-svi">0</span></button>
         <button class="tab" data-tab="intf">🔌 Interfaces <span class="badge" id="b-intf">0</span></button>
         <button class="tab" data-tab="dhcp">📡 DHCP <span class="badge" id="b-dhcp">0</span></button>
         <button class="tab" data-tab="route">🛣️ Routing <span class="badge" id="b-route">0</span></button>
@@ -312,8 +316,21 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
         </div>
 
         <div class="tab-panel" id="pane-vlan">
+          <div class="info-banner">
+            <span class="icon">ℹ️</span>
+            <span>Create Layer 2 VLANs here. For L3 gateway IP + DHCP, use the <strong style="color:var(--text);">VLAN-interface</strong> tab next.</span>
+          </div>
           <div class="repeater" id="rep-vlans"></div>
           <button class="btn-add" onclick="addVlan()">＋ Add VLAN</button>
+        </div>
+
+        <div class="tab-panel" id="pane-svi">
+          <div class="info-banner">
+            <span class="icon">🌐</span>
+            <span>Layer 3 gateway (SVI). Pick a VLAN, set the IP, and optionally apply a DHCP pool or relay.</span>
+          </div>
+          <div class="repeater" id="rep-svis"></div>
+          <button class="btn-add" onclick="addSvi()">＋ Add VLAN-interface</button>
         </div>
 
         <div class="tab-panel" id="pane-intf">
@@ -322,6 +339,10 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
         </div>
 
         <div class="tab-panel" id="pane-dhcp">
+          <div class="info-banner">
+            <span class="icon">💡</span>
+            <span>Define DHCP pools here. To actually serve IPs, link a pool to a VLAN-interface in the <strong style="color:var(--text);">VLAN-interface</strong> tab.</span>
+          </div>
           <div class="repeater" id="rep-dhcp"></div>
           <button class="btn-add" onclick="addDhcp()">＋ Add DHCP Pool</button>
         </div>
@@ -394,8 +415,8 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
       </div>
       <div class="footer-col">
         <h4>Product</h4>
-        <a href="#" onclick="document.querySelector('.templates-section').scrollIntoView({behavior:'smooth'}); return false;">Templates</a>
-        <a href="#" onclick="openFeedback(); return false;">Send feedback</a>
+        <a onclick="document.querySelector('.templates-section').scrollIntoView({behavior:'smooth'});">Templates</a>
+        <a onclick="openFeedback();">Send feedback</a>
         <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" rel="noopener">GitHub</a>
       </div>
       <div class="footer-col">
@@ -407,8 +428,8 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
       </div>
       <div class="footer-col">
         <h4>Legal</h4>
-        <a href="#" onclick="openDisclaimer(); return false;">Disclaimer</a>
-        <a href="#" onclick="openTerms(); return false;">Terms of Use</a>
+        <a onclick="openDisclaimer();">Disclaimer</a>
+        <a onclick="openTerms();">Terms of Use</a>
       </div>
     </div>
     <div class="legal">
@@ -488,8 +509,7 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
 
 <script>
 // ============================================================
-// TEST BENCH: Point to local backend on port 5002
-// For production: change to 'https://configlabs-production.up.railway.app'
+// PRODUCTION API — points to Railway backend
 // ============================================================
 const API = 'https://configlabs-production.up.railway.app';
 const THEME_KEY = 'configlabs_theme';
@@ -526,63 +546,116 @@ document.querySelectorAll('.tab').forEach(t => {
     document.querySelectorAll('.tab-panel').forEach(x => x.classList.remove('active'));
     t.classList.add('active');
     document.getElementById('pane-' + t.dataset.tab).classList.add('active');
+    // Refresh SVI dropdowns whenever tab is opened
+    if (t.dataset.tab === 'svi') refreshSviDropdowns();
   });
 });
 
 function makeItem(title, html) {
   const div = document.createElement('div');
   div.className = 'repeater-item';
-  div.innerHTML = `<div class="repeater-head"><div class="repeater-title">${title}</div><button class="btn-remove" onclick="this.closest('.repeater-item').remove(); updateBadges();">✕</button></div>${html}`;
+  div.innerHTML = `<div class="repeater-head"><div class="repeater-title">${title}</div><button class="btn-remove" onclick="this.closest('.repeater-item').remove(); updateBadges(); refreshSviDropdowns();">✕</button></div>${html}`;
   return div;
 }
 
+// ===== VLAN (L2 only) =====
 function addVlan(data = {}) {
-  const mode = data.dhcp_mode || 'none';
   const html = `
     <div class="field-row-3">
-      <div class="field"><label>VLAN ID</label><input class="v-id" value="${data.vlan||''}" placeholder="10"></div>
+      <div class="field"><label>VLAN ID</label><input class="v-id" value="${data.vlan||''}" placeholder="10" oninput="refreshSviDropdowns()"></div>
       <div class="field"><label>Name</label><input class="v-name" value="${data.name||''}" placeholder="USERS"></div>
-      <div class="field"><label>Gateway IP (CIDR)</label><input class="v-ip" value="${data.ip||''}" placeholder="10.10.10.1/24"></div>
+      <div class="field"><label>Description <span class="hint">optional</span></label><input class="v-desc" value="${data.description||''}" placeholder="Office users"></div>
     </div>
-    <div class="field"><label>Description <span class="hint">optional</span></label><input class="v-desc" value="${data.description||''}" placeholder="Office user VLAN"></div>
+  `;
+  document.getElementById('rep-vlans').appendChild(makeItem('VLAN', html));
+  updateBadges();
+  refreshSviDropdowns();
+}
 
+// ===== SVI / VLAN-interface (L3) =====
+function addSvi(data = {}) {
+  const mode = data.dhcp_mode || 'none';
+  const html = `
+    <div class="field-row">
+      <div class="field">
+        <label>VLAN ID <span class="hint">pick from VLAN tab</span></label>
+        <select class="s-vlan" data-selected="${data.vlan||''}">
+          <option value="">— select VLAN —</option>
+        </select>
+      </div>
+      <div class="field"><label>Description</label><input class="s-desc" value="${data.description||''}" placeholder="User gateway"></div>
+    </div>
+    <div class="field"><label>IP Address (CIDR) <span class="hint">ignored if DHCP Client mode</span></label><input class="s-ip" value="${data.ip||''}" placeholder="10.10.10.1/24"></div>
     <div class="field">
-      <label>DHCP Mode on this VLAN <span class="hint">L3 only</span></label>
+      <label>DHCP Mode</label>
       <div class="segmented dhcp-mode-seg">
         <button type="button" data-mode="none" class="${mode==='none'?'active':''}">None</button>
         <button type="button" data-mode="server" class="${mode==='server'?'active':''}">Server</button>
         <button type="button" data-mode="relay" class="${mode==='relay'?'active':''}">Relay</button>
         <button type="button" data-mode="client" class="${mode==='client'?'active':''}">Client</button>
       </div>
-      <input type="hidden" class="v-dhcp-mode" value="${mode}">
+      <input type="hidden" class="s-dhcp-mode" value="${mode}">
     </div>
-
-    <div class="field v-dhcp-server-wrap" style="display:${mode==='server'?'block':'none'}">
-      <label>Apply DHCP Pool <span class="hint">must match pool name in DHCP tab</span></label>
-      <input class="v-dhcp-apply" value="${data.dhcp_apply_pool||''}" placeholder="USERS_POOL">
+    <div class="field s-dhcp-server-wrap" style="display:${mode==='server'?'block':'none'}">
+      <label>Apply DHCP Pool <span class="hint">pick from DHCP tab</span></label>
+      <select class="s-dhcp-apply" data-selected="${data.dhcp_apply_pool||''}">
+        <option value="">— select pool —</option>
+      </select>
     </div>
-
-    <div class="field v-dhcp-relay-wrap" style="display:${mode==='relay'?'block':'none'}">
+    <div class="field s-dhcp-relay-wrap" style="display:${mode==='relay'?'block':'none'}">
       <label>DHCP Relay Server IP</label>
-      <input class="v-dhcp-relay" value="${data.dhcp_relay||''}" placeholder="10.10.100.10">
+      <input class="s-dhcp-relay" value="${data.dhcp_relay||''}" placeholder="10.10.100.10">
     </div>
-
     <div class="field" style="margin-top:8px">
-      <label class="check"><input type="checkbox" class="v-shut" ${data.shutdown?'checked':''}> Shutdown this VLAN interface</label>
+      <label class="check"><input type="checkbox" class="s-shut" ${data.shutdown?'checked':''}> Shutdown this interface</label>
     </div>
   `;
-  const el = makeItem('VLAN', html);
-  document.getElementById('rep-vlans').appendChild(el);
+  const el = makeItem('VLAN-interface', html);
+  document.getElementById('rep-svis').appendChild(el);
   el.querySelectorAll('.dhcp-mode-seg button').forEach(b => {
     b.addEventListener('click', () => {
       el.querySelectorAll('.dhcp-mode-seg button').forEach(x => x.classList.remove('active'));
       b.classList.add('active');
-      el.querySelector('.v-dhcp-mode').value = b.dataset.mode;
-      el.querySelector('.v-dhcp-server-wrap').style.display = b.dataset.mode === 'server' ? 'block' : 'none';
-      el.querySelector('.v-dhcp-relay-wrap').style.display = b.dataset.mode === 'relay' ? 'block' : 'none';
+      el.querySelector('.s-dhcp-mode').value = b.dataset.mode;
+      el.querySelector('.s-dhcp-server-wrap').style.display = b.dataset.mode === 'server' ? 'block' : 'none';
+      el.querySelector('.s-dhcp-relay-wrap').style.display = b.dataset.mode === 'relay' ? 'block' : 'none';
     });
   });
+  refreshSviDropdowns();
   updateBadges();
+}
+
+// Refresh VLAN & DHCP Pool dropdowns in all SVI cards
+function refreshSviDropdowns() {
+  // collect available VLAN IDs
+  const vlanIds = [...document.querySelectorAll('#rep-vlans .v-id')]
+    .map(i => i.value.trim()).filter(v => v);
+  const vlanNames = {};
+  [...document.querySelectorAll('#rep-vlans .repeater-item')].forEach(el => {
+    const id = el.querySelector('.v-id').value.trim();
+    const name = el.querySelector('.v-name').value.trim();
+    if (id) vlanNames[id] = name;
+  });
+
+  // collect DHCP pool names
+  const poolNames = [...document.querySelectorAll('#rep-dhcp .d-name')]
+    .map(i => i.value.trim()).filter(v => v);
+
+  // Update each SVI card
+  document.querySelectorAll('#rep-svis .repeater-item').forEach(el => {
+    const vlanSelect = el.querySelector('.s-vlan');
+    const prev = vlanSelect.value || vlanSelect.dataset.selected || '';
+    vlanSelect.innerHTML = '<option value="">— select VLAN —</option>' +
+      vlanIds.map(id => {
+        const label = vlanNames[id] ? `VLAN ${id} (${vlanNames[id]})` : `VLAN ${id}`;
+        return `<option value="${id}" ${id===prev?'selected':''}>${label}</option>`;
+      }).join('');
+
+    const poolSelect = el.querySelector('.s-dhcp-apply');
+    const prevPool = poolSelect.value || poolSelect.dataset.selected || '';
+    poolSelect.innerHTML = '<option value="">— select pool —</option>' +
+      poolNames.map(p => `<option value="${p}" ${p===prevPool?'selected':''}>${p}</option>`).join('');
+  });
 }
 
 function addIntf(data = {}) {
@@ -647,7 +720,7 @@ function addDhcp(data = {}) {
 
   const html = `
     <div class="field-row">
-      <div class="field"><label>Pool Name <span class="hint">links to VLAN via "Apply Pool"</span></label><input class="d-name" value="${data.pool_name||''}" placeholder="USERS_POOL"></div>
+      <div class="field"><label>Pool Name <span class="hint">link via VLAN-interface tab</span></label><input class="d-name" value="${data.pool_name||''}" placeholder="USERS_POOL" oninput="refreshSviDropdowns()"></div>
       <div class="field"><label>Lease (days)</label><input class="d-lease" value="${data.lease_days||'7'}" placeholder="7"></div>
     </div>
     <div class="field-row-3">
@@ -666,6 +739,7 @@ function addDhcp(data = {}) {
   `;
   document.getElementById('rep-dhcp').appendChild(makeItem('DHCP Pool', html));
   updateBadges();
+  refreshSviDropdowns();
 }
 
 function addRoute(data = {}) {
@@ -709,8 +783,8 @@ function addAcl(data = {}) {
         <option value="udp" ${r.protocol==='udp'?'selected':''}>udp</option>
         <option value="icmp" ${r.protocol==='icmp'?'selected':''}>icmp</option>
       </select>
-      <input class="acl-src" value="${r.source||'any'}" placeholder="source (any / 10.10.10.0)">
-      <input class="acl-wc" value="${r.wildcard||''}" placeholder="wildcard (0.0.0.255)">
+      <input class="acl-src" value="${r.source||'any'}" placeholder="any / 10.10.10.0">
+      <input class="acl-wc" value="${r.wildcard||''}" placeholder="0.0.0.255">
     </div>
   `).join('');
   const html = `
@@ -736,6 +810,7 @@ function addAclRule(btn) {
 
 function updateBadges() {
   document.getElementById('b-vlan').textContent  = document.getElementById('rep-vlans').children.length;
+  document.getElementById('b-svi').textContent   = document.getElementById('rep-svis').children.length;
   document.getElementById('b-intf').textContent  = document.getElementById('rep-intfs').children.length;
   document.getElementById('b-dhcp').textContent  = document.getElementById('rep-dhcp').children.length;
   document.getElementById('b-route').textContent = document.getElementById('rep-routes').children.length;
@@ -755,16 +830,23 @@ function collectData() {
   if (banner) sys.banner = banner;
   if (Object.keys(sys).length) data.system = sys;
 
+  // VLANs (L2)
   data.vlans = [...document.querySelectorAll('#rep-vlans .repeater-item')].map(el => ({
     vlan: el.querySelector('.v-id').value.trim(),
     name: el.querySelector('.v-name').value.trim(),
-    description: el.querySelector('.v-desc').value.trim(),
-    ip: el.querySelector('.v-ip').value.trim(),
-    dhcp_mode: el.querySelector('.v-dhcp-mode').value,
-    dhcp_apply_pool: el.querySelector('.v-dhcp-apply').value.trim(),
-    dhcp_relay: el.querySelector('.v-dhcp-relay').value.trim(),
-    shutdown: el.querySelector('.v-shut').checked
+    description: el.querySelector('.v-desc').value.trim()
   })).filter(v => v.vlan);
+
+  // SVIs (L3 VLAN-interfaces)
+  data.svis = [...document.querySelectorAll('#rep-svis .repeater-item')].map(el => ({
+    vlan: el.querySelector('.s-vlan').value.trim(),
+    description: el.querySelector('.s-desc').value.trim(),
+    ip: el.querySelector('.s-ip').value.trim(),
+    dhcp_mode: el.querySelector('.s-dhcp-mode').value,
+    dhcp_apply_pool: el.querySelector('.s-dhcp-apply').value.trim(),
+    dhcp_relay: el.querySelector('.s-dhcp-relay').value.trim(),
+    shutdown: el.querySelector('.s-shut').checked
+  })).filter(s => s.vlan);
 
   data.interfaces = [...document.querySelectorAll('#rep-intfs .repeater-item')].map(el => ({
     interface: el.querySelector('.i-name').value.trim(),
@@ -840,8 +922,9 @@ function applyTemplate(data) {
     document.getElementById('sys-banner').value = data.system.banner || '';
   }
   (data.vlans || []).forEach(v => addVlan(v));
-  (data.interfaces || []).forEach(i => addIntf(i));
   (data.dhcp_pools || []).forEach(d => addDhcp(d));
+  (data.svis || []).forEach(s => addSvi(s));
+  (data.interfaces || []).forEach(i => addIntf(i));
   (data.static_routes || []).forEach(r => addRoute(r));
   if (data.ospf) {
     document.getElementById('ospf-pid').value = data.ospf.process_id || '';
@@ -851,6 +934,8 @@ function applyTemplate(data) {
   }
   (data.acls || []).forEach(a => addAcl(a));
   updateBadges();
+  // Ensure SVI dropdowns have latest VLAN/pool data
+  setTimeout(refreshSviDropdowns, 50);
   toast('Template loaded');
 }
 
@@ -858,7 +943,7 @@ function clearAll(silent) {
   ['sys-hostname','sys-ntp','sys-tz','sys-banner','ospf-pid','ospf-rid','ospf-area'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
-  ['rep-vlans','rep-intfs','rep-dhcp','rep-routes','rep-ospf-nets','rep-acls'].forEach(id => {
+  ['rep-vlans','rep-svis','rep-intfs','rep-dhcp','rep-routes','rep-ospf-nets','rep-acls'].forEach(id => {
     document.getElementById(id).innerHTML = '';
   });
   updateBadges();
@@ -875,26 +960,30 @@ function loadExample() {
   applyTemplate({
     system: { hostname: 'SW-DEMO-01' },
     vlans: [
-      { vlan: '10', name: 'USERS', description: 'Office users', ip: '10.10.10.1/24', dhcp_mode: 'server', dhcp_apply_pool: 'USERS_POOL' },
-      { vlan: '20', name: 'SERVERS', ip: '10.10.20.1/24' }
-    ],
-    interfaces: [
-      { interface: 'GigabitEthernet1/0/1', mode: 'access', vlan: '10', description: 'User port', stp_edge: true },
-      { interface: 'GigabitEthernet1/0/24', mode: 'trunk', allowed: '10 20', description: 'Uplink' }
+      { vlan: '10', name: 'USERS', description: 'Office users' },
+      { vlan: '20', name: 'SERVERS' }
     ],
     dhcp_pools: [{
       pool_name: 'USERS_POOL', network: '10.10.10.0', cidr: '24',
       gateway: '10.10.10.1', dns: '8.8.8.8 1.1.1.1', lease_days: '7',
       forbidden_ips: '10.10.10.1 10.10.10.2'
-    }]
+    }],
+    svis: [
+      { vlan: '10', description: 'User gateway', ip: '10.10.10.1/24', dhcp_mode: 'server', dhcp_apply_pool: 'USERS_POOL' },
+      { vlan: '20', description: 'Server gateway', ip: '10.10.20.1/24' }
+    ],
+    interfaces: [
+      { interface: 'GigabitEthernet1/0/1', mode: 'access', vlan: '10', description: 'User port', stp_edge: true },
+      { interface: 'GigabitEthernet1/0/24', mode: 'trunk', allowed: '10 20', description: 'Uplink' }
+    ]
   });
 }
 
 async function generate() {
   const data = collectData();
-  if (!data.system && (!data.vlans || data.vlans.length === 0) && (!data.interfaces || data.interfaces.length === 0) &&
-      (!data.dhcp_pools || data.dhcp_pools.length === 0) && (!data.static_routes || data.static_routes.length === 0) &&
-      !data.ospf && (!data.acls || data.acls.length === 0)) {
+  if (!data.system && (!data.vlans || data.vlans.length === 0) && (!data.svis || data.svis.length === 0)
+      && (!data.interfaces || data.interfaces.length === 0) && (!data.dhcp_pools || data.dhcp_pools.length === 0)
+      && (!data.static_routes || data.static_routes.length === 0) && !data.ospf && (!data.acls || data.acls.length === 0)) {
     toast('Add something first!', true);
     return;
   }
@@ -914,7 +1003,7 @@ async function generate() {
     saveHistory(lastConfig);
     toast('Config generated!');
   } catch (e) {
-    setStatus('Backend offline — run python3 ConfigLab.py', 'err');
+    setStatus('Backend offline', 'err');
     toast('Cannot reach backend', true);
   }
 }
@@ -940,7 +1029,7 @@ function renderOutput(text) {
 
 function highlight(line) {
   let s = escapeHtml(line);
-  s = s.replace(/\b(system-view|vlan|name|description|interface|port|link-type|access|trunk|hybrid|permit|tagged|untagged|ip|address|route-static|dhcp|server|ip-pool|network|gateway-list|dns-list|expired|domain-name|forbidden-ip|ospf|router-id|area|acl|number|rule|source|any|mask|quit|save|force|return|sysname|header|ntp-service|unicast-server|clock|timezone|poe|enable|stp|edged-port|shutdown|undo|speed|duplex|pvid|relay|select|preference|from|to|deny|day|shell|apply|advanced|basic|destination|dhcp-alloc)\b/g,
+  s = s.replace(/\b(system-view|vlan|name|description|interface|port|link-type|access|trunk|hybrid|permit|tagged|untagged|ip|address|route-static|dhcp|server|ip-pool|network|gateway-list|dns-list|expired|domain-name|forbidden-ip|ospf|router-id|area|acl|number|rule|source|any|mask|quit|save|force|return|sysname|header|ntp-service|unicast-server|clock|timezone|poe|enable|stp|edged-port|shutdown|undo|speed|duplex|pvid|relay|select|preference|from|to|deny|day|shell|apply|advanced|basic|destination|dhcp-alloc|Vlan-interface|GigabitEthernet|Bridge-Aggregation|Route-Aggregation|LoopBack)\b/g,
     '<span class="kw">$1</span>');
   s = s.replace(/\b(\d{1,3}(?:\.\d{1,3}){3}(?:\/\d+)?)\b/g, '<span class="val">$1</span>');
   return s;
@@ -1087,7 +1176,7 @@ async function loadTemplates() {
     document.getElementById('backend-status').textContent = 'Offline';
     document.querySelector('.chip .dot').style.background = 'var(--danger)';
     document.getElementById('tpl-count').textContent = 'backend offline';
-    document.getElementById('templates-grid').innerHTML = '<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--text-muted)">⚠️ Start your backend: <code style="font-family:var(--mono);color:var(--accent)">python3 ConfigLab.py</code></div>';
+    document.getElementById('templates-grid').innerHTML = '<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--text-muted)">⚠️ Backend is waking up... refresh in 30s</div>';
   }
 }
 
