@@ -240,6 +240,98 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ========================================================
+   Support (Saweria donation) — floating button + modal
+======================================================== */
+.support-fab {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 90;
+  padding: 12px 18px 12px 14px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+  color: var(--bg);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 8px 24px rgba(124, 244, 199, 0.25), 0 2px 8px rgba(0,0,0,0.3);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  animation: fabEntrance 0.6s var(--ease) 1s both, fabPulse 3s ease-in-out 2s infinite;
+}
+.support-fab:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 12px 32px rgba(124, 244, 199, 0.4), 0 4px 12px rgba(0,0,0,0.3);
+  animation-play-state: paused;
+}
+.support-fab:active { transform: translateY(0) scale(1); }
+.support-fab .fab-icon { font-size: 18px; line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2)); }
+.support-fab .fab-label { font-family: var(--sans); white-space: nowrap; }
+
+@keyframes fabEntrance {
+  from { opacity: 0; transform: translateY(20px) scale(0.8); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes fabPulse {
+  0%, 100% { box-shadow: 0 8px 24px rgba(124, 244, 199, 0.25), 0 2px 8px rgba(0,0,0,0.3); }
+  50%      { box-shadow: 0 8px 32px rgba(124, 244, 199, 0.5), 0 2px 8px rgba(0,0,0,0.3); }
+}
+
+@media (max-width: 600px) {
+  .support-fab { bottom: 20px; right: 20px; padding: 11px 16px 11px 12px; font-size: 12px; }
+  .support-fab .fab-icon { font-size: 16px; }
+}
+
+.support-modal-content { text-align: center; }
+.support-hero {
+  font-size: 56px; margin-bottom: 12px; line-height: 1;
+  filter: drop-shadow(0 4px 12px rgba(124, 244, 199, 0.3));
+  animation: heroFloat 3s ease-in-out infinite;
+}
+@keyframes heroFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+.support-message { color: var(--text-dim); font-size: 14px; line-height: 1.7; margin-bottom: 20px; text-align: left; }
+.support-message strong { color: var(--text); font-weight: 500; }
+.support-reasons {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px 18px; margin-bottom: 24px; text-align: left;
+}
+.support-reasons h4 {
+  font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+  margin-bottom: 12px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 500;
+}
+.support-reasons ul { list-style: none; padding: 0; margin: 0; }
+.support-reasons li {
+  color: var(--text-dim); font-size: 13px; padding: 5px 0;
+  display: flex; align-items: center; gap: 10px;
+}
+.support-reasons li::before { content: '✓'; color: var(--accent); font-weight: 700; font-size: 12px; }
+.btn-support-main {
+  width: 100%; padding: 14px 20px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: var(--bg); border: none; border-radius: 12px;
+  font-family: var(--sans); font-size: 15px; font-weight: 600;
+  cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  transition: transform 0.15s var(--ease), filter 0.15s;
+  text-decoration: none; box-shadow: 0 6px 20px rgba(124, 244, 199, 0.2);
+}
+.btn-support-main:hover { transform: translateY(-1px); filter: brightness(1.05); }
+.btn-support-main .saweria-logo {
+  background: var(--bg); color: var(--accent);
+  padding: 2px 8px; border-radius: 6px; font-size: 10px;
+  font-weight: 800; letter-spacing: 1px; font-family: var(--mono);
+}
+.support-footer-note { margin-top: 16px; font-size: 12px; color: var(--text-muted); font-family: var(--mono); }
+.support-footer-note em { color: var(--accent); font-style: normal; }
 </style>
 </head>
 <body data-theme="dark">
@@ -417,6 +509,7 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
         <h4>Product</h4>
         <a onclick="document.querySelector('.templates-section').scrollIntoView({behavior:'smooth'});">Templates</a>
         <a onclick="openFeedback();">Send feedback</a>
+        <a onclick="openSupport();">☕ Support us</a>
         <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" rel="noopener">GitHub</a>
       </div>
       <div class="footer-col">
@@ -1185,12 +1278,58 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     document.getElementById('history-drawer').classList.remove('open');
     document.getElementById('overlay').classList.remove('show');
-    closeFeedback(); closeDisclaimer(); closeTerms();
+    closeFeedback(); closeDisclaimer(); closeTerms(); closeSupport();
   }
 });
+
+// ===== Support / Saweria donation =====
+function openSupport() { document.getElementById('support-modal').classList.add('show'); }
+function closeSupport() { document.getElementById('support-modal').classList.remove('show'); }
 
 loadTemplates();
 addVlan({ vlan: '10', name: 'USERS' });
 </script>
+
+<!-- Floating Support Button -->
+<button class="support-fab" onclick="openSupport()" title="Support ConfigLabs">
+  <span class="fab-icon">☕</span>
+  <span class="fab-label">Support us</span>
+</button>
+
+<!-- Support Modal -->
+<div class="modal-overlay" id="support-modal" onclick="if(event.target===this)closeSupport()">
+  <div class="modal support-modal-content">
+    <div class="support-hero">☕</div>
+    <h2>Support <em>ConfigLabs</em></h2>
+    <p class="support-message">
+      ConfigLabs is <strong>free</strong> and will stay free forever. No ads, no tracking, no paywalls.
+      <br><br>
+      If it saved you time, a small sawer helps keep the lights on 🧪
+    </p>
+
+    <div class="support-reasons">
+      <h4>Your support helps:</h4>
+      <ul>
+        <li>Cover server hosting (Railway)</li>
+        <li>Renew the configlabs.online domain</li>
+        <li>Keep the tool ad-free forever</li>
+        <li>Add more vendors (Cisco, Huawei...)</li>
+      </ul>
+    </div>
+
+    <a href="https://saweria.co/configlabs" target="_blank" rel="noopener" class="btn-support-main">
+      💚 Support via <span class="saweria-logo">SAWERIA</span>
+    </a>
+
+    <div class="support-footer-note">
+      Every sawer matters — <em>terima kasih banyak!</em> 🙏
+    </div>
+
+    <div class="modal-actions" style="justify-content:center; margin-top:20px">
+      <button class="btn btn-secondary" onclick="closeSupport()">Maybe later</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
