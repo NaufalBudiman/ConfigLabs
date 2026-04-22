@@ -3,7 +3,17 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>ConfigLab — Network Configuration, Simplified</title>
+<title>ConfigLabs — Network Configuration, Simplified</title>
+<meta name="description" content="Free H3C Comware v7 config generator for network engineers. Generate VLAN, DHCP, OSPF, ACL configs visually. No typos, no CLI headaches."/>
+<meta name="keywords" content="H3C config generator, Comware CLI, VLAN generator, OSPF config, network automation, H3C templates"/>
+<meta property="og:title" content="ConfigLabs — H3C Config Generator"/>
+<meta property="og:description" content="Build production-ready H3C configs visually in seconds."/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://configlabs.online"/>
+
+<!-- Favicon (embedded SVG) -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%237cf4c7'/%3E%3Cstop offset='50%25' stop-color='%23a8b5ff'/%3E%3Cstop offset='100%25' stop-color='%23ffb86b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='url(%23g)'/%3E%3Cg transform='translate(6 4)' fill='none' stroke='%230b0d10' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 0v7.5a2 2 0 0 1-.2.9L-1.3 18.6a1 1 0 0 0 .9 1.4h12.8a1 1 0 0 0 .9-1.4L8.2 8.4A2 2 0 0 1 8 7.5V0'/%3E%3Cpath d='M2.5 0h7'/%3E%3Cpath d='M1 14h10'/%3E%3C/g%3E%3C/svg%3E"/>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -52,723 +62,176 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; transition: background 0.3s var(--ease), color 0.3s var(--ease); }
 
-html, body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
-  font-size: 15px;
-  line-height: 1.55;
-  -webkit-font-smoothing: antialiased;
-  transition: background 0.3s var(--ease), color 0.3s var(--ease);
-}
+body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 60px 60px; mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%); opacity: 0.3; pointer-events: none; z-index: 0; }
 
-body::before {
-  content: '';
-  position: fixed; inset: 0;
-  background-image:
-    linear-gradient(var(--border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border) 1px, transparent 1px);
-  background-size: 60px 60px;
-  mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
-  opacity: 0.3;
-  pointer-events: none;
-  z-index: 0;
-}
+nav { position: sticky; top: 0; z-index: 50; padding: 16px 32px; background: color-mix(in srgb, var(--bg) 75%, transparent); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
 
-nav {
-  position: sticky; top: 0; z-index: 50;
-  padding: 16px 32px;
-  background: color-mix(in srgb, var(--bg) 75%, transparent);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-}
-
-.brand {
-  display: flex; align-items: center; gap: 12px;
-  font-weight: 600; font-size: 17px; letter-spacing: -0.3px;
-}
-
-.brand-logo {
-  width: 32px; height: 32px;
-  border-radius: 8px;
-  background: conic-gradient(from 180deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent));
-  display: grid; place-items: center;
-  position: relative;
-}
-.brand-logo::after {
-  content: '';
-  position: absolute; inset: 2px;
-  border-radius: 6px;
-  background: var(--bg);
-}
-.brand-logo svg {
-  position: relative; z-index: 1;
-  width: 18px; height: 18px;
-  color: var(--text);
-}
-
-.brand em {
-  font-family: var(--serif);
-  font-style: italic;
-  color: var(--accent);
-  font-weight: 400;
-}
+.brand { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 17px; letter-spacing: -0.3px; }
+.brand-logo { width: 32px; height: 32px; border-radius: 8px; background: conic-gradient(from 180deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent)); display: grid; place-items: center; position: relative; }
+.brand-logo::after { content: ''; position: absolute; inset: 2px; border-radius: 6px; background: var(--bg); }
+.brand-logo svg { position: relative; z-index: 1; width: 18px; height: 18px; color: var(--text); }
+.brand em { font-family: var(--serif); font-style: italic; color: var(--accent); font-weight: 400; }
 
 .nav-actions { display: flex; gap: 8px; align-items: center; }
-
-.chip {
-  font-family: var(--mono);
-  font-size: 11px;
-  padding: 5px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--border-strong);
-  color: var(--text-dim);
-  display: inline-flex; align-items: center; gap: 6px;
-}
-
-.chip .dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--success);
-  box-shadow: 0 0 8px var(--success);
-  animation: pulse 2s infinite;
-}
-
+.chip { font-family: var(--mono); font-size: 11px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--border-strong); color: var(--text-dim); display: inline-flex; align-items: center; gap: 6px; }
+.chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px var(--success); animation: pulse 2s infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-.icon-btn {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text-dim);
-  width: 36px; height: 36px;
-  border-radius: 10px;
-  cursor: pointer;
-  display: grid; place-items: center;
-  transition: all 0.2s var(--ease);
-  font-size: 16px;
-}
+.icon-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); width: 36px; height: 36px; border-radius: 10px; cursor: pointer; display: grid; place-items: center; transition: all 0.2s var(--ease); font-size: 16px; }
 .icon-btn:hover { background: var(--surface-hover); color: var(--text); border-color: var(--border-strong); }
 
-.container {
-  position: relative; z-index: 1;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 40px 32px 80px;
-}
+.container { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 40px 32px 80px; }
 
-.hero {
-  text-align: center;
-  padding: 60px 0 40px;
-}
+.hero { text-align: center; padding: 60px 0 40px; }
+.hero-tag { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font-size: 12px; color: var(--text-dim); font-family: var(--mono); margin-bottom: 28px; animation: fadeUp 0.6s var(--ease) both; }
+.hero-tag .live { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.hero h1 { font-size: clamp(40px, 6vw, 68px); line-height: 1.02; letter-spacing: -2px; font-weight: 600; margin-bottom: 24px; animation: fadeUp 0.7s var(--ease) 0.1s both; }
+.hero h1 .serif { font-family: var(--serif); font-style: italic; font-weight: 400; background: linear-gradient(135deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; padding-right: 4px; }
+.hero p { color: var(--text-dim); font-size: 18px; max-width: 560px; margin: 0 auto 32px; animation: fadeUp 0.7s var(--ease) 0.2s both; }
+.vendor-pills { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; animation: fadeUp 0.7s var(--ease) 0.3s both; }
+.vendor-pill { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); font-size: 12px; display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); color: var(--text-dim); transition: all 0.2s; }
+.vendor-pill.active { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.vendor-pill .soon-badge { font-size: 9px; padding: 1px 6px; border-radius: 99px; background: var(--surface-hover); color: var(--text-muted); border: 1px solid var(--border); letter-spacing: 0.5px; }
+.vendor-pill.active .soon-badge { background: var(--accent); color: var(--bg); border: none; font-weight: 700; }
 
-.hero-tag {
-  display: inline-flex;
-  align-items: center; gap: 8px;
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  font-size: 12px;
-  color: var(--text-dim);
-  font-family: var(--mono);
-  margin-bottom: 28px;
-  animation: fadeUp 0.6s var(--ease) both;
-}
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
-.hero-tag .live {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 6px var(--accent);
-}
-
-.hero h1 {
-  font-size: clamp(40px, 6vw, 68px);
-  line-height: 1.02;
-  letter-spacing: -2px;
-  font-weight: 600;
-  margin-bottom: 24px;
-  animation: fadeUp 0.7s var(--ease) 0.1s both;
-}
-
-.hero h1 .serif {
-  font-family: var(--serif);
-  font-style: italic;
-  font-weight: 400;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  padding-right: 4px;
-}
-
-.hero p {
-  color: var(--text-dim);
-  font-size: 18px;
-  max-width: 560px;
-  margin: 0 auto 32px;
-  animation: fadeUp 0.7s var(--ease) 0.2s both;
-}
-
-.vendor-pills {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  animation: fadeUp 0.7s var(--ease) 0.3s both;
-}
-
-.vendor-pill {
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  font-size: 12px;
-  display: inline-flex; align-items: center; gap: 6px;
-  font-family: var(--mono);
-  color: var(--text-dim);
-  transition: all 0.2s;
-}
-
-.vendor-pill.active {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
-}
-
-.vendor-pill .soon-badge {
-  font-size: 9px;
-  padding: 1px 6px;
-  border-radius: 99px;
-  background: var(--surface-hover);
-  color: var(--text-muted);
-  border: 1px solid var(--border);
-  letter-spacing: 0.5px;
-}
-
-.vendor-pill.active .soon-badge {
-  background: var(--accent);
-  color: var(--bg);
-  border: none;
-  font-weight: 700;
-}
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.templates-section {
-  margin-bottom: 48px;
-  margin-top: 60px;
-  animation: fadeUp 0.7s var(--ease) 0.4s both;
-}
-
-.section-head {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 20px;
-}
-
-.section-head h2 {
-  font-size: 22px;
-  font-weight: 500;
-  letter-spacing: -0.5px;
-}
-
-.section-head h2 em {
-  font-family: var(--serif); font-style: italic; color: var(--accent);
-  font-weight: 400;
-}
-
-.section-head .count {
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.templates-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 12px;
-}
-
-.tpl {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  cursor: pointer;
-  transition: all 0.2s var(--ease);
-  position: relative;
-  overflow: hidden;
-}
-
+.templates-section { margin-bottom: 48px; margin-top: 60px; animation: fadeUp 0.7s var(--ease) 0.4s both; }
+.section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.section-head h2 { font-size: 22px; font-weight: 500; letter-spacing: -0.5px; }
+.section-head h2 em { font-family: var(--serif); font-style: italic; color: var(--accent); font-weight: 400; }
+.section-head .count { font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
+.templates-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.tpl { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; cursor: pointer; transition: all 0.2s var(--ease); position: relative; overflow: hidden; }
 .tpl:hover { border-color: var(--accent); transform: translateY(-2px); }
-
 .tpl-emoji { font-size: 26px; margin-bottom: 10px; display: block; }
 .tpl-name { font-weight: 500; font-size: 14px; margin-bottom: 4px; }
 .tpl-desc { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
 
-.main-layout {
-  display: grid;
-  grid-template-columns: 1.1fr 1fr;
-  gap: 20px;
-}
+.main-layout { display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; }
+@media (max-width: 960px) { .main-layout { grid-template-columns: 1fr; } }
 
-@media (max-width: 960px) {
-  .main-layout { grid-template-columns: 1fr; }
-}
+.builder, .output-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; animation: fadeUp 0.7s var(--ease) 0.5s both; }
 
-.builder, .output-wrap {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  animation: fadeUp 0.7s var(--ease) 0.5s both;
-}
+.panel-head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface-2); }
+.panel-title { font-weight: 500; font-size: 14px; display: flex; align-items: center; gap: 10px; }
+.panel-title .num { font-family: var(--mono); font-size: 11px; padding: 2px 8px; border-radius: 6px; background: var(--bg); color: var(--text-dim); border: 1px solid var(--border); }
 
-.panel-head {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-  background: var(--surface-2);
-}
-
-.panel-title {
-  font-weight: 500;
-  font-size: 14px;
-  display: flex; align-items: center; gap: 10px;
-}
-
-.panel-title .num {
-  font-family: var(--mono); font-size: 11px;
-  padding: 2px 8px; border-radius: 6px;
-  background: var(--bg); color: var(--text-dim);
-  border: 1px solid var(--border);
-}
-
-.tabs {
-  display: flex; gap: 4px;
-  padding: 12px 12px 0;
-  background: var(--surface-2);
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto;
-}
-
-.tab {
-  padding: 10px 14px;
-  background: transparent;
-  border: none;
-  color: var(--text-dim);
-  font-family: var(--sans);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  border-radius: 8px 8px 0 0;
-  transition: all 0.2s;
-  display: flex; align-items: center; gap: 6px;
-  white-space: nowrap;
-  position: relative;
-}
-
+.tabs { display: flex; gap: 4px; padding: 12px 12px 0; background: var(--surface-2); border-bottom: 1px solid var(--border); overflow-x: auto; }
+.tab { padding: 10px 14px; background: transparent; border: none; color: var(--text-dim); font-family: var(--sans); font-size: 13px; font-weight: 500; cursor: pointer; border-radius: 8px 8px 0 0; transition: all 0.2s; display: flex; align-items: center; gap: 6px; white-space: nowrap; position: relative; }
 .tab:hover { color: var(--text); background: var(--surface-hover); }
-
-.tab.active {
-  color: var(--text);
-  background: var(--surface);
-}
-
-.tab.active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px; left: 0; right: 0;
-  height: 2px;
-  background: var(--accent);
-}
-
-.tab .badge {
-  font-family: var(--mono); font-size: 10px;
-  padding: 1px 6px; border-radius: 99px;
-  background: var(--accent); color: var(--bg);
-  font-weight: 700;
-}
+.tab.active { color: var(--text); background: var(--surface); }
+.tab.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--accent); }
+.tab .badge { font-family: var(--mono); font-size: 10px; padding: 1px 6px; border-radius: 99px; background: var(--accent); color: var(--bg); font-weight: 700; }
 
 .panel-body { padding: 24px; }
-
 .tab-panel { display: none; animation: fadeIn 0.25s var(--ease); }
 .tab-panel.active { display: block; }
-
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .field { margin-bottom: 14px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 
-.field-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.field-row-3 {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
-}
-
-label {
-  display: block;
-  font-size: 12px;
-  color: var(--text-dim);
-  margin-bottom: 6px;
-  font-weight: 500;
-}
-
+label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; font-weight: 500; }
 label .hint { font-family: var(--mono); color: var(--text-muted); font-weight: 400; margin-left: 6px; }
 
-input, select, textarea {
-  width: 100%;
-  padding: 10px 12px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 13px;
-  outline: none;
-  transition: all 0.15s var(--ease);
-}
-
-input:focus, select:focus, textarea:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
-}
-
+input, select, textarea { width: 100%; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: var(--mono); font-size: 13px; outline: none; transition: all 0.15s var(--ease); }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
 input::placeholder { color: var(--text-muted); }
+textarea { resize: vertical; min-height: 80px; font-family: var(--sans); }
 
-.segmented {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  gap: 4px;
-  padding: 4px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-}
-
-.segmented button {
-  padding: 8px 12px;
-  background: transparent;
-  border: none;
-  color: var(--text-dim);
-  font-family: var(--sans);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  border-radius: 7px;
-  transition: all 0.2s;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
+.segmented { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; padding: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; }
+.segmented button { padding: 8px 12px; background: transparent; border: none; color: var(--text-dim); font-family: var(--sans); font-size: 12px; font-weight: 500; cursor: pointer; border-radius: 7px; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
 .segmented button:hover { color: var(--text); }
-.segmented button.active {
-  background: var(--accent);
-  color: var(--bg);
-  font-weight: 600;
-}
+.segmented button.active { background: var(--accent); color: var(--bg); font-weight: 600; }
 
-.repeater {
-  display: flex; flex-direction: column;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.repeater-item {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px;
-  position: relative;
-  transition: border-color 0.2s;
-  animation: fadeIn 0.3s var(--ease);
-}
-
+.repeater { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.repeater-item { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px; position: relative; transition: border-color 0.2s; animation: fadeIn 0.3s var(--ease); }
 .repeater-item:hover { border-color: var(--border-strong); }
-
-.repeater-head {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.repeater-title {
-  font-size: 12px;
-  font-family: var(--mono);
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.repeater-item .btn-remove {
-  background: transparent; border: 1px solid var(--border);
-  color: var(--text-muted);
-  width: 24px; height: 24px; border-radius: 6px;
-  cursor: pointer; display: grid; place-items: center;
-  font-size: 14px;
-  transition: all 0.2s;
-}
-
+.repeater-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.repeater-title { font-size: 12px; font-family: var(--mono); color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+.repeater-item .btn-remove { background: transparent; border: 1px solid var(--border); color: var(--text-muted); width: 24px; height: 24px; border-radius: 6px; cursor: pointer; display: grid; place-items: center; font-size: 14px; transition: all 0.2s; }
 .repeater-item .btn-remove:hover { background: var(--danger); color: white; border-color: var(--danger); }
 
-.btn-add {
-  background: transparent;
-  border: 1px dashed var(--border-strong);
-  color: var(--text-dim);
-  padding: 12px;
-  border-radius: 10px;
-  cursor: pointer;
-  width: 100%;
-  font-family: var(--sans); font-size: 13px;
-  transition: all 0.2s;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-}
-
+.btn-add { background: transparent; border: 1px dashed var(--border-strong); color: var(--text-dim); padding: 12px; border-radius: 10px; cursor: pointer; width: 100%; font-family: var(--sans); font-size: 13px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .btn-add:hover { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 5%, transparent); }
 
-.check {
-  display: flex; align-items: center; gap: 8px;
-  cursor: pointer; user-select: none;
-  font-size: 13px; color: var(--text-dim);
-}
-
+.check { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; font-size: 13px; color: var(--text-dim); }
 .check input { width: auto; margin: 0; }
 
-.panel-footer {
-  padding: 16px 20px;
-  border-top: 1px solid var(--border);
-  display: flex; gap: 10px;
-  background: var(--surface-2);
-}
-
-.btn {
-  padding: 11px 18px;
-  border: none;
-  border-radius: 10px;
-  font-family: var(--sans);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s var(--ease);
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-}
-
-.btn-primary {
-  background: var(--accent);
-  color: var(--bg);
-  flex: 1;
-  font-weight: 600;
-  box-shadow: var(--glow);
-}
-
+.panel-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; background: var(--surface-2); }
+.btn { padding: 11px 18px; border: none; border-radius: 10px; font-family: var(--sans); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s var(--ease); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-primary { background: var(--accent); color: var(--bg); flex: 1; font-weight: 600; box-shadow: var(--glow); }
 .btn-primary:hover { transform: translateY(-1px); filter: brightness(1.05); }
-
-.btn-secondary {
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
-}
+.btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
 .btn-secondary:hover { background: var(--surface-hover); border-color: var(--border-strong); }
 
 .output-wrap { display: flex; flex-direction: column; min-height: 600px; }
-
-.output-toolbar {
-  display: flex; gap: 6px;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface-2);
-  align-items: center;
-  justify-content: space-between;
-}
-
+.output-toolbar { display: flex; gap: 6px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface-2); align-items: center; justify-content: space-between; }
 .output-toolbar-left { display: flex; gap: 6px; }
-
-.tool-btn {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-dim);
-  padding: 6px 10px;
-  border-radius: 7px;
-  font-family: var(--mono); font-size: 11px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex; align-items: center; gap: 5px;
-}
+.tool-btn { background: transparent; border: 1px solid var(--border); color: var(--text-dim); padding: 6px 10px; border-radius: 7px; font-family: var(--mono); font-size: 11px; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 5px; }
 .tool-btn:hover { color: var(--text); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
 .tool-btn.active { color: var(--accent); border-color: var(--accent); }
-
-.output {
-  flex: 1;
-  overflow: auto;
-  padding: 20px;
-  font-family: var(--mono);
-  font-size: 13px;
-  line-height: 1.8;
-  background: var(--bg);
-}
-
-.output.empty {
-  color: var(--text-muted);
-  font-style: italic;
-  display: grid; place-items: center;
-  text-align: center;
-}
-
-.empty-art {
-  font-size: 48px; margin-bottom: 12px; display: block;
-  opacity: 0.5;
-}
-
-.line {
-  display: grid;
-  grid-template-columns: 40px 1fr;
-  gap: 14px;
-  padding: 1px 6px;
-  border-radius: 4px;
-  transition: background 0.15s;
-}
+.output { flex: 1; overflow: auto; padding: 20px; font-family: var(--mono); font-size: 13px; line-height: 1.8; background: var(--bg); }
+.output.empty { color: var(--text-muted); font-style: italic; display: grid; place-items: center; text-align: center; }
+.empty-art { font-size: 48px; margin-bottom: 12px; display: block; opacity: 0.5; }
+.line { display: grid; grid-template-columns: 40px 1fr; gap: 14px; padding: 1px 6px; border-radius: 4px; transition: background 0.15s; }
 .line:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); }
-.line .ln {
-  color: var(--text-muted);
-  user-select: none;
-  text-align: right;
-  font-size: 11px;
-}
+.line .ln { color: var(--text-muted); user-select: none; text-align: right; font-size: 11px; }
 .line.comment .content { color: var(--text-muted); font-style: italic; }
 .line.cmd .kw { color: var(--accent-2); }
 .line.cmd .val { color: var(--accent); }
-
-.status-bar {
-  padding: 8px 16px;
-  border-top: 1px solid var(--border);
-  background: var(--surface-2);
-  font-family: var(--mono); font-size: 11px;
-  color: var(--text-muted);
-  display: flex; justify-content: space-between; align-items: center;
-}
-
-.status-bar .s-dot {
-  display: inline-block;
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--text-muted);
-  margin-right: 6px;
-  vertical-align: middle;
-}
+.status-bar { padding: 8px 16px; border-top: 1px solid var(--border); background: var(--surface-2); font-family: var(--mono); font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; }
+.status-bar .s-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); margin-right: 6px; vertical-align: middle; }
 .status-bar.ok .s-dot { background: var(--success); box-shadow: 0 0 6px var(--success); }
 .status-bar.err .s-dot { background: var(--danger); }
 
-.history-drawer {
-  position: fixed;
-  top: 0; right: -420px;
-  width: 420px; max-width: 100%;
-  height: 100vh;
-  background: var(--bg-2);
-  border-left: 1px solid var(--border);
-  transition: right 0.4s var(--ease);
-  z-index: 100;
-  display: flex; flex-direction: column;
-}
-
+.history-drawer { position: fixed; top: 0; right: -420px; width: 420px; max-width: 100%; height: 100vh; background: var(--bg-2); border-left: 1px solid var(--border); transition: right 0.4s var(--ease); z-index: 100; display: flex; flex-direction: column; }
 .history-drawer.open { right: 0; }
-
-.drawer-head {
-  padding: 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-}
+.drawer-head { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
 .drawer-head h3 { font-size: 18px; font-weight: 500; }
 .drawer-head h3 em { font-family: var(--serif); font-style: italic; color: var(--accent); font-weight: 400; }
-
-.drawer-body {
-  flex: 1; overflow-y: auto; padding: 16px;
-}
-
-.history-item {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px;
-  margin-bottom: 10px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
+.drawer-body { flex: 1; overflow-y: auto; padding: 16px; }
+.history-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; }
 .history-item:hover { border-color: var(--accent); transform: translateX(-4px); }
-
-.history-item .h-time {
-  font-family: var(--mono); font-size: 11px;
-  color: var(--text-muted); margin-bottom: 6px;
-}
-.history-item .h-preview {
-  font-family: var(--mono); font-size: 12px;
-  color: var(--text-dim);
-  max-height: 60px; overflow: hidden;
-  white-space: pre-wrap;
-  position: relative;
-}
-.history-item .h-preview::after {
-  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 30px;
-  background: linear-gradient(to bottom, transparent, var(--surface));
-}
+.history-item .h-time { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+.history-item .h-preview { font-family: var(--mono); font-size: 12px; color: var(--text-dim); max-height: 60px; overflow: hidden; white-space: pre-wrap; position: relative; }
+.history-item .h-preview::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 30px; background: linear-gradient(to bottom, transparent, var(--surface)); }
 .history-empty { text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 13px; }
 
-.overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(4px);
-  z-index: 99;
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.3s;
-}
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 99; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
 .overlay.show { opacity: 1; pointer-events: auto; }
 
-.toast {
-  position: fixed; bottom: 24px; left: 50%;
-  transform: translate(-50%, 100px);
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
-  color: var(--text);
-  padding: 12px 18px;
-  border-radius: 999px;
-  font-size: 13px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-  z-index: 200;
-  transition: transform 0.3s var(--ease);
-  display: flex; align-items: center; gap: 10px;
-}
-
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translate(-50%, 100px); background: var(--surface); border: 1px solid var(--border-strong); color: var(--text); padding: 12px 18px; border-radius: 999px; font-size: 13px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); z-index: 200; transition: transform 0.3s var(--ease); display: flex; align-items: center; gap: 10px; }
 .toast.show { transform: translate(-50%, 0); }
-.toast .t-icon {
-  width: 20px; height: 20px; border-radius: 50%;
-  background: var(--success); color: var(--bg);
-  display: grid; place-items: center; font-weight: 700; font-size: 11px;
-}
+.toast .t-icon { width: 20px; height: 20px; border-radius: 50%; background: var(--success); color: var(--bg); display: grid; place-items: center; font-weight: 700; font-size: 11px; }
 
-footer {
-  margin-top: 80px;
-  padding: 40px 0;
-  border-top: 1px solid var(--border);
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 13px;
-}
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 150; opacity: 0; pointer-events: none; transition: opacity 0.25s; display: grid; place-items: center; padding: 20px; }
+.modal-overlay.show { opacity: 1; pointer-events: auto; }
+.modal { background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-lg); padding: 28px; max-width: 480px; width: 100%; transform: translateY(20px); transition: transform 0.25s var(--ease); }
+.modal-overlay.show .modal { transform: translateY(0); }
+.modal h2 { font-size: 22px; font-weight: 500; margin-bottom: 8px; letter-spacing: -0.5px; }
+.modal h2 em { font-family: var(--serif); font-style: italic; color: var(--accent); font-weight: 400; }
+.modal p { color: var(--text-dim); font-size: 14px; margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
 
-footer em { font-family: var(--serif); font-style: italic; color: var(--accent); }
-
-footer .footer-brand {
-  font-size: 15px;
-  color: var(--text);
-  margin-bottom: 8px;
-  font-weight: 500;
-}
+footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 13px; }
+.footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 32px; margin-bottom: 32px; }
+@media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+.footer-col h4 { font-family: var(--mono); font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px; font-weight: 500; }
+.footer-col a { display: block; color: var(--text-muted); text-decoration: none; font-size: 13px; padding: 4px 0; transition: color 0.15s; }
+.footer-col a:hover { color: var(--accent); }
+.footer-col a::before { content: '→ '; opacity: 0.4; margin-right: 2px; }
+.footer-brand-block { font-size: 15px; color: var(--text); margin-bottom: 12px; font-weight: 500; }
+.footer-brand-block em { font-family: var(--serif); font-style: italic; color: var(--accent); font-weight: 400; }
+.footer-tagline { color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 14px; }
+.legal { border-top: 1px solid var(--border); padding-top: 20px; text-align: center; font-size: 11px; color: var(--text-muted); line-height: 1.8; font-family: var(--mono); max-width: 900px; margin: 0 auto; }
+.legal strong { color: var(--text-dim); font-weight: 500; }
+.legal a { color: var(--text-dim); text-decoration: underline; text-decoration-color: var(--border-strong); }
+.legal a:hover { color: var(--accent); }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -787,10 +250,11 @@ footer .footer-brand {
         <path d="M7 16h10"/>
       </svg>
     </div>
-    <div>Config<em>Lab</em></div>
+    <div>Config<em>Labs</em></div>
   </div>
   <div class="nav-actions">
     <div class="chip"><span class="dot"></span><span id="backend-status">Connecting...</span></div>
+    <button class="icon-btn" onclick="openFeedback()" title="Send feedback">💬</button>
     <button class="icon-btn" onclick="toggleHistory()" title="History">🕐</button>
     <button class="icon-btn" onclick="toggleTheme()" title="Theme" id="theme-btn">🌙</button>
   </div>
@@ -799,7 +263,7 @@ footer .footer-brand {
 <div class="container">
 
   <section class="hero">
-    <div class="hero-tag"><span class="live"></span> Live · H3C Comware v7 generator</div>
+    <div class="hero-tag"><span class="live"></span> Live · H3C Comware v7 · v1.1</div>
     <h1>Network configuration,<br><span class="serif">without the pain.</span></h1>
     <p>A lab for network engineers. Build production-ready configs visually — from VLAN to OSPF. No typos, no reference docs, no CLI headaches.</p>
     <div class="vendor-pills">
@@ -821,17 +285,13 @@ footer .footer-brand {
   </section>
 
   <div class="main-layout">
-
     <section class="builder">
       <div class="panel-head">
-        <div class="panel-title">
-          <span class="num">01</span>
-          Configuration Builder
-        </div>
+        <div class="panel-title"><span class="num">01</span>Configuration Builder</div>
         <button class="icon-btn" onclick="clearAll()" title="Clear all">🗑️</button>
       </div>
 
-      <div class="tabs" id="tabs">
+      <div class="tabs">
         <button class="tab active" data-tab="system">⚙️ System</button>
         <button class="tab" data-tab="vlan">🔷 VLAN <span class="badge" id="b-vlan">0</span></button>
         <button class="tab" data-tab="intf">🔌 Interfaces <span class="badge" id="b-intf">0</span></button>
@@ -842,26 +302,13 @@ footer .footer-brand {
       </div>
 
       <div class="panel-body">
-
         <div class="tab-panel active" id="pane-system">
-          <div class="field">
-            <label>Hostname <span class="hint">sysname</span></label>
-            <input id="sys-hostname" placeholder="e.g. SW-CORE-01">
-          </div>
+          <div class="field"><label>Hostname <span class="hint">sysname</span></label><input id="sys-hostname" placeholder="e.g. SW-CORE-01"></div>
           <div class="field-row">
-            <div class="field">
-              <label>NTP Server <span class="hint">optional</span></label>
-              <input id="sys-ntp" placeholder="e.g. time.google.com">
-            </div>
-            <div class="field">
-              <label>Timezone <span class="hint">optional</span></label>
-              <input id="sys-tz" placeholder="e.g. WIB +07:00">
-            </div>
+            <div class="field"><label>NTP Server <span class="hint">optional</span></label><input id="sys-ntp" placeholder="e.g. time.google.com"></div>
+            <div class="field"><label>Timezone <span class="hint">optional</span></label><input id="sys-tz" placeholder="e.g. JKT add 07:00:00"></div>
           </div>
-          <div class="field">
-            <label>Login Banner <span class="hint">optional</span></label>
-            <input id="sys-banner" placeholder="Authorized users only">
-          </div>
+          <div class="field"><label>Login Banner <span class="hint">optional</span></label><input id="sys-banner" placeholder="Authorized users only"></div>
         </div>
 
         <div class="tab-panel" id="pane-vlan">
@@ -886,19 +333,10 @@ footer .footer-brand {
 
         <div class="tab-panel" id="pane-ospf">
           <div class="field-row">
-            <div class="field">
-              <label>Process ID <span class="hint">e.g. 1</span></label>
-              <input id="ospf-pid" placeholder="1">
-            </div>
-            <div class="field">
-              <label>Router ID <span class="hint">e.g. 1.1.1.1</span></label>
-              <input id="ospf-rid" placeholder="1.1.1.1">
-            </div>
+            <div class="field"><label>Process ID <span class="hint">e.g. 1</span></label><input id="ospf-pid" placeholder="1"></div>
+            <div class="field"><label>Router ID <span class="hint">e.g. 1.1.1.1</span></label><input id="ospf-rid" placeholder="1.1.1.1"></div>
           </div>
-          <div class="field">
-            <label>Area <span class="hint">e.g. 0 for backbone</span></label>
-            <input id="ospf-area" placeholder="0">
-          </div>
+          <div class="field"><label>Area <span class="hint">e.g. 0 → auto formatted 0.0.0.0</span></label><input id="ospf-area" placeholder="0"></div>
           <label style="margin-top:8px">Networks in this area</label>
           <div class="repeater" id="rep-ospf-nets"></div>
           <button class="btn-add" onclick="addOspfNet()">＋ Add Network</button>
@@ -908,24 +346,17 @@ footer .footer-brand {
           <div class="repeater" id="rep-acls"></div>
           <button class="btn-add" onclick="addAcl()">＋ Add ACL</button>
         </div>
-
       </div>
 
       <div class="panel-footer">
         <button class="btn btn-secondary" onclick="loadExample()">✨ Example</button>
-        <button class="btn btn-primary" onclick="generate()">
-          ⚡ Generate Config
-          <span style="font-family:var(--mono);font-size:11px;opacity:0.7">⌘↵</span>
-        </button>
+        <button class="btn btn-primary" onclick="generate()">⚡ Generate Config <span style="font-family:var(--mono);font-size:11px;opacity:0.7">⌘↵</span></button>
       </div>
     </section>
 
     <section class="output-wrap">
       <div class="panel-head">
-        <div class="panel-title">
-          <span class="num">02</span>
-          CLI Output
-        </div>
+        <div class="panel-title"><span class="num">02</span>CLI Output</div>
       </div>
       <div class="output-toolbar">
         <div class="output-toolbar-left">
@@ -949,13 +380,43 @@ footer .footer-brand {
         <span id="line-info"></span>
       </div>
     </section>
-
   </div>
 
   <footer>
-    <div class="footer-brand">Config<em>Lab</em></div>
-    <div>Built with <em>care</em> for network engineers · H3C Comware v7</div>
-    <div style="margin-top:12px; font-size:11px; opacity:0.7">More vendors coming soon · Free forever</div>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <div class="footer-brand-block">Config<em>Labs</em></div>
+        <div class="footer-tagline">
+          Built with <em style="font-family:var(--serif); font-style:italic; color:var(--accent);">care</em> for network engineers.<br>
+          Free, open, always improving.
+        </div>
+        <div style="font-family:var(--mono); font-size:11px; color:var(--text-muted);">v1.1.0 · H3C Comware v7</div>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="#" onclick="document.querySelector('.templates-section').scrollIntoView({behavior:'smooth'}); return false;">Templates</a>
+        <a href="#" onclick="openFeedback(); return false;">Send feedback</a>
+        <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" rel="noopener">GitHub</a>
+      </div>
+      <div class="footer-col">
+        <h4>H3C Resources</h4>
+        <a href="https://www.h3c.com" target="_blank" rel="noopener">H3C Official</a>
+        <a href="https://www.h3c.com/en/Support/" target="_blank" rel="noopener">H3C Support</a>
+        <a href="https://www.h3c.com/en/Products_and_Solutions/" target="_blank" rel="noopener">Products Catalog</a>
+        <a href="https://www.h3c.com/en/Support/Online_Help/" target="_blank" rel="noopener">Online Help</a>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <a href="#" onclick="openDisclaimer(); return false;">Disclaimer</a>
+        <a href="#" onclick="openTerms(); return false;">Terms of Use</a>
+      </div>
+    </div>
+    <div class="legal">
+      <p><strong>ConfigLabs is an independent tool</strong> and is <strong>not affiliated with, endorsed by, or sponsored by</strong> New H3C Technologies Co., Ltd.</p>
+      <p style="margin-top:8px">H3C®, Comware® and related marks are registered trademarks of New H3C Technologies Co., Ltd. Used for reference only.</p>
+      <p style="margin-top:8px">All generated configurations should be reviewed before deployment. Use at your own risk.</p>
+      <p style="margin-top:14px; opacity:0.7">© <span id="year"></span> ConfigLabs · configlabs.online</p>
+    </div>
   </footer>
 </div>
 
@@ -970,17 +431,76 @@ footer .footer-brand {
   </div>
 </aside>
 
+<div class="modal-overlay" id="feedback-modal" onclick="if(event.target===this)closeFeedback()">
+  <div class="modal">
+    <h2>Send <em>feedback</em></h2>
+    <p>Found a bug? Missing a feature? Want a new template? Let me know! 💬</p>
+    <div class="field"><label>Your email <span class="hint">optional</span></label><input id="fb-email" type="email" placeholder="you@example.com"></div>
+    <div class="field"><label>Message</label><textarea id="fb-message" placeholder="What's on your mind?"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeFeedback()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitFeedback()">Send</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="disclaimer-modal" onclick="if(event.target===this)closeDisclaimer()">
+  <div class="modal">
+    <h2>Legal <em>Disclaimer</em></h2>
+    <p style="color: var(--text-dim); font-size: 13px; line-height: 1.7;">
+      ConfigLabs is an independent, free tool built by network engineers for network engineers.
+      It is <strong style="color:var(--text);">not affiliated with, endorsed by, or sponsored by</strong> New H3C Technologies Co., Ltd.
+      <br><br>
+      H3C®, Comware®, and all related trademarks are registered trademarks of New H3C Technologies Co., Ltd.
+      They are used on this site only to describe the hardware/software that ConfigLabs helps configure.
+      <br><br>
+      All configurations generated by this tool are provided <strong style="color:var(--text);">"AS IS"</strong>
+      without warranty of any kind. Always review and test configurations in a lab environment before deploying to production networks.
+      <br><br>
+      ConfigLabs is not liable for any damages, data loss, or network outages caused by the use of generated configurations.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeDisclaimer()">I understand</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="terms-modal" onclick="if(event.target===this)closeTerms()">
+  <div class="modal">
+    <h2>Terms of <em>Use</em></h2>
+    <p style="color: var(--text-dim); font-size: 13px; line-height: 1.7;">
+      By using ConfigLabs you agree to:
+      <br><br>
+      • Use the tool for lawful purposes only<br>
+      • Review all generated configs before deployment<br>
+      • Not hold ConfigLabs liable for any network issues<br>
+      • Respect the intellectual property of all vendors mentioned<br>
+      • Not redistribute or resell this tool as your own<br><br>
+      ConfigLabs reserves the right to modify the service, features, or these terms at any time without prior notice.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeTerms()">I agree</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"><span class="t-icon">✓</span><span id="toast-msg">Done</span></div>
 
 <script>
-const API = 'https://configlabs-production.up.railway.app';
-const THEME_KEY = 'configlab_theme';
+// ============================================================
+// TEST BENCH: Point to local backend on port 5002
+// For production: change to 'https://configlabs-production.up.railway.app'
+// ============================================================
+const API = 'http://127.0.0.1:5000';
+const THEME_KEY = 'configlabs_theme';
 const MAX_HIST = 20;
 
 let showLineNumbers = true;
 let showHighlight = true;
 let lastConfig = '';
 let history = [];
+
+document.getElementById('year').textContent = new Date().getFullYear();
 
 function toggleTheme() {
   const cur = document.body.dataset.theme;
@@ -1012,17 +532,12 @@ document.querySelectorAll('.tab').forEach(t => {
 function makeItem(title, html) {
   const div = document.createElement('div');
   div.className = 'repeater-item';
-  div.innerHTML = `
-    <div class="repeater-head">
-      <div class="repeater-title">${title}</div>
-      <button class="btn-remove" onclick="this.closest('.repeater-item').remove(); updateBadges();">✕</button>
-    </div>
-    ${html}
-  `;
+  div.innerHTML = `<div class="repeater-head"><div class="repeater-title">${title}</div><button class="btn-remove" onclick="this.closest('.repeater-item').remove(); updateBadges();">✕</button></div>${html}`;
   return div;
 }
 
 function addVlan(data = {}) {
+  const mode = data.dhcp_mode || 'none';
   const html = `
     <div class="field-row-3">
       <div class="field"><label>VLAN ID</label><input class="v-id" value="${data.vlan||''}" placeholder="10"></div>
@@ -1030,9 +545,43 @@ function addVlan(data = {}) {
       <div class="field"><label>Gateway IP (CIDR)</label><input class="v-ip" value="${data.ip||''}" placeholder="10.10.10.1/24"></div>
     </div>
     <div class="field"><label>Description <span class="hint">optional</span></label><input class="v-desc" value="${data.description||''}" placeholder="Office user VLAN"></div>
-    <div class="field"><label>DHCP Relay Server <span class="hint">optional — for L3 VLANs</span></label><input class="v-relay" value="${data.dhcp_relay||''}" placeholder="10.10.100.10"></div>
+
+    <div class="field">
+      <label>DHCP Mode on this VLAN <span class="hint">L3 only</span></label>
+      <div class="segmented dhcp-mode-seg">
+        <button type="button" data-mode="none" class="${mode==='none'?'active':''}">None</button>
+        <button type="button" data-mode="server" class="${mode==='server'?'active':''}">Server</button>
+        <button type="button" data-mode="relay" class="${mode==='relay'?'active':''}">Relay</button>
+        <button type="button" data-mode="client" class="${mode==='client'?'active':''}">Client</button>
+      </div>
+      <input type="hidden" class="v-dhcp-mode" value="${mode}">
+    </div>
+
+    <div class="field v-dhcp-server-wrap" style="display:${mode==='server'?'block':'none'}">
+      <label>Apply DHCP Pool <span class="hint">must match pool name in DHCP tab</span></label>
+      <input class="v-dhcp-apply" value="${data.dhcp_apply_pool||''}" placeholder="USERS_POOL">
+    </div>
+
+    <div class="field v-dhcp-relay-wrap" style="display:${mode==='relay'?'block':'none'}">
+      <label>DHCP Relay Server IP</label>
+      <input class="v-dhcp-relay" value="${data.dhcp_relay||''}" placeholder="10.10.100.10">
+    </div>
+
+    <div class="field" style="margin-top:8px">
+      <label class="check"><input type="checkbox" class="v-shut" ${data.shutdown?'checked':''}> Shutdown this VLAN interface</label>
+    </div>
   `;
-  document.getElementById('rep-vlans').appendChild(makeItem('VLAN', html));
+  const el = makeItem('VLAN', html);
+  document.getElementById('rep-vlans').appendChild(el);
+  el.querySelectorAll('.dhcp-mode-seg button').forEach(b => {
+    b.addEventListener('click', () => {
+      el.querySelectorAll('.dhcp-mode-seg button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      el.querySelector('.v-dhcp-mode').value = b.dataset.mode;
+      el.querySelector('.v-dhcp-server-wrap').style.display = b.dataset.mode === 'server' ? 'block' : 'none';
+      el.querySelector('.v-dhcp-relay-wrap').style.display = b.dataset.mode === 'relay' ? 'block' : 'none';
+    });
+  });
   updateBadges();
 }
 
@@ -1057,7 +606,7 @@ function addIntf(data = {}) {
     </div>
     <div class="field i-trunk-wrap" style="display:${mode==='trunk'?'block':'none'}">
       <div class="field-row">
-        <div><label>Allowed VLANs</label><input class="i-allowed" value="${data.allowed||''}" placeholder="10 20 30"></div>
+        <div><label>Allowed VLANs <span class="hint">e.g. 10 20 30 or 10 to 20</span></label><input class="i-allowed" value="${data.allowed||''}" placeholder="10 20 30"></div>
         <div><label>Native (PVID)</label><input class="i-pvid" value="${data.pvid||''}" placeholder="1"></div>
       </div>
     </div>
@@ -1089,9 +638,16 @@ function addIntf(data = {}) {
 }
 
 function addDhcp(data = {}) {
+  let forbidden = data.forbidden_ips;
+  if (Array.isArray(forbidden)) forbidden = forbidden.join(' ');
+  if (!forbidden && data.exclude_start) {
+    forbidden = data.exclude_start + (data.exclude_end ? ' ' + data.exclude_end : '');
+  }
+  forbidden = forbidden || '';
+
   const html = `
     <div class="field-row">
-      <div class="field"><label>Pool Name</label><input class="d-name" value="${data.pool_name||''}" placeholder="USERS_POOL"></div>
+      <div class="field"><label>Pool Name <span class="hint">links to VLAN via "Apply Pool"</span></label><input class="d-name" value="${data.pool_name||''}" placeholder="USERS_POOL"></div>
       <div class="field"><label>Lease (days)</label><input class="d-lease" value="${data.lease_days||'7'}" placeholder="7"></div>
     </div>
     <div class="field-row-3">
@@ -1103,9 +659,9 @@ function addDhcp(data = {}) {
       <div class="field"><label>DNS Servers</label><input class="d-dns" value="${data.dns||'8.8.8.8 1.1.1.1'}" placeholder="8.8.8.8 1.1.1.1"></div>
       <div class="field"><label>Domain</label><input class="d-domain" value="${data.domain||''}" placeholder="company.local"></div>
     </div>
-    <div class="field-row">
-      <div class="field"><label>Exclude From</label><input class="d-ex-start" value="${data.exclude_start||''}" placeholder="10.10.10.1"></div>
-      <div class="field"><label>Exclude To</label><input class="d-ex-end" value="${data.exclude_end||''}" placeholder="10.10.10.20"></div>
+    <div class="field">
+      <label>Forbidden IPs <span class="hint">space-separated, e.g. 10.10.10.1 10.10.10.2</span></label>
+      <input class="d-forbidden" value="${forbidden}" placeholder="10.10.10.1 10.10.10.2 10.10.10.3">
     </div>
   `;
   document.getElementById('rep-dhcp').appendChild(makeItem('DHCP Pool', html));
@@ -1141,20 +697,28 @@ function addOspfNet(data = {}) {
 function addAcl(data = {}) {
   const rulesData = data.rules && data.rules.length ? data.rules : [{}];
   const rulesHtml = rulesData.map((r, i) => `
-    <div class="field-row-3" style="margin-bottom:6px">
+    <div class="acl-rule-row" style="display:grid;grid-template-columns:50px 80px 80px 1fr 1fr;gap:6px;margin-bottom:6px">
       <input class="acl-rid" value="${r.rule_id||((i+1)*5)}" placeholder="5">
       <select class="acl-act">
         <option value="permit" ${r.action==='permit'?'selected':''}>permit</option>
         <option value="deny" ${r.action==='deny'?'selected':''}>deny</option>
       </select>
-      <input class="acl-src" value="${r.source||'any'}" placeholder="any or 10.10.10.0">
+      <select class="acl-proto">
+        <option value="ip" ${(r.protocol||'ip')==='ip'?'selected':''}>ip</option>
+        <option value="tcp" ${r.protocol==='tcp'?'selected':''}>tcp</option>
+        <option value="udp" ${r.protocol==='udp'?'selected':''}>udp</option>
+        <option value="icmp" ${r.protocol==='icmp'?'selected':''}>icmp</option>
+      </select>
+      <input class="acl-src" value="${r.source||'any'}" placeholder="source (any / 10.10.10.0)">
+      <input class="acl-wc" value="${r.wildcard||''}" placeholder="wildcard (0.0.0.255)">
     </div>
   `).join('');
   const html = `
     <div class="field-row">
-      <div class="field"><label>ACL Number <span class="hint">2000–2999 basic · 3000–3999 advanced</span></label><input class="a-num" value="${data.acl_number||'3000'}" placeholder="3000"></div>
+      <div class="field"><label>ACL Number <span class="hint">2000-2999 basic · 3000-3999 advanced</span></label><input class="a-num" value="${data.acl_number||'3000'}" placeholder="3000"></div>
+      <div class="field"><label>Description</label><input class="a-desc" value="${data.description||''}" placeholder="Network-ACL"></div>
     </div>
-    <label>Rules <span class="hint">rule-id · action · source</span></label>
+    <label>Rules <span class="hint">id · action · protocol · source · wildcard</span></label>
     <div class="acl-rules">${rulesHtml}</div>
     <button class="btn-add" style="margin-top:8px" onclick="addAclRule(this)">＋ Add Rule</button>
   `;
@@ -1164,9 +728,9 @@ function addAcl(data = {}) {
 
 function addAclRule(btn) {
   const row = document.createElement('div');
-  row.className = 'field-row-3';
-  row.style.marginBottom = '6px';
-  row.innerHTML = '<input class="acl-rid" placeholder="10"><select class="acl-act"><option value="permit">permit</option><option value="deny">deny</option></select><input class="acl-src" placeholder="any">';
+  row.className = 'acl-rule-row';
+  row.style.cssText = 'display:grid;grid-template-columns:50px 80px 80px 1fr 1fr;gap:6px;margin-bottom:6px';
+  row.innerHTML = '<input class="acl-rid" placeholder="10"><select class="acl-act"><option value="permit">permit</option><option value="deny">deny</option></select><select class="acl-proto"><option value="ip">ip</option><option value="tcp">tcp</option><option value="udp">udp</option><option value="icmp">icmp</option></select><input class="acl-src" placeholder="any"><input class="acl-wc" placeholder="0.0.0.255">';
   btn.previousElementSibling.appendChild(row);
 }
 
@@ -1196,7 +760,10 @@ function collectData() {
     name: el.querySelector('.v-name').value.trim(),
     description: el.querySelector('.v-desc').value.trim(),
     ip: el.querySelector('.v-ip').value.trim(),
-    dhcp_relay: el.querySelector('.v-relay').value.trim()
+    dhcp_mode: el.querySelector('.v-dhcp-mode').value,
+    dhcp_apply_pool: el.querySelector('.v-dhcp-apply').value.trim(),
+    dhcp_relay: el.querySelector('.v-dhcp-relay').value.trim(),
+    shutdown: el.querySelector('.v-shut').checked
   })).filter(v => v.vlan);
 
   data.interfaces = [...document.querySelectorAll('#rep-intfs .repeater-item')].map(el => ({
@@ -1221,8 +788,7 @@ function collectData() {
     dns: el.querySelector('.d-dns').value.trim(),
     domain: el.querySelector('.d-domain').value.trim(),
     lease_days: el.querySelector('.d-lease').value.trim(),
-    exclude_start: el.querySelector('.d-ex-start').value.trim(),
-    exclude_end: el.querySelector('.d-ex-end').value.trim()
+    forbidden_ips: el.querySelector('.d-forbidden').value.trim()
   })).filter(p => p.pool_name);
 
   data.static_routes = [...document.querySelectorAll('#rep-routes .repeater-item')].map(el => ({
@@ -1248,12 +814,18 @@ function collectData() {
   }
 
   data.acls = [...document.querySelectorAll('#rep-acls .repeater-item')].map(el => {
-    const rules = [...el.querySelectorAll('.acl-rules .field-row-3')].map(rr => ({
+    const rules = [...el.querySelectorAll('.acl-rules .acl-rule-row')].map(rr => ({
       rule_id: rr.querySelector('.acl-rid').value.trim(),
       action: rr.querySelector('.acl-act').value,
-      source: rr.querySelector('.acl-src').value.trim()
+      protocol: rr.querySelector('.acl-proto').value,
+      source: rr.querySelector('.acl-src').value.trim(),
+      wildcard: rr.querySelector('.acl-wc').value.trim()
     })).filter(r => r.source);
-    return { acl_number: el.querySelector('.a-num').value.trim(), rules };
+    return {
+      acl_number: el.querySelector('.a-num').value.trim(),
+      description: el.querySelector('.a-desc').value.trim(),
+      rules
+    };
   }).filter(a => a.acl_number);
 
   return data;
@@ -1303,13 +875,18 @@ function loadExample() {
   applyTemplate({
     system: { hostname: 'SW-DEMO-01' },
     vlans: [
-      { vlan: '10', name: 'USERS', description: 'Office users', ip: '10.10.10.1/24' },
+      { vlan: '10', name: 'USERS', description: 'Office users', ip: '10.10.10.1/24', dhcp_mode: 'server', dhcp_apply_pool: 'USERS_POOL' },
       { vlan: '20', name: 'SERVERS', ip: '10.10.20.1/24' }
     ],
     interfaces: [
       { interface: 'GigabitEthernet1/0/1', mode: 'access', vlan: '10', description: 'User port', stp_edge: true },
       { interface: 'GigabitEthernet1/0/24', mode: 'trunk', allowed: '10 20', description: 'Uplink' }
-    ]
+    ],
+    dhcp_pools: [{
+      pool_name: 'USERS_POOL', network: '10.10.10.0', cidr: '24',
+      gateway: '10.10.10.1', dns: '8.8.8.8 1.1.1.1', lease_days: '7',
+      forbidden_ips: '10.10.10.1 10.10.10.2'
+    }]
   });
 }
 
@@ -1337,7 +914,7 @@ async function generate() {
     saveHistory(lastConfig);
     toast('Config generated!');
   } catch (e) {
-    setStatus('Backend offline — run python3 CloudLab.py', 'err');
+    setStatus('Backend offline — run python3 ConfigLab.py', 'err');
     toast('Cannot reach backend', true);
   }
 }
@@ -1350,7 +927,7 @@ function renderOutput(text) {
     const ln = showLineNumbers ? `<span class="ln">${i+1}</span>` : '<span></span>';
     let cls = 'line';
     let content;
-    if (line.startsWith('#')) {
+    if (line.startsWith('#') || line.trim() === '#') {
       cls += ' comment';
       content = escapeHtml(line);
     } else {
@@ -1363,15 +940,13 @@ function renderOutput(text) {
 
 function highlight(line) {
   let s = escapeHtml(line);
-  s = s.replace(/\b(system-view|vlan|name|description|interface|port|link-type|access|trunk|hybrid|permit|tagged|untagged|ip|address|route-static|dhcp|server|ip-pool|network|gateway-list|dns-list|expired|domain-name|forbidden-ip|ospf|router-id|area|acl|number|rule|source|any|mask|quit|save|force|sysname|header|ntp-service|unicast-server|clock|timezone|poe|enable|stp|edged-port|shutdown|undo|speed|duplex|pvid|relay|select|preference|from|to|deny|day|shell)\b/g,
+  s = s.replace(/\b(system-view|vlan|name|description|interface|port|link-type|access|trunk|hybrid|permit|tagged|untagged|ip|address|route-static|dhcp|server|ip-pool|network|gateway-list|dns-list|expired|domain-name|forbidden-ip|ospf|router-id|area|acl|number|rule|source|any|mask|quit|save|force|return|sysname|header|ntp-service|unicast-server|clock|timezone|poe|enable|stp|edged-port|shutdown|undo|speed|duplex|pvid|relay|select|preference|from|to|deny|day|shell|apply|advanced|basic|destination|dhcp-alloc)\b/g,
     '<span class="kw">$1</span>');
   s = s.replace(/\b(\d{1,3}(?:\.\d{1,3}){3}(?:\/\d+)?)\b/g, '<span class="val">$1</span>');
   return s;
 }
 
-function escapeHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function setStatus(text, cls) {
   const s = document.getElementById('status');
@@ -1403,7 +978,7 @@ function downloadConfig() {
   const blob = new Blob([lastConfig], { type: 'text/plain' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `${host}-configlab-${Date.now()}.txt`;
+  a.download = `${host}-configlabs-${Date.now()}.txt`;
   a.click();
   toast('Downloaded!');
 }
@@ -1453,6 +1028,33 @@ function toggleHistory() {
   document.getElementById('overlay').classList.toggle('show');
 }
 
+function openFeedback() { document.getElementById('feedback-modal').classList.add('show'); }
+function closeFeedback() { document.getElementById('feedback-modal').classList.remove('show'); }
+
+async function submitFeedback() {
+  const email = document.getElementById('fb-email').value.trim();
+  const message = document.getElementById('fb-message').value.trim();
+  if (!message) { toast('Please enter a message', true); return; }
+  try {
+    await fetch(API + '/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, message })
+    });
+    document.getElementById('fb-email').value = '';
+    document.getElementById('fb-message').value = '';
+    closeFeedback();
+    toast('Thanks for your feedback! 💚');
+  } catch(e) {
+    toast('Could not send feedback', true);
+  }
+}
+
+function openDisclaimer() { document.getElementById('disclaimer-modal').classList.add('show'); }
+function closeDisclaimer() { document.getElementById('disclaimer-modal').classList.remove('show'); }
+function openTerms() { document.getElementById('terms-modal').classList.add('show'); }
+function closeTerms() { document.getElementById('terms-modal').classList.remove('show'); }
+
 async function loadTemplates() {
   try {
     const res = await fetch(API + '/templates');
@@ -1494,6 +1096,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     document.getElementById('history-drawer').classList.remove('open');
     document.getElementById('overlay').classList.remove('show');
+    closeFeedback(); closeDisclaimer(); closeTerms();
   }
 });
 
