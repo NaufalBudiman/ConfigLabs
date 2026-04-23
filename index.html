@@ -4,16 +4,15 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>ConfigLabs — Network Configuration, Simplified</title>
-<meta name="description" content="Free H3C Comware v7 config generator. Build production-ready VLAN, DHCP, OSPF, ACL configs visually. No typos, no CLI headaches."/>
-<meta name="keywords" content="H3C config generator, Comware CLI, VLAN generator, OSPF config, network automation, H3C templates, DHCP generator"/>
+<meta name="description" content="Free multi-vendor network config generator. Build production-ready configs for H3C, Cisco IOS, IOS-XE, and NX-OS visually. No typos, no CLI headaches."/>
+<meta name="keywords" content="H3C config generator, Cisco IOS config, NX-OS config, Comware CLI, VLAN generator, OSPF config, network automation"/>
 <meta name="author" content="ConfigLabs"/>
-<meta property="og:title" content="ConfigLabs — H3C Config Generator"/>
-<meta property="og:description" content="Build production-ready H3C configs visually in seconds."/>
+<meta property="og:title" content="ConfigLabs — Multi-Vendor Config Generator"/>
+<meta property="og:description" content="Build production-ready H3C and Cisco configs visually in seconds."/>
 <meta property="og:type" content="website"/>
 <meta property="og:url" content="https://configlabs.online"/>
 <meta name="theme-color" content="#0b0d10"/>
 
-<!-- Favicon (embedded SVG — matches brand logo) -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%237cf4c7'/%3E%3Cstop offset='50%25' stop-color='%23a8b5ff'/%3E%3Cstop offset='100%25' stop-color='%23ffb86b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='url(%23g)'/%3E%3Cg transform='translate(10 6)' fill='none' stroke='%230b0d10' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 0v7a2 2 0 0 1-.2.9L-3 17.5a1 1 0 0 0 .9 1.4H9.1a1 1 0 0 0 .9-1.4L5.2 7.9A2 2 0 0 1 5 7V0z'/%3E%3Cpath d='M0 0h6'/%3E%3Cpath d='M-1 13h8'/%3E%3C/g%3E%3C/svg%3E"/>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -34,6 +33,8 @@
   --accent: #7cf4c7;
   --accent-2: #a8b5ff;
   --accent-3: #ffb86b;
+  --accent-cisco: #a8b5ff;
+  --accent-h3c: #ff0000;
   --danger: #ff6478;
   --success: #7cf4c7;
   --warning: #ffc857;
@@ -45,21 +46,12 @@
   --radius-lg: 20px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
-
 [data-theme="light"] {
-  --bg: #f8f6f1;
-  --bg-2: #ffffff;
-  --surface: #ffffff;
-  --surface-2: #f1ede3;
-  --surface-hover: #ebe6d8;
-  --border: #e4dfd0;
-  --border-strong: #d0c9b5;
-  --text: #1a1a1a;
-  --text-dim: #5a5a5a;
-  --text-muted: #8a8a8a;
-  --accent: #0f766e;
-  --accent-2: #4f46e5;
-  --accent-3: #ea580c;
+  --bg: #f8f6f1; --bg-2: #ffffff; --surface: #ffffff; --surface-2: #f1ede3;
+  --surface-hover: #ebe6d8; --border: #e4dfd0; --border-strong: #d0c9b5;
+  --text: #1a1a1a; --text-dim: #5a5a5a; --text-muted: #8a8a8a;
+  --accent: #0f766e; --accent-2: #4f46e5; --accent-3: #ea580c;
+  --accent-cisco: #4f46e5; --accent-h3c: #0f766e;
   --glow: 0 4px 20px rgba(15, 118, 110, 0.08);
 }
 
@@ -69,18 +61,15 @@ html, body { background: var(--bg); color: var(--text); font-family: var(--sans)
 body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 60px 60px; mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%); opacity: 0.3; pointer-events: none; z-index: 0; }
 
 nav { position: sticky; top: 0; z-index: 50; padding: 16px 32px; background: color-mix(in srgb, var(--bg) 75%, transparent); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-
 .brand { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 17px; letter-spacing: -0.3px; }
 .brand-logo { width: 32px; height: 32px; border-radius: 8px; background: conic-gradient(from 180deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent)); display: grid; place-items: center; position: relative; }
 .brand-logo::after { content: ''; position: absolute; inset: 2px; border-radius: 6px; background: var(--bg); }
 .brand-logo svg { position: relative; z-index: 1; width: 18px; height: 18px; color: var(--text); }
 .brand em { font-family: var(--serif); font-style: italic; color: var(--accent); font-weight: 400; }
-
 .nav-actions { display: flex; gap: 8px; align-items: center; }
 .chip { font-family: var(--mono); font-size: 11px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--border-strong); color: var(--text-dim); display: inline-flex; align-items: center; gap: 6px; }
 .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px var(--success); animation: pulse 2s infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-
 .icon-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); width: 36px; height: 36px; border-radius: 10px; cursor: pointer; display: grid; place-items: center; transition: all 0.2s var(--ease); font-size: 16px; }
 .icon-btn:hover { background: var(--surface-hover); color: var(--text); border-color: var(--border-strong); }
 
@@ -91,12 +80,98 @@ nav { position: sticky; top: 0; z-index: 50; padding: 16px 32px; background: col
 .hero-tag .live { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px var(--accent); }
 .hero h1 { font-size: clamp(40px, 6vw, 68px); line-height: 1.02; letter-spacing: -2px; font-weight: 600; margin-bottom: 24px; animation: fadeUp 0.7s var(--ease) 0.1s both; }
 .hero h1 .serif { font-family: var(--serif); font-style: italic; font-weight: 400; background: linear-gradient(135deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; padding-right: 4px; }
-.hero p { color: var(--text-dim); font-size: 18px; max-width: 560px; margin: 0 auto 32px; animation: fadeUp 0.7s var(--ease) 0.2s both; }
-.vendor-pills { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; animation: fadeUp 0.7s var(--ease) 0.3s both; }
-.vendor-pill { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); font-size: 12px; display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); color: var(--text-dim); transition: all 0.2s; }
-.vendor-pill.active { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
-.vendor-pill .soon-badge { font-size: 9px; padding: 1px 6px; border-radius: 99px; background: var(--surface-hover); color: var(--text-muted); border: 1px solid var(--border); letter-spacing: 0.5px; }
-.vendor-pill.active .soon-badge { background: var(--accent); color: var(--bg); border: none; font-weight: 700; }
+.hero p { color: var(--text-dim); font-size: 18px; max-width: 600px; margin: 0 auto 32px; animation: fadeUp 0.7s var(--ease) 0.2s both; }
+
+/* ============ VENDOR PILLS ============ */
+.vendor-pills { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; animation: fadeUp 0.7s var(--ease) 0.3s both; }
+.vendor-pill {
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-size: 13px;
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--mono);
+  color: var(--text-dim);
+  transition: all 0.2s var(--ease);
+  cursor: pointer;
+  font-weight: 500;
+}
+.vendor-pill:not(.disabled):hover { border-color: var(--border-strong); color: var(--text); transform: translateY(-1px); }
+.vendor-pill.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.vendor-pill[data-vendor="cisco"].active {
+  border-color: var(--accent-cisco);
+  color: var(--accent-cisco);
+  background: color-mix(in srgb, var(--accent-cisco) 12%, var(--surface));
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--accent-cisco) 20%, transparent);
+}
+.vendor-pill.disabled { opacity: 0.5; cursor: not-allowed; }
+.vendor-pill .soon-badge { font-size: 9px; padding: 2px 7px; border-radius: 99px; background: var(--surface-hover); color: var(--text-muted); border: 1px solid var(--border); letter-spacing: 0.5px; font-weight: 600; }
+.vendor-pill.active .soon-badge { background: var(--accent); color: var(--bg); border: none; }
+.vendor-pill[data-vendor="cisco"].active .soon-badge { background: var(--accent-cisco); color: var(--bg); }
+
+/* ============ OS SUB-PICKER ============ */
+.os-picker-wrap {
+  margin-top: 20px;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  overflow: hidden;
+  animation: fadeUp 0.7s var(--ease) 0.4s both;
+}
+.os-picker {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+  position: relative;
+}
+.os-picker-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+.os-btn {
+  padding: 12px 20px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+  color: var(--text-dim);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  display: flex; flex-direction: column; align-items: flex-start;
+  gap: 2px;
+  min-width: 140px;
+  text-align: left;
+}
+.os-btn:hover:not(.disabled) { border-color: var(--border-strong); color: var(--text); transform: translateY(-1px); }
+.os-btn.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg));
+  color: var(--text);
+}
+.os-btn[data-vendor="cisco"].active {
+  border-color: var(--accent-cisco);
+  background: color-mix(in srgb, var(--accent-cisco) 10%, var(--bg));
+}
+.os-btn .os-name { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+.os-btn .os-name .os-check { color: var(--accent); opacity: 0; transition: opacity 0.2s; }
+.os-btn[data-vendor="cisco"] .os-check { color: var(--accent-cisco); }
+.os-btn.active .os-check { opacity: 1; }
+.os-btn .os-desc { font-size: 11px; color: var(--text-muted); font-family: var(--mono); }
 
 @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -111,15 +186,17 @@ nav { position: sticky; top: 0; z-index: 50; padding: 16px 32px; background: col
 .tpl-emoji { font-size: 26px; margin-bottom: 10px; display: block; }
 .tpl-name { font-weight: 500; font-size: 14px; margin-bottom: 4px; }
 .tpl-desc { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+.tpl-vendor-tag { position: absolute; top: 10px; right: 10px; font-family: var(--mono); font-size: 9px; padding: 2px 6px; border-radius: 99px; background: var(--surface-2); color: var(--text-muted); letter-spacing: 0.5px; text-transform: uppercase; }
 
 .main-layout { display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; }
 @media (max-width: 960px) { .main-layout { grid-template-columns: 1fr; } }
 
 .builder, .output-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; animation: fadeUp 0.7s var(--ease) 0.5s both; }
-
 .panel-head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface-2); }
 .panel-title { font-weight: 500; font-size: 14px; display: flex; align-items: center; gap: 10px; }
 .panel-title .num { font-family: var(--mono); font-size: 11px; padding: 2px 8px; border-radius: 6px; background: var(--bg); color: var(--text-dim); border: 1px solid var(--border); }
+.panel-title .vendor-label { font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 99px; background: var(--accent); color: var(--bg); font-weight: 700; letter-spacing: 0.5px; }
+.panel-title .vendor-label.cisco { background: var(--accent-cisco); }
 
 .tabs { display: flex; gap: 4px; padding: 12px 12px 0; background: var(--surface-2); border-bottom: 1px solid var(--border); overflow-x: auto; }
 .tab { padding: 10px 14px; background: transparent; border: none; color: var(--text-dim); font-family: var(--sans); font-size: 13px; font-weight: 500; cursor: pointer; border-radius: 8px 8px 0 0; transition: all 0.2s; display: flex; align-items: center; gap: 6px; white-space: nowrap; position: relative; }
@@ -136,10 +213,8 @@ nav { position: sticky; top: 0; z-index: 50; padding: 16px 32px; background: col
 .field { margin-bottom: 14px; }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .field-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-
 label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; font-weight: 500; }
 label .hint { font-family: var(--mono); color: var(--text-muted); font-weight: 400; margin-left: 6px; }
-
 input, select, textarea { width: 100%; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: var(--mono); font-size: 13px; outline: none; transition: all 0.15s var(--ease); }
 input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
 input::placeholder { color: var(--text-muted); }
@@ -157,10 +232,8 @@ textarea { resize: vertical; min-height: 80px; font-family: var(--sans); }
 .repeater-title { font-size: 12px; font-family: var(--mono); color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
 .repeater-item .btn-remove { background: transparent; border: 1px solid var(--border); color: var(--text-muted); width: 24px; height: 24px; border-radius: 6px; cursor: pointer; display: grid; place-items: center; font-size: 14px; transition: all 0.2s; }
 .repeater-item .btn-remove:hover { background: var(--danger); color: white; border-color: var(--danger); }
-
 .btn-add { background: transparent; border: 1px dashed var(--border-strong); color: var(--text-dim); padding: 12px; border-radius: 10px; cursor: pointer; width: 100%; font-family: var(--sans); font-size: 13px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .btn-add:hover { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 5%, transparent); }
-
 .check { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; font-size: 13px; color: var(--text-dim); }
 .check input { width: auto; margin: 0; }
 
@@ -202,7 +275,8 @@ textarea { resize: vertical; min-height: 80px; font-family: var(--sans); }
 .drawer-body { flex: 1; overflow-y: auto; padding: 16px; }
 .history-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; }
 .history-item:hover { border-color: var(--accent); transform: translateX(-4px); }
-.history-item .h-time { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+.history-item .h-time { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-bottom: 6px; display: flex; justify-content: space-between; }
+.history-item .h-tag { font-size: 9px; padding: 1px 6px; border-radius: 99px; background: var(--surface-2); color: var(--text-muted); letter-spacing: 0.5px; text-transform: uppercase; }
 .history-item .h-preview { font-family: var(--mono); font-size: 12px; color: var(--text-dim); max-height: 60px; overflow: hidden; white-space: pre-wrap; position: relative; }
 .history-item .h-preview::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 30px; background: linear-gradient(to bottom, transparent, var(--surface)); }
 .history-empty { text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 13px; }
@@ -241,95 +315,27 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-/* ========================================================
-   Support (Saweria donation) — floating button + modal
-======================================================== */
-.support-fab {
-  position: fixed;
-  bottom: 28px;
-  right: 28px;
-  z-index: 90;
-  padding: 12px 18px 12px 14px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
-  color: var(--bg);
-  font-family: var(--sans);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: -0.2px;
-  border: none;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 8px 24px rgba(124, 244, 199, 0.25), 0 2px 8px rgba(0,0,0,0.3);
-  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
-  animation: fabEntrance 0.6s var(--ease) 1s both, fabPulse 3s ease-in-out 2s infinite;
-}
-.support-fab:hover {
-  transform: translateY(-2px) scale(1.04);
-  box-shadow: 0 12px 32px rgba(124, 244, 199, 0.4), 0 4px 12px rgba(0,0,0,0.3);
-  animation-play-state: paused;
-}
+/* Support (Saweria donation) — floating button + modal */
+.support-fab { position: fixed; bottom: 28px; right: 28px; z-index: 90; padding: 12px 18px 12px 14px; border-radius: 999px; background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%); color: var(--bg); font-family: var(--sans); font-size: 13px; font-weight: 600; letter-spacing: -0.2px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 8px 24px rgba(124, 244, 199, 0.25), 0 2px 8px rgba(0,0,0,0.3); transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease); animation: fabEntrance 0.6s var(--ease) 1s both, fabPulse 3s ease-in-out 2s infinite; }
+.support-fab:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 12px 32px rgba(124, 244, 199, 0.4), 0 4px 12px rgba(0,0,0,0.3); animation-play-state: paused; }
 .support-fab:active { transform: translateY(0) scale(1); }
-.support-fab .fab-icon { font-size: 18px; line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2)); }
-.support-fab .fab-label { font-family: var(--sans); white-space: nowrap; }
-
-@keyframes fabEntrance {
-  from { opacity: 0; transform: translateY(20px) scale(0.8); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-@keyframes fabPulse {
-  0%, 100% { box-shadow: 0 8px 24px rgba(124, 244, 199, 0.25), 0 2px 8px rgba(0,0,0,0.3); }
-  50%      { box-shadow: 0 8px 32px rgba(124, 244, 199, 0.5), 0 2px 8px rgba(0,0,0,0.3); }
-}
-
-@media (max-width: 600px) {
-  .support-fab { bottom: 20px; right: 20px; padding: 11px 16px 11px 12px; font-size: 12px; }
-  .support-fab .fab-icon { font-size: 16px; }
-}
-
+.support-fab .fab-icon { font-size: 18px; line-height: 1; }
+@keyframes fabEntrance { from { opacity: 0; transform: translateY(20px) scale(0.8); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes fabPulse { 0%, 100% { box-shadow: 0 8px 24px rgba(124, 244, 199, 0.25), 0 2px 8px rgba(0,0,0,0.3); } 50% { box-shadow: 0 8px 32px rgba(124, 244, 199, 0.5), 0 2px 8px rgba(0,0,0,0.3); } }
+@media (max-width: 600px) { .support-fab { bottom: 20px; right: 20px; padding: 11px 16px 11px 12px; font-size: 12px; } .support-fab .fab-icon { font-size: 16px; } }
 .support-modal-content { text-align: center; }
-.support-hero {
-  font-size: 56px; margin-bottom: 12px; line-height: 1;
-  filter: drop-shadow(0 4px 12px rgba(124, 244, 199, 0.3));
-  animation: heroFloat 3s ease-in-out infinite;
-}
-@keyframes heroFloat {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-6px); }
-}
+.support-hero { font-size: 56px; margin-bottom: 12px; line-height: 1; animation: heroFloat 3s ease-in-out infinite; }
+@keyframes heroFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 .support-message { color: var(--text-dim); font-size: 14px; line-height: 1.7; margin-bottom: 20px; text-align: left; }
 .support-message strong { color: var(--text); font-weight: 500; }
-.support-reasons {
-  background: var(--bg); border: 1px solid var(--border);
-  border-radius: 10px; padding: 16px 18px; margin-bottom: 24px; text-align: left;
-}
-.support-reasons h4 {
-  font-family: var(--mono); font-size: 11px; color: var(--text-dim);
-  margin-bottom: 12px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 500;
-}
+.support-reasons { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin-bottom: 24px; text-align: left; }
+.support-reasons h4 { font-family: var(--mono); font-size: 11px; color: var(--text-dim); margin-bottom: 12px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 500; }
 .support-reasons ul { list-style: none; padding: 0; margin: 0; }
-.support-reasons li {
-  color: var(--text-dim); font-size: 13px; padding: 5px 0;
-  display: flex; align-items: center; gap: 10px;
-}
+.support-reasons li { color: var(--text-dim); font-size: 13px; padding: 5px 0; display: flex; align-items: center; gap: 10px; }
 .support-reasons li::before { content: '✓'; color: var(--accent); font-weight: 700; font-size: 12px; }
-.btn-support-main {
-  width: 100%; padding: 14px 20px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: var(--bg); border: none; border-radius: 12px;
-  font-family: var(--sans); font-size: 15px; font-weight: 600;
-  cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-  transition: transform 0.15s var(--ease), filter 0.15s;
-  text-decoration: none; box-shadow: 0 6px 20px rgba(124, 244, 199, 0.2);
-}
+.btn-support-main { width: 100%; padding: 14px 20px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: var(--bg); border: none; border-radius: 12px; font-family: var(--sans); font-size: 15px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; box-shadow: 0 6px 20px rgba(124, 244, 199, 0.2); transition: transform 0.15s var(--ease), filter 0.15s; }
 .btn-support-main:hover { transform: translateY(-1px); filter: brightness(1.05); }
-.btn-support-main .saweria-logo {
-  background: var(--bg); color: var(--accent);
-  padding: 2px 8px; border-radius: 6px; font-size: 10px;
-  font-weight: 800; letter-spacing: 1px; font-family: var(--mono);
-}
+.btn-support-main .saweria-logo { background: var(--bg); color: var(--accent); padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; letter-spacing: 1px; font-family: var(--mono); }
 .support-footer-note { margin-top: 16px; font-size: 12px; color: var(--text-muted); font-family: var(--mono); }
 .support-footer-note em { color: var(--accent); font-style: normal; }
 </style>
@@ -358,16 +364,17 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
 <div class="container">
 
   <section class="hero">
-    <div class="hero-tag"><span class="live"></span> Live · H3C Comware v7 · v1.1</div>
+    <div class="hero-tag"><span class="live"></span> v2.0 · Multi-vendor support · H3C + Cisco</div>
     <h1>Network configuration,<br><span class="serif">without the pain.</span></h1>
-    <p>A lab for network engineers. Build production-ready configs visually — from VLAN to OSPF. No typos, no reference docs, no CLI headaches.</p>
-    <div class="vendor-pills">
-      <div class="vendor-pill active">🟢 H3C <span class="soon-badge">LIVE</span></div>
-      <div class="vendor-pill">Cisco <span class="soon-badge">SOON</span></div>
-      <div class="vendor-pill">Huawei <span class="soon-badge">SOON</span></div>
-      <div class="vendor-pill">Juniper <span class="soon-badge">SOON</span></div>
-      <div class="vendor-pill">Arista <span class="soon-badge">SOON</span></div>
-      <div class="vendor-pill">MikroTik <span class="soon-badge">SOON</span></div>
+    <p>A lab for network engineers. Build production-ready configs for H3C and Cisco devices, visually — from VLAN to OSPF. No typos, no reference docs, no CLI headaches.</p>
+
+    <!-- VENDOR PILLS -->
+    <div class="vendor-pills" id="vendor-pills"></div>
+
+    <!-- OS PICKER (appears when vendor has multiple OS) -->
+    <div class="os-picker-wrap" id="os-picker-wrap" style="display:none">
+      <div class="os-picker-label">Select OS version</div>
+      <div class="os-picker" id="os-picker"></div>
     </div>
   </section>
 
@@ -382,7 +389,11 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
   <div class="main-layout">
     <section class="builder">
       <div class="panel-head">
-        <div class="panel-title"><span class="num">01</span>Configuration Builder</div>
+        <div class="panel-title">
+          <span class="num">01</span>
+          Configuration Builder
+          <span class="vendor-label" id="active-vendor-label">H3C · COMWARE</span>
+        </div>
         <button class="icon-btn" onclick="clearAll()" title="Clear all">🗑️</button>
       </div>
 
@@ -399,10 +410,10 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
 
       <div class="panel-body">
         <div class="tab-panel active" id="pane-system">
-          <div class="field"><label>Hostname <span class="hint">sysname</span></label><input id="sys-hostname" placeholder="e.g. SW-CORE-01"></div>
+          <div class="field"><label>Hostname <span class="hint" id="hint-hostname">sysname</span></label><input id="sys-hostname" placeholder="e.g. SW-CORE-01"></div>
           <div class="field-row">
             <div class="field"><label>NTP Server <span class="hint">optional</span></label><input id="sys-ntp" placeholder="e.g. time.google.com"></div>
-            <div class="field"><label>Timezone <span class="hint">optional</span></label><input id="sys-tz" placeholder="e.g. JKT add 07:00:00"></div>
+            <div class="field"><label>Timezone <span class="hint">optional</span></label><input id="sys-tz" placeholder="e.g. JKT 07:00:00"></div>
           </div>
           <div class="field"><label>Login Banner <span class="hint">optional</span></label><input id="sys-banner" placeholder="Authorized users only"></div>
         </div>
@@ -410,7 +421,7 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
         <div class="tab-panel" id="pane-vlan">
           <div class="info-banner">
             <span class="icon">ℹ️</span>
-            <span>Create Layer 2 VLANs here. For L3 gateway IP + DHCP, use the <strong style="color:var(--text);">VLAN-interface</strong> tab next.</span>
+            <span>Create Layer 2 VLANs here. For L3 gateway IP + DHCP, use the <strong style="color:var(--text);">VLAN-interface</strong> tab.</span>
           </div>
           <div class="repeater" id="rep-vlans"></div>
           <button class="btn-add" onclick="addVlan()">＋ Add VLAN</button>
@@ -419,7 +430,7 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
         <div class="tab-panel" id="pane-svi">
           <div class="info-banner">
             <span class="icon">🌐</span>
-            <span>Layer 3 gateway (SVI). Pick a VLAN, set the IP, and optionally apply a DHCP pool or relay.</span>
+            <span>Layer 3 gateway (SVI). Pick a VLAN, set the IP, and optionally apply DHCP. <span id="svi-hint-extra"></span></span>
           </div>
           <div class="repeater" id="rep-svis"></div>
           <button class="btn-add" onclick="addSvi()">＋ Add VLAN-interface</button>
@@ -433,7 +444,7 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
         <div class="tab-panel" id="pane-dhcp">
           <div class="info-banner">
             <span class="icon">💡</span>
-            <span>Define DHCP pools here. To actually serve IPs, link a pool to a VLAN-interface in the <strong style="color:var(--text);">VLAN-interface</strong> tab.</span>
+            <span>Define DHCP pools here. For H3C, link pools to SVIs via "Apply Pool". For Cisco, assign the SVI IP within the pool's subnet.</span>
           </div>
           <div class="repeater" id="rep-dhcp"></div>
           <button class="btn-add" onclick="addDhcp()">＋ Add DHCP Pool</button>
@@ -449,7 +460,7 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
             <div class="field"><label>Process ID <span class="hint">e.g. 1</span></label><input id="ospf-pid" placeholder="1"></div>
             <div class="field"><label>Router ID <span class="hint">e.g. 1.1.1.1</span></label><input id="ospf-rid" placeholder="1.1.1.1"></div>
           </div>
-          <div class="field"><label>Area <span class="hint">e.g. 0 → auto formatted 0.0.0.0</span></label><input id="ospf-area" placeholder="0"></div>
+          <div class="field"><label>Area <span class="hint">e.g. 0 or 0.0.0.0</span></label><input id="ospf-area" placeholder="0"></div>
           <label style="margin-top:8px">Networks in this area</label>
           <div class="repeater" id="rep-ospf-nets"></div>
           <button class="btn-add" onclick="addOspfNet()">＋ Add Network</button>
@@ -503,7 +514,7 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
           Built with <em style="font-family:var(--serif); font-style:italic; color:var(--accent);">care</em> for network engineers.<br>
           Free, open, always improving.
         </div>
-        <div style="font-family:var(--mono); font-size:11px; color:var(--text-muted);">v1.1.0 · H3C Comware v7</div>
+        <div style="font-family:var(--mono); font-size:11px; color:var(--text-muted);">v2.0 · H3C + Cisco multi-vendor</div>
       </div>
       <div class="footer-col">
         <h4>Product</h4>
@@ -513,11 +524,11 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
         <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" rel="noopener">GitHub</a>
       </div>
       <div class="footer-col">
-        <h4>H3C Resources</h4>
+        <h4>Vendor Resources</h4>
         <a href="https://www.h3c.com" target="_blank" rel="noopener">H3C Official</a>
-        <a href="https://www.h3c.com/en/Support/" target="_blank" rel="noopener">H3C Support</a>
-        <a href="https://www.h3c.com/en/Products_and_Solutions/" target="_blank" rel="noopener">Products Catalog</a>
-        <a href="https://www.h3c.com/en/Support/Online_Help/" target="_blank" rel="noopener">Online Help</a>
+        <a href="https://www.cisco.com" target="_blank" rel="noopener">Cisco Official</a>
+        <a href="https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/" target="_blank" rel="noopener">IOS Documentation</a>
+        <a href="https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/" target="_blank" rel="noopener">NX-OS Documentation</a>
       </div>
       <div class="footer-col">
         <h4>Legal</h4>
@@ -526,8 +537,8 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
       </div>
     </div>
     <div class="legal">
-      <p><strong>ConfigLabs is an independent tool</strong> and is <strong>not affiliated with, endorsed by, or sponsored by</strong> New H3C Technologies Co., Ltd.</p>
-      <p style="margin-top:8px">H3C®, Comware® and related marks are registered trademarks of New H3C Technologies Co., Ltd. Used for reference only.</p>
+      <p><strong>ConfigLabs is an independent tool</strong> and is <strong>not affiliated with, endorsed by, or sponsored by</strong> New H3C Technologies Co., Ltd. or Cisco Systems, Inc.</p>
+      <p style="margin-top:8px">H3C®, Comware®, Cisco®, IOS®, IOS-XE®, NX-OS® and related marks are registered trademarks of their respective owners. Used for reference only.</p>
       <p style="margin-top:8px">All generated configurations should be reviewed before deployment. Use at your own risk.</p>
       <p style="margin-top:14px; opacity:0.7">© <span id="year"></span> ConfigLabs · configlabs.online</p>
     </div>
@@ -563,13 +574,11 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
     <h2>Legal <em>Disclaimer</em></h2>
     <p style="color: var(--text-dim); font-size: 13px; line-height: 1.7;">
       ConfigLabs is an independent, free tool built by network engineers for network engineers.
-      It is <strong style="color:var(--text);">not affiliated with, endorsed by, or sponsored by</strong> New H3C Technologies Co., Ltd.
+      It is <strong style="color:var(--text);">not affiliated with, endorsed by, or sponsored by</strong> any of the network equipment vendors mentioned.
       <br><br>
-      H3C®, Comware®, and all related trademarks are registered trademarks of New H3C Technologies Co., Ltd.
-      They are used on this site only to describe the hardware/software that ConfigLabs helps configure.
+      H3C®, Comware®, Cisco®, IOS®, IOS-XE®, NX-OS®, and all related trademarks are registered trademarks of their respective owners. They are used on this site only to describe the hardware/software that ConfigLabs helps configure.
       <br><br>
-      All configurations generated by this tool are provided <strong style="color:var(--text);">"AS IS"</strong>
-      without warranty of any kind. Always review and test configurations in a lab environment before deploying to production networks.
+      All configurations generated by this tool are provided <strong style="color:var(--text);">"AS IS"</strong> without warranty of any kind. Always review and test configurations in a lab environment before deploying to production networks.
       <br><br>
       ConfigLabs is not liable for any damages, data loss, or network outages caused by the use of generated configurations.
     </p>
@@ -600,13 +609,62 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
 
 <div class="toast" id="toast"><span class="t-icon">✓</span><span id="toast-msg">Done</span></div>
 
+<!-- Floating Support Button -->
+<button class="support-fab" onclick="openSupport()" title="Support ConfigLabs">
+  <span class="fab-icon">☕</span>
+  <span class="fab-label">Support us</span>
+</button>
+
+<!-- Support Modal -->
+<div class="modal-overlay" id="support-modal" onclick="if(event.target===this)closeSupport()">
+  <div class="modal support-modal-content">
+    <div class="support-hero">☕</div>
+    <h2>Support <em>ConfigLabs</em></h2>
+    <p class="support-message">
+      ConfigLabs is <strong>free</strong> and will stay free forever. No ads, no tracking, no paywalls.
+      <br><br>
+      If it saved you time, a small sawer helps keep the lights on 🧪
+    </p>
+    <div class="support-reasons">
+      <h4>Your support helps:</h4>
+      <ul>
+        <li>Cover server hosting (Railway)</li>
+        <li>Renew the configlabs.online domain</li>
+        <li>Keep the tool ad-free forever</li>
+        <li>Add more vendors (Huawei, Juniper...)</li>
+      </ul>
+    </div>
+    <a href="https://saweria.co/configlabs" target="_blank" rel="noopener" class="btn-support-main">
+      💚 Support via <span class="saweria-logo">SAWERIA</span>
+    </a>
+    <div class="support-footer-note">
+      Every sawer matters — <em>terima kasih banyak!</em> 🙏
+    </div>
+    <div class="modal-actions" style="justify-content:center; margin-top:20px">
+      <button class="btn btn-secondary" onclick="closeSupport()">Maybe later</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ============================================================
-// PRODUCTION API — points to Railway backend
+// PRODUCTION API
 // ============================================================
 const API = 'https://configlabs-production.up.railway.app';
 const THEME_KEY = 'configlabs_theme';
+const VENDOR_KEY = 'configlabs_vendor';
+const OS_KEY = 'configlabs_os';
 const MAX_HIST = 20;
+
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  vendor: 'h3c',
+  os: 'comware',
+  vendors: {},       // full vendor metadata from API
+  allTemplates: {}   // all templates indexed by key
+};
 
 let showLineNumbers = true;
 let showHighlight = true;
@@ -615,6 +673,9 @@ let history = [];
 
 document.getElementById('year').textContent = new Date().getFullYear();
 
+// ============================================================
+// THEME
+// ============================================================
 function toggleTheme() {
   const cur = document.body.dataset.theme;
   const next = cur === 'dark' ? 'light' : 'dark';
@@ -622,7 +683,6 @@ function toggleTheme() {
   document.getElementById('theme-btn').textContent = next === 'dark' ? '🌙' : '☀️';
   try { localStorage.setItem(THEME_KEY, next); } catch(e){}
 }
-
 (function initTheme(){
   try {
     const saved = localStorage.getItem(THEME_KEY);
@@ -633,13 +693,139 @@ function toggleTheme() {
   } catch(e){}
 })();
 
+// Restore last vendor/os
+try {
+  const savedVendor = localStorage.getItem(VENDOR_KEY);
+  const savedOS = localStorage.getItem(OS_KEY);
+  if (savedVendor) state.vendor = savedVendor;
+  if (savedOS) state.os = savedOS;
+} catch(e){}
+
+// ============================================================
+// VENDOR/OS PICKER
+// ============================================================
+async function loadVendors() {
+  try {
+    const res = await fetch(API + '/vendors');
+    state.vendors = await res.json();
+    renderVendorPills();
+    renderOSPicker();
+    updateVendorLabel();
+    document.getElementById('backend-status').textContent = 'Connected';
+  } catch(e) {
+    document.getElementById('backend-status').textContent = 'Offline';
+    document.querySelector('.chip .dot').style.background = 'var(--danger)';
+  }
+}
+
+function renderVendorPills() {
+  const container = document.getElementById('vendor-pills');
+  const order = ['h3c', 'cisco', 'huawei', 'juniper', 'arista', 'mikrotik'];
+  container.innerHTML = order.map(key => {
+    const v = state.vendors[key];
+    if (!v) return '';
+    const isActive = key === state.vendor;
+    const isLive = v.status === 'available';
+    const emoji = key === 'h3c' ? '🟢' : key === 'cisco' ? '🔵' : '🟡';
+    const disabled = !isLive ? 'disabled' : '';
+    const cls = `vendor-pill ${isActive ? 'active' : ''} ${disabled}`;
+    const badge = isLive ? 'LIVE' : 'SOON';
+    return `
+      <button class="${cls}" data-vendor="${key}" ${isLive ? `onclick="selectVendor('${key}')"` : ''}>
+        ${emoji} ${v.name}
+        <span class="soon-badge">${badge}</span>
+      </button>
+    `;
+  }).join('');
+}
+
+function renderOSPicker() {
+  const wrap = document.getElementById('os-picker-wrap');
+  const picker = document.getElementById('os-picker');
+  const vendor = state.vendors[state.vendor];
+  if (!vendor || !vendor.os_list || vendor.os_list.length === 0) {
+    wrap.style.display = 'none';
+    return;
+  }
+  // Always show OS picker when a vendor is active (even single OS, shows for consistency)
+  // But hide if only one OS AND user hasn't changed it
+  if (vendor.os_list.length === 1 && state.vendor === 'h3c') {
+    // single OS vendors still show picker so it's clear what's selected
+    wrap.style.display = 'block';
+  } else {
+    wrap.style.display = 'block';
+  }
+
+  picker.innerHTML = vendor.os_list.map(os => {
+    const isActive = os.id === state.os;
+    const isLive = os.status === 'available';
+    const cls = `os-btn ${isActive ? 'active' : ''}`;
+    return `
+      <button class="${cls}" data-vendor="${state.vendor}" ${isLive ? `onclick="selectOS('${os.id}')"` : ''}>
+        <div class="os-name">${os.name} <span class="os-check">✓</span></div>
+        <div class="os-desc">${os.desc || ''}</div>
+      </button>
+    `;
+  }).join('');
+}
+
+function selectVendor(vendor) {
+  const v = state.vendors[vendor];
+  if (!v || v.status !== 'available') return;
+  state.vendor = vendor;
+  // Auto-pick first available OS
+  const firstOS = v.os_list.find(o => o.status === 'available');
+  if (firstOS) state.os = firstOS.id;
+  try {
+    localStorage.setItem(VENDOR_KEY, state.vendor);
+    localStorage.setItem(OS_KEY, state.os);
+  } catch(e){}
+  renderVendorPills();
+  renderOSPicker();
+  updateVendorLabel();
+  loadTemplates();
+  updateVendorHints();
+}
+
+function selectOS(osId) {
+  state.os = osId;
+  try { localStorage.setItem(OS_KEY, state.os); } catch(e){}
+  renderOSPicker();
+  updateVendorLabel();
+  loadTemplates();
+  updateVendorHints();
+}
+
+function updateVendorLabel() {
+  const v = state.vendors[state.vendor];
+  if (!v) return;
+  const os = v.os_list.find(o => o.id === state.os);
+  const label = document.getElementById('active-vendor-label');
+  label.textContent = `${v.name} · ${os ? os.name : ''}`.toUpperCase();
+  label.className = 'vendor-label' + (state.vendor === 'cisco' ? ' cisco' : '');
+}
+
+function updateVendorHints() {
+  // Update placeholder hints based on vendor/OS
+  const sviHintExtra = document.getElementById('svi-hint-extra');
+  if (state.vendor === 'h3c') {
+    sviHintExtra.textContent = 'H3C uses "dhcp server apply ip-pool" to link pools.';
+  } else if (state.vendor === 'cisco' && state.os === 'nxos') {
+    sviHintExtra.textContent = 'NX-OS uses prefix notation (10.0.0.1/24).';
+  } else {
+    sviHintExtra.textContent = 'Cisco uses "ip helper-address" for relay.';
+  }
+}
+
+// ============================================================
+// TABS
+// ============================================================
 document.querySelectorAll('.tab').forEach(t => {
   t.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(x => x.classList.remove('active'));
     t.classList.add('active');
     document.getElementById('pane-' + t.dataset.tab).classList.add('active');
-    // Refresh SVI dropdowns whenever tab is opened
     if (t.dataset.tab === 'svi') refreshSviDropdowns();
   });
 });
@@ -651,7 +837,7 @@ function makeItem(title, html) {
   return div;
 }
 
-// ===== VLAN (L2 only) =====
+// ===== VLAN =====
 function addVlan(data = {}) {
   const html = `
     <div class="field-row-3">
@@ -661,13 +847,15 @@ function addVlan(data = {}) {
     </div>
   `;
   document.getElementById('rep-vlans').appendChild(makeItem('VLAN', html));
-  updateBadges();
-  refreshSviDropdowns();
+  updateBadges(); refreshSviDropdowns();
 }
 
-// ===== SVI / VLAN-interface (L3) =====
+// ===== SVI =====
 function addSvi(data = {}) {
   const mode = data.dhcp_mode || 'none';
+  const ipHint = state.vendor === 'cisco' && state.os === 'nxos'
+    ? 'NX-OS: prefix format 10.10.10.1/24'
+    : 'CIDR notation, e.g. 10.10.10.1/24';
   const html = `
     <div class="field-row">
       <div class="field">
@@ -678,12 +866,12 @@ function addSvi(data = {}) {
       </div>
       <div class="field"><label>Description</label><input class="s-desc" value="${data.description||''}" placeholder="User gateway"></div>
     </div>
-    <div class="field"><label>IP Address (CIDR) <span class="hint">ignored if DHCP Client mode</span></label><input class="s-ip" value="${data.ip||''}" placeholder="10.10.10.1/24"></div>
+    <div class="field"><label>IP Address <span class="hint">${ipHint}</span></label><input class="s-ip" value="${data.ip||''}" placeholder="10.10.10.1/24"></div>
     <div class="field">
       <label>DHCP Mode</label>
       <div class="segmented dhcp-mode-seg">
         <button type="button" data-mode="none" class="${mode==='none'?'active':''}">None</button>
-        <button type="button" data-mode="server" class="${mode==='server'?'active':''}">Server</button>
+        <button type="button" data-mode="server" class="${mode==='server'?'active':''}" ${state.vendor !== 'h3c' ? 'disabled title="H3C only - other vendors apply pool via subnet match"' : ''}>Server</button>
         <button type="button" data-mode="relay" class="${mode==='relay'?'active':''}">Relay</button>
         <button type="button" data-mode="client" class="${mode==='client'?'active':''}">Client</button>
       </div>
@@ -696,7 +884,7 @@ function addSvi(data = {}) {
       </select>
     </div>
     <div class="field s-dhcp-relay-wrap" style="display:${mode==='relay'?'block':'none'}">
-      <label>DHCP Relay Server IP</label>
+      <label>DHCP Relay Server IP <span class="hint">Cisco: becomes "ip helper-address"</span></label>
       <input class="s-dhcp-relay" value="${data.dhcp_relay||''}" placeholder="10.10.100.10">
     </div>
     <div class="field" style="margin-top:8px">
@@ -707,6 +895,7 @@ function addSvi(data = {}) {
   document.getElementById('rep-svis').appendChild(el);
   el.querySelectorAll('.dhcp-mode-seg button').forEach(b => {
     b.addEventListener('click', () => {
+      if (b.disabled) return;
       el.querySelectorAll('.dhcp-mode-seg button').forEach(x => x.classList.remove('active'));
       b.classList.add('active');
       el.querySelector('.s-dhcp-mode').value = b.dataset.mode;
@@ -718,23 +907,15 @@ function addSvi(data = {}) {
   updateBadges();
 }
 
-// Refresh VLAN & DHCP Pool dropdowns in all SVI cards
 function refreshSviDropdowns() {
-  // collect available VLAN IDs
-  const vlanIds = [...document.querySelectorAll('#rep-vlans .v-id')]
-    .map(i => i.value.trim()).filter(v => v);
+  const vlanIds = [...document.querySelectorAll('#rep-vlans .v-id')].map(i => i.value.trim()).filter(v => v);
   const vlanNames = {};
   [...document.querySelectorAll('#rep-vlans .repeater-item')].forEach(el => {
     const id = el.querySelector('.v-id').value.trim();
     const name = el.querySelector('.v-name').value.trim();
     if (id) vlanNames[id] = name;
   });
-
-  // collect DHCP pool names
-  const poolNames = [...document.querySelectorAll('#rep-dhcp .d-name')]
-    .map(i => i.value.trim()).filter(v => v);
-
-  // Update each SVI card
+  const poolNames = [...document.querySelectorAll('#rep-dhcp .d-name')].map(i => i.value.trim()).filter(v => v);
   document.querySelectorAll('#rep-svis .repeater-item').forEach(el => {
     const vlanSelect = el.querySelector('.s-vlan');
     const prev = vlanSelect.value || vlanSelect.dataset.selected || '';
@@ -743,7 +924,6 @@ function refreshSviDropdowns() {
         const label = vlanNames[id] ? `VLAN ${id} (${vlanNames[id]})` : `VLAN ${id}`;
         return `<option value="${id}" ${id===prev?'selected':''}>${label}</option>`;
       }).join('');
-
     const poolSelect = el.querySelector('.s-dhcp-apply');
     const prevPool = poolSelect.value || poolSelect.dataset.selected || '';
     poolSelect.innerHTML = '<option value="">— select pool —</option>' +
@@ -751,11 +931,17 @@ function refreshSviDropdowns() {
   });
 }
 
+// ===== INTERFACE =====
 function addIntf(data = {}) {
   const mode = data.mode || 'access';
+  const ifaceHint = state.vendor === 'cisco' && state.os === 'nxos'
+    ? 'NX-OS: e.g. Ethernet1/1'
+    : state.vendor === 'cisco'
+    ? 'Cisco: e.g. GigabitEthernet0/1'
+    : 'H3C: e.g. GigabitEthernet1/0/1';
   const html = `
     <div class="field-row">
-      <div class="field"><label>Interface Name</label><input class="i-name" value="${data.interface||''}" placeholder="GigabitEthernet1/0/1"></div>
+      <div class="field"><label>Interface Name <span class="hint">${ifaceHint}</span></label><input class="i-name" value="${data.interface||''}" placeholder=""></div>
       <div class="field"><label>Description</label><input class="i-desc" value="${data.description||''}" placeholder="Uplink to core"></div>
     </div>
     <div class="field">
@@ -763,7 +949,7 @@ function addIntf(data = {}) {
       <div class="segmented mode-seg">
         <button type="button" data-mode="access" class="${mode==='access'?'active':''}">Access</button>
         <button type="button" data-mode="trunk" class="${mode==='trunk'?'active':''}">Trunk</button>
-        <button type="button" data-mode="hybrid" class="${mode==='hybrid'?'active':''}">Hybrid</button>
+        <button type="button" data-mode="hybrid" class="${mode==='hybrid'?'active':''}" ${state.vendor === 'cisco' ? 'title="Cisco does not support hybrid - will emulate with trunk + native VLAN"' : ''}>Hybrid</button>
       </div>
       <input type="hidden" class="i-mode" value="${mode}">
     </div>
@@ -772,7 +958,7 @@ function addIntf(data = {}) {
     </div>
     <div class="field i-trunk-wrap" style="display:${mode==='trunk'?'block':'none'}">
       <div class="field-row">
-        <div><label>Allowed VLANs <span class="hint">e.g. 10 20 30 or 10 to 20</span></label><input class="i-allowed" value="${data.allowed||''}" placeholder="10 20 30"></div>
+        <div><label>Allowed VLANs <span class="hint">e.g. 10 20 30</span></label><input class="i-allowed" value="${data.allowed||''}" placeholder="10 20 30"></div>
         <div><label>Native (PVID)</label><input class="i-pvid" value="${data.pvid||''}" placeholder="1"></div>
       </div>
     </div>
@@ -783,7 +969,7 @@ function addIntf(data = {}) {
       </div>
     </div>
     <div style="display:flex; gap:16px; margin-top:8px; flex-wrap:wrap">
-      <label class="check"><input type="checkbox" class="i-edge" ${data.stp_edge?'checked':''}> STP Edge Port</label>
+      <label class="check"><input type="checkbox" class="i-edge" ${data.stp_edge?'checked':''}> STP Edge / PortFast</label>
       <label class="check"><input type="checkbox" class="i-poe" ${data.poe?'checked':''}> PoE Enable</label>
       <label class="check"><input type="checkbox" class="i-shut" ${data.shutdown?'checked':''}> Shutdown</label>
     </div>
@@ -803,17 +989,15 @@ function addIntf(data = {}) {
   updateBadges();
 }
 
+// ===== DHCP =====
 function addDhcp(data = {}) {
   let forbidden = data.forbidden_ips;
   if (Array.isArray(forbidden)) forbidden = forbidden.join(' ');
-  if (!forbidden && data.exclude_start) {
-    forbidden = data.exclude_start + (data.exclude_end ? ' ' + data.exclude_end : '');
-  }
+  if (!forbidden && data.exclude_start) forbidden = data.exclude_start + (data.exclude_end ? ' ' + data.exclude_end : '');
   forbidden = forbidden || '';
-
   const html = `
     <div class="field-row">
-      <div class="field"><label>Pool Name <span class="hint">link via VLAN-interface tab</span></label><input class="d-name" value="${data.pool_name||''}" placeholder="USERS_POOL" oninput="refreshSviDropdowns()"></div>
+      <div class="field"><label>Pool Name</label><input class="d-name" value="${data.pool_name||''}" placeholder="USERS_POOL" oninput="refreshSviDropdowns()"></div>
       <div class="field"><label>Lease (days)</label><input class="d-lease" value="${data.lease_days||'7'}" placeholder="7"></div>
     </div>
     <div class="field-row-3">
@@ -826,13 +1010,12 @@ function addDhcp(data = {}) {
       <div class="field"><label>Domain</label><input class="d-domain" value="${data.domain||''}" placeholder="company.local"></div>
     </div>
     <div class="field">
-      <label>Forbidden IPs <span class="hint">space-separated, e.g. 10.10.10.1 10.10.10.2</span></label>
+      <label>Forbidden/Excluded IPs <span class="hint">space-separated</span></label>
       <input class="d-forbidden" value="${forbidden}" placeholder="10.10.10.1 10.10.10.2 10.10.10.3">
     </div>
   `;
   document.getElementById('rep-dhcp').appendChild(makeItem('DHCP Pool', html));
-  updateBadges();
-  refreshSviDropdowns();
+  updateBadges(); refreshSviDropdowns();
 }
 
 function addRoute(data = {}) {
@@ -882,7 +1065,7 @@ function addAcl(data = {}) {
   `).join('');
   const html = `
     <div class="field-row">
-      <div class="field"><label>ACL Number <span class="hint">2000-2999 basic · 3000-3999 advanced</span></label><input class="a-num" value="${data.acl_number||'3000'}" placeholder="3000"></div>
+      <div class="field"><label>ACL Number</label><input class="a-num" value="${data.acl_number||'3000'}" placeholder="3000"></div>
       <div class="field"><label>Description</label><input class="a-desc" value="${data.description||''}" placeholder="Network-ACL"></div>
     </div>
     <label>Rules <span class="hint">id · action · protocol · source · wildcard</span></label>
@@ -923,14 +1106,12 @@ function collectData() {
   if (banner) sys.banner = banner;
   if (Object.keys(sys).length) data.system = sys;
 
-  // VLANs (L2)
   data.vlans = [...document.querySelectorAll('#rep-vlans .repeater-item')].map(el => ({
     vlan: el.querySelector('.v-id').value.trim(),
     name: el.querySelector('.v-name').value.trim(),
     description: el.querySelector('.v-desc').value.trim()
   })).filter(v => v.vlan);
 
-  // SVIs (L3 VLAN-interfaces)
   data.svis = [...document.querySelectorAll('#rep-svis .repeater-item')].map(el => ({
     vlan: el.querySelector('.s-vlan').value.trim(),
     description: el.querySelector('.s-desc').value.trim(),
@@ -1027,7 +1208,6 @@ function applyTemplate(data) {
   }
   (data.acls || []).forEach(a => addAcl(a));
   updateBadges();
-  // Ensure SVI dropdowns have latest VLAN/pool data
   setTimeout(refreshSviDropdowns, 50);
   toast('Template loaded');
 }
@@ -1050,28 +1230,78 @@ function clearAll(silent) {
 }
 
 function loadExample() {
-  applyTemplate({
-    system: { hostname: 'SW-DEMO-01' },
-    vlans: [
-      { vlan: '10', name: 'USERS', description: 'Office users' },
-      { vlan: '20', name: 'SERVERS' }
-    ],
-    dhcp_pools: [{
-      pool_name: 'USERS_POOL', network: '10.10.10.0', cidr: '24',
-      gateway: '10.10.10.1', dns: '8.8.8.8 1.1.1.1', lease_days: '7',
-      forbidden_ips: '10.10.10.1 10.10.10.2'
-    }],
-    svis: [
-      { vlan: '10', description: 'User gateway', ip: '10.10.10.1/24', dhcp_mode: 'server', dhcp_apply_pool: 'USERS_POOL' },
-      { vlan: '20', description: 'Server gateway', ip: '10.10.20.1/24' }
-    ],
-    interfaces: [
-      { interface: 'GigabitEthernet1/0/1', mode: 'access', vlan: '10', description: 'User port', stp_edge: true },
-      { interface: 'GigabitEthernet1/0/24', mode: 'trunk', allowed: '10 20', description: 'Uplink' }
-    ]
-  });
+  // Smart example based on active vendor/OS
+  const examples = {
+    'h3c|comware': {
+      system: { hostname: 'SW-DEMO-H3C' },
+      vlans: [
+        { vlan: '10', name: 'USERS', description: 'Office users' },
+        { vlan: '20', name: 'SERVERS' }
+      ],
+      dhcp_pools: [{
+        pool_name: 'USERS_POOL', network: '10.10.10.0', cidr: '24',
+        gateway: '10.10.10.1', dns: '8.8.8.8 1.1.1.1', lease_days: '7',
+        forbidden_ips: '10.10.10.1 10.10.10.2'
+      }],
+      svis: [
+        { vlan: '10', description: 'User gateway', ip: '10.10.10.1/24', dhcp_mode: 'server', dhcp_apply_pool: 'USERS_POOL' },
+        { vlan: '20', description: 'Server gateway', ip: '10.10.20.1/24' }
+      ],
+      interfaces: [
+        { interface: 'GigabitEthernet1/0/1', mode: 'access', vlan: '10', description: 'User port', stp_edge: true },
+        { interface: 'GigabitEthernet1/0/24', mode: 'trunk', allowed: '10 20', description: 'Uplink' }
+      ]
+    },
+    'cisco|ios': {
+      system: { hostname: 'SW-DEMO-IOS' },
+      vlans: [
+        { vlan: '10', name: 'USERS' },
+        { vlan: '20', name: 'SERVERS' }
+      ],
+      dhcp_pools: [{
+        pool_name: 'USERS_POOL', network: '10.10.10.0', cidr: '24',
+        gateway: '10.10.10.1', dns: '8.8.8.8 1.1.1.1', lease_days: '7',
+        forbidden_ips: '10.10.10.1 10.10.10.2'
+      }],
+      svis: [
+        { vlan: '10', description: 'User gateway', ip: '10.10.10.1/24' },
+        { vlan: '20', description: 'Server gateway', ip: '10.10.20.1/24' }
+      ],
+      interfaces: [
+        { interface: 'GigabitEthernet0/1', mode: 'access', vlan: '10', description: 'User port', stp_edge: true },
+        { interface: 'GigabitEthernet0/24', mode: 'trunk', allowed: '10,20', description: 'Uplink' }
+      ]
+    },
+    'cisco|iosxe': {
+      system: { hostname: 'SW-DEMO-IOSXE' },
+      vlans: [{ vlan: '10', name: 'USERS' }],
+      svis: [{ vlan: '10', description: 'Users', ip: '10.10.10.1/24' }],
+      interfaces: [
+        { interface: 'GigabitEthernet1/0/1', mode: 'access', vlan: '10', stp_edge: true },
+        { interface: 'TenGigabitEthernet1/1/1', mode: 'trunk', allowed: '10,20' }
+      ]
+    },
+    'cisco|nxos': {
+      system: { hostname: 'N9K-DEMO' },
+      vlans: [{ vlan: '10', name: 'USERS' }],
+      svis: [{ vlan: '10', description: 'Users', ip: '10.10.10.1/24' }],
+      interfaces: [
+        { interface: 'Ethernet1/1', mode: 'access', vlan: '10', stp_edge: true },
+        { interface: 'Ethernet1/49', mode: 'trunk', allowed: '10,20' }
+      ],
+      ospf: {
+        process_id: '1', router_id: '1.1.1.1', area: '0',
+        networks: [{ network: '10.10.0.0', cidr: '16' }]
+      }
+    }
+  };
+  const key = `${state.vendor}|${state.os}`;
+  applyTemplate(examples[key] || examples['h3c|comware']);
 }
 
+// ============================================================
+// GENERATE
+// ============================================================
 async function generate() {
   const data = collectData();
   if (!data.system && (!data.vlans || data.vlans.length === 0) && (!data.svis || data.svis.length === 0)
@@ -1085,13 +1315,13 @@ async function generate() {
     const res = await fetch(API + '/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify({ vendor: state.vendor, os: state.os, data: data })
     });
     if (!res.ok) throw new Error('Server error');
     const result = await res.json();
     lastConfig = result.config;
     renderOutput(lastConfig);
-    setStatus('Generated ' + new Date().toLocaleTimeString(), 'ok');
+    setStatus(`Generated ${new Date().toLocaleTimeString()} · ${state.vendor.toUpperCase()}/${state.os.toUpperCase()}`, 'ok');
     document.getElementById('line-info').textContent = (result.lines || lastConfig.split('\n').length) + ' lines';
     saveHistory(lastConfig);
     toast('Config generated!');
@@ -1109,7 +1339,9 @@ function renderOutput(text) {
     const ln = showLineNumbers ? `<span class="ln">${i+1}</span>` : '<span></span>';
     let cls = 'line';
     let content;
-    if (line.startsWith('#') || line.trim() === '#') {
+    const trimmed = line.trim();
+    const isComment = trimmed.startsWith('#') || trimmed.startsWith('!') || trimmed === '#' || trimmed === '!';
+    if (isComment) {
       cls += ' comment';
       content = escapeHtml(line);
     } else {
@@ -1122,7 +1354,8 @@ function renderOutput(text) {
 
 function highlight(line) {
   let s = escapeHtml(line);
-  s = s.replace(/\b(system-view|vlan|name|description|interface|port|link-type|access|trunk|hybrid|permit|tagged|untagged|ip|address|route-static|dhcp|server|ip-pool|network|gateway-list|dns-list|expired|domain-name|forbidden-ip|ospf|router-id|area|acl|number|rule|source|any|mask|quit|save|force|return|sysname|header|ntp-service|unicast-server|clock|timezone|poe|enable|stp|edged-port|shutdown|undo|speed|duplex|pvid|relay|select|preference|from|to|deny|day|shell|apply|advanced|basic|destination|dhcp-alloc|Vlan-interface|GigabitEthernet|Bridge-Aggregation|Route-Aggregation|LoopBack)\b/g,
+  // Multi-vendor keyword list
+  s = s.replace(/\b(system-view|vlan|name|description|interface|port|link-type|access|trunk|hybrid|permit|tagged|untagged|ip|address|route-static|dhcp|server|ip-pool|network|gateway-list|dns-list|expired|domain-name|forbidden-ip|excluded-address|ospf|router-id|area|acl|number|rule|source|any|mask|quit|save|force|return|sysname|hostname|header|banner|motd|ntp|ntp-service|unicast-server|clock|timezone|poe|enable|stp|spanning-tree|edged-port|portfast|shutdown|undo|no|speed|duplex|pvid|relay|select|preference|from|to|deny|day|shell|apply|advanced|basic|destination|dhcp-alloc|Vlan-interface|Vlan|GigabitEthernet|TenGigabitEthernet|Ethernet|FastEthernet|Bridge-Aggregation|Route-Aggregation|LoopBack|Loopback|switchport|mode|allowed|encapsulation|dot1q|native|helper-address|feature|service|pool|lease|router|default-router|dns-server|write|memory|copy|running-config|startup-config|end|configure|terminal|version|remark|access-list|extended|standard)\b/g,
     '<span class="kw">$1</span>');
   s = s.replace(/\b(\d{1,3}(?:\.\d{1,3}){3}(?:\/\d+)?)\b/g, '<span class="val">$1</span>');
   return s;
@@ -1160,7 +1393,7 @@ function downloadConfig() {
   const blob = new Blob([lastConfig], { type: 'text/plain' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `${host}-configlabs-${Date.now()}.txt`;
+  a.download = `${host}-${state.vendor}-${state.os}-${Date.now()}.txt`;
   a.click();
   toast('Downloaded!');
 }
@@ -1176,7 +1409,7 @@ function toast(msg, isErr) {
 }
 
 function saveHistory(cfg) {
-  history.unshift({ time: Date.now(), config: cfg });
+  history.unshift({ time: Date.now(), config: cfg, vendor: state.vendor, os: state.os });
   if (history.length > MAX_HIST) history = history.slice(0, MAX_HIST);
   renderHistory();
 }
@@ -1189,7 +1422,10 @@ function renderHistory() {
   }
   body.innerHTML = history.map((h, i) => `
     <div class="history-item" onclick="restoreHistory(${i})">
-      <div class="h-time">${new Date(h.time).toLocaleString()}</div>
+      <div class="h-time">
+        <span>${new Date(h.time).toLocaleString()}</span>
+        <span class="h-tag">${h.vendor} · ${h.os}</span>
+      </div>
       <div class="h-preview">${escapeHtml(h.config.split('\n').slice(0,6).join('\n'))}</div>
     </div>
   `).join('');
@@ -1200,7 +1436,7 @@ function restoreHistory(i) {
   lastConfig = history[i].config;
   renderOutput(lastConfig);
   document.getElementById('line-info').textContent = lastConfig.split('\n').length + ' lines';
-  setStatus('Restored from ' + new Date(history[i].time).toLocaleTimeString(), 'ok');
+  setStatus(`Restored ${history[i].vendor}/${history[i].os}`, 'ok');
   toggleHistory();
   toast('Restored');
 }
@@ -1210,9 +1446,53 @@ function toggleHistory() {
   document.getElementById('overlay').classList.toggle('show');
 }
 
+// ============================================================
+// TEMPLATES — load filtered by vendor+OS
+// ============================================================
+async function loadTemplates() {
+  try {
+    const res = await fetch(`${API}/templates?vendor=${state.vendor}&os=${state.os}`);
+    const data = await res.json();
+    state.allTemplates = data;
+    const grid = document.getElementById('templates-grid');
+    const keys = Object.keys(data);
+    document.getElementById('tpl-count').textContent = keys.length + ` for ${state.vendor.toUpperCase()}/${state.os.toUpperCase()}`;
+    if (keys.length === 0) {
+      grid.innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--text-muted);background:var(--surface);border-radius:12px">No templates yet for this vendor/OS combination. More coming soon! 🚀</div>';
+      return;
+    }
+    grid.innerHTML = keys.map(k => {
+      const t = data[k];
+      const emojiMatch = t.name.match(/\p{Emoji}/u);
+      const emoji = emojiMatch ? emojiMatch[0] : '📋';
+      const name = t.name.replace(/\p{Emoji}/u, '').trim();
+      const safeData = JSON.stringify(t.data).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      return `
+        <div class="tpl" data-tpl="${safeData}">
+          <span class="tpl-vendor-tag">${t.vendor} · ${t.os}</span>
+          <span class="tpl-emoji">${emoji}</span>
+          <div class="tpl-name">${name}</div>
+          <div class="tpl-desc">${t.description}</div>
+        </div>
+      `;
+    }).join('');
+    document.querySelectorAll('.tpl').forEach(el => {
+      el.addEventListener('click', () => {
+        try { applyTemplate(JSON.parse(el.dataset.tpl.replace(/&quot;/g,'"').replace(/&#39;/g,"'"))); }
+        catch(e){ console.error(e); }
+      });
+    });
+  } catch (e) {
+    document.getElementById('tpl-count').textContent = 'backend offline';
+    document.getElementById('templates-grid').innerHTML = '<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--text-muted)">⚠️ Backend waking up... refresh in 30s</div>';
+  }
+}
+
+// ============================================================
+// FEEDBACK / SUPPORT / LEGAL MODALS
+// ============================================================
 function openFeedback() { document.getElementById('feedback-modal').classList.add('show'); }
 function closeFeedback() { document.getElementById('feedback-modal').classList.remove('show'); }
-
 async function submitFeedback() {
   const email = document.getElementById('fb-email').value.trim();
   const message = document.getElementById('fb-message').value.trim();
@@ -1227,51 +1507,14 @@ async function submitFeedback() {
     document.getElementById('fb-message').value = '';
     closeFeedback();
     toast('Thanks for your feedback! 💚');
-  } catch(e) {
-    toast('Could not send feedback', true);
-  }
+  } catch(e) { toast('Could not send feedback', true); }
 }
-
 function openDisclaimer() { document.getElementById('disclaimer-modal').classList.add('show'); }
 function closeDisclaimer() { document.getElementById('disclaimer-modal').classList.remove('show'); }
 function openTerms() { document.getElementById('terms-modal').classList.add('show'); }
 function closeTerms() { document.getElementById('terms-modal').classList.remove('show'); }
-
-async function loadTemplates() {
-  try {
-    const res = await fetch(API + '/templates');
-    const data = await res.json();
-    const grid = document.getElementById('templates-grid');
-    const keys = Object.keys(data);
-    document.getElementById('tpl-count').textContent = keys.length + ' ready to use';
-    grid.innerHTML = keys.map(k => {
-      const t = data[k];
-      const emojiMatch = t.name.match(/\p{Emoji}/u);
-      const emoji = emojiMatch ? emojiMatch[0] : '📋';
-      const name = t.name.replace(/\p{Emoji}/u, '').trim();
-      const safeData = JSON.stringify(t.data).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-      return `
-        <div class="tpl" data-tpl="${safeData}">
-          <span class="tpl-emoji">${emoji}</span>
-          <div class="tpl-name">${name}</div>
-          <div class="tpl-desc">${t.description}</div>
-        </div>
-      `;
-    }).join('');
-    document.querySelectorAll('.tpl').forEach(el => {
-      el.addEventListener('click', () => {
-        try { applyTemplate(JSON.parse(el.dataset.tpl.replace(/&quot;/g,'"').replace(/&#39;/g,"'"))); }
-        catch(e){ console.error(e); }
-      });
-    });
-    document.getElementById('backend-status').textContent = 'Connected';
-  } catch (e) {
-    document.getElementById('backend-status').textContent = 'Offline';
-    document.querySelector('.chip .dot').style.background = 'var(--danger)';
-    document.getElementById('tpl-count').textContent = 'backend offline';
-    document.getElementById('templates-grid').innerHTML = '<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--text-muted)">⚠️ Backend is waking up... refresh in 30s</div>';
-  }
-}
+function openSupport() { document.getElementById('support-modal').classList.add('show'); }
+function closeSupport() { document.getElementById('support-modal').classList.remove('show'); }
 
 document.addEventListener('keydown', e => {
   if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); generate(); }
@@ -1282,54 +1525,15 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// ===== Support / Saweria donation =====
-function openSupport() { document.getElementById('support-modal').classList.add('show'); }
-function closeSupport() { document.getElementById('support-modal').classList.remove('show'); }
-
-loadTemplates();
-addVlan({ vlan: '10', name: 'USERS' });
+// ============================================================
+// BOOT
+// ============================================================
+(async function init() {
+  await loadVendors();
+  await loadTemplates();
+  updateVendorHints();
+  addVlan({ vlan: '10', name: 'USERS' });
+})();
 </script>
-
-<!-- Floating Support Button -->
-<button class="support-fab" onclick="openSupport()" title="Support ConfigLabs">
-  <span class="fab-icon">☕</span>
-  <span class="fab-label">Support us</span>
-</button>
-
-<!-- Support Modal -->
-<div class="modal-overlay" id="support-modal" onclick="if(event.target===this)closeSupport()">
-  <div class="modal support-modal-content">
-    <div class="support-hero">☕</div>
-    <h2>Support <em>ConfigLabs</em></h2>
-    <p class="support-message">
-      ConfigLabs is <strong>free</strong> and will stay free forever. No ads, no tracking, no paywalls.
-      <br><br>
-      If it saved you time, a small sawer helps keep the lights on 🧪
-    </p>
-
-    <div class="support-reasons">
-      <h4>Your support helps:</h4>
-      <ul>
-        <li>Cover server hosting (Railway)</li>
-        <li>Renew the configlabs.online domain</li>
-        <li>Keep the tool ad-free forever</li>
-        <li>Add more vendors (Cisco, Huawei...)</li>
-      </ul>
-    </div>
-
-    <a href="https://saweria.co/configlabs" target="_blank" rel="noopener" class="btn-support-main">
-      💚 Support via <span class="saweria-logo">SAWERIA</span>
-    </a>
-
-    <div class="support-footer-note">
-      Every sawer matters — <em>terima kasih banyak!</em> 🙏
-    </div>
-
-    <div class="modal-actions" style="justify-content:center; margin-top:20px">
-      <button class="btn btn-secondary" onclick="closeSupport()">Maybe later</button>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
