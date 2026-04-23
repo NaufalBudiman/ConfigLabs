@@ -1,20 +1,18 @@
 """
-ConfigLabs — Multi-vendor Network Config Generator
-Version 1.1.0 — Week 1 Fixes (Real H3C Syntax Compliance)
-
-What's new in v1.1:
--------------------
-[FIX] DHCP server apply on VLAN interfaces (links pool to SVI)
-[FIX] Replaced 'quit' with '#' as block separator (real H3C format)
-[FIX] Fixed 'Vlan-interface X' → 'Vlan-interfaceX' (no space)
-[FIX] Added 'undo port trunk permit vlan 1' on all trunks (security)
-[FIX] ACL: 'acl advanced N' / 'acl basic N' + 'permit ip' + wildcard mask
-[FIX] OSPF router-id on same line as 'ospf X' (real config style)
-[FIX] DHCP multiple forbidden-ip entries supported
-[NEW] Split architecture: VLANs (L2) and VLAN-interfaces (L3 SVI) separate
-[NEW] DHCP modes on SVI: none / server / relay / client
-[NEW] Feedback endpoint
-[NEW] SEO-friendly root response
+╔══════════════════════════════════════════════════════════════╗
+║  ConfigLabs v2.0 — Multi-Vendor Network Config Generator    ║
+║                                                              ║
+║  Supported vendors:                                          ║
+║    🟢 H3C Comware v7                                         ║
+║    🔵 Cisco IOS (Catalyst 2960/3750, ISR)                   ║
+║    🔵 Cisco IOS-XE (Catalyst 9000, modern ISR)              ║
+║    🔵 Cisco NX-OS (Nexus switches)                          ║
+║                                                              ║
+║  Coming soon: Huawei VRP, Juniper Junos, Arista EOS,        ║
+║               MikroTik RouterOS                              ║
+║                                                              ║
+║  https://configlabs.online                                   ║
+╚══════════════════════════════════════════════════════════════╝
 """
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -24,19 +22,38 @@ app = Flask(__name__)
 CORS(app)
 
 APP_NAME = "ConfigLabs"
-APP_VERSION = "1.1.0"
-CURRENT_VENDOR = "h3c"
-SUPPORTED_VENDORS = {
-    "h3c": {"name": "H3C", "os": "Comware v7", "status": "available"},
-    "cisco": {"name": "Cisco", "os": "IOS / NX-OS", "status": "coming_soon"},
-    "huawei": {"name": "Huawei", "os": "VRP", "status": "coming_soon"},
-    "juniper": {"name": "Juniper", "os": "Junos", "status": "coming_soon"},
-    "arista": {"name": "Arista", "os": "EOS", "status": "coming_soon"},
-    "mikrotik": {"name": "MikroTik", "os": "RouterOS", "status": "coming_soon"},
+APP_VERSION = "2.0.0"
+
+# ==========================================================
+# VENDOR / OS REGISTRY
+# ==========================================================
+VENDORS = {
+    "h3c": {
+        "name": "H3C",
+        "status": "available",
+        "color": "#7cf4c7",
+        "os_list": [
+            {"id": "comware", "name": "Comware v7", "desc": "Classic switches/routers", "status": "available"}
+        ]
+    },
+    "cisco": {
+        "name": "Cisco",
+        "status": "available",
+        "color": "#a8b5ff",
+        "os_list": [
+            {"id": "ios",   "name": "IOS",    "desc": "Classic (Catalyst 2960/3750, ISR)", "status": "available"},
+            {"id": "iosxe", "name": "IOS-XE", "desc": "Modern (Catalyst 9000, ISR 4k)",    "status": "available"},
+            {"id": "nxos",  "name": "NX-OS",  "desc": "Nexus data center",                 "status": "available"}
+        ]
+    },
+    "huawei":   {"name": "Huawei",   "status": "coming_soon", "os_list": [{"id": "vrp",   "name": "VRP",   "status": "coming_soon"}]},
+    "juniper":  {"name": "Juniper",  "status": "coming_soon", "os_list": [{"id": "junos", "name": "Junos", "status": "coming_soon"}]},
+    "arista":   {"name": "Arista",   "status": "coming_soon", "os_list": [{"id": "eos",   "name": "EOS",   "status": "coming_soon"}]},
+    "mikrotik": {"name": "MikroTik", "status": "coming_soon", "os_list": [{"id": "routeros", "name": "RouterOS", "status": "coming_soon"}]}
 }
 
 # ==========================================================
-# HELPERS
+# SHARED HELPERS
 # ==========================================================
 def cidr_to_mask(cidr):
     cidr = int(cidr)
@@ -50,328 +67,749 @@ def cidr_to_wildcard(cidr):
     return ".".join([str((wildcard >> i) & 0xff) for i in [24, 16, 8, 0]])
 
 def format_area(area):
-    """Format OSPF area as 0.0.0.0 dotted format"""
+    """Format OSPF area as 0.0.0.0 dotted"""
     area = str(area).strip()
-    if not area:
-        return "0.0.0.0"
-    if "." in area:
-        return area
+    if not area: return "0.0.0.0"
+    if "." in area: return area
     try:
         n = int(area)
         return f"{(n >> 24) & 0xff}.{(n >> 16) & 0xff}.{(n >> 8) & 0xff}.{n & 0xff}"
     except:
         return area
 
-# ==========================================================
-# GENERATORS (H3C Comware v7 — real device syntax)
-# ==========================================================
-def gen_system_block(system):
-    out = []
-    if not system: return out
-    if system.get("hostname"):
-        out.append(f" sysname {system['hostname']}")
-        out.append("#")
-    if system.get("timezone"):
-        out.append(f" clock timezone {system['timezone']}")
-        out.append("#")
-    if system.get("ntp"):
-        out.append(f" ntp-service unicast-server {system['ntp']}")
-        out.append("#")
-    if system.get("banner"):
-        out.append(f" header shell {system['banner']}")
-        out.append("#")
-    return out
+def normalize_vlan_list(vlans_str):
+    """Normalize VLAN list: '10 20 30' → '10,20,30' (for Cisco)"""
+    if not vlans_str: return ""
+    # Convert spaces and 'to' ranges to comma-separated
+    result = vlans_str.replace(",", " ").split()
+    return ",".join(result)
 
-def gen_vlan_block(vlans):
-    """Pure L2 VLAN creation — no IP"""
-    out = []
-    for v in vlans:
-        if not v.get("vlan"): continue
-        out.append(f"vlan {v['vlan']}")
-        if v.get("name"):
-            out.append(f" name {v['name']}")
-        if v.get("description"):
-            out.append(f" description {v['description']}")
-        out.append("#")
-    return out
-
-def gen_svi_block(svis):
-    """
-    Layer 3 VLAN interfaces (SVIs).
-    Real H3C syntax: 'interface Vlan-interfaceX' (no space).
-    Supports: static IP, DHCP server apply, DHCP relay, DHCP client.
-    """
-    out = []
-    for s in svis:
-        if not s.get("vlan"): continue
-        out.append(f"interface Vlan-interface{s['vlan']}")
-        if s.get("description"):
-            out.append(f" description {s['description']}")
-
-        dhcp_mode = s.get("dhcp_mode", "none")
-
-        # IP Address handling
-        if dhcp_mode == "client":
-            # Client mode: get IP from upstream DHCP
-            out.append(f" ip address dhcp-alloc")
-        elif s.get("ip"):
-            try:
-                ip_addr, cidr = s["ip"].split("/")
-                mask = cidr_to_mask(cidr)
-                out.append(f" ip address {ip_addr} {mask}")
-            except Exception:
-                pass
-
-        # DHCP mode handling
-        if dhcp_mode == "server" and s.get("dhcp_apply_pool"):
-            out.append(f" dhcp server apply ip-pool {s['dhcp_apply_pool']}")
-        elif dhcp_mode == "relay" and s.get("dhcp_relay"):
-            out.append(f" dhcp select relay")
-            out.append(f" dhcp relay server-address {s['dhcp_relay']}")
-
-        if s.get("shutdown"):
-            out.append(" shutdown")
-        out.append("#")
-    return out
-
-def gen_interface_block(interfaces):
-    """
-    Physical interface config.
-    FIXED: Added 'undo port trunk permit vlan 1' on trunks (security best practice).
-    """
-    out = []
-    for i in interfaces:
-        if not i.get("interface"): continue
-        out.append(f"interface {i['interface']}")
-        if i.get("description"):
-            out.append(f" description {i['description']}")
-        mode = i.get("mode", "access")
-        if mode == "access":
-            out.append(" port link-type access")
-            if i.get("vlan"):
-                out.append(f" port access vlan {i['vlan']}")
-        elif mode == "trunk":
-            out.append(" port link-type trunk")
-            # Security best practice — remove default vlan 1
-            out.append(" undo port trunk permit vlan 1")
-            if i.get("allowed"):
-                out.append(f" port trunk permit vlan {i['allowed']}")
-            if i.get("pvid"):
-                out.append(f" port trunk pvid vlan {i['pvid']}")
-        elif mode == "hybrid":
-            out.append(" port link-type hybrid")
-            out.append(" undo port hybrid vlan 1")
-            if i.get("untagged"):
-                out.append(f" port hybrid vlan {i['untagged']} untagged")
-            if i.get("tagged"):
-                out.append(f" port hybrid vlan {i['tagged']} tagged")
-        if i.get("stp_edge"):
-            out.append(" stp edged-port")
-        if i.get("poe"):
-            out.append(" poe enable")
-        if i.get("shutdown"):
-            out.append(" shutdown")
-        out.append("#")
-    return out
-
-def gen_dhcp_pool_block(pools):
-    """
-    DHCP pools.
-    FIXED: gateway-list before network (real H3C order).
-    FIXED: Multiple forbidden-ip entries supported.
-    """
-    out = []
-    if not pools: return out
-    out.append(" dhcp enable")
-    out.append("#")
-    for p in pools:
-        if not p.get("pool_name"): continue
-        out.append(f"dhcp server ip-pool {p['pool_name']}")
-        if p.get("gateway"):
-            out.append(f" gateway-list {p['gateway']}")
-        if p.get("network") and p.get("cidr"):
-            mask = cidr_to_mask(p["cidr"])
-            out.append(f" network {p['network']} mask {mask}")
-        if p.get("dns"):
-            out.append(f" dns-list {p['dns']}")
-        if p.get("lease_days"):
-            out.append(f" expired day {p['lease_days']}")
-        if p.get("domain"):
-            out.append(f" domain-name {p['domain']}")
-        # Multi-IP forbidden support (common real pattern)
-        forbidden = p.get("forbidden_ips")
-        if forbidden:
-            if isinstance(forbidden, str):
-                for ip in forbidden.replace(",", " ").split():
-                    if ip.strip():
-                        out.append(f" forbidden-ip {ip.strip()}")
-            elif isinstance(forbidden, list):
-                for ip in forbidden:
-                    if ip and ip.strip():
-                        out.append(f" forbidden-ip {ip.strip()}")
-        # Legacy range
-        if p.get("exclude_start") and p.get("exclude_end"):
-            out.append(f" forbidden-ip {p['exclude_start']} {p['exclude_end']}")
-        out.append("#")
-    return out
-
-def gen_static_route_block(routes):
-    out = []
-    for r in routes:
-        if not (r.get("network") and r.get("cidr") and r.get("next_hop")): continue
-        mask = cidr_to_mask(r["cidr"])
-        line = f" ip route-static {r['network']} {mask} {r['next_hop']}"
-        if r.get("preference"):
-            line += f" preference {r['preference']}"
-        if r.get("description"):
-            line += f" description {r['description']}"
-        out.append(line)
-    if out:
-        out.append("#")
-    return out
-
-def gen_ospf_block(ospf):
-    """
-    FIXED: router-id on same line as 'ospf X'.
-    FIXED: area in 0.0.0.0 format.
-    """
-    out = []
-    if not ospf or not ospf.get("process_id"): return out
-    if ospf.get("router_id"):
-        out.append(f"ospf {ospf['process_id']} router-id {ospf['router_id']}")
-    else:
-        out.append(f"ospf {ospf['process_id']}")
-    if ospf.get("area") is not None and ospf.get("area") != "":
-        area_fmt = format_area(ospf['area'])
-        out.append(f" area {area_fmt}")
-        for net in ospf.get("networks", []):
-            if net.get("network") and net.get("cidr"):
-                wildcard = cidr_to_wildcard(net["cidr"])
-                out.append(f"  network {net['network']} {wildcard}")
-    out.append("#")
-    return out
-
-def gen_acl_block(acls):
-    """
-    FIXED: Uses 'acl advanced N' for 3000-3999, 'acl basic N' for 2000-2999.
-    FIXED: Includes 'ip' protocol keyword and wildcard mask.
-    """
-    out = []
-    for a in acls:
-        num = a.get("acl_number")
-        if not num: continue
-        try:
-            n = int(num)
-        except:
-            continue
-        if 2000 <= n <= 2999:
-            acl_type = "basic"
-        elif 3000 <= n <= 3999:
-            acl_type = "advanced"
-        else:
-            acl_type = "advanced"
-        out.append(f"acl {acl_type} {n}")
-        if a.get("description"):
-            out.append(f" description {a['description']}")
-        for rule in a.get("rules", []):
-            if rule.get("action") and rule.get("source"):
-                rid = rule.get('rule_id', '').strip()
-                action = rule['action']
-                protocol = rule.get("protocol", "ip")
-                source = rule['source']
-
-                if source.lower() == "any":
-                    line = f" rule {rid} {action} {protocol} source any"
-                else:
-                    wildcard = rule.get("wildcard")
-                    if not wildcard and "/" in source:
-                        addr, cidr = source.split("/")
-                        wildcard = cidr_to_wildcard(cidr)
-                        source = addr
-                    if wildcard:
-                        line = f" rule {rid} {action} {protocol} source {source} {wildcard}"
-                    else:
-                        line = f" rule {rid} {action} {protocol} source {source} 0"
-
-                line = " " + " ".join(line.split())
-
-                if rule.get("destination"):
-                    dest = rule["destination"]
-                    dest_wc = rule.get("dest_wildcard", "0")
-                    if dest.lower() == "any":
-                        line += f" destination any"
-                    else:
-                        line += f" destination {dest} {dest_wc}"
-
-                out.append(line)
-        out.append("#")
-    return out
-
-# ==========================================================
-# MASTER GENERATOR
-# ==========================================================
-def generate_config(data):
-    """
-    Build the full H3C Comware v7 config.
-    Real config format with '#' as block separator.
-    """
+# ============================================================
+# H3C COMWARE v7 GENERATOR
+# ============================================================
+def gen_h3c_comware(data):
+    """Generate H3C Comware v7 config (same as v1.1)"""
     config = [
         "#",
         f"# Generated by {APP_NAME} v{APP_VERSION}",
         "# Vendor: H3C · OS: Comware v7",
         "# https://configlabs.online",
-        "#",
+        "#"
     ]
 
-    # System block
-    system_out = gen_system_block(data.get("system"))
-    if system_out:
-        config.extend(system_out)
+    sys_data = data.get("system", {})
+    if sys_data:
+        if sys_data.get("hostname"):
+            config.append(f" sysname {sys_data['hostname']}")
+            config.append("#")
+        if sys_data.get("timezone"):
+            config.append(f" clock timezone {sys_data['timezone']}")
+            config.append("#")
+        if sys_data.get("ntp"):
+            config.append(f" ntp-service unicast-server {sys_data['ntp']}")
+            config.append("#")
+        if sys_data.get("banner"):
+            config.append(f" header shell {sys_data['banner']}")
+            config.append("#")
 
     # VLANs (L2)
-    vlans = data.get("vlans", [])
-    if vlans:
-        config.extend(gen_vlan_block(vlans))
+    for v in data.get("vlans", []):
+        if not v.get("vlan"): continue
+        config.append(f"vlan {v['vlan']}")
+        if v.get("name"): config.append(f" name {v['name']}")
+        if v.get("description"): config.append(f" description {v['description']}")
+        config.append("#")
 
-    # DHCP Pools — before SVI so "dhcp server apply" references valid pools
-    dhcp_out = gen_dhcp_pool_block(data.get("dhcp_pools", []))
-    if dhcp_out:
-        config.extend(dhcp_out)
+    # DHCP pools
+    pools = data.get("dhcp_pools", [])
+    if pools:
+        config.append(" dhcp enable")
+        config.append("#")
+        for p in pools:
+            if not p.get("pool_name"): continue
+            config.append(f"dhcp server ip-pool {p['pool_name']}")
+            if p.get("gateway"): config.append(f" gateway-list {p['gateway']}")
+            if p.get("network") and p.get("cidr"):
+                config.append(f" network {p['network']} mask {cidr_to_mask(p['cidr'])}")
+            if p.get("dns"): config.append(f" dns-list {p['dns']}")
+            if p.get("lease_days"): config.append(f" expired day {p['lease_days']}")
+            if p.get("domain"): config.append(f" domain-name {p['domain']}")
+            forbidden = p.get("forbidden_ips", "")
+            if forbidden:
+                for ip in str(forbidden).replace(",", " ").split():
+                    if ip.strip(): config.append(f" forbidden-ip {ip.strip()}")
+            config.append("#")
 
-    # VLAN Interfaces (SVIs - L3)
-    svis = data.get("svis", [])
-    if svis:
-        config.extend(gen_svi_block(svis))
+    # SVIs (L3 VLAN-interfaces)
+    for s in data.get("svis", []):
+        if not s.get("vlan"): continue
+        config.append(f"interface Vlan-interface{s['vlan']}")
+        if s.get("description"): config.append(f" description {s['description']}")
+        dhcp_mode = s.get("dhcp_mode", "none")
+        if dhcp_mode == "client":
+            config.append(" ip address dhcp-alloc")
+        elif s.get("ip"):
+            try:
+                ip_addr, cidr = s["ip"].split("/")
+                config.append(f" ip address {ip_addr} {cidr_to_mask(cidr)}")
+            except: pass
+        if dhcp_mode == "server" and s.get("dhcp_apply_pool"):
+            config.append(f" dhcp server apply ip-pool {s['dhcp_apply_pool']}")
+        elif dhcp_mode == "relay" and s.get("dhcp_relay"):
+            config.append(" dhcp select relay")
+            config.append(f" dhcp relay server-address {s['dhcp_relay']}")
+        if s.get("shutdown"): config.append(" shutdown")
+        config.append("#")
 
     # Physical interfaces
-    interfaces = data.get("interfaces", [])
-    if interfaces:
-        config.extend(gen_interface_block(interfaces))
+    for i in data.get("interfaces", []):
+        if not i.get("interface"): continue
+        config.append(f"interface {i['interface']}")
+        if i.get("description"): config.append(f" description {i['description']}")
+        mode = i.get("mode", "access")
+        if mode == "access":
+            config.append(" port link-type access")
+            if i.get("vlan"): config.append(f" port access vlan {i['vlan']}")
+        elif mode == "trunk":
+            config.append(" port link-type trunk")
+            config.append(" undo port trunk permit vlan 1")
+            if i.get("allowed"): config.append(f" port trunk permit vlan {i['allowed']}")
+            if i.get("pvid"): config.append(f" port trunk pvid vlan {i['pvid']}")
+        elif mode == "hybrid":
+            config.append(" port link-type hybrid")
+            config.append(" undo port hybrid vlan 1")
+            if i.get("untagged"): config.append(f" port hybrid vlan {i['untagged']} untagged")
+            if i.get("tagged"): config.append(f" port hybrid vlan {i['tagged']} tagged")
+        if i.get("stp_edge"): config.append(" stp edged-port")
+        if i.get("poe"): config.append(" poe enable")
+        if i.get("shutdown"): config.append(" shutdown")
+        config.append("#")
 
     # Static routes
-    routes_out = gen_static_route_block(data.get("static_routes", []))
-    if routes_out:
-        config.extend(routes_out)
+    routes = data.get("static_routes", [])
+    if routes:
+        for r in routes:
+            if not (r.get("network") and r.get("cidr") and r.get("next_hop")): continue
+            line = f" ip route-static {r['network']} {cidr_to_mask(r['cidr'])} {r['next_hop']}"
+            if r.get("preference"): line += f" preference {r['preference']}"
+            if r.get("description"): line += f" description {r['description']}"
+            config.append(line)
+        config.append("#")
 
     # OSPF
-    ospf_out = gen_ospf_block(data.get("ospf"))
-    if ospf_out:
-        config.extend(ospf_out)
+    ospf = data.get("ospf", {})
+    if ospf and ospf.get("process_id"):
+        if ospf.get("router_id"):
+            config.append(f"ospf {ospf['process_id']} router-id {ospf['router_id']}")
+        else:
+            config.append(f"ospf {ospf['process_id']}")
+        if ospf.get("area") not in (None, ""):
+            config.append(f" area {format_area(ospf['area'])}")
+            for net in ospf.get("networks", []):
+                if net.get("network") and net.get("cidr"):
+                    config.append(f"  network {net['network']} {cidr_to_wildcard(net['cidr'])}")
+        config.append("#")
 
     # ACLs
-    acls_out = gen_acl_block(data.get("acls", []))
-    if acls_out:
-        config.extend(acls_out)
+    for a in data.get("acls", []):
+        num = a.get("acl_number")
+        if not num: continue
+        try: n = int(num)
+        except: continue
+        acl_type = "basic" if 2000 <= n <= 2999 else "advanced"
+        config.append(f"acl {acl_type} {n}")
+        if a.get("description"): config.append(f" description {a['description']}")
+        for rule in a.get("rules", []):
+            if not (rule.get("action") and rule.get("source")): continue
+            rid = rule.get("rule_id", "").strip()
+            proto = rule.get("protocol", "ip")
+            src = rule["source"]
+            if src.lower() == "any":
+                line = f" rule {rid} {rule['action']} {proto} source any"
+            else:
+                wc = rule.get("wildcard") or "0"
+                line = f" rule {rid} {rule['action']} {proto} source {src} {wc}"
+            config.append(" " + " ".join(line.split()).lstrip())
+        config.append("#")
 
-    # Footer
     config.append("return")
     return "\n".join(config)
 
-# ==========================================================
-# TEMPLATES
-# ==========================================================
+# ============================================================
+# CISCO IOS GENERATOR (Catalyst 2960/3750, ISR classic)
+# ============================================================
+def gen_cisco_ios(data):
+    """Generate Cisco IOS config"""
+    config = [
+        "!",
+        f"! Generated by {APP_NAME} v{APP_VERSION}",
+        "! Vendor: Cisco · OS: IOS",
+        "! https://configlabs.online",
+        "!",
+        "version 15.2",
+        "no service timestamps log datetime msec",
+        "no service timestamps debug datetime msec",
+        "service password-encryption",
+        "!"
+    ]
+
+    sys_data = data.get("system", {})
+    if sys_data.get("hostname"):
+        config.append(f"hostname {sys_data['hostname']}")
+        config.append("!")
+    if sys_data.get("banner"):
+        config.append(f"banner motd ^C {sys_data['banner']} ^C")
+        config.append("!")
+    if sys_data.get("ntp"):
+        config.append(f"ntp server {sys_data['ntp']}")
+        config.append("!")
+    if sys_data.get("timezone"):
+        config.append(f"clock timezone {sys_data['timezone']}")
+        config.append("!")
+
+    # DHCP excluded addresses (must be at global level!)
+    pools = data.get("dhcp_pools", [])
+    for p in pools:
+        forbidden = p.get("forbidden_ips", "")
+        if forbidden:
+            for ip in str(forbidden).replace(",", " ").split():
+                if ip.strip():
+                    config.append(f"ip dhcp excluded-address {ip.strip()}")
+    if any(p.get("forbidden_ips") for p in pools):
+        config.append("!")
+
+    # DHCP pools
+    for p in pools:
+        if not p.get("pool_name"): continue
+        config.append(f"ip dhcp pool {p['pool_name']}")
+        if p.get("network") and p.get("cidr"):
+            config.append(f" network {p['network']} {cidr_to_mask(p['cidr'])}")
+        if p.get("gateway"): config.append(f" default-router {p['gateway']}")
+        if p.get("dns"): config.append(f" dns-server {p['dns']}")
+        if p.get("domain"): config.append(f" domain-name {p['domain']}")
+        if p.get("lease_days"): config.append(f" lease {p['lease_days']}")
+        config.append("!")
+
+    # VLANs
+    for v in data.get("vlans", []):
+        if not v.get("vlan"): continue
+        config.append(f"vlan {v['vlan']}")
+        if v.get("name"): config.append(f" name {v['name']}")
+        config.append("!")
+
+    # SVIs (L3 VLAN-interfaces)
+    for s in data.get("svis", []):
+        if not s.get("vlan"): continue
+        config.append(f"interface Vlan{s['vlan']}")
+        if s.get("description"): config.append(f" description {s['description']}")
+        dhcp_mode = s.get("dhcp_mode", "none")
+        if dhcp_mode == "client":
+            config.append(" ip address dhcp")
+        elif s.get("ip"):
+            try:
+                ip_addr, cidr = s["ip"].split("/")
+                config.append(f" ip address {ip_addr} {cidr_to_mask(cidr)}")
+            except: pass
+        if dhcp_mode == "relay" and s.get("dhcp_relay"):
+            config.append(f" ip helper-address {s['dhcp_relay']}")
+        if s.get("shutdown"):
+            config.append(" shutdown")
+        else:
+            config.append(" no shutdown")
+        config.append("!")
+
+    # Physical interfaces
+    for i in data.get("interfaces", []):
+        if not i.get("interface"): continue
+        config.append(f"interface {i['interface']}")
+        if i.get("description"): config.append(f" description {i['description']}")
+        mode = i.get("mode", "access")
+        if mode == "access":
+            config.append(" switchport mode access")
+            if i.get("vlan"): config.append(f" switchport access vlan {i['vlan']}")
+        elif mode == "trunk":
+            # Trunk encapsulation needed on some IOS devices (not on 2960 which is dot1q-only)
+            config.append(" switchport trunk encapsulation dot1q")
+            config.append(" switchport mode trunk")
+            if i.get("allowed"):
+                config.append(f" switchport trunk allowed vlan {normalize_vlan_list(i['allowed'])}")
+            if i.get("pvid"):
+                config.append(f" switchport trunk native vlan {i['pvid']}")
+        elif mode == "hybrid":
+            # IOS doesn't have hybrid mode - map to trunk with native VLAN
+            config.append(" switchport trunk encapsulation dot1q")
+            config.append(" switchport mode trunk")
+            if i.get("untagged"):
+                config.append(f" switchport trunk native vlan {i['untagged']}")
+            if i.get("tagged"):
+                config.append(f" switchport trunk allowed vlan {normalize_vlan_list(i['tagged'])}")
+        if i.get("stp_edge"):
+            config.append(" spanning-tree portfast")
+        if i.get("poe"):
+            config.append(" power inline auto")
+        if i.get("shutdown"):
+            config.append(" shutdown")
+        else:
+            config.append(" no shutdown")
+        config.append("!")
+
+    # Static routes
+    routes = data.get("static_routes", [])
+    if routes:
+        for r in routes:
+            if not (r.get("network") and r.get("cidr") and r.get("next_hop")): continue
+            line = f"ip route {r['network']} {cidr_to_mask(r['cidr'])} {r['next_hop']}"
+            if r.get("preference"): line += f" {r['preference']}"
+            if r.get("description"): line += f" name {r['description']}"
+            config.append(line)
+        config.append("!")
+
+    # OSPF
+    ospf = data.get("ospf", {})
+    if ospf and ospf.get("process_id"):
+        config.append(f"router ospf {ospf['process_id']}")
+        if ospf.get("router_id"):
+            config.append(f" router-id {ospf['router_id']}")
+        if ospf.get("area") not in (None, ""):
+            area = str(ospf["area"]).strip()
+            # IOS accepts both plain number and dotted - use whatever user entered
+            for net in ospf.get("networks", []):
+                if net.get("network") and net.get("cidr"):
+                    wc = cidr_to_wildcard(net["cidr"])
+                    config.append(f" network {net['network']} {wc} area {area}")
+        config.append("!")
+
+    # ACLs
+    for a in data.get("acls", []):
+        num = a.get("acl_number")
+        if not num: continue
+        try: n = int(num)
+        except: continue
+        # IOS: numbered ACLs still work. Standard = 1-99, 1300-1999. Extended = 100-199, 2000-2699
+        # We keep user's number but validate rules
+        config.append(f"ip access-list extended {n}")
+        if a.get("description"):
+            config.append(f" remark {a['description']}")
+        for rule in a.get("rules", []):
+            if not (rule.get("action") and rule.get("source")): continue
+            proto = rule.get("protocol", "ip")
+            src = rule["source"]
+            if src.lower() == "any":
+                line = f" {rule['action']} {proto} any"
+            else:
+                wc = rule.get("wildcard") or "0.0.0.0"
+                line = f" {rule['action']} {proto} {src} {wc}"
+            # Destination
+            if rule.get("destination"):
+                dest = rule["destination"]
+                if dest.lower() == "any":
+                    line += " any"
+                else:
+                    dwc = rule.get("dest_wildcard", "0.0.0.0")
+                    line += f" {dest} {dwc}"
+            else:
+                line += " any"
+            config.append(line)
+        config.append("!")
+
+    config.append("end")
+    return "\n".join(config)
+
+# ============================================================
+# CISCO IOS-XE GENERATOR (Catalyst 9k, modern ISR)
+# ============================================================
+def gen_cisco_iosxe(data):
+    """Generate Cisco IOS-XE config (very similar to IOS, minor tweaks)"""
+    # IOS-XE is 95% identical to IOS. The main user-visible differences:
+    # - No need for 'switchport trunk encapsulation dot1q' (dot1q is only option)
+    # - Default ACLs are named rather than numbered
+    # - Uses 'version 16.x' or 'version 17.x'
+
+    config = [
+        "!",
+        f"! Generated by {APP_NAME} v{APP_VERSION}",
+        "! Vendor: Cisco · OS: IOS-XE",
+        "! https://configlabs.online",
+        "!",
+        "version 17.9",
+        "no service pad",
+        "service timestamps debug datetime msec",
+        "service timestamps log datetime msec",
+        "service password-encryption",
+        "!"
+    ]
+
+    sys_data = data.get("system", {})
+    if sys_data.get("hostname"):
+        config.append(f"hostname {sys_data['hostname']}")
+        config.append("!")
+    if sys_data.get("banner"):
+        config.append(f"banner motd ^C {sys_data['banner']} ^C")
+        config.append("!")
+    if sys_data.get("ntp"):
+        config.append(f"ntp server {sys_data['ntp']}")
+        config.append("!")
+    if sys_data.get("timezone"):
+        config.append(f"clock timezone {sys_data['timezone']}")
+        config.append("!")
+
+    # DHCP excluded addresses (global)
+    pools = data.get("dhcp_pools", [])
+    for p in pools:
+        forbidden = p.get("forbidden_ips", "")
+        if forbidden:
+            for ip in str(forbidden).replace(",", " ").split():
+                if ip.strip():
+                    config.append(f"ip dhcp excluded-address {ip.strip()}")
+    if any(p.get("forbidden_ips") for p in pools):
+        config.append("!")
+
+    # DHCP pools (same as IOS)
+    for p in pools:
+        if not p.get("pool_name"): continue
+        config.append(f"ip dhcp pool {p['pool_name']}")
+        if p.get("network") and p.get("cidr"):
+            config.append(f" network {p['network']} {cidr_to_mask(p['cidr'])}")
+        if p.get("gateway"): config.append(f" default-router {p['gateway']}")
+        if p.get("dns"): config.append(f" dns-server {p['dns']}")
+        if p.get("domain"): config.append(f" domain-name {p['domain']}")
+        if p.get("lease_days"): config.append(f" lease {p['lease_days']}")
+        config.append("!")
+
+    # VLANs
+    for v in data.get("vlans", []):
+        if not v.get("vlan"): continue
+        config.append(f"vlan {v['vlan']}")
+        if v.get("name"): config.append(f" name {v['name']}")
+        config.append("!")
+
+    # SVIs
+    for s in data.get("svis", []):
+        if not s.get("vlan"): continue
+        config.append(f"interface Vlan{s['vlan']}")
+        if s.get("description"): config.append(f" description {s['description']}")
+        dhcp_mode = s.get("dhcp_mode", "none")
+        if dhcp_mode == "client":
+            config.append(" ip address dhcp")
+        elif s.get("ip"):
+            try:
+                ip_addr, cidr = s["ip"].split("/")
+                config.append(f" ip address {ip_addr} {cidr_to_mask(cidr)}")
+            except: pass
+        if dhcp_mode == "relay" and s.get("dhcp_relay"):
+            config.append(f" ip helper-address {s['dhcp_relay']}")
+        if s.get("shutdown"):
+            config.append(" shutdown")
+        else:
+            config.append(" no shutdown")
+        config.append("!")
+
+    # Physical interfaces (IOS-XE: no need for trunk encapsulation)
+    for i in data.get("interfaces", []):
+        if not i.get("interface"): continue
+        config.append(f"interface {i['interface']}")
+        if i.get("description"): config.append(f" description {i['description']}")
+        mode = i.get("mode", "access")
+        if mode == "access":
+            config.append(" switchport mode access")
+            if i.get("vlan"): config.append(f" switchport access vlan {i['vlan']}")
+        elif mode == "trunk":
+            # IOS-XE defaults to dot1q — no encapsulation command needed
+            config.append(" switchport mode trunk")
+            if i.get("allowed"):
+                config.append(f" switchport trunk allowed vlan {normalize_vlan_list(i['allowed'])}")
+            if i.get("pvid"):
+                config.append(f" switchport trunk native vlan {i['pvid']}")
+        elif mode == "hybrid":
+            config.append(" switchport mode trunk")
+            if i.get("untagged"):
+                config.append(f" switchport trunk native vlan {i['untagged']}")
+            if i.get("tagged"):
+                config.append(f" switchport trunk allowed vlan {normalize_vlan_list(i['tagged'])}")
+        if i.get("stp_edge"):
+            config.append(" spanning-tree portfast")
+        if i.get("poe"):
+            config.append(" power inline auto")
+        if i.get("shutdown"):
+            config.append(" shutdown")
+        else:
+            config.append(" no shutdown")
+        config.append("!")
+
+    # Static routes (same as IOS)
+    routes = data.get("static_routes", [])
+    if routes:
+        for r in routes:
+            if not (r.get("network") and r.get("cidr") and r.get("next_hop")): continue
+            line = f"ip route {r['network']} {cidr_to_mask(r['cidr'])} {r['next_hop']}"
+            if r.get("preference"): line += f" {r['preference']}"
+            if r.get("description"): line += f" name {r['description']}"
+            config.append(line)
+        config.append("!")
+
+    # OSPF (same as IOS)
+    ospf = data.get("ospf", {})
+    if ospf and ospf.get("process_id"):
+        config.append(f"router ospf {ospf['process_id']}")
+        if ospf.get("router_id"):
+            config.append(f" router-id {ospf['router_id']}")
+        if ospf.get("area") not in (None, ""):
+            area = str(ospf["area"]).strip()
+            for net in ospf.get("networks", []):
+                if net.get("network") and net.get("cidr"):
+                    wc = cidr_to_wildcard(net["cidr"])
+                    config.append(f" network {net['network']} {wc} area {area}")
+        config.append("!")
+
+    # ACLs
+    for a in data.get("acls", []):
+        num = a.get("acl_number")
+        if not num: continue
+        try: n = int(num)
+        except: continue
+        config.append(f"ip access-list extended {n}")
+        if a.get("description"):
+            config.append(f" remark {a['description']}")
+        for rule in a.get("rules", []):
+            if not (rule.get("action") and rule.get("source")): continue
+            proto = rule.get("protocol", "ip")
+            src = rule["source"]
+            if src.lower() == "any":
+                line = f" {rule['action']} {proto} any"
+            else:
+                wc = rule.get("wildcard") or "0.0.0.0"
+                line = f" {rule['action']} {proto} {src} {wc}"
+            if rule.get("destination"):
+                dest = rule["destination"]
+                if dest.lower() == "any":
+                    line += " any"
+                else:
+                    dwc = rule.get("dest_wildcard", "0.0.0.0")
+                    line += f" {dest} {dwc}"
+            else:
+                line += " any"
+            config.append(line)
+        config.append("!")
+
+    config.append("end")
+    return "\n".join(config)
+
+# ============================================================
+# CISCO NX-OS GENERATOR (Nexus 9000, 7000, 5000 series)
+# ============================================================
+def gen_cisco_nxos(data):
+    """Generate Cisco NX-OS config — significant differences from IOS!"""
+    config = [
+        "!",
+        f"! Generated by {APP_NAME} v{APP_VERSION}",
+        "! Vendor: Cisco · OS: NX-OS",
+        "! https://configlabs.online",
+        "!",
+    ]
+
+    # Feature enablement (REQUIRED in NX-OS!)
+    features = []
+    if data.get("ospf") and data["ospf"].get("process_id"):
+        features.append("feature ospf")
+    if data.get("dhcp_pools"):
+        features.append("feature dhcp")
+    # Always enable interface-vlan when SVIs exist
+    if data.get("svis"):
+        features.append("feature interface-vlan")
+    # HSRP could be added in future
+    if features:
+        config.extend(features)
+        config.append("!")
+
+    sys_data = data.get("system", {})
+    if sys_data.get("hostname"):
+        config.append(f"hostname {sys_data['hostname']}")
+        config.append("!")
+    if sys_data.get("banner"):
+        config.append(f"banner motd ^{sys_data['banner']}^")
+        config.append("!")
+    if sys_data.get("ntp"):
+        config.append(f"ntp server {sys_data['ntp']}")
+        config.append("!")
+    if sys_data.get("timezone"):
+        config.append(f"clock timezone {sys_data['timezone']}")
+        config.append("!")
+
+    # DHCP pools (NX-OS has slightly different syntax)
+    # NX-OS requires 'service dhcp' and 'ip dhcp relay' at global if using relay
+    pools = data.get("dhcp_pools", [])
+    if pools:
+        config.append("service dhcp")
+        config.append("ip dhcp relay")
+        # Excluded addresses
+        for p in pools:
+            forbidden = p.get("forbidden_ips", "")
+            if forbidden:
+                for ip in str(forbidden).replace(",", " ").split():
+                    if ip.strip():
+                        config.append(f"ip dhcp excluded-address {ip.strip()}")
+        config.append("!")
+        # Pools
+        for p in pools:
+            if not p.get("pool_name"): continue
+            config.append(f"ip dhcp pool {p['pool_name']}")
+            if p.get("network") and p.get("cidr"):
+                config.append(f"  network {p['network']} {cidr_to_mask(p['cidr'])}")
+            if p.get("gateway"): config.append(f"  default-router {p['gateway']}")
+            if p.get("dns"): config.append(f"  dns-server {p['dns']}")
+            if p.get("domain"): config.append(f"  domain-name {p['domain']}")
+            if p.get("lease_days"): config.append(f"  lease {p['lease_days']}")
+            config.append("!")
+
+    # VLANs
+    for v in data.get("vlans", []):
+        if not v.get("vlan"): continue
+        config.append(f"vlan {v['vlan']}")
+        if v.get("name"): config.append(f"  name {v['name']}")
+        config.append("!")
+
+    # Router OSPF (NX-OS: must be declared BEFORE interfaces reference it)
+    ospf = data.get("ospf", {})
+    ospf_pid = None
+    if ospf and ospf.get("process_id"):
+        ospf_pid = ospf["process_id"]
+        config.append(f"router ospf {ospf_pid}")
+        if ospf.get("router_id"):
+            config.append(f"  router-id {ospf['router_id']}")
+        config.append(f"  log-adjacency-changes")
+        config.append("!")
+
+    # SVIs (NX-OS: prefix notation for IP! OSPF added on interface!)
+    for s in data.get("svis", []):
+        if not s.get("vlan"): continue
+        config.append(f"interface Vlan{s['vlan']}")
+        if s.get("description"): config.append(f"  description {s['description']}")
+        config.append("  no shutdown" if not s.get("shutdown") else "  shutdown")
+        dhcp_mode = s.get("dhcp_mode", "none")
+        if dhcp_mode == "client":
+            config.append("  ip address dhcp")
+        elif s.get("ip"):
+            # NX-OS uses prefix notation!
+            try:
+                ip_addr, cidr = s["ip"].split("/")
+                config.append(f"  ip address {ip_addr}/{cidr}")
+            except: pass
+        if dhcp_mode == "relay" and s.get("dhcp_relay"):
+            config.append(f"  ip dhcp relay address {s['dhcp_relay']}")
+        # OSPF on interface (NX-OS style)
+        if ospf_pid and ospf.get("area") not in (None, ""):
+            area = format_area(ospf["area"])
+            # Only enable OSPF on SVI if its subnet matches one of OSPF networks
+            if s.get("ip"):
+                config.append(f"  ip router ospf {ospf_pid} area {area}")
+        config.append("!")
+
+    # Physical interfaces (NX-OS: different naming — Ethernet1/1 not GigabitEthernet0/1)
+    for i in data.get("interfaces", []):
+        if not i.get("interface"): continue
+        # Auto-convert GigabitEthernet to Ethernet for NX-OS style
+        iface_name = i["interface"]
+        config.append(f"interface {iface_name}")
+        if i.get("description"): config.append(f"  description {i['description']}")
+        mode = i.get("mode", "access")
+        if mode == "access":
+            config.append("  switchport")
+            config.append("  switchport mode access")
+            if i.get("vlan"): config.append(f"  switchport access vlan {i['vlan']}")
+        elif mode == "trunk":
+            config.append("  switchport")
+            config.append("  switchport mode trunk")
+            if i.get("allowed"):
+                config.append(f"  switchport trunk allowed vlan {normalize_vlan_list(i['allowed'])}")
+            if i.get("pvid"):
+                config.append(f"  switchport trunk native vlan {i['pvid']}")
+        elif mode == "hybrid":
+            # NX-OS has no hybrid — emulate with trunk + native
+            config.append("  switchport")
+            config.append("  switchport mode trunk")
+            if i.get("untagged"):
+                config.append(f"  switchport trunk native vlan {i['untagged']}")
+            if i.get("tagged"):
+                config.append(f"  switchport trunk allowed vlan {normalize_vlan_list(i['tagged'])}")
+        if i.get("stp_edge"):
+            config.append("  spanning-tree port type edge")
+        if i.get("shutdown"):
+            config.append("  shutdown")
+        else:
+            config.append("  no shutdown")
+        config.append("!")
+
+    # OSPF network statements (NX-OS: added on INTERFACE, but we also allow area config here)
+    # Actually on NX-OS the interface-based approach is standard — we did that above.
+    # No separate 'network X area Y' block like IOS.
+
+    # Static routes (NX-OS uses prefix notation!)
+    routes = data.get("static_routes", [])
+    if routes:
+        for r in routes:
+            if not (r.get("network") and r.get("cidr") and r.get("next_hop")): continue
+            # Prefix notation: ip route 10.0.0.0/24 next-hop
+            line = f"ip route {r['network']}/{r['cidr']} {r['next_hop']}"
+            if r.get("preference"): line += f" {r['preference']}"
+            config.append(line)
+        config.append("!")
+
+    # ACLs (NX-OS: named, not numbered — but we accept numbers as names)
+    for a in data.get("acls", []):
+        num = a.get("acl_number")
+        if not num: continue
+        config.append(f"ip access-list ACL_{num}")
+        if a.get("description"):
+            config.append(f"  remark {a['description']}")
+        seq = 10
+        for rule in a.get("rules", []):
+            if not (rule.get("action") and rule.get("source")): continue
+            proto = rule.get("protocol", "ip")
+            src = rule["source"]
+            rid = rule.get("rule_id", "").strip() or str(seq)
+            if src.lower() == "any":
+                line = f"  {rid} {rule['action']} {proto} any"
+            else:
+                wc = rule.get("wildcard") or "0.0.0.0"
+                line = f"  {rid} {rule['action']} {proto} {src} {wc}"
+            if rule.get("destination"):
+                dest = rule["destination"]
+                if dest.lower() == "any":
+                    line += " any"
+                else:
+                    dwc = rule.get("dest_wildcard", "0.0.0.0")
+                    line += f" {dest} {dwc}"
+            else:
+                line += " any"
+            config.append(line)
+            seq += 10
+        config.append("!")
+
+    return "\n".join(config)
+
+# ============================================================
+# MASTER ROUTER
+# ============================================================
+def generate_config(vendor, os_id, data):
+    """Route to the correct generator based on vendor+OS"""
+    if vendor == "h3c" and os_id == "comware":
+        return gen_h3c_comware(data)
+    elif vendor == "cisco" and os_id == "ios":
+        return gen_cisco_ios(data)
+    elif vendor == "cisco" and os_id == "iosxe":
+        return gen_cisco_iosxe(data)
+    elif vendor == "cisco" and os_id == "nxos":
+        return gen_cisco_nxos(data)
+    else:
+        return f"# Vendor '{vendor}' with OS '{os_id}' is not yet supported.\n# Coming soon!"
+
+# ============================================================
+# TEMPLATES (tagged by vendor + OS)
+# ============================================================
 TEMPLATES = {
-    "access_switch": {
+    # =========== H3C COMWARE ===========
+    "h3c_comware_access_switch": {
+        "vendor": "h3c", "os": "comware",
         "name": "🏢 Access Switch",
         "description": "Standard access switch with user VLAN and uplink trunk",
         "data": {
@@ -386,7 +824,8 @@ TEMPLATES = {
             ]
         }
     },
-    "core_switch": {
+    "h3c_comware_core_switch": {
+        "vendor": "h3c", "os": "comware",
         "name": "🏛️ Core Switch (L3)",
         "description": "Layer 3 core with SVI gateways, OSPF and static routes",
         "data": {
@@ -413,7 +852,8 @@ TEMPLATES = {
             }
         }
     },
-    "trunk_uplink": {
+    "h3c_comware_trunk": {
+        "vendor": "h3c", "os": "comware",
         "name": "🔗 Trunk Uplink",
         "description": "Simple trunk link between switches",
         "data": {
@@ -422,51 +862,40 @@ TEMPLATES = {
             ]
         }
     },
-    "dhcp_server_vlan": {
-        "name": "📡 DHCP Server on VLAN",
-        "description": "VLAN + SVI + DHCP pool — full L3 server setup (real-world pattern!)",
+    "h3c_comware_dhcp_on_vlan": {
+        "vendor": "h3c", "os": "comware",
+        "name": "📡 DHCP on VLAN",
+        "description": "VLAN + SVI + DHCP pool — full L3 server setup",
         "data": {
-            "vlans": [
-                {"vlan": "10", "name": "USERS", "description": "Office users"}
-            ],
+            "vlans": [{"vlan": "10", "name": "USERS", "description": "Office users"}],
             "dhcp_pools": [{
-                "pool_name": "USERS_POOL",
-                "network": "10.10.10.0", "cidr": "24",
-                "gateway": "10.10.10.1",
-                "dns": "8.8.8.8 1.1.1.1",
-                "lease_days": "7",
+                "pool_name": "USERS_POOL", "network": "10.10.10.0", "cidr": "24",
+                "gateway": "10.10.10.1", "dns": "8.8.8.8 1.1.1.1", "lease_days": "7",
                 "forbidden_ips": "10.10.10.1 10.10.10.2 10.10.10.3"
             }],
             "svis": [{
-                "vlan": "10", "description": "Users gateway",
-                "ip": "10.10.10.1/24",
+                "vlan": "10", "description": "Users gateway", "ip": "10.10.10.1/24",
                 "dhcp_mode": "server", "dhcp_apply_pool": "USERS_POOL"
             }]
         }
     },
-    "guest_wifi_vlan": {
+    "h3c_comware_guest_wifi": {
+        "vendor": "h3c", "os": "comware",
         "name": "📶 Guest WiFi VLAN",
-        "description": "Isolated guest VLAN with DHCP server + ACL",
+        "description": "Isolated guest VLAN with DHCP and ACL",
         "data": {
-            "vlans": [
-                {"vlan": "200", "name": "GUEST_WIFI", "description": "Guest WiFi isolation"}
-            ],
+            "vlans": [{"vlan": "200", "name": "GUEST_WIFI", "description": "Guest isolation"}],
             "dhcp_pools": [{
-                "pool_name": "GUEST_POOL",
-                "network": "192.168.200.0", "cidr": "24",
-                "gateway": "192.168.200.1",
-                "dns": "8.8.8.8",
-                "lease_days": "1",
+                "pool_name": "GUEST_POOL", "network": "192.168.200.0", "cidr": "24",
+                "gateway": "192.168.200.1", "dns": "8.8.8.8", "lease_days": "1",
                 "forbidden_ips": "192.168.200.1"
             }],
             "svis": [{
-                "vlan": "200", "description": "Guest WiFi",
-                "ip": "192.168.200.1/24",
+                "vlan": "200", "description": "Guest WiFi", "ip": "192.168.200.1/24",
                 "dhcp_mode": "server", "dhcp_apply_pool": "GUEST_POOL"
             }],
             "acls": [{
-                "acl_number": "3000",
-                "description": "Guest-Isolation",
+                "acl_number": "3000", "description": "Guest-Isolation",
                 "rules": [
                     {"rule_id": "5", "action": "deny", "protocol": "ip", "source": "192.168.200.0", "wildcard": "0.0.0.255"},
                     {"rule_id": "10", "action": "permit", "protocol": "ip", "source": "any"}
@@ -474,7 +903,8 @@ TEMPLATES = {
             }]
         }
     },
-    "ospf_router": {
+    "h3c_comware_ospf": {
+        "vendor": "h3c", "os": "comware",
         "name": "🧭 OSPF Router",
         "description": "OSPF area 0 with multiple networks",
         "data": {
@@ -488,56 +918,252 @@ TEMPLATES = {
             }
         }
     },
-    "dhcp_relay_vlan": {
+    "h3c_comware_dhcp_relay": {
+        "vendor": "h3c", "os": "comware",
         "name": "↗️ DHCP Relay",
         "description": "VLAN with DHCP Relay to central server",
         "data": {
-            "vlans": [
-                {"vlan": "50", "name": "BRANCH_USERS", "description": "Branch office users"}
-            ],
+            "vlans": [{"vlan": "50", "name": "BRANCH_USERS", "description": "Branch users"}],
             "svis": [{
-                "vlan": "50", "description": "Branch gateway",
-                "ip": "172.16.50.1/24",
+                "vlan": "50", "description": "Branch gateway", "ip": "172.16.50.1/24",
                 "dhcp_mode": "relay", "dhcp_relay": "10.10.100.10"
             }]
+        }
+    },
+    # =========== CISCO IOS ===========
+    "cisco_ios_access_switch": {
+        "vendor": "cisco", "os": "ios",
+        "name": "🏢 Catalyst Access Switch",
+        "description": "Cisco Catalyst 2960-style access switch",
+        "data": {
+            "system": {"hostname": "SW-ACCESS-01"},
+            "vlans": [
+                {"vlan": "10", "name": "USERS"},
+                {"vlan": "99", "name": "MGMT"}
+            ],
+            "interfaces": [
+                {"interface": "GigabitEthernet0/1", "mode": "access", "vlan": "10", "description": "User Port", "stp_edge": True},
+                {"interface": "GigabitEthernet0/24", "mode": "trunk", "allowed": "10,99", "description": "Uplink"}
+            ]
+        }
+    },
+    "cisco_ios_core_router": {
+        "vendor": "cisco", "os": "ios",
+        "name": "🏛️ ISR Core Router",
+        "description": "Cisco ISR with SVI gateways and OSPF",
+        "data": {
+            "system": {"hostname": "RTR-CORE-01"},
+            "vlans": [
+                {"vlan": "10", "name": "USERS"},
+                {"vlan": "20", "name": "SERVERS"}
+            ],
+            "svis": [
+                {"vlan": "10", "description": "Users", "ip": "10.10.10.1/24"},
+                {"vlan": "20", "description": "Servers", "ip": "10.10.20.1/24"}
+            ],
+            "interfaces": [
+                {"interface": "GigabitEthernet0/1", "mode": "trunk", "allowed": "10,20", "description": "Downlink"}
+            ],
+            "ospf": {
+                "process_id": "1", "router_id": "1.1.1.1", "area": "0",
+                "networks": [{"network": "10.10.0.0", "cidr": "16"}]
+            }
+        }
+    },
+    "cisco_ios_dhcp_router": {
+        "vendor": "cisco", "os": "ios",
+        "name": "📡 DHCP Server Router",
+        "description": "Router with DHCP pool for VLAN",
+        "data": {
+            "vlans": [{"vlan": "10", "name": "USERS"}],
+            "dhcp_pools": [{
+                "pool_name": "USERS_POOL", "network": "10.10.10.0", "cidr": "24",
+                "gateway": "10.10.10.1", "dns": "8.8.8.8 1.1.1.1",
+                "domain": "company.local", "lease_days": "7",
+                "forbidden_ips": "10.10.10.1 10.10.10.2 10.10.10.3"
+            }],
+            "svis": [{
+                "vlan": "10", "description": "User gateway", "ip": "10.10.10.1/24"
+            }]
+        }
+    },
+    "cisco_ios_ospf": {
+        "vendor": "cisco", "os": "ios",
+        "name": "🧭 OSPF Router",
+        "description": "OSPF area 0 setup",
+        "data": {
+            "system": {"hostname": "RTR-OSPF-01"},
+            "ospf": {
+                "process_id": "1", "router_id": "1.1.1.1", "area": "0",
+                "networks": [
+                    {"network": "10.0.0.0", "cidr": "8"},
+                    {"network": "192.168.1.0", "cidr": "24"}
+                ]
+            }
+        }
+    },
+    # =========== CISCO IOS-XE ===========
+    "cisco_iosxe_cat9k": {
+        "vendor": "cisco", "os": "iosxe",
+        "name": "🏢 Catalyst 9000 Switch",
+        "description": "Modern Catalyst 9k access switch",
+        "data": {
+            "system": {"hostname": "C9K-ACCESS-01"},
+            "vlans": [
+                {"vlan": "10", "name": "USERS"},
+                {"vlan": "99", "name": "MGMT"}
+            ],
+            "interfaces": [
+                {"interface": "GigabitEthernet1/0/1", "mode": "access", "vlan": "10", "description": "User Port", "stp_edge": True},
+                {"interface": "TenGigabitEthernet1/1/1", "mode": "trunk", "allowed": "10,99", "description": "Uplink"}
+            ]
+        }
+    },
+    "cisco_iosxe_isr4k": {
+        "vendor": "cisco", "os": "iosxe",
+        "name": "🏛️ ISR 4000 Router",
+        "description": "Modern ISR 4000 with OSPF",
+        "data": {
+            "system": {"hostname": "ISR4K-01"},
+            "vlans": [
+                {"vlan": "10", "name": "USERS"},
+                {"vlan": "20", "name": "SERVERS"}
+            ],
+            "svis": [
+                {"vlan": "10", "description": "Users", "ip": "10.10.10.1/24"},
+                {"vlan": "20", "description": "Servers", "ip": "10.10.20.1/24"}
+            ],
+            "ospf": {
+                "process_id": "1", "router_id": "1.1.1.1", "area": "0",
+                "networks": [{"network": "10.10.0.0", "cidr": "16"}]
+            }
+        }
+    },
+    "cisco_iosxe_dhcp": {
+        "vendor": "cisco", "os": "iosxe",
+        "name": "📡 DHCP Server",
+        "description": "DHCP pool with SVI gateway",
+        "data": {
+            "vlans": [{"vlan": "10", "name": "USERS"}],
+            "dhcp_pools": [{
+                "pool_name": "USERS_POOL", "network": "10.10.10.0", "cidr": "24",
+                "gateway": "10.10.10.1", "dns": "8.8.8.8 1.1.1.1",
+                "domain": "company.local", "lease_days": "7",
+                "forbidden_ips": "10.10.10.1 10.10.10.2"
+            }],
+            "svis": [{"vlan": "10", "description": "User gateway", "ip": "10.10.10.1/24"}]
+        }
+    },
+    # =========== CISCO NX-OS ===========
+    "cisco_nxos_leaf": {
+        "vendor": "cisco", "os": "nxos",
+        "name": "🌱 Nexus 9k Leaf",
+        "description": "Nexus leaf switch (access)",
+        "data": {
+            "system": {"hostname": "N9K-LEAF-01"},
+            "vlans": [
+                {"vlan": "10", "name": "USERS"},
+                {"vlan": "20", "name": "SERVERS"}
+            ],
+            "interfaces": [
+                {"interface": "Ethernet1/1", "mode": "access", "vlan": "10", "description": "Server port", "stp_edge": True},
+                {"interface": "Ethernet1/49", "mode": "trunk", "allowed": "10,20", "description": "Uplink to spine"}
+            ]
+        }
+    },
+    "cisco_nxos_spine": {
+        "vendor": "cisco", "os": "nxos",
+        "name": "🌲 Nexus 9k Spine (L3)",
+        "description": "Nexus spine with SVIs and OSPF",
+        "data": {
+            "system": {"hostname": "N9K-SPINE-01"},
+            "vlans": [
+                {"vlan": "10", "name": "USERS"},
+                {"vlan": "20", "name": "SERVERS"}
+            ],
+            "svis": [
+                {"vlan": "10", "description": "Users", "ip": "10.10.10.1/24"},
+                {"vlan": "20", "description": "Servers", "ip": "10.10.20.1/24"}
+            ],
+            "interfaces": [
+                {"interface": "Ethernet1/1", "mode": "trunk", "allowed": "10,20", "description": "To leaf-01"}
+            ],
+            "ospf": {
+                "process_id": "1", "router_id": "1.1.1.1", "area": "0",
+                "networks": [{"network": "10.10.0.0", "cidr": "16"}]
+            }
+        }
+    },
+    "cisco_nxos_dhcp": {
+        "vendor": "cisco", "os": "nxos",
+        "name": "📡 Nexus DHCP Server",
+        "description": "Nexus with DHCP pool and SVI",
+        "data": {
+            "vlans": [{"vlan": "10", "name": "USERS"}],
+            "dhcp_pools": [{
+                "pool_name": "USERS_POOL", "network": "10.10.10.0", "cidr": "24",
+                "gateway": "10.10.10.1", "dns": "8.8.8.8 1.1.1.1", "lease_days": "7",
+                "forbidden_ips": "10.10.10.1"
+            }],
+            "svis": [{"vlan": "10", "description": "Users", "ip": "10.10.10.1/24"}]
         }
     }
 }
 
-# ==========================================================
+# ============================================================
 # ROUTES
-# ==========================================================
+# ============================================================
 @app.route("/")
 def root():
     return jsonify({
         "status": "ok",
         "app": APP_NAME,
         "version": APP_VERSION,
-        "vendor": CURRENT_VENDOR,
+        "vendors": list(VENDORS.keys()),
         "docs": "https://configlabs.online"
     })
 
 @app.route("/vendors", methods=["GET"])
 def vendors():
-    return jsonify(SUPPORTED_VENDORS)
+    return jsonify(VENDORS)
 
 @app.route("/generate", methods=["POST"])
 def generate():
     try:
-        data = request.json or {}
-        result = generate_config(data)
-        lines = len(result.split("\n"))
-        return jsonify({"config": result, "lines": lines, "success": True})
+        payload = request.json or {}
+        vendor = payload.get("vendor", "h3c")
+        os_id = payload.get("os", "comware")
+        data = payload.get("data", payload)  # fall back: treat body as data (v1 compat)
+        # Back-compat: v1 didn't have vendor/os envelope
+        if "data" not in payload and ("vlans" in payload or "svis" in payload or "interfaces" in payload):
+            data = payload
+            vendor = "h3c"
+            os_id = "comware"
+        result = generate_config(vendor, os_id, data)
+        return jsonify({
+            "config": result,
+            "lines": len(result.split("\n")),
+            "vendor": vendor,
+            "os": os_id,
+            "success": True
+        })
     except Exception as e:
         return jsonify({"error": str(e), "success": False}), 400
 
 @app.route("/templates", methods=["GET"])
 def templates():
+    vendor = request.args.get("vendor")
+    os_id = request.args.get("os")
+    if vendor and os_id:
+        filtered = {k: v for k, v in TEMPLATES.items() if v.get("vendor") == vendor and v.get("os") == os_id}
+        return jsonify(filtered)
+    elif vendor:
+        filtered = {k: v for k, v in TEMPLATES.items() if v.get("vendor") == vendor}
+        return jsonify(filtered)
     return jsonify(TEMPLATES)
 
 @app.route("/feedback", methods=["POST"])
 def feedback():
-    """Simple feedback endpoint — logs to console"""
     try:
         data = request.json or {}
         msg = data.get("message", "")
@@ -547,7 +1173,7 @@ def feedback():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
 
-# ==========================================================
+# ============================================================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
