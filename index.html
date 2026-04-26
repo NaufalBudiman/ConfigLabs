@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="google-site-verification" content="ULPAaxAn_33ypO9GWfJCPIlJWf1CzFndJyDwAwdlJcs" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>ConfigLabs — Network Configuration, Simplified</title>
 <meta name="description" content="Free multi-vendor network config generator. Build production-ready configs for H3C, Cisco IOS, IOS-XE, and NX-OS visually. No typos, no CLI headaches."/>
@@ -408,6 +407,7 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
     <div>Config<em>Labs</em></div>
   </div>
   <div class="nav-actions">
+    <a href="/about.html" style="padding:8px 14px;color:var(--text-dim);text-decoration:none;font-size:13px;font-weight:500;border-radius:8px;transition:all 0.2s" onmouseover="this.style.color='var(--text)';this.style.background='var(--surface-hover)'" onmouseout="this.style.color='var(--text-dim)';this.style.background='transparent'">About</a>
     <div class="chip"><span class="dot"></span><span id="backend-status">Connecting...</span></div>
     <button class="icon-btn" onclick="openFeedback()" title="Send feedback">💬</button>
     <button class="icon-btn" onclick="toggleHistory()" title="History">🕐</button>
@@ -572,6 +572,7 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
       </div>
       <div class="footer-col">
         <h4>Product</h4>
+        <a href="/about.html">About</a>
         <a onclick="document.querySelector('.templates-section').scrollIntoView({behavior:'smooth'});">Templates</a>
         <a onclick="openFeedback();">Send feedback</a>
         <a onclick="openSupport();">☕ Support us</a>

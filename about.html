@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>About — ConfigLabs · The Story Behind The Tool</title>
+<meta name="description" content="ConfigLabs is a free, independent network configuration generator built by network engineers, for network engineers. Learn about the mission, the maker, and what's coming next."/>
+<meta name="keywords" content="about ConfigLabs, network config generator, Naufal Budiman, H3C Cisco config tool, free networking tool"/>
+<meta name="author" content="ConfigLabs"/>
+<meta property="og:title" content="About ConfigLabs — Network Configuration, Simplified"/>
+<meta property="og:description" content="The story behind ConfigLabs. Built by a network engineer, for network engineers. Free forever."/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://configlabs.online/about"/>
+<meta name="theme-color" content="#0b0d10"/>
+
+<!-- Proper favicon setup -->
+<link rel="icon" type="image/x-icon" href="/favicon.ico"/>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/>
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png"/>
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png"/>
+<link rel="manifest" href="/site.webmanifest"/>
+
+<!-- Schema.org for the About page -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "AboutPage",
+  "url": "https://configlabs.online/about",
+  "name": "About ConfigLabs",
+  "description": "The story behind ConfigLabs — a free multi-vendor network configuration generator.",
+  "publisher": {
+    "@type": "Organization",
+    "name": "ConfigLabs",
+    "url": "https://configlabs.online",
+    "logo": "https://configlabs.online/favicon-512.png"
+  }
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #0b0d10;
+  --bg-2: #111418;
+  --surface: #15191f;
+  --surface-2: #1b2027;
+  --surface-hover: #222831;
+  --border: #232a34;
+  --border-strong: #2e3744;
+  --text: #e6e9ee;
+  --text-dim: #9aa3af;
+  --text-muted: #5b6472;
+  --accent: #7cf4c7;
+  --accent-2: #a8b5ff;
+  --accent-3: #ffb86b;
+  --danger: #ff6478;
+  --success: #7cf4c7;
+  --glow: 0 0 40px rgba(124, 244, 199, 0.15);
+  --sans: 'Geist', system-ui, sans-serif;
+  --serif: 'Instrument Serif', Georgia, serif;
+  --mono: 'JetBrains Mono', monospace;
+  --radius: 12px;
+  --radius-lg: 20px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+[data-theme="light"] {
+  --bg: #f8f6f1; --bg-2: #ffffff; --surface: #ffffff; --surface-2: #f1ede3;
+  --surface-hover: #ebe6d8; --border: #e4dfd0; --border-strong: #d0c9b5;
+  --text: #1a1a1a; --text-dim: #5a5a5a; --text-muted: #8a8a8a;
+  --accent: #0f766e; --accent-2: #4f46e5; --accent-3: #ea580c;
+  --glow: 0 4px 20px rgba(15, 118, 110, 0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; transition: background 0.3s var(--ease), color 0.3s var(--ease); }
+
+body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 60px 60px; mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%); opacity: 0.3; pointer-events: none; z-index: 0; }
+
+/* ========== NAV (matches index.html) ========== */
+nav { position: sticky; top: 0; z-index: 50; padding: 16px 32px; background: color-mix(in srgb, var(--bg) 75%, transparent); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.brand { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 17px; letter-spacing: -0.3px; text-decoration: none; color: var(--text); }
+.brand-logo { width: 32px; height: 32px; border-radius: 8px; background: conic-gradient(from 180deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent)); display: grid; place-items: center; position: relative; }
+.brand-logo::after { content: ''; position: absolute; inset: 2px; border-radius: 6px; background: var(--bg); }
+.brand-logo svg { position: relative; z-index: 1; width: 18px; height: 18px; color: var(--text); }
+.brand em { font-family: var(--serif); font-style: italic; color: var(--accent); font-weight: 400; }
+.nav-actions { display: flex; gap: 8px; align-items: center; }
+.nav-link { padding: 8px 14px; color: var(--text-dim); text-decoration: none; font-size: 13px; font-weight: 500; border-radius: 8px; transition: all 0.2s; }
+.nav-link:hover { color: var(--text); background: var(--surface); }
+.nav-link.active { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.icon-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); width: 36px; height: 36px; border-radius: 10px; cursor: pointer; display: grid; place-items: center; transition: all 0.2s var(--ease); font-size: 16px; }
+.icon-btn:hover { background: var(--surface-hover); color: var(--text); border-color: var(--border-strong); }
+
+/* ========== CONTAINER ========== */
+.container { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 40px 32px 80px; }
+
+/* ========== HERO ========== */
+.hero { text-align: center; padding: 60px 0 40px; }
+.hero-tag { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font-size: 12px; color: var(--text-dim); font-family: var(--mono); margin-bottom: 28px; animation: fadeUp 0.6s var(--ease) both; }
+.hero-tag .live { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.hero h1 { font-size: clamp(40px, 6vw, 60px); line-height: 1.05; letter-spacing: -1.5px; font-weight: 600; margin-bottom: 24px; animation: fadeUp 0.7s var(--ease) 0.1s both; }
+.hero h1 .serif { font-family: var(--serif); font-style: italic; font-weight: 400; background: linear-gradient(135deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; padding-right: 4px; }
+.hero p { color: var(--text-dim); font-size: 17px; max-width: 600px; margin: 0 auto 32px; animation: fadeUp 0.7s var(--ease) 0.2s both; }
+.cta-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; background: var(--accent); color: var(--bg); border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 14px; box-shadow: var(--glow); transition: transform 0.2s var(--ease); animation: fadeUp 0.7s var(--ease) 0.3s both; }
+.cta-btn:hover { transform: translateY(-2px); }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ========== SECTIONS ========== */
+section.block { margin: 60px 0; animation: fadeUp 0.7s var(--ease) both; }
+section.block h2 { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 16px; }
+section.block h2 em { font-family: var(--serif); font-style: italic; color: var(--accent); font-weight: 400; }
+section.block p { color: var(--text-dim); font-size: 15px; line-height: 1.7; margin-bottom: 14px; }
+section.block strong { color: var(--text); font-weight: 500; }
+
+/* ========== PROBLEM CARDS ========== */
+.problem-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 24px; }
+.problem-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; transition: all 0.2s var(--ease); }
+.problem-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.problem-card .icon { font-size: 28px; margin-bottom: 10px; display: block; }
+.problem-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+.problem-card p { font-size: 13px; color: var(--text-dim); margin: 0; line-height: 1.5; }
+
+/* ========== HOW IT WORKS ========== */
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 24px; counter-reset: step; }
+.step { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; position: relative; transition: all 0.2s var(--ease); }
+.step:hover { border-color: var(--accent); }
+.step::before { counter-increment: step; content: counter(step, decimal-leading-zero); position: absolute; top: 12px; right: 16px; font-family: var(--mono); font-size: 32px; color: var(--accent); opacity: 0.25; font-weight: 700; }
+.step h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+.step p { font-size: 13px; color: var(--text-dim); margin: 0; line-height: 1.5; }
+
+/* ========== FEATURES ========== */
+.features { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 24px; }
+.feature { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; display: flex; align-items: flex-start; gap: 12px; transition: all 0.2s var(--ease); }
+.feature:hover { border-color: var(--accent); }
+.feature .check { width: 22px; height: 22px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); display: grid; place-items: center; flex-shrink: 0; font-weight: 700; font-size: 12px; }
+.feature span { font-size: 14px; color: var(--text); }
+
+/* ========== ROADMAP ========== */
+.roadmap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px; margin-top: 24px; }
+.roadmap-section { margin-bottom: 22px; }
+.roadmap-section:last-child { margin-bottom: 0; }
+.roadmap-section h3 { font-size: 13px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-dim); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.roadmap-section h3 .dot { width: 8px; height: 8px; border-radius: 50%; }
+.roadmap-section.live h3 .dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.roadmap-section.soon h3 .dot { background: var(--accent-2); }
+.roadmap-section.maybe h3 .dot { background: var(--accent-3); }
+.roadmap-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.roadmap-list li { padding: 10px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; font-size: 14px; color: var(--text-dim); display: flex; align-items: center; gap: 10px; }
+.roadmap-list li::before { font-family: var(--mono); font-size: 11px; }
+.roadmap-section.live .roadmap-list li::before { content: '✓'; color: var(--accent); font-weight: 700; }
+.roadmap-section.soon .roadmap-list li::before { content: '→'; color: var(--accent-2); }
+.roadmap-section.maybe .roadmap-list li::before { content: '?'; color: var(--accent-3); }
+
+/* ========== FAQ ========== */
+.faq { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
+.faq-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; transition: border-color 0.2s; }
+.faq-item:hover { border-color: var(--border-strong); }
+.faq-item summary { padding: 16px 20px; font-weight: 500; font-size: 15px; color: var(--text); cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s; }
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after { content: '+'; font-family: var(--mono); font-size: 22px; color: var(--text-dim); transition: transform 0.3s var(--ease); font-weight: 300; }
+.faq-item summary:hover { background: var(--surface-hover); }
+.faq-item[open] summary::after { transform: rotate(45deg); color: var(--accent); }
+.faq-item .faq-body { padding: 0 20px 18px; color: var(--text-dim); font-size: 14px; line-height: 1.7; }
+.faq-item .faq-body a { color: var(--accent); text-decoration: none; }
+.faq-item .faq-body a:hover { text-decoration: underline; }
+
+/* ========== MAKER CARD ========== */
+.maker { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 32px; margin-top: 24px; display: flex; gap: 24px; align-items: center; }
+@media (max-width: 600px) { .maker { flex-direction: column; text-align: center; } }
+.maker-avatar { width: 80px; height: 80px; border-radius: 50%; background: conic-gradient(from 180deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent)); display: grid; place-items: center; flex-shrink: 0; position: relative; }
+.maker-avatar::after { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--surface); }
+.maker-avatar span { position: relative; z-index: 1; font-size: 32px; font-family: var(--serif); font-style: italic; color: var(--accent); font-weight: 600; }
+.maker-info h3 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+.maker-info .role { font-family: var(--mono); font-size: 12px; color: var(--text-dim); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1.2px; }
+.maker-info p { font-size: 14px; color: var(--text-dim); line-height: 1.6; margin-bottom: 12px; }
+.maker-links { display: flex; gap: 8px; flex-wrap: wrap; }
+.maker-links a { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; color: var(--text-dim); text-decoration: none; font-size: 12px; font-family: var(--mono); transition: all 0.2s; }
+.maker-links a:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ========== CTA SECTION ========== */
+.cta-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 48px 32px; text-align: center; margin-top: 60px; position: relative; overflow: hidden; }
+.cta-section::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--accent) 15%, transparent), transparent 70%); pointer-events: none; }
+.cta-section h2 { position: relative; z-index: 1; font-size: 32px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 12px; }
+.cta-section h2 em { font-family: var(--serif); font-style: italic; color: var(--accent); font-weight: 400; }
+.cta-section p { position: relative; z-index: 1; color: var(--text-dim); margin-bottom: 24px; font-size: 16px; }
+.cta-buttons { position: relative; z-index: 1; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.cta-section .btn { padding: 12px 22px; border-radius: 999px; font-weight: 600; font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: transform 0.2s; }
+.cta-section .btn-primary { background: var(--accent); color: var(--bg); box-shadow: var(--glow); }
+.cta-section .btn-secondary { background: transparent; color: var(--text); border: 1px solid var(--border-strong); }
+.cta-section .btn:hover { transform: translateY(-2px); }
+
+/* ========== FOOTER ========== */
+footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 13px; }
+.footer-grid { max-width: 1400px; margin: 0 auto; padding: 0 32px; display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 32px; margin-bottom: 32px; }
+@media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+.footer-col h4 { font-family: var(--mono); font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px; font-weight: 500; }
+.footer-col a { display: block; color: var(--text-muted); text-decoration: none; font-size: 13px; padding: 4px 0; transition: color 0.15s; cursor: pointer; }
+.footer-col a:hover { color: var(--accent); }
+.footer-col a::before { content: '→ '; opacity: 0.4; margin-right: 2px; }
+.footer-brand-block { font-size: 15px; color: var(--text); margin-bottom: 12px; font-weight: 500; }
+.footer-brand-block em { font-family: var(--serif); font-style: italic; color: var(--accent); font-weight: 400; }
+.footer-tagline { color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 14px; }
+.legal { max-width: 900px; margin: 0 auto; padding: 0 32px; border-top: 1px solid var(--border); padding-top: 20px; text-align: center; font-size: 11px; color: var(--text-muted); line-height: 1.8; font-family: var(--mono); }
+.legal strong { color: var(--text-dim); font-weight: 500; }
+
+/* Support FAB */
+.support-fab { position: fixed; bottom: 28px; right: 28px; z-index: 90; padding: 12px 18px 12px 14px; border-radius: 999px; background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%); color: var(--bg); font-family: var(--sans); font-size: 13px; font-weight: 600; letter-spacing: -0.2px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 8px 24px rgba(124, 244, 199, 0.25), 0 2px 8px rgba(0,0,0,0.3); transition: transform 0.2s var(--ease); text-decoration: none; }
+.support-fab:hover { transform: translateY(-2px) scale(1.04); }
+.support-fab .fab-icon { font-size: 18px; line-height: 1; }
+@media (max-width: 600px) { .support-fab { bottom: 20px; right: 20px; padding: 11px 16px 11px 12px; font-size: 12px; } }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+</style>
+</head>
+<body data-theme="dark">
+
+<nav>
+  <a href="/" class="brand">
+    <div class="brand-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/>
+        <path d="M8.5 2h7"/>
+        <path d="M7 16h10"/>
+      </svg>
+    </div>
+    <div>Config<em>Labs</em></div>
+  </a>
+  <div class="nav-actions">
+    <a href="/" class="nav-link">App</a>
+    <a href="/about.html" class="nav-link active">About</a>
+    <button class="icon-btn" onclick="toggleTheme()" title="Theme" id="theme-btn">🌙</button>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- ===================== HERO ===================== -->
+  <section class="hero">
+    <div class="hero-tag"><span class="live"></span> About ConfigLabs · v2.0</div>
+    <h1>Network configuration,<br><span class="serif">simplified.</span></h1>
+    <p>Built by network engineers, for network engineers. ConfigLabs is a free, independent tool that generates production-ready configs for H3C and Cisco devices — without the CLI headaches.</p>
+    <a href="/" class="cta-btn">Start Building →</a>
+  </section>
+
+  <!-- ===================== THE PROBLEM ===================== -->
+  <section class="block">
+    <h2>The <em>problem</em> we solve</h2>
+    <p>Every network engineer knows the pain: you've configured the same VLAN structure a hundred times, but every time you have to look up the syntax, double-check command order, and pray you don't typo a single character. <strong>ConfigLabs eliminates that friction.</strong></p>
+
+    <div class="problem-grid">
+      <div class="problem-card">
+        <span class="icon">📚</span>
+        <h3>CLI Memorization</h3>
+        <p>H3C uses different syntax than Cisco. Cisco IOS differs from NX-OS. ConfigLabs handles all that for you.</p>
+      </div>
+      <div class="problem-card">
+        <span class="icon">⌨️</span>
+        <h3>Typos &amp; Errors</h3>
+        <p>One missing space, one wrong VLAN ID, and your network breaks. Visual builders catch mistakes before they happen.</p>
+      </div>
+      <div class="problem-card">
+        <span class="icon">⏱️</span>
+        <h3>Time Wasted</h3>
+        <p>Stop digging through vendor docs. Build configs in minutes, not hours.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== THE MAKER ===================== -->
+  <section class="block">
+    <h2>Built <em>by</em></h2>
+    <div class="maker">
+      <div class="maker-avatar"><span>N</span></div>
+      <div class="maker-info">
+        <h3>Naufal Budiman</h3>
+        <div class="role">Network Engineer · Indonesia</div>
+        <p>ConfigLabs started as a side project — a way to make repetitive network configuration faster and more reliable. What began as a personal tool for H3C devices grew into a multi-vendor platform supporting Cisco IOS, IOS-XE, and NX-OS, with more vendors on the way.</p>
+        <p>The mission is simple: <strong>make network engineers' lives easier, for free.</strong></p>
+        <div class="maker-links">
+          <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" rel="noopener">⌨ GitHub</a>
+          <a href="/" >🧪 Try the App</a>
+          <a href="https://saweria.co/configlabs" target="_blank" rel="noopener">☕ Support</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== HOW IT WORKS ===================== -->
+  <section class="block">
+    <h2>How it <em>works</em></h2>
+    <p>Three simple steps from blank page to deployable config:</p>
+    <div class="steps">
+      <div class="step">
+        <h3>Pick Your Vendor</h3>
+        <p>Choose between H3C Comware or Cisco (IOS, IOS-XE, or NX-OS). The UI adapts to vendor-specific syntax automatically.</p>
+      </div>
+      <div class="step">
+        <h3>Fill The Form</h3>
+        <p>Add VLANs, interfaces, DHCP pools, OSPF, ACLs — all visually. Use a template to start fast, or build from scratch.</p>
+      </div>
+      <div class="step">
+        <h3>Copy &amp; Deploy</h3>
+        <p>Click generate, copy the CLI output, paste into your switch. Production-ready, vendor-correct, and validated syntax.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== FEATURES ===================== -->
+  <section class="block">
+    <h2>What you <em>get</em></h2>
+    <p>Everything you need, nothing you don't:</p>
+    <div class="features">
+      <div class="feature"><div class="check">✓</div><span>Free forever — no login, no paywall, no ads</span></div>
+      <div class="feature"><div class="check">✓</div><span>4 vendor OS supported (H3C + 3 Cisco variants)</span></div>
+      <div class="feature"><div class="check">✓</div><span>25+ pre-built templates to start fast</span></div>
+      <div class="feature"><div class="check">✓</div><span>Visual builder (no CLI memorization)</span></div>
+      <div class="feature"><div class="check">✓</div><span>One-click copy &amp; download</span></div>
+      <div class="feature"><div class="check">✓</div><span>Works on desktop and mobile</span></div>
+      <div class="feature"><div class="check">✓</div><span>Dark &amp; light theme</span></div>
+      <div class="feature"><div class="check">✓</div><span>Session history (revisit past configs)</span></div>
+      <div class="feature"><div class="check">✓</div><span>Privacy-first — nothing tracked, nothing stored</span></div>
+    </div>
+  </section>
+
+  <!-- ===================== ROADMAP ===================== -->
+  <section class="block">
+    <h2>What's <em>next</em></h2>
+    <p>Active development. Updates ship regularly:</p>
+    <div class="roadmap">
+      <div class="roadmap-section live">
+        <h3><span class="dot"></span>Live now</h3>
+        <ul class="roadmap-list">
+          <li>H3C Comware v7</li>
+          <li>Cisco IOS (Catalyst 2960/3750, ISR)</li>
+          <li>Cisco IOS-XE (Catalyst 9000, ISR 4k)</li>
+          <li>Cisco NX-OS (Nexus 9k/7k/5k)</li>
+        </ul>
+      </div>
+      <div class="roadmap-section soon">
+        <h3><span class="dot"></span>Coming soon</h3>
+        <ul class="roadmap-list">
+          <li>User accounts &amp; saved configs</li>
+          <li>AI-powered config validator</li>
+          <li>Huawei VRP support</li>
+          <li>Juniper Junos support</li>
+        </ul>
+      </div>
+      <div class="roadmap-section maybe">
+        <h3><span class="dot"></span>Exploring</h3>
+        <ul class="roadmap-list">
+          <li>Topology visualizer (auto-diagram from config)</li>
+          <li>Config diff &amp; comparison tool</li>
+          <li>Arista EOS &amp; MikroTik RouterOS</li>
+          <li>Mobile app (iOS &amp; Android)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== FAQ ===================== -->
+  <section class="block">
+    <h2>Common <em>questions</em></h2>
+    <div class="faq">
+
+      <details class="faq-item">
+        <summary>Is ConfigLabs affiliated with H3C or Cisco?</summary>
+        <div class="faq-body">No. ConfigLabs is an independent tool — not affiliated with, endorsed by, or sponsored by New H3C Technologies Co., Ltd., Cisco Systems, Inc., or any other vendor. H3C®, Comware®, Cisco®, IOS®, IOS-XE®, and NX-OS® are registered trademarks of their respective owners. We just respect their platforms.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary>Can I trust the generated configs in production?</summary>
+        <div class="faq-body">Always review and test in a lab environment first. ConfigLabs follows official vendor syntax and best practices, but every network is different. The tool is provided "AS IS" — you're responsible for what you deploy.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary>Is my data private? Do you store my configs?</summary>
+        <div class="faq-body"><strong>Yes, your data is private.</strong> ConfigLabs doesn't require login, doesn't track you, and doesn't store your configurations on our servers. Configs are generated on-demand and only kept in your browser session (history clears when you close the tab).</div>
+      </details>
+
+      <details class="faq-item">
+        <summary>Why is this free? What's the catch?</summary>
+        <div class="faq-body">There's no catch. ConfigLabs is built as a passion project for the networking community. If it saves you time, you can <a href="https://saweria.co/configlabs" target="_blank" rel="noopener">support it via Saweria</a> — but you don't have to. The tool stays free regardless.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary>Can I use this commercially or at my company?</summary>
+        <div class="faq-body">Yes! Use it for any purpose — personal projects, work, lab studies, certifications, client deployments. No license required, no attribution needed. Just don't redistribute it as your own product.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary>How do I report a bug or request a feature?</summary>
+        <div class="faq-body">Click the 💬 feedback button in the app, or open an issue on <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" rel="noopener">GitHub</a>. We read every message and prioritize based on impact.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary>What vendors will be added next?</summary>
+        <div class="faq-body">Huawei VRP and Juniper Junos are next on the roadmap, followed by Arista EOS and MikroTik RouterOS. Got a vendor request? Send feedback and let us know!</div>
+      </details>
+
+      <details class="faq-item">
+        <summary>How can I stay updated on new features?</summary>
+        <div class="faq-body">Star the <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" rel="noopener">GitHub repo</a> to follow updates. Major releases will be announced there. Social media accounts coming soon.</div>
+      </details>
+
+    </div>
+  </section>
+
+  <!-- ===================== CTA ===================== -->
+  <section class="cta-section">
+    <h2>Ready to <em>build</em>?</h2>
+    <p>No login required. No download. Just open and start configuring.</p>
+    <div class="cta-buttons">
+      <a href="/" class="btn btn-primary">⚡ Open ConfigLabs</a>
+      <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" rel="noopener" class="btn btn-secondary">⌨ View on GitHub</a>
+    </div>
+  </section>
+
+</div>
+
+<!-- ===================== FOOTER ===================== -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-col">
+      <div class="footer-brand-block">Config<em>Labs</em></div>
+      <div class="footer-tagline">
+        Built with <em style="font-family:var(--serif); font-style:italic; color:var(--accent);">care</em> for network engineers.<br>
+        Free, open, always improving.
+      </div>
+      <div style="font-family:var(--mono); font-size:11px; color:var(--text-muted);">v2.0 · H3C + Cisco multi-vendor</div>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <a href="/">App</a>
+      <a href="/about.html">About</a>
+      <a href="https://saweria.co/configlabs" target="_blank" rel="noopener">☕ Support us</a>
+      <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <div class="footer-col">
+      <h4>Vendor Resources</h4>
+      <a href="https://www.h3c.com" target="_blank" rel="noopener">H3C Official</a>
+      <a href="https://www.cisco.com" target="_blank" rel="noopener">Cisco Official</a>
+      <a href="https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/" target="_blank" rel="noopener">IOS Documentation</a>
+      <a href="https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/" target="_blank" rel="noopener">NX-OS Documentation</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="/#disclaimer">Disclaimer</a>
+      <a href="/#terms">Terms of Use</a>
+    </div>
+  </div>
+  <div class="legal">
+    <p><strong>ConfigLabs is an independent tool</strong> and is <strong>not affiliated with, endorsed by, or sponsored by</strong> New H3C Technologies Co., Ltd. or Cisco Systems, Inc.</p>
+    <p style="margin-top:8px">H3C®, Comware®, Cisco®, IOS®, IOS-XE®, NX-OS® and related marks are registered trademarks of their respective owners. Used for reference only.</p>
+    <p style="margin-top:14px; opacity:0.7">© <span id="year"></span> ConfigLabs · configlabs.online</p>
+  </div>
+</footer>
+
+<!-- Floating Support Button -->
+<a href="https://saweria.co/configlabs" target="_blank" rel="noopener" class="support-fab" title="Support ConfigLabs">
+  <span class="fab-icon">☕</span>
+  <span>Support us</span>
+</a>
+
+<script>
+const THEME_KEY = 'configlabs_theme';
+document.getElementById('year').textContent = new Date().getFullYear();
+
+function toggleTheme() {
+  const cur = document.body.dataset.theme;
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.body.dataset.theme = next;
+  document.getElementById('theme-btn').textContent = next === 'dark' ? '🌙' : '☀️';
+  try { localStorage.setItem(THEME_KEY, next); } catch(e){}
+}
+(function initTheme(){
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved) {
+      document.body.dataset.theme = saved;
+      document.getElementById('theme-btn').textContent = saved === 'dark' ? '🌙' : '☀️';
+    }
+  } catch(e){}
+})();
+</script>
+
+</body>
+</html>
