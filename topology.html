@@ -457,6 +457,40 @@ nav {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ============================================================
+   DEVICE NAME — inline-editable input on top of chassis
+   ============================================================ */
+.dev-name-input {
+  width: 100%;
+  height: 24px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 0 8px;
+  text-align: center;
+  font-family: 'Geist', system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  outline: none;
+  transition: all .15s ease;
+  letter-spacing: .15px;
+  cursor: text;
+  box-sizing: border-box;
+  /* Ensure it stays clickable inside SVG foreignObject */
+  pointer-events: all;
+}
+.dev-name-input:hover {
+  border-color: var(--accent);
+  background: var(--surface-hover);
+}
+.dev-name-input:focus {
+  border-color: var(--accent);
+  background: var(--bg);
+  box-shadow: 0 0 0 2px rgba(124,244,199,0.2);
+}
+.dev-name-input::selection { background: var(--accent); color: var(--bg); }
 </style>
 </head>
 <body data-theme="dark">
@@ -669,16 +703,54 @@ nav {
 
 /* ============================================================
    DEVICE CATALOGUE
+   - W / H = front-panel chassis size only
+   - NAME_H = height reserved for editable name input above chassis
+   - color = primary stroke + LED color for the chassis
+   - tag = short type label shown next to model number
    ============================================================ */
+const NAME_H = 30;       // height of the editable name strip on top
+const NAME_GAP = 6;      // gap between name and chassis
+
 const TD = {
-  switch_l3: { emoji:'🔶', label:'L3 Switch', prefix:'SW-CORE', defV:'h3c',   defO:'comware', W:185, H:95 },
-  switch_l2: { emoji:'🔷', label:'L2 Switch', prefix:'SW-ACC',  defV:'h3c',   defO:'comware', W:185, H:95 },
-  router:    { emoji:'🔵', label:'Router',    prefix:'RTR',     defV:'cisco', defO:'ios',     W:180, H:92 },
-  firewall:  { emoji:'🔴', label:'Firewall',  prefix:'FW',      defV:'cisco', defO:'ios',     W:175, H:90 },
-  server:    { emoji:'💻', label:'Server',    prefix:'SRV',     defV:null,    defO:null,      W:165, H:86 },
-  endpoint:  { emoji:'📱', label:'Endpoint',  prefix:'PC',      defV:null,    defO:null,      W:160, H:84 },
-  cloud:     { emoji:'☁️', label:'Cloud/ISP', prefix:'ISP',     defV:null,    defO:null,      W:165, H:86 },
+  switch_l3: {
+    emoji:'🔶', label:'L3 Switch', prefix:'SW-CORE', defV:'h3c',   defO:'comware',
+    W: 220, H: 70,
+    color: '#7cf4c7', bg: '#16221a', tag: 'L3 SW',
+  },
+  switch_l2: {
+    emoji:'🔷', label:'L2 Switch', prefix:'SW-ACC',  defV:'h3c',   defO:'comware',
+    W: 220, H: 70,
+    color: '#5fc8b4', bg: '#152521', tag: 'L2 SW',
+  },
+  router: {
+    emoji:'🔵', label:'Router', prefix:'RTR', defV:'cisco', defO:'ios',
+    W: 220, H: 70,
+    color: '#a8b5ff', bg: '#171a26', tag: 'RTR',
+  },
+  firewall: {
+    emoji:'🔴', label:'Firewall', prefix:'FW', defV:'cisco', defO:'ios',
+    W: 220, H: 70,
+    color: '#ff6478', bg: '#241518', tag: 'FW',
+  },
+  server: {
+    emoji:'💻', label:'Server', prefix:'SRV', defV:null, defO:null,
+    W: 220, H: 70,
+    color: '#ffb86b', bg: '#241c12', tag: 'SRV',
+  },
+  endpoint: {
+    emoji:'📱', label:'Endpoint', prefix:'PC', defV:null, defO:null,
+    W: 220, H: 70,
+    color: '#9aa3af', bg: '#1a1d22', tag: 'PC',
+  },
+  cloud: {
+    emoji:'☁️', label:'Cloud/ISP', prefix:'ISP', defV:null, defO:null,
+    W: 220, H: 70,
+    color: '#a8b5ff', bg: '#161a26', tag: 'ISP',
+  },
 };
+
+// Total visual height (used for centering, link math, etc.)
+function devTotalH(d) { return TD[d.type].H + NAME_H + NAME_GAP; }
 
 /* ============================================================
    STATE
@@ -750,9 +822,12 @@ function fitToScreen() {
   const PAD = 80;
   let mnX=Infinity,mnY=Infinity,mxX=-Infinity,mxY=-Infinity;
   topo.devices.forEach(d => {
-    const c=TD[d.type];
-    mnX=Math.min(mnX,d.x); mnY=Math.min(mnY,d.y);
-    mxX=Math.max(mxX,d.x+c.W); mxY=Math.max(mxY,d.y+c.H);
+    const c = TD[d.type];
+    const totalH = NAME_H + NAME_GAP + c.H + 18; // +18 for bottom info text
+    mnX = Math.min(mnX, d.x);
+    mnY = Math.min(mnY, d.y);
+    mxX = Math.max(mxX, d.x + c.W);
+    mxY = Math.max(mxY, d.y + totalH);
   });
   const cW=mxX-mnX+PAD*2, cH=mxY-mnY+PAD*2;
   const newZ = Math.min(W/cW, H/cH, 2);
@@ -777,6 +852,7 @@ function addDevice(type, cx, cy) {
   topo.counters[type] = (topo.counters[type]||0) + 1;
   const n = topo.counters[type];
   const id = 'dv' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+  const totalH = NAME_H + NAME_GAP + c.H;
   const dev = {
     id, type,
     hostname: `${c.prefix}-${String(n).padStart(2,'0')}`,
@@ -784,7 +860,7 @@ function addDevice(type, cx, cy) {
     notes: '',
     configData: {},
     x: Math.round(cx - c.W/2),
-    y: Math.round(cy - c.H/2),
+    y: Math.round(cy - totalH/2),
   };
   topo.devices.push(dev);
   renderDev(dev);
@@ -793,65 +869,218 @@ function addDevice(type, cx, cy) {
 }
 
 /* ============================================================
-   RENDER DEVICE
+   RENDER DEVICE — Front-Panel Chassis + Editable Name
    ============================================================ */
 function renderDev(dev) {
   const layer = document.getElementById('devs-layer'); if(!layer) return;
   document.getElementById('dv-'+dev.id)?.remove();
-  const c    = TD[dev.type];
+
+  const c = TD[dev.type];
   const isSel  = topo.sel?.kind==='device' && topo.sel?.id===dev.id;
   const isLkSt = topo.lkStart===dev.id;
   const lkCnt  = topo.links.filter(l=>l.from===dev.id||l.to===dev.id).length;
   const hasCfg = dev.configData && Object.keys(dev.configData).some(k=>{ const v=dev.configData[k]; return Array.isArray(v)?v.length>0:!!v; });
 
+  // Vendor color override (override per-device-type color when vendor selected)
+  const vendorClr = dev.vendor==='h3c' ? '#7cf4c7' : dev.vendor==='cisco' ? '#a8b5ff' : c.color;
+  const stroke    = isSel ? '#7cf4c7' : isLkSt ? '#a8b5ff' : vendorClr;
+  const sw        = isSel||isLkSt ? 2.5 : 1.4;
+
   const g = mk('g', { id:'dv-'+dev.id, transform:`translate(${dev.x},${dev.y})`, cursor:'pointer' });
 
-  // Shadow for selected
-  if (isSel) {
-    g.appendChild(mk('rect', { x:2,y:4,width:c.W,height:c.H,rx:13, fill:'rgba(124,244,199,0.12)' }));
-  }
-
-  // Card body
-  const rect = mk('rect', {
-    width:c.W, height:c.H, rx:13, fill:'#15191f',
-    stroke: isSel?'#7cf4c7':isLkSt?'#a8b5ff':'#2e3744',
-    'stroke-width': isSel||isLkSt ? 2.5 : 1
+  // ============================================================
+  //   1) EDITABLE NAME INPUT (on top, above chassis)
+  // ============================================================
+  const fo = mk('foreignObject', { x: 0, y: 0, width: c.W, height: NAME_H });
+  // foreignObject content must be in XHTML namespace
+  const div = document.createElementNS('http://www.w3.org/1999/xhtml','div');
+  div.setAttribute('xmlns','http://www.w3.org/1999/xhtml');
+  div.style.cssText = `width:${c.W}px;height:${NAME_H}px;display:flex;align-items:center;justify-content:center;padding:3px;box-sizing:border-box;`;
+  const inp = document.createElementNS('http://www.w3.org/1999/xhtml','input');
+  inp.setAttribute('type','text');
+  inp.setAttribute('class','dev-name-input');
+  inp.setAttribute('value', dev.hostname);
+  inp.setAttribute('maxlength', '32');
+  inp.setAttribute('spellcheck', 'false');
+  inp.setAttribute('data-dev-id', dev.id);
+  // Stop drag/pan when interacting with the input
+  inp.addEventListener('mousedown', e => e.stopPropagation());
+  inp.addEventListener('click',     e => e.stopPropagation());
+  inp.addEventListener('dblclick',  e => e.stopPropagation());
+  inp.addEventListener('keydown',   e => {
+    e.stopPropagation();
+    if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
+    if (e.key === 'Escape') { inp.value = dev.hostname; inp.blur(); }
   });
-  if (isSel) rect.setAttribute('filter','url(#glow-sel)');
-  g.appendChild(rect);
+  inp.addEventListener('input', e => {
+    const v = e.target.value.trim();
+    if (v) {
+      dev.hostname = v;
+      // Re-render any links so labels update if needed; props panel if open
+      updateLinksOf(dev.id);
+      if (topo.sel?.kind==='device' && topo.sel?.id===dev.id) {
+        // Update sub-text in props panel without full re-render (avoids cursor jump)
+        const sub = document.querySelector('#props-inner .props-sub');
+        if (sub) sub.textContent = dev.id.slice(0,14);
+      }
+    }
+  });
+  inp.addEventListener('blur', () => {
+    // If user cleared the field, restore
+    if (!inp.value.trim()) inp.value = dev.hostname;
+  });
+  div.appendChild(inp);
+  fo.appendChild(div);
+  g.appendChild(fo);
 
-  // Accent stripe (left)
-  g.appendChild(mk('rect', { x:0,y:14,width:3.5,height:c.H-28,rx:2,
-    fill: isSel?'#7cf4c7':isLkSt?'#a8b5ff':'#2e3744' }));
+  // ============================================================
+  //   2) CHASSIS — front-panel rack unit
+  //   y-offset: NAME_H + NAME_GAP
+  // ============================================================
+  const cy = NAME_H + NAME_GAP;
 
-  // Emoji
-  const em = mk('text', { x:16,y:36,'font-size':22,'dominant-baseline':'auto','font-family':'system-ui,Apple Color Emoji,Segoe UI Emoji,sans-serif' });
-  em.textContent = c.emoji;
-  g.appendChild(em);
-
-  // Hostname
-  const hn = mk('text', { x:52,y:34,fill:'#e6e9ee','font-size':14,'font-weight':600,'font-family':'Geist,system-ui,sans-serif' });
-  hn.textContent = dev.hostname.length>16 ? dev.hostname.slice(0,14)+'…' : dev.hostname;
-  g.appendChild(hn);
-
-  // Vendor / OS tag
-  const vt = mk('text', { x:52,y:53,fill:'#5b6472','font-size':10,'font-family':'JetBrains Mono,monospace' });
-  vt.textContent = dev.vendor ? `${dev.vendor.toUpperCase()} · ${(dev.os||'').toUpperCase()}` : c.label;
-  g.appendChild(vt);
-
-  // Bottom info
-  const parts = [];
-  if (lkCnt>0) parts.push(`● ${lkCnt} link${lkCnt>1?'s':''}`);
-  if (hasCfg) parts.push('✓ config');
-  if (parts.length) {
-    const inf = mk('text', { x:16,y:c.H-12,fill:'#3a4754','font-size':10,'font-family':'JetBrains Mono,monospace' });
-    inf.textContent = parts.join('  ');
-    g.appendChild(inf);
+  // Selection glow shadow
+  if (isSel) {
+    g.appendChild(mk('rect', { x:2, y:cy+3, width:c.W, height:c.H, rx:8, fill:'rgba(124,244,199,0.12)' }));
   }
 
-  g.addEventListener('mousedown', e => { e.stopPropagation(); if(topo.tool==='select'){ const d=topo.devices.find(x=>x.id===dev.id); if(d) dragging={id:dev.id,smx:e.clientX,smy:e.clientY,ox:d.x,oy:d.y}; } });
-  g.addEventListener('click',    e => { e.stopPropagation(); onDevClick(dev.id); });
-  g.addEventListener('dblclick', e => { e.stopPropagation(); onDevDblClick(dev.id); });
+  // Main chassis body
+  const chassis = mk('rect', {
+    x:0, y:cy, width:c.W, height:c.H, rx:8,
+    fill: c.bg, stroke, 'stroke-width': sw,
+  });
+  if (isSel) chassis.setAttribute('filter','url(#glow-sel)');
+  g.appendChild(chassis);
+
+  // Subtle inner top highlight (gives metallic feel)
+  g.appendChild(mk('rect', {
+    x:1.5, y:cy+1.5, width:c.W-3, height:1, rx:1,
+    fill: vendorClr, opacity: 0.15
+  }));
+
+  // ============================================================
+  //   3) LCD DISPLAY (top-left of chassis)
+  // ============================================================
+  const lcdX = 8, lcdY = cy + 8, lcdW = 64, lcdH = 16;
+  g.appendChild(mk('rect', { x:lcdX, y:lcdY, width:lcdW, height:lcdH, rx:2, fill:'#001428', stroke: vendorClr, 'stroke-width':0.6, opacity:0.85 }));
+  const lcdText = mk('text', {
+    x: lcdX + lcdW/2, y: lcdY + lcdH/2 + 3,
+    'text-anchor':'middle',
+    'font-family':'JetBrains Mono,monospace',
+    'font-size': 8,
+    fill: vendorClr,
+  });
+  lcdText.textContent = (dev.vendor && dev.os)
+    ? `${dev.vendor.toUpperCase()} ${dev.os.toUpperCase()}`
+    : c.tag;
+  g.appendChild(lcdText);
+
+  // ============================================================
+  //   4) STATUS LEDS (right of LCD)
+  // ============================================================
+  const ledY = cy + 16;
+  const leds = [
+    { x: lcdX + lcdW + 14, color:'#00ff88', label:'PWR' },
+    { x: lcdX + lcdW + 42, color: lkCnt>0?'#00ff88':'#666', label:'SYS' },
+    { x: lcdX + lcdW + 70, color:'#ffaa00', label:'ACT' },
+    { x: lcdX + lcdW + 98, color: hasCfg?'#00ff88':'#444', label:'CFG' },
+  ];
+  leds.forEach(led => {
+    g.appendChild(mk('circle', { cx: led.x, cy: ledY, r: 2.6, fill: led.color, opacity: 0.9 }));
+    const t = mk('text', {
+      x: led.x + 6, y: ledY + 3,
+      'font-family':'JetBrains Mono,monospace',
+      'font-size': 7,
+      fill: '#5b6472'
+    });
+    t.textContent = led.label;
+    g.appendChild(t);
+  });
+
+  // ============================================================
+  //   5) PORTS GRID (8 ports, 2 rows x 4 cols on left side)
+  // ============================================================
+  const portsX = 8, portsY = cy + 32, portsW = 100, portsH = 26;
+  g.appendChild(mk('rect', { x: portsX, y: portsY, width: portsW, height: portsH, rx:2, fill:'#0a0a0a' }));
+
+  const portCols = 8, portRows = 2;
+  const pW = 10, pH = 8, pGapX = 2, pGapY = 2;
+  const pStartX = portsX + 4, pStartY = portsY + 3;
+  // Use device id hash to pseudo-randomly light up some ports (consistent per device)
+  const seed = [...dev.id].reduce((a,c)=>a + c.charCodeAt(0), 0);
+  for (let r = 0; r < portRows; r++) {
+    for (let cIdx = 0; cIdx < portCols; cIdx++) {
+      const px = pStartX + cIdx * (pW + pGapX);
+      const py = pStartY + r * (pH + pGapY);
+      // Light up ports based on link count + seed
+      const isActive = ((seed + r*7 + cIdx*3) % 4 === 0) && (cIdx < 2 + lkCnt);
+      g.appendChild(mk('rect', {
+        x: px, y: py, width: pW, height: pH, rx: 1,
+        fill: isActive ? vendorClr : '#1a1a1a',
+        stroke: isActive ? vendorClr : '#333',
+        'stroke-width': 0.5,
+        'fill-opacity': isActive ? 0.75 : 1,
+      }));
+    }
+  }
+
+  // ============================================================
+  //   6) SFP CAGES (right of ports — 4 SFP slots)
+  // ============================================================
+  const sfpX = portsX + portsW + 8, sfpY = portsY, sfpW = 56, sfpH = 26;
+  g.appendChild(mk('rect', { x: sfpX, y: sfpY, width: sfpW, height: sfpH, rx:2, fill:'#0a0a0a' }));
+  const sfpCols = 4;
+  const sW = 11, sH = 18;
+  for (let i = 0; i < sfpCols; i++) {
+    const sx = sfpX + 4 + i * (sW + 1);
+    const sy = sfpY + 4;
+    const isUsed = (seed + i) % 3 === 0 && i < lkCnt;
+    g.appendChild(mk('rect', {
+      x: sx, y: sy, width: sW, height: sH, rx: 0.5,
+      fill: isUsed ? vendorClr : '#1a1a1a',
+      stroke: isUsed ? vendorClr : '#444',
+      'stroke-width': 0.5,
+      'fill-opacity': isUsed ? 0.55 : 1,
+    }));
+    // Tiny LED dot on each SFP
+    g.appendChild(mk('circle', {
+      cx: sx + sW - 2, cy: sy + 2, r: 0.8,
+      fill: isUsed ? '#00ff88' : '#222',
+    }));
+  }
+
+  // ============================================================
+  //   7) BOTTOM INFO (below chassis — vendor/OS + link/cfg)
+  // ============================================================
+  const infY = cy + c.H + 14;
+  const infParts = [];
+  if (dev.vendor) infParts.push(`${dev.vendor.toUpperCase()} · ${(dev.os||'').toUpperCase()}`);
+  else infParts.push(c.label.toUpperCase());
+  if (lkCnt > 0) infParts.push(`${lkCnt} link${lkCnt>1?'s':''}`);
+
+  const inf = mk('text', {
+    x: c.W/2, y: infY,
+    'text-anchor':'middle',
+    'font-family':'JetBrains Mono,monospace',
+    'font-size': 9,
+    fill: '#5b6472'
+  });
+  inf.textContent = infParts.join('  ·  ');
+  g.appendChild(inf);
+
+  // ============================================================
+  //   EVENTS
+  // ============================================================
+  // Drag (only on the chassis area, not the name input)
+  chassis.addEventListener('mousedown', e => {
+    e.stopPropagation();
+    if (topo.tool==='select') {
+      const d = topo.devices.find(x=>x.id===dev.id);
+      if (d) dragging = { id:dev.id, smx:e.clientX, smy:e.clientY, ox:d.x, oy:d.y };
+    }
+  });
+  // Click (anywhere on group, but name input has its own handler that stops propagation)
+  g.addEventListener('click', e => { e.stopPropagation(); onDevClick(dev.id); });
 
   layer.appendChild(g);
 }
@@ -915,7 +1144,12 @@ function updateLinksOf(id) {
   topo.links.filter(l=>l.from===id||l.to===id).forEach(l=>renderLink(l));
 }
 
-function devCenter(d) { const c=TD[d.type]; return { x:d.x+c.W/2, y:d.y+c.H/2 }; }
+function devCenter(d) {
+  const c = TD[d.type];
+  // Center is the middle of the visible chassis (ignoring name strip on top)
+  // so links connect to the device hardware, not the label
+  return { x: d.x + c.W/2, y: d.y + NAME_H + NAME_GAP + c.H/2 };
+}
 
 /* ============================================================
    DEVICE EVENTS
@@ -943,12 +1177,6 @@ function onDevClick(id) {
   topo.sel={kind:'device',id};
   renderAll(); renderDevProps(id); updateStatus();
   openProps();
-}
-
-function onDevDblClick(id) {
-  const dev=topo.devices.find(d=>d.id===id); if(!dev) return;
-  const n=prompt('Rename device:',dev.hostname);
-  if (n&&n.trim()) { dev.hostname=n.trim(); renderAll(); if(topo.sel?.id===id) renderDevProps(id); }
 }
 
 /* ============================================================
@@ -1029,7 +1257,6 @@ function renderDevProps(id) {
 
     <div class="props-actions">
       <button class="btn btn-primary" onclick="openInBuilder('${id}')">⚡ Open in Builder</button>
-      <button class="btn btn-secondary" onclick="devPropSet('${id}','_rename',null)">✏️ Rename</button>
       <button class="btn btn-danger" onclick="deleteDev('${id}')">🗑️ Delete Device</button>
     </div>
   `;
@@ -1091,8 +1318,7 @@ function renderLinkProps(id) {
    ============================================================ */
 function devPropSet(id, prop, val) {
   const d=topo.devices.find(x=>x.id===id); if(!d) return;
-  if (prop==='_rename') { const n=prompt('Rename:',d.hostname); if(n&&n.trim()){d.hostname=n.trim();} }
-  else d[prop]=val;
+  d[prop]=val;
   renderAll(); if(topo.sel?.id===id) renderDevProps(id);
 }
 function devVendorSet(id, val) {
