@@ -234,6 +234,7 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
   </a>
   <div class="nav-actions">
     <a href="/" class="nav-link">App</a>
+    <a href="/topology.html" class="nav-link">🗺️ Topology</a>
     <a href="/about.html" class="nav-link active">About</a>
     <button class="icon-btn" onclick="toggleTheme()" title="Theme" id="theme-btn">🌙</button>
   </div>
@@ -243,7 +244,7 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
 
   <!-- ===================== HERO ===================== -->
   <section class="hero">
-    <div class="hero-tag"><span class="live"></span> About ConfigLabs · v2.0</div>
+    <div class="hero-tag"><span class="live"></span> About ConfigLabs · v3.0</div>
     <h1>Network configuration,<br><span class="serif">simplified.</span></h1>
     <p>Built by network engineers, for network engineers. ConfigLabs is a free, independent tool that generates production-ready configs for H3C and Cisco devices — without the CLI headaches.</p>
     <a href="/" class="cta-btn">Start Building →</a>
@@ -335,8 +336,9 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
     <p>Active development. Updates ship regularly:</p>
     <div class="roadmap">
       <div class="roadmap-section live">
-        <h3><span class="dot"></span>Live now</h3>
+        <h3><span class="dot"></span>Live now — v3.0</h3>
         <ul class="roadmap-list">
+          <li>🗺️ Topology Builder (Beta) — drag, drop, connect devices visually</li>
           <li>H3C Comware v7</li>
           <li>Cisco IOS (Catalyst 2960/3750, ISR)</li>
           <li>Cisco IOS-XE (Catalyst 9000, ISR 4k)</li>
@@ -348,6 +350,7 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
         <ul class="roadmap-list">
           <li>User accounts &amp; saved configs</li>
           <li>AI-powered config validator</li>
+          <li>Full topology → config sync (generate configs per-device from topology)</li>
           <li>Huawei VRP support</li>
           <li>Juniper Junos support</li>
         </ul>
@@ -355,7 +358,6 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
       <div class="roadmap-section maybe">
         <h3><span class="dot"></span>Exploring</h3>
         <ul class="roadmap-list">
-          <li>Topology visualizer (auto-diagram from config)</li>
           <li>Config diff &amp; comparison tool</li>
           <li>Arista EOS &amp; MikroTik RouterOS</li>
           <li>Mobile app (iOS &amp; Android)</li>

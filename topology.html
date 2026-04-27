@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Topology Builder — ConfigLabs</title>
+<meta name="description" content="Visual network topology builder. Drag devices, draw connections, then load any device directly into the ConfigLabs config generator."/>
+<meta name="robots" content="index, follow"/>
+<link rel="icon" type="image/x-icon" href="/favicon.ico"/>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/>
+<link rel="apple-touch-icon" href="/apple-touch-icon.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS — same system as index.html
+   ============================================================ */
+:root {
+  --bg:            #0b0d10;
+  --bg-2:          #111418;
+  --surface:       #15191f;
+  --surface-2:     #1b2027;
+  --surface-hover: #222831;
+  --border:        #232a34;
+  --border-strong: #2e3744;
+  --text:          #e6e9ee;
+  --text-dim:      #9aa3af;
+  --text-muted:    #5b6472;
+  --accent:        #7cf4c7;
+  --accent-2:      #a8b5ff;
+  --accent-3:      #ffb86b;
+  --danger:        #ff6478;
+  --success:       #7cf4c7;
+  --glow:          0 0 30px rgba(124,244,199,.2);
+  --sans:   'Geist', system-ui, sans-serif;
+  --serif:  'Instrument Serif', Georgia, serif;
+  --mono:   'JetBrains Mono', monospace;
+  --radius: 12px;
+  --ease:   cubic-bezier(.22,1,.36,1);
+  --nav-h:  60px;
+  --sb-h:   36px;
+  --sidebar-w: 220px;
+}
+[data-theme="light"] {
+  --bg:#f8f6f1; --bg-2:#fff; --surface:#fff; --surface-2:#f1ede3;
+  --surface-hover:#ebe6d8; --border:#e4dfd0; --border-strong:#d0c9b5;
+  --text:#1a1a1a; --text-dim:#5a5a5a; --text-muted:#8a8a8a;
+  --accent:#0f766e; --accent-2:#4f46e5; --accent-3:#ea580c;
+  --glow:0 4px 20px rgba(15,118,110,.08);
+}
+
+/* ============================================================
+   RESET
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg); color: var(--text);
+  font-family: var(--sans); font-size: 14px;
+  line-height: 1.5; -webkit-font-smoothing: antialiased;
+  overflow: hidden; /* page never scrolls */
+}
+@keyframes fadeUp   { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeIn   { from{opacity:0} to{opacity:1} }
+@keyframes slideIn  { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+@keyframes pulse    { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ============================================================
+   NAV
+   ============================================================ */
+nav {
+  height: var(--nav-h);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  position: relative; z-index: 10; flex-shrink: 0;
+}
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 600; font-size: 16px; letter-spacing: -.3px;
+  text-decoration: none; color: var(--text);
+}
+.brand-logo {
+  width: 30px; height: 30px; border-radius: 7px;
+  background: conic-gradient(from 180deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent));
+  display: grid; place-items: center; position: relative; flex-shrink: 0;
+}
+.brand-logo::after { content:''; position:absolute; inset:2px; border-radius:5px; background:var(--bg); }
+.brand-logo svg { position:relative; z-index:1; width:16px; height:16px; color:var(--text); }
+.brand em { font-family:var(--serif); font-style:italic; color:var(--accent); font-weight:400; }
+
+.nav-center {
+  display: flex; align-items: center; gap: 4px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 4px;
+}
+.nav-tab {
+  padding: 7px 16px; border-radius: 7px; border: none;
+  background: transparent; color: var(--text-dim);
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all .2s; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.nav-tab:hover { color: var(--text); background: var(--surface-hover); }
+.nav-tab.active {
+  background: var(--surface-2); color: var(--text);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+.nav-tab .beta-pill {
+  font-family: var(--mono); font-size: 9px; padding: 1px 5px;
+  border-radius: 99px; background: var(--accent-3); color: #1a0e00; font-weight: 700;
+}
+
+.nav-right { display: flex; align-items: center; gap: 8px; }
+.chip {
+  font-family: var(--mono); font-size: 11px; padding: 5px 10px;
+  border-radius: 999px; border: 1px solid var(--border-strong);
+  color: var(--text-muted); display: inline-flex; align-items: center; gap: 6px;
+}
+.chip .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 6px var(--accent);
+  animation: pulse 2s infinite;
+}
+.icon-btn {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text-dim); width: 34px; height: 34px;
+  border-radius: 9px; cursor: pointer; display: grid; place-items: center;
+  transition: all .2s var(--ease); font-size: 15px; flex-shrink: 0;
+}
+.icon-btn:hover { background: var(--surface-hover); color: var(--text); border-color: var(--border-strong); }
+
+/* ============================================================
+   PAGE STRUCTURE
+   ============================================================ */
+.topo-page {
+  height: calc(100vh - var(--nav-h));
+  display: flex; flex-direction: column;
+}
+.topo-body {
+  flex: 1; display: flex; min-height: 0; position: relative;
+}
+
+/* ============================================================
+   SIDEBAR (LEFT)
+   ============================================================ */
+.sidebar {
+  width: var(--sidebar-w); flex-shrink: 0;
+  background: var(--surface-2); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow-y: auto;
+  padding: 14px 10px; gap: 20px;
+}
+.sidebar-section { display: flex; flex-direction: column; gap: 0; }
+.sidebar-label {
+  font-family: var(--mono); font-size: 10px; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 1.8px; font-weight: 600;
+  padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 8px;
+}
+
+/* Device palette items */
+.pal-dev {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 10px; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 8px;
+  margin-bottom: 5px; cursor: grab;
+  color: var(--text-dim); transition: all .15s; user-select: none;
+}
+.pal-dev:hover { border-color: var(--accent); color: var(--text); transform: translateX(3px); }
+.pal-dev:active { cursor: grabbing; transform: scale(.97); opacity: .75; }
+.pal-dev .em { font-size: 15px; flex-shrink: 0; line-height: 1; }
+.pal-dev .lbl { font-size: 12px; font-weight: 500; }
+
+/* Tool buttons */
+.tool-btn {
+  display: flex; align-items: center; gap: 7px; width: 100%;
+  padding: 9px 10px; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 8px; margin-bottom: 5px;
+  cursor: pointer; font-size: 12px; color: var(--text-dim);
+  transition: all .15s; font-family: var(--sans); font-weight: 500; text-align: left;
+}
+.tool-btn:hover { border-color: var(--border-strong); color: var(--text); }
+.tool-btn.active {
+  border-color: var(--accent); color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg)); font-weight: 600;
+}
+.tool-btn .kbd {
+  margin-left: auto; font-family: var(--mono); font-size: 10px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  padding: 1px 5px; border-radius: 4px; color: var(--text-muted);
+}
+
+/* Zoom controls row */
+.zoom-row {
+  display: grid; grid-template-columns: 1fr auto 1fr; gap: 5px; align-items: center;
+}
+.zoom-btn {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 7px; padding: 7px; cursor: pointer; color: var(--text-dim);
+  font-size: 13px; font-family: var(--sans); transition: all .15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.zoom-btn:hover { border-color: var(--accent); color: var(--accent); }
+.zoom-display {
+  font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+  text-align: center; padding: 7px 4px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 7px;
+}
+
+/* Action buttons */
+.action-btn {
+  display: flex; align-items: center; gap: 7px; width: 100%;
+  padding: 8px 10px; background: transparent;
+  border: 1px solid var(--border); border-radius: 8px; margin-bottom: 5px;
+  cursor: pointer; font-size: 12px; color: var(--text-dim);
+  transition: all .15s; font-family: var(--sans); text-align: left;
+}
+.action-btn:hover { border-color: var(--border-strong); color: var(--text); }
+.action-btn.danger:hover { border-color: var(--danger); color: var(--danger); background: color-mix(in srgb, var(--danger) 5%, transparent); }
+
+/* Shortcuts */
+.shortcuts {
+  font-family: var(--mono); font-size: 10px; color: var(--text-muted);
+  line-height: 2; border-top: 1px solid var(--border);
+  padding-top: 10px; margin-top: auto;
+}
+.shortcuts .kbd-tag {
+  display: inline-block; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 3px; padding: 0 4px; font-size: 9px; color: var(--text-dim);
+  margin-right: 4px; vertical-align: middle;
+}
+
+/* ============================================================
+   CANVAS AREA
+   ============================================================ */
+.canvas-wrap {
+  flex: 1; position: relative; overflow: hidden;
+  background: var(--bg); cursor: default;
+}
+#topo-svg {
+  width: 100%; height: 100%; display: block;
+  user-select: none; -webkit-user-select: none;
+}
+
+/* Empty state */
+.empty-hint {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px; text-align: center; pointer-events: none;
+}
+.empty-hint-icon { font-size: 60px; opacity: .15; line-height: 1; }
+.empty-hint h3 { font-size: 16px; color: var(--text-dim); font-weight: 500; }
+.empty-hint p {
+  font-size: 13px; color: var(--text-muted); max-width: 280px; line-height: 1.6;
+}
+.empty-hint .hint-pill {
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+}
+.empty-hint .pill {
+  font-family: var(--mono); font-size: 11px; padding: 4px 10px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 99px;
+  color: var(--text-muted);
+}
+
+/* Drop overlay */
+.drop-overlay {
+  position: absolute; inset: 0;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  border: 2.5px dashed var(--accent);
+  display: none; align-items: center; justify-content: center;
+  font-size: 15px; color: var(--accent); font-weight: 600;
+  letter-spacing: .3px; pointer-events: none; z-index: 10;
+}
+
+/* Mini-map (future) placeholder */
+
+/* ============================================================
+   PROPERTIES PANEL (RIGHT, slides in)
+   ============================================================ */
+.props-panel {
+  width: 0; overflow: hidden; flex-shrink: 0;
+  background: var(--surface-2); border-left: 1px solid var(--border);
+  transition: width .3s var(--ease);
+  display: flex; flex-direction: column;
+}
+.props-panel.open { width: 288px; }
+.props-inner {
+  width: 288px; flex: 1;
+  padding: 18px 16px; overflow-y: auto;
+  animation: slideIn .25s var(--ease);
+}
+
+.props-header {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding-bottom: 16px; margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.props-emoji { font-size: 30px; line-height: 1; flex-shrink: 0; }
+.props-name { font-weight: 600; font-size: 14px; color: var(--text); }
+.props-sub  { font-size: 11px; color: var(--text-muted); font-family: var(--mono); margin-top: 2px; }
+.props-close {
+  margin-left: auto; background: transparent; border: 1px solid var(--border);
+  border-radius: 7px; width: 26px; height: 26px; cursor: pointer;
+  color: var(--text-muted); font-size: 14px; display: grid; place-items: center;
+  transition: all .15s; flex-shrink: 0;
+}
+.props-close:hover { border-color: var(--border-strong); color: var(--text); }
+
+.pf { margin-bottom: 13px; }
+.pf label { display: block; font-size: 11px; color: var(--text-dim); font-weight: 500; margin-bottom: 5px; }
+.pf input, .pf select, .pf textarea {
+  width: 100%; padding: 9px 11px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-family: var(--mono);
+  font-size: 12px; outline: none; transition: border-color .15s;
+}
+.pf input:focus, .pf select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
+.pf input::placeholder { color: var(--text-muted); }
+
+.seg {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+  gap: 4px; padding: 4px; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 9px;
+}
+.seg button {
+  padding: 7px 10px; background: transparent; border: none;
+  color: var(--text-dim); font-family: var(--sans); font-size: 11px;
+  font-weight: 500; cursor: pointer; border-radius: 6px; transition: all .15s;
+  text-transform: uppercase; letter-spacing: .5px;
+}
+.seg button:hover { color: var(--text); }
+.seg button.active { background: var(--accent); color: var(--bg); font-weight: 600; }
+
+.props-divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+/* Connections list */
+.connections-list { display: flex; flex-direction: column; gap: 6px; }
+.conn-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; font-size: 12px; color: var(--text-dim);
+}
+.conn-item .conn-em { font-size: 14px; flex-shrink: 0; }
+.conn-item .conn-label { flex: 1; }
+.conn-mode {
+  font-family: var(--mono); font-size: 9px; padding: 2px 6px;
+  border-radius: 99px; background: var(--surface-2);
+  color: var(--text-muted); letter-spacing: .5px; text-transform: uppercase;
+}
+.conn-mode.trunk  { background: color-mix(in srgb, var(--accent) 12%, var(--surface-2)); color: var(--accent); }
+.conn-mode.access { background: color-mix(in srgb, var(--accent-2) 12%, var(--surface-2)); color: var(--accent-2); }
+
+/* Action buttons in props */
+.props-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.btn {
+  padding: 10px 16px; border: none; border-radius: 9px;
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all .2s var(--ease);
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-primary {
+  background: var(--accent); color: var(--bg); width: 100%;
+  font-weight: 700; box-shadow: var(--glow); font-size: 14px;
+}
+.btn-primary:hover { transform: translateY(-1px); filter: brightness(1.06); }
+.btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); width: 100%; }
+.btn-secondary:hover { background: var(--surface-hover); border-color: var(--border-strong); }
+.btn-danger { background: transparent; color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 40%, var(--border)); width: 100%; }
+.btn-danger:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); border-color: var(--danger); }
+
+.cfg-badge {
+  margin-top: 10px; padding: 9px 12px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border));
+  border-radius: 8px; font-size: 12px; color: var(--accent); font-family: var(--mono);
+  display: flex; align-items: center; gap: 6px;
+}
+
+/* ============================================================
+   STATUS BAR (BOTTOM)
+   ============================================================ */
+.status-bar {
+  height: var(--sb-h); flex-shrink: 0;
+  background: var(--surface-2); border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px; font-family: var(--mono); font-size: 11px; color: var(--text-muted);
+}
+.sb-left, .sb-right { display: flex; align-items: center; gap: 16px; }
+.sb-stat { display: flex; align-items: center; gap: 5px; }
+.sb-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); display: inline-block; }
+.sb-dot.green { background: var(--success); box-shadow: 0 0 6px var(--success); }
+.sb-dot.blue  { background: var(--accent-2); }
+.sb-mode {
+  padding: 3px 10px; border-radius: 99px; font-size: 10px; font-weight: 600;
+  letter-spacing: .8px; text-transform: uppercase;
+}
+.sb-mode.select { background: color-mix(in srgb, var(--accent) 12%, var(--surface-2)); color: var(--accent); }
+.sb-mode.link   { background: color-mix(in srgb, var(--accent-2) 12%, var(--surface-2)); color: var(--accent-2); }
+.sb-beta {
+  font-family: var(--mono); font-size: 10px; padding: 2px 8px;
+  border-radius: 99px; background: color-mix(in srgb, var(--accent-3) 15%, var(--surface-2));
+  color: var(--accent-3); font-weight: 700; letter-spacing: .5px;
+}
+
+/* ============================================================
+   TOAST + MODALS
+   ============================================================ */
+.toast {
+  position: fixed; bottom: var(--sb-h); left: 50%;
+  transform: translate(-50%, 80px);
+  background: var(--surface); border: 1px solid var(--border-strong);
+  color: var(--text); padding: 11px 18px; border-radius: 999px;
+  font-size: 13px; box-shadow: 0 20px 40px rgba(0,0,0,.4);
+  z-index: 200; transition: transform .3s var(--ease);
+  display: flex; align-items: center; gap: 9px; white-space: nowrap;
+}
+.toast.show { transform: translate(-50%, -12px); }
+.t-icon {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--success); color: var(--bg);
+  display: grid; place-items: center; font-weight: 700; font-size: 10px; flex-shrink: 0;
+}
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  backdrop-filter: blur(10px); z-index: 150;
+  opacity: 0; pointer-events: none; transition: opacity .25s;
+  display: grid; place-items: center; padding: 20px;
+}
+.modal-overlay.show { opacity: 1; pointer-events: auto; }
+.modal {
+  background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: 20px; padding: 28px; max-width: 460px; width: 100%;
+  transform: translateY(16px); transition: transform .25s var(--ease);
+  max-height: 90vh; overflow-y: auto;
+}
+.modal-overlay.show .modal { transform: translateY(0); }
+.modal h2 { font-size: 22px; font-weight: 500; margin-bottom: 8px; letter-spacing: -.5px; }
+.modal h2 em { font-family: var(--serif); font-style: italic; color: var(--accent); font-weight: 400; }
+.modal p { color: var(--text-dim); font-size: 14px; line-height: 1.6; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+.modal-btn {
+  padding: 10px 18px; border: none; border-radius: 10px;
+  font-family: var(--sans); font-size: 13px; font-weight: 500; cursor: pointer;
+  transition: all .2s var(--ease);
+}
+.modal-btn.primary { background: var(--accent); color: var(--bg); }
+.modal-btn.primary:hover { filter: brightness(1.05); }
+.modal-btn.secondary { background: var(--surface-hover); color: var(--text); border: 1px solid var(--border); }
+.modal-btn.secondary:hover { border-color: var(--border-strong); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+</style>
+</head>
+<body data-theme="dark">
+
+<!-- ============================================================
+     NAV
+     ============================================================ -->
+<nav>
+  <a href="/index.html" class="brand">
+    <div class="brand-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/>
+        <path d="M8.5 2h7"/><path d="M7 16h10"/>
+      </svg>
+    </div>
+    <div>Config<em>Labs</em></div>
+  </a>
+
+  <div class="nav-center">
+    <a href="/index.html" class="nav-tab">⚡ Builder</a>
+    <a href="/topology.html" class="nav-tab active">🗺️ Topology <span class="beta-pill">BETA</span></a>
+    <a href="/about.html" class="nav-tab">About</a>
+  </div>
+
+  <div class="nav-right">
+    <div class="chip"><span class="dot"></span><span>v3.0</span></div>
+    <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
+  </div>
+</nav>
+
+<!-- ============================================================
+     MAIN PAGE
+     ============================================================ -->
+<div class="topo-page">
+  <div class="topo-body">
+
+    <!-- ==================== SIDEBAR ==================== -->
+    <aside class="sidebar">
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Devices</div>
+        <div class="pal-dev" data-type="switch_l3" draggable="true"><span class="em">🔶</span><span class="lbl">L3 Switch</span></div>
+        <div class="pal-dev" data-type="switch_l2" draggable="true"><span class="em">🔷</span><span class="lbl">L2 Switch</span></div>
+        <div class="pal-dev" data-type="router"    draggable="true"><span class="em">🔵</span><span class="lbl">Router</span></div>
+        <div class="pal-dev" data-type="firewall"  draggable="true"><span class="em">🔴</span><span class="lbl">Firewall</span></div>
+        <div class="pal-dev" data-type="server"    draggable="true"><span class="em">💻</span><span class="lbl">Server</span></div>
+        <div class="pal-dev" data-type="endpoint"  draggable="true"><span class="em">📱</span><span class="lbl">Endpoint</span></div>
+        <div class="pal-dev" data-type="cloud"     draggable="true"><span class="em">☁️</span><span class="lbl">Cloud / ISP</span></div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Tools</div>
+        <button class="tool-btn active" data-tool="select" onclick="setTool('select')">
+          ↖ Select <span class="kbd">S</span>
+        </button>
+        <button class="tool-btn" data-tool="link" onclick="setTool('link')">
+          🔗 Link Mode <span class="kbd">L</span>
+        </button>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">View</div>
+        <div class="zoom-row" style="margin-bottom:5px">
+          <button class="zoom-btn" onclick="zoomBy(0.75)" title="Zoom out">−</button>
+          <div class="zoom-display" id="zoom-display">100%</div>
+          <button class="zoom-btn" onclick="zoomBy(1.33)" title="Zoom in">+</button>
+        </div>
+        <button class="action-btn" onclick="fitToScreen()">⊡ Fit to Screen <span class="kbd" style="margin-left:auto">F</span></button>
+        <button class="action-btn" onclick="resetView()">⊙ Reset View</button>
+        <button class="action-btn" id="grid-btn" onclick="toggleGrid()">⊞ Grid: On</button>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">File</div>
+        <button class="action-btn" onclick="exportPNG()">📷 Export PNG</button>
+        <button class="action-btn" onclick="saveJSON()">💾 Save JSON</button>
+        <button class="action-btn" onclick="loadJSON()">📂 Load JSON</button>
+        <button class="action-btn danger" onclick="clearAll()">🗑️ Clear All</button>
+      </div>
+
+      <div class="shortcuts">
+        <span class="kbd-tag">S</span>Select &nbsp;
+        <span class="kbd-tag">L</span>Link<br>
+        <span class="kbd-tag">Del</span>Delete selected<br>
+        <span class="kbd-tag">Esc</span>Cancel / deselect<br>
+        <span class="kbd-tag">F</span>Fit to screen<br>
+        <span class="kbd-tag">Scroll</span>Zoom<br>
+        Drag bg to pan
+      </div>
+
+    </aside>
+
+    <!-- ==================== CANVAS ==================== -->
+    <div class="canvas-wrap" id="canvas-wrap">
+      <svg id="topo-svg" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <!-- Glow filter -->
+          <filter id="glow-sel" x="-35%" y="-35%" width="170%" height="170%">
+            <feGaussianBlur stdDeviation="6" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <!-- Dot grid -->
+          <pattern id="dot-grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+            <circle cx="0"  cy="0"  r="1.2" fill="#1b2027"/>
+            <circle cx="40" cy="0"  r="1.2" fill="#1b2027"/>
+            <circle cx="0"  cy="40" r="1.2" fill="#1b2027"/>
+            <circle cx="40" cy="40" r="1.2" fill="#1b2027"/>
+          </pattern>
+          <!-- Line grid -->
+          <pattern id="line-grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1b2027" stroke-width=".8"/>
+          </pattern>
+        </defs>
+
+        <!-- Infinite background (click to deselect / pan) -->
+        <rect id="bg-rect" width="100%" height="100%" fill="url(#dot-grid)"/>
+
+        <!-- Temp link line (while drawing) -->
+        <line id="temp-link"
+          x1="0" y1="0" x2="0" y2="0"
+          stroke="#a8b5ff" stroke-width="2"
+          stroke-dasharray="10 6" opacity="0"
+          pointer-events="none"/>
+
+        <!-- Panned + zoomed viewport -->
+        <g id="viewport">
+          <g id="links-layer"></g>
+          <g id="devs-layer"></g>
+        </g>
+      </svg>
+
+      <!-- Empty state hint -->
+      <div class="empty-hint" id="empty-hint">
+        <div class="empty-hint-icon">🗺️</div>
+        <h3>Your canvas is empty</h3>
+        <p>Drag any device from the left panel onto the canvas to get started</p>
+        <div class="hint-pill">
+          <span class="pill">S = select</span>
+          <span class="pill">L = link mode</span>
+          <span class="pill">Del = delete</span>
+          <span class="pill">F = fit</span>
+        </div>
+      </div>
+
+      <!-- Drop target overlay -->
+      <div class="drop-overlay" id="drop-overlay">📍 Drop to place device</div>
+    </div>
+
+    <!-- ==================== PROPS PANEL ==================== -->
+    <div class="props-panel" id="props-panel">
+      <div class="props-inner" id="props-inner">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+
+  </div><!-- /topo-body -->
+
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <div class="sb-left">
+      <span class="sb-mode select" id="sb-mode">SELECT</span>
+      <span class="sb-stat"><span class="sb-dot green"></span><span id="sb-devs">0 devices</span></span>
+      <span class="sb-stat"><span class="sb-dot blue"></span><span id="sb-links">0 links</span></span>
+    </div>
+    <div class="sb-right">
+      <span class="sb-beta">BETA</span>
+      <span id="sb-hint">Drag devices from the left panel to start</span>
+    </div>
+  </div>
+</div><!-- /topo-page -->
+
+<!-- ============================================================
+     MODALS
+     ============================================================ -->
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal">
+    <h2 id="cm-title">Confirm</h2>
+    <p id="cm-msg" style="margin-top:6px"></p>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" id="cm-cancel">Cancel</button>
+      <button class="modal-btn primary" id="cm-ok">Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- Open in Builder Modal -->
+<div class="modal-overlay" id="oib-modal">
+  <div class="modal">
+    <h2>Open in <em>Builder</em></h2>
+    <p id="oib-msg" style="margin-top:6px"></p>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-top:16px">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px">This will send to Builder:</div>
+      <div id="oib-details" style="font-size:13px;color:var(--text-dim);line-height:1.9"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeOIB()">Cancel</button>
+      <button class="modal-btn primary" id="oib-ok">⚡ Open in Builder</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span class="t-icon">✓</span><span id="toast-msg">Done</span></div>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+'use strict';
+
+/* ============================================================
+   DEVICE CATALOGUE
+   ============================================================ */
+const TD = {
+  switch_l3: { emoji:'🔶', label:'L3 Switch', prefix:'SW-CORE', defV:'h3c',   defO:'comware', W:185, H:95 },
+  switch_l2: { emoji:'🔷', label:'L2 Switch', prefix:'SW-ACC',  defV:'h3c',   defO:'comware', W:185, H:95 },
+  router:    { emoji:'🔵', label:'Router',    prefix:'RTR',     defV:'cisco', defO:'ios',     W:180, H:92 },
+  firewall:  { emoji:'🔴', label:'Firewall',  prefix:'FW',      defV:'cisco', defO:'ios',     W:175, H:90 },
+  server:    { emoji:'💻', label:'Server',    prefix:'SRV',     defV:null,    defO:null,      W:165, H:86 },
+  endpoint:  { emoji:'📱', label:'Endpoint',  prefix:'PC',      defV:null,    defO:null,      W:160, H:84 },
+  cloud:     { emoji:'☁️', label:'Cloud/ISP', prefix:'ISP',     defV:null,    defO:null,      W:165, H:86 },
+};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let topo = {
+  devices:  [],
+  links:    [],
+  sel:      null,    // { kind:'device'|'link', id }
+  tool:     'select',
+  lkStart:  null,    // device id when drawing a link
+  counters: {},
+};
+
+let pan     = { x: 120, y: 80 };
+let zoom    = 1.0;
+let showGrid = true;
+let dragging  = null;   // { id, smx, smy, ox, oy }
+let panning   = false;
+let panStart  = { x:0, y:0 };
+let mPos      = { x:0, y:0 }; // mouse relative to canvas-wrap
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const mk = (tag, attrs={}) => { const el=document.createElementNS(SVG_NS,tag); for(const[k,v] of Object.entries(attrs)) el.setAttribute(k,v); return el; };
+
+/* ============================================================
+   THEME
+   ============================================================ */
+function toggleTheme() {
+  const next = document.body.dataset.theme==='dark'?'light':'dark';
+  document.body.dataset.theme = next;
+  document.getElementById('theme-btn').textContent = next==='dark'?'🌙':'☀️';
+  try{ localStorage.setItem('clab_theme', next); }catch(e){}
+}
+(function initTheme(){
+  try{ const t=localStorage.getItem('clab_theme'); if(t){ document.body.dataset.theme=t; document.getElementById('theme-btn').textContent=t==='dark'?'🌙':'☀️'; } }catch(e){}
+})();
+
+/* ============================================================
+   VIEWPORT TRANSFORM
+   ============================================================ */
+function applyTransform() {
+  const vp = document.getElementById('viewport');
+  if (vp) vp.setAttribute('transform', `translate(${pan.x},${pan.y}) scale(${zoom})`);
+  document.getElementById('zoom-display').textContent = Math.round(zoom*100) + '%';
+  // Also update temp link
+  const tl = document.getElementById('temp-link');
+  if (tl && topo.lkStart) { /* handled in mousemove */ }
+}
+
+function zoomBy(factor, cx, cy) {
+  const wrap = document.getElementById('canvas-wrap');
+  if (!cx) { cx = wrap.clientWidth/2; cy = wrap.clientHeight/2; }
+  const newZ = Math.max(0.12, Math.min(4.5, zoom*factor));
+  pan.x = cx - (cx - pan.x) * (newZ/zoom);
+  pan.y = cy - (cy - pan.y) * (newZ/zoom);
+  zoom  = newZ;
+  applyTransform();
+}
+
+function resetView() {
+  pan = { x:120, y:80 }; zoom = 1.0;
+  applyTransform();
+}
+
+function fitToScreen() {
+  if (!topo.devices.length) { resetView(); return; }
+  const wrap = document.getElementById('canvas-wrap');
+  const W = wrap.clientWidth, H = wrap.clientHeight;
+  const PAD = 80;
+  let mnX=Infinity,mnY=Infinity,mxX=-Infinity,mxY=-Infinity;
+  topo.devices.forEach(d => {
+    const c=TD[d.type];
+    mnX=Math.min(mnX,d.x); mnY=Math.min(mnY,d.y);
+    mxX=Math.max(mxX,d.x+c.W); mxY=Math.max(mxY,d.y+c.H);
+  });
+  const cW=mxX-mnX+PAD*2, cH=mxY-mnY+PAD*2;
+  const newZ = Math.min(W/cW, H/cH, 2);
+  pan.x = (W - cW*newZ)/2 - (mnX-PAD)*newZ;
+  pan.y = (H - cH*newZ)/2 - (mnY-PAD)*newZ;
+  zoom  = newZ;
+  applyTransform();
+}
+
+function toggleGrid() {
+  showGrid = !showGrid;
+  const bg = document.getElementById('bg-rect');
+  if (bg) bg.setAttribute('fill', showGrid ? 'url(#dot-grid)' : 'transparent');
+  document.getElementById('grid-btn').textContent = `⊞ Grid: ${showGrid?'On':'Off'}`;
+}
+
+/* ============================================================
+   ADD DEVICE
+   ============================================================ */
+function addDevice(type, cx, cy) {
+  const c = TD[type];
+  topo.counters[type] = (topo.counters[type]||0) + 1;
+  const n = topo.counters[type];
+  const id = 'dv' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+  const dev = {
+    id, type,
+    hostname: `${c.prefix}-${String(n).padStart(2,'0')}`,
+    vendor: c.defV, os: c.defO,
+    notes: '',
+    configData: {},
+    x: Math.round(cx - c.W/2),
+    y: Math.round(cy - c.H/2),
+  };
+  topo.devices.push(dev);
+  renderDev(dev);
+  updateEmpty(); updateStatus();
+  return dev;
+}
+
+/* ============================================================
+   RENDER DEVICE
+   ============================================================ */
+function renderDev(dev) {
+  const layer = document.getElementById('devs-layer'); if(!layer) return;
+  document.getElementById('dv-'+dev.id)?.remove();
+  const c    = TD[dev.type];
+  const isSel  = topo.sel?.kind==='device' && topo.sel?.id===dev.id;
+  const isLkSt = topo.lkStart===dev.id;
+  const lkCnt  = topo.links.filter(l=>l.from===dev.id||l.to===dev.id).length;
+  const hasCfg = dev.configData && Object.keys(dev.configData).some(k=>{ const v=dev.configData[k]; return Array.isArray(v)?v.length>0:!!v; });
+
+  const g = mk('g', { id:'dv-'+dev.id, transform:`translate(${dev.x},${dev.y})`, cursor:'pointer' });
+
+  // Shadow for selected
+  if (isSel) {
+    g.appendChild(mk('rect', { x:2,y:4,width:c.W,height:c.H,rx:13, fill:'rgba(124,244,199,0.12)' }));
+  }
+
+  // Card body
+  const rect = mk('rect', {
+    width:c.W, height:c.H, rx:13, fill:'#15191f',
+    stroke: isSel?'#7cf4c7':isLkSt?'#a8b5ff':'#2e3744',
+    'stroke-width': isSel||isLkSt ? 2.5 : 1
+  });
+  if (isSel) rect.setAttribute('filter','url(#glow-sel)');
+  g.appendChild(rect);
+
+  // Accent stripe (left)
+  g.appendChild(mk('rect', { x:0,y:14,width:3.5,height:c.H-28,rx:2,
+    fill: isSel?'#7cf4c7':isLkSt?'#a8b5ff':'#2e3744' }));
+
+  // Emoji
+  const em = mk('text', { x:16,y:36,'font-size':22,'dominant-baseline':'auto','font-family':'system-ui,Apple Color Emoji,Segoe UI Emoji,sans-serif' });
+  em.textContent = c.emoji;
+  g.appendChild(em);
+
+  // Hostname
+  const hn = mk('text', { x:52,y:34,fill:'#e6e9ee','font-size':14,'font-weight':600,'font-family':'Geist,system-ui,sans-serif' });
+  hn.textContent = dev.hostname.length>16 ? dev.hostname.slice(0,14)+'…' : dev.hostname;
+  g.appendChild(hn);
+
+  // Vendor / OS tag
+  const vt = mk('text', { x:52,y:53,fill:'#5b6472','font-size':10,'font-family':'JetBrains Mono,monospace' });
+  vt.textContent = dev.vendor ? `${dev.vendor.toUpperCase()} · ${(dev.os||'').toUpperCase()}` : c.label;
+  g.appendChild(vt);
+
+  // Bottom info
+  const parts = [];
+  if (lkCnt>0) parts.push(`● ${lkCnt} link${lkCnt>1?'s':''}`);
+  if (hasCfg) parts.push('✓ config');
+  if (parts.length) {
+    const inf = mk('text', { x:16,y:c.H-12,fill:'#3a4754','font-size':10,'font-family':'JetBrains Mono,monospace' });
+    inf.textContent = parts.join('  ');
+    g.appendChild(inf);
+  }
+
+  g.addEventListener('mousedown', e => { e.stopPropagation(); if(topo.tool==='select'){ const d=topo.devices.find(x=>x.id===dev.id); if(d) dragging={id:dev.id,smx:e.clientX,smy:e.clientY,ox:d.x,oy:d.y}; } });
+  g.addEventListener('click',    e => { e.stopPropagation(); onDevClick(dev.id); });
+  g.addEventListener('dblclick', e => { e.stopPropagation(); onDevDblClick(dev.id); });
+
+  layer.appendChild(g);
+}
+
+/* ============================================================
+   RENDER LINK
+   ============================================================ */
+function renderLink(lk) {
+  const layer = document.getElementById('links-layer'); if(!layer) return;
+  document.getElementById('lk-'+lk.id)?.remove();
+  const fDev = topo.devices.find(d=>d.id===lk.from);
+  const tDev = topo.devices.find(d=>d.id===lk.to);
+  if (!fDev||!tDev) return;
+  const fc=devCenter(fDev), tc=devCenter(tDev);
+  const isSel   = topo.sel?.kind==='link'&&topo.sel?.id===lk.id;
+  const isTrunk = lk.mode==='trunk';
+
+  const g = mk('g', { id:'lk-'+lk.id, cursor:'pointer' });
+
+  // Wide hit area
+  g.appendChild(mk('line', { x1:fc.x,y1:fc.y,x2:tc.x,y2:tc.y, stroke:'transparent','stroke-width':22 }));
+
+  // Visible line
+  const line = mk('line', { x1:fc.x,y1:fc.y,x2:tc.x,y2:tc.y });
+  if      (isSel)   { line.setAttribute('stroke','#7cf4c7'); line.setAttribute('stroke-width','3'); line.setAttribute('filter','url(#glow-sel)'); }
+  else if (isTrunk) { line.setAttribute('stroke','#2e3744'); line.setAttribute('stroke-width','2.5'); }
+  else              { line.setAttribute('stroke','#1b2027'); line.setAttribute('stroke-width','1.5'); line.setAttribute('stroke-dasharray','9 6'); }
+  g.appendChild(line);
+
+  // Label
+  const lbl = lk.label || (lk.allowedVlans ? `VL:${lk.allowedVlans.split(/[\s,]+/).slice(0,2).join(',')}` : '');
+  if (lbl) {
+    const mx=(fc.x+tc.x)/2, my=(fc.y+tc.y)/2, tw=lbl.length*5.4+14;
+    g.appendChild(mk('rect', { x:mx-tw/2,y:my-10,width:tw,height:18,rx:4,fill:'#0b0d10',stroke:'#232a34','stroke-width':1 }));
+    const lt=mk('text',{ x:mx,y:my+5,'text-anchor':'middle',fill:'#9aa3af','font-size':10,'font-family':'JetBrains Mono,monospace' });
+    lt.textContent = lbl; g.appendChild(lt);
+  }
+
+  // Mode dots at both ends
+  const mkDot = (x,y) => mk('circle',{ cx:x,cy:y,r:5,fill:isTrunk?'#2e3744':'#1b2027',stroke:isSel?'#7cf4c7':'#2e3744','stroke-width':1 });
+  g.appendChild(mkDot(fc.x+(tc.x-fc.x)*0.12, fc.y+(tc.y-fc.y)*0.12));
+  g.appendChild(mkDot(tc.x-(tc.x-fc.x)*0.12, tc.y-(tc.y-fc.y)*0.12));
+
+  g.addEventListener('click', e => { e.stopPropagation(); if(topo.tool!=='link'){ topo.sel={kind:'link',id:lk.id}; renderAll(); renderLinkProps(lk.id); updateStatus(); } });
+
+  layer.insertBefore(g, layer.firstChild);
+}
+
+/* ============================================================
+   FULL RE-RENDER
+   ============================================================ */
+function renderAll() {
+  const dl=document.getElementById('devs-layer'), ll=document.getElementById('links-layer');
+  if(!dl||!ll) return;
+  dl.innerHTML=''; ll.innerHTML='';
+  topo.links.forEach(l=>renderLink(l));
+  topo.devices.forEach(d=>renderDev(d));
+}
+
+function updateLinksOf(id) {
+  topo.links.filter(l=>l.from===id||l.to===id).forEach(l=>renderLink(l));
+}
+
+function devCenter(d) { const c=TD[d.type]; return { x:d.x+c.W/2, y:d.y+c.H/2 }; }
+
+/* ============================================================
+   DEVICE EVENTS
+   ============================================================ */
+function onDevClick(id) {
+  if (topo.tool==='link') {
+    if (!topo.lkStart) {
+      topo.lkStart=id; renderAll();
+      setSbHint('Click another device to draw a link — Esc to cancel');
+    } else if (topo.lkStart!==id) {
+      const dup=topo.links.some(l=>(l.from===topo.lkStart&&l.to===id)||(l.from===id&&l.to===topo.lkStart));
+      if (dup) { toast('These devices are already connected', true); return; }
+      const lkId='lk'+Date.now().toString(36);
+      const lk={id:lkId,from:topo.lkStart,to:id,fromPort:'',toPort:'',mode:'trunk',allowedVlans:'',nativeVlan:'1',label:''};
+      topo.links.push(lk);
+      const prev=topo.lkStart; topo.lkStart=null;
+      document.getElementById('temp-link')?.setAttribute('opacity','0');
+      renderAll();
+      topo.sel={kind:'link',id:lkId};
+      renderAll(); renderLinkProps(lkId); updateStatus();
+      setSbHint('Link created — edit properties on the right');
+    }
+    return;
+  }
+  topo.sel={kind:'device',id};
+  renderAll(); renderDevProps(id); updateStatus();
+  openProps();
+}
+
+function onDevDblClick(id) {
+  const dev=topo.devices.find(d=>d.id===id); if(!dev) return;
+  const n=prompt('Rename device:',dev.hostname);
+  if (n&&n.trim()) { dev.hostname=n.trim(); renderAll(); if(topo.sel?.id===id) renderDevProps(id); }
+}
+
+/* ============================================================
+   PROPS PANEL
+   ============================================================ */
+function openProps()  { document.getElementById('props-panel').classList.add('open'); }
+function closeProps() {
+  document.getElementById('props-panel').classList.remove('open');
+  topo.sel=null; topo.lkStart=null;
+  document.getElementById('temp-link')?.setAttribute('opacity','0');
+  renderAll(); updateStatus(); setSbHint('');
+}
+
+function renderDevProps(id) {
+  const dev=topo.devices.find(d=>d.id===id); if(!dev) return;
+  const c=TD[dev.type];
+  const hasCfg=dev.configData&&Object.keys(dev.configData).some(k=>{const v=dev.configData[k];return Array.isArray(v)?v.length>0:!!v;});
+
+  // Connected peers
+  const peers=topo.links.filter(l=>l.from===dev.id||l.to===dev.id).map(l=>{
+    const peerId=l.from===dev.id?l.to:l.from;
+    const peer=topo.devices.find(d=>d.id===peerId);
+    return{ peer, lk:l };
+  }).filter(x=>x.peer);
+
+  const connHtml = peers.length
+    ? peers.map(({peer,lk})=>`
+        <div class="conn-item">
+          <span class="conn-em">${TD[peer.type].emoji}</span>
+          <span class="conn-label">${peer.hostname}</span>
+          <span class="conn-mode ${lk.mode}">${lk.mode}</span>
+        </div>`).join('')
+    : `<div style="font-size:12px;color:var(--text-muted);padding:8px 0">No connections yet. Use Link mode (L) to connect.</div>`;
+
+  const osOpts = dev.vendor==='h3c'
+    ? `<option value="comware" ${dev.os==='comware'?'selected':''}>Comware v7</option>`
+    : `<option value="ios"   ${dev.os==='ios'   ?'selected':''}>IOS</option>
+       <option value="iosxe" ${dev.os==='iosxe' ?'selected':''}>IOS-XE</option>
+       <option value="nxos"  ${dev.os==='nxos'  ?'selected':''}>NX-OS</option>`;
+
+  document.getElementById('props-inner').innerHTML = `
+    <div class="props-header">
+      <span class="props-emoji">${c.emoji}</span>
+      <div>
+        <div class="props-name">${c.label}</div>
+        <div class="props-sub">${dev.id.slice(0,14)}</div>
+      </div>
+      <button class="props-close" onclick="closeProps()">✕</button>
+    </div>
+
+    <div class="pf">
+      <label>Hostname</label>
+      <input value="${dev.hostname}" oninput="devPropSet('${id}','hostname',this.value)" style="font-family:var(--mono)">
+    </div>
+    <div class="pf">
+      <label>Vendor</label>
+      <select onchange="devVendorSet('${id}',this.value)">
+        <option value="h3c"   ${dev.vendor==='h3c'  ?'selected':''}>H3C</option>
+        <option value="cisco" ${dev.vendor==='cisco' ?'selected':''}>Cisco</option>
+        <option value=""      ${!dev.vendor          ?'selected':''}>N/A</option>
+      </select>
+    </div>
+    <div class="pf" id="pp-os-${id}" ${!dev.vendor?'style="display:none"':''}>
+      <label>OS / Platform</label>
+      <select onchange="devPropSet('${id}','os',this.value)">${osOpts}</select>
+    </div>
+    <div class="pf">
+      <label>Notes</label>
+      <input value="${dev.notes||''}" placeholder="Optional notes" oninput="devPropSet('${id}','notes',this.value)">
+    </div>
+
+    <hr class="props-divider">
+
+    <div style="font-size:11px;font-family:var(--mono);color:var(--text-muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px">Connections (${peers.length})</div>
+    <div class="connections-list">${connHtml}</div>
+
+    ${hasCfg?`<div class="cfg-badge">✓ Has saved config data</div>`:''}
+
+    <div class="props-actions">
+      <button class="btn btn-primary" onclick="openInBuilder('${id}')">⚡ Open in Builder</button>
+      <button class="btn btn-secondary" onclick="devPropSet('${id}','_rename',null)">✏️ Rename</button>
+      <button class="btn btn-danger" onclick="deleteDev('${id}')">🗑️ Delete Device</button>
+    </div>
+  `;
+  openProps();
+}
+
+function renderLinkProps(id) {
+  const lk=topo.links.find(l=>l.id===id); if(!lk) return;
+  const fDev=topo.devices.find(d=>d.id===lk.from);
+  const tDev=topo.devices.find(d=>d.id===lk.to);
+
+  document.getElementById('props-inner').innerHTML = `
+    <div class="props-header">
+      <span class="props-emoji">🔗</span>
+      <div>
+        <div class="props-name">Link</div>
+        <div class="props-sub">${fDev?.hostname||'?'} ↔ ${tDev?.hostname||'?'}</div>
+      </div>
+      <button class="props-close" onclick="closeProps()">✕</button>
+    </div>
+
+    <div class="pf">
+      <label>Mode</label>
+      <div class="seg">
+        <button type="button" class="${lk.mode==='trunk' ?'active':''}" onclick="lkPropSet('${id}','mode','trunk')">Trunk</button>
+        <button type="button" class="${lk.mode==='access'?'active':''}" onclick="lkPropSet('${id}','mode','access')">Access</button>
+      </div>
+    </div>
+    <div class="pf">
+      <label>Allowed VLANs</label>
+      <input value="${lk.allowedVlans||''}" placeholder="10 20 99" oninput="lkPropLive('${id}','allowedVlans',this.value)">
+    </div>
+    <div class="pf">
+      <label>Native VLAN</label>
+      <input value="${lk.nativeVlan||'1'}" placeholder="1" oninput="lkPropSet('${id}','nativeVlan',this.value)">
+    </div>
+    <div class="pf">
+      <label>${fDev?.hostname||'A'} Port</label>
+      <input value="${lk.fromPort||''}" placeholder="GigabitEthernet1/0/24" oninput="lkPropSet('${id}','fromPort',this.value)">
+    </div>
+    <div class="pf">
+      <label>${tDev?.hostname||'B'} Port</label>
+      <input value="${lk.toPort||''}" placeholder="GigabitEthernet1/0/1" oninput="lkPropSet('${id}','toPort',this.value)">
+    </div>
+    <div class="pf">
+      <label>Label <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-left:4px">shown on canvas</span></label>
+      <input value="${lk.label||''}" placeholder="Uplink" oninput="lkPropLive('${id}','label',this.value)">
+    </div>
+
+    <div class="props-actions">
+      <button class="btn btn-danger" onclick="deleteLink('${id}')">🗑️ Delete Link</button>
+    </div>
+  `;
+  openProps();
+}
+
+/* ============================================================
+   PROP SETTERS
+   ============================================================ */
+function devPropSet(id, prop, val) {
+  const d=topo.devices.find(x=>x.id===id); if(!d) return;
+  if (prop==='_rename') { const n=prompt('Rename:',d.hostname); if(n&&n.trim()){d.hostname=n.trim();} }
+  else d[prop]=val;
+  renderAll(); if(topo.sel?.id===id) renderDevProps(id);
+}
+function devVendorSet(id, val) {
+  const d=topo.devices.find(x=>x.id===id); if(!d) return;
+  d.vendor=val; d.os=val==='h3c'?'comware':val==='cisco'?'ios':null;
+  renderAll(); renderDevProps(id);
+}
+function lkPropSet(id, prop, val) {
+  const l=topo.links.find(x=>x.id===id); if(!l) return;
+  l[prop]=val; renderLink(l); renderLinkProps(id);
+}
+function lkPropLive(id, prop, val) {
+  const l=topo.links.find(x=>x.id===id); if(!l) return;
+  l[prop]=val; renderLink(l); // don't re-render props panel (would lose cursor pos)
+}
+
+/* ============================================================
+   DELETE
+   ============================================================ */
+function deleteDev(id) {
+  topo.links=topo.links.filter(l=>l.from!==id&&l.to!==id);
+  topo.devices=topo.devices.filter(d=>d.id!==id);
+  topo.sel=null; closeProps(); renderAll(); updateEmpty(); updateStatus();
+  toast('Device deleted');
+}
+function deleteLink(id) {
+  const lk=topo.links.find(l=>l.id===id);
+  topo.links=topo.links.filter(l=>l.id!==id);
+  topo.sel=null; closeProps();
+  if(lk){ renderDev(topo.devices.find(d=>d.id===lk.from)); renderDev(topo.devices.find(d=>d.id===lk.to)); }
+  renderAll(); updateStatus(); toast('Link deleted');
+}
+
+/* ============================================================
+   TOOL
+   ============================================================ */
+function setTool(tool) {
+  topo.tool=tool; topo.lkStart=null;
+  document.getElementById('temp-link')?.setAttribute('opacity','0');
+  renderAll();
+  document.querySelectorAll('.tool-btn').forEach(b=>b.classList.toggle('active',b.dataset.tool===tool));
+  const wrap=document.getElementById('canvas-wrap');
+  if(wrap) wrap.style.cursor=tool==='link'?'crosshair':'default';
+  // Update status bar mode chip
+  const sbMode=document.getElementById('sb-mode');
+  sbMode.textContent=tool.toUpperCase();
+  sbMode.className='sb-mode '+tool;
+  setSbHint(tool==='link'?'Click a device to start drawing a link':'');
+}
+
+/* ============================================================
+   OPEN IN BUILDER (localStorage bridge)
+   ============================================================ */
+function openInBuilder(id) {
+  const dev=topo.devices.find(d=>d.id===id); if(!dev) return;
+  const c=TD[dev.type];
+
+  // Build details preview
+  const peers=topo.links.filter(l=>l.from===id||l.to===id).length;
+  const hasCfg=dev.configData&&Object.keys(dev.configData).some(k=>{const v=dev.configData[k];return Array.isArray(v)?v.length>0:!!v;});
+
+  document.getElementById('oib-msg').textContent = `Send "${dev.hostname}" to the Config Builder?`;
+  document.getElementById('oib-details').innerHTML = `
+    <span style="color:var(--text)">${c.emoji} ${dev.hostname}</span><br>
+    Vendor: <span style="color:var(--accent)">${dev.vendor?dev.vendor.toUpperCase()+' · '+(dev.os||'').toUpperCase():'N/A'}</span><br>
+    Connections: ${peers} link${peers!==1?'s':''}<br>
+    Saved config: ${hasCfg?'<span style="color:var(--accent)">✓ Yes — will be loaded</span>':'None (hostname + vendor only)'}
+  `;
+
+  document.getElementById('oib-ok').onclick = () => {
+    closeOIB();
+    // Write to localStorage
+    try {
+      localStorage.setItem('clab_pending_device', JSON.stringify({
+        hostname:   dev.hostname,
+        vendor:     dev.vendor,
+        os:         dev.os,
+        configData: dev.configData,
+        timestamp:  Date.now()
+      }));
+    } catch(e) { toast('localStorage unavailable', true); return; }
+    // Open builder in new tab
+    window.open('/index.html', '_blank');
+    toast(`Opening ${dev.hostname} in Builder ⚡`);
+  };
+  document.getElementById('oib-modal').classList.add('show');
+}
+function closeOIB() { document.getElementById('oib-modal').classList.remove('show'); }
+
+/* ============================================================
+   CLEAR ALL
+   ============================================================ */
+function clearAll() {
+  if (!topo.devices.length) { toast('Canvas is already empty', true); return; }
+  showConfirm(
+    'Clear Topology?',
+    `Remove all ${topo.devices.length} device${topo.devices.length>1?'s':''} and ${topo.links.length} link${topo.links.length>1?'s':''}? This cannot be undone.`,
+    () => {
+      topo.devices=[]; topo.links=[]; topo.sel=null; topo.lkStart=null; topo.counters={};
+      closeProps(); renderAll(); updateEmpty(); updateStatus(); toast('Topology cleared');
+    }
+  );
+}
+
+/* ============================================================
+   EXPORT / SAVE / LOAD
+   ============================================================ */
+function exportPNG() {
+  if (!topo.devices.length) { toast('Add devices first!', true); return; }
+  const svg   = document.getElementById('topo-svg');
+  const wrap  = document.getElementById('canvas-wrap');
+  const W=wrap.clientWidth, H=wrap.clientHeight;
+  const clone = svg.cloneNode(true);
+  clone.setAttribute('width',W); clone.setAttribute('height',H);
+  // Remove temp line opacity artifact
+  clone.querySelector('#temp-link')?.setAttribute('opacity','0');
+  const svgStr = new XMLSerializer().serializeToString(clone);
+  const canvas = document.createElement('canvas');
+  canvas.width=W*2; canvas.height=H*2;
+  const ctx=canvas.getContext('2d');
+  ctx.scale(2,2); ctx.fillStyle='#0b0d10'; ctx.fillRect(0,0,W,H);
+  const img=new Image();
+  const blob=new Blob([svgStr],{type:'image/svg+xml;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  img.onload=()=>{ ctx.drawImage(img,0,0,W,H); URL.revokeObjectURL(url); const a=document.createElement('a'); a.download=`topology-${Date.now()}.png`; a.href=canvas.toDataURL('image/png'); a.click(); toast('Exported as PNG 📷'); };
+  img.onerror=()=>{ URL.revokeObjectURL(url); toast('Export failed', true); };
+  img.src=url;
+}
+
+function saveJSON() {
+  if (!topo.devices.length) { toast('Nothing to save yet', true); return; }
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify({version:'3.0',saved:new Date().toISOString(),devices:topo.devices,links:topo.links},null,2)],{type:'application/json'}));
+  a.download=`configlabs-topology-${Date.now()}.json`;
+  a.click(); toast('Saved as JSON 💾');
+}
+
+function loadJSON() {
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='.json';
+  inp.onchange=e=>{
+    const file=e.target.files[0]; if(!file) return;
+    const r=new FileReader();
+    r.onload=ev=>{
+      try{
+        const data=JSON.parse(ev.target.result);
+        if(!Array.isArray(data.devices)) throw new Error('bad format');
+        topo.devices=data.devices; topo.links=data.links||[]; topo.sel=null; topo.lkStart=null;
+        closeProps(); renderAll(); updateEmpty(); updateStatus();
+        toast(`Loaded topology — ${data.devices.length} devices`);
+      }catch(e){ toast('Invalid topology file', true); }
+    };
+    r.readAsText(file);
+  };
+  inp.click();
+}
+
+/* ============================================================
+   STATUS + EMPTY STATE
+   ============================================================ */
+function updateEmpty() {
+  const el=document.getElementById('empty-hint');
+  if(el) el.style.display=topo.devices.length?'none':'flex';
+}
+function updateStatus() {
+  const dCount=topo.devices.length, lCount=topo.links.length;
+  document.getElementById('sb-devs').textContent=`${dCount} device${dCount!==1?'s':''}`;
+  document.getElementById('sb-links').textContent=`${lCount} link${lCount!==1?'s':''}`;
+}
+function setSbHint(msg) {
+  document.getElementById('sb-hint').textContent = msg;
+}
+
+/* ============================================================
+   CONFIRM MODAL
+   ============================================================ */
+function showConfirm(title, msg, onOk) {
+  document.getElementById('cm-title').textContent=title;
+  document.getElementById('cm-msg').textContent=msg;
+  document.getElementById('cm-ok').onclick=()=>{ document.getElementById('confirm-modal').classList.remove('show'); onOk(); };
+  document.getElementById('cm-cancel').onclick=()=>document.getElementById('confirm-modal').classList.remove('show');
+  document.getElementById('confirm-modal').classList.add('show');
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function toast(msg, isErr=false) {
+  const t=document.getElementById('toast');
+  document.getElementById('toast-msg').textContent=msg;
+  t.querySelector('.t-icon').style.background=isErr?'var(--danger)':'var(--success)';
+  t.querySelector('.t-icon').textContent=isErr?'!':'✓';
+  t.classList.add('show');
+  clearTimeout(window._tt);
+  window._tt=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+/* ============================================================
+   CANVAS EVENT SETUP
+   ============================================================ */
+(function setupEvents() {
+  const wrap  = document.getElementById('canvas-wrap');
+  const svg   = document.getElementById('topo-svg');
+  const vp    = document.getElementById('viewport');
+  const bg    = document.getElementById('bg-rect');
+  const tmpL  = document.getElementById('temp-link');
+
+  // Initial transform
+  applyTransform();
+
+  // Palette drag
+  document.querySelectorAll('.pal-dev').forEach(el=>{
+    el.addEventListener('dragstart',e=>{
+      e.dataTransfer.setData('text/plain',el.dataset.type);
+      e.dataTransfer.effectAllowed='copy';
+    });
+  });
+
+  // Drop on canvas
+  wrap.addEventListener('dragover', e=>{ e.preventDefault(); e.dataTransfer.dropEffect='copy'; document.getElementById('drop-overlay').style.display='flex'; });
+  wrap.addEventListener('dragleave',e=>{ if(!wrap.contains(e.relatedTarget)) document.getElementById('drop-overlay').style.display='none'; });
+  wrap.addEventListener('drop', e=>{
+    e.preventDefault();
+    document.getElementById('drop-overlay').style.display='none';
+    const type=e.dataTransfer.getData('text/plain');
+    if (!TD[type]) return;
+    const rect=wrap.getBoundingClientRect();
+    // Convert screen coords to canvas coords (accounting for pan + zoom)
+    const cx=(e.clientX-rect.left-pan.x)/zoom;
+    const cy=(e.clientY-rect.top -pan.y)/zoom;
+    const dev=addDevice(type,cx,cy);
+    topo.sel={kind:'device',id:dev.id};
+    renderAll(); renderDevProps(dev.id); openProps();
+  });
+
+  // Background mousedown: pan start or cancel link
+  bg.addEventListener('mousedown',e=>{
+    if (topo.tool==='select') {
+      panning=true;
+      panStart={x:e.clientX-pan.x,y:e.clientY-pan.y};
+      svg.style.cursor='grabbing';
+    } else if (topo.tool==='link'&&topo.lkStart) {
+      const prev=topo.lkStart; topo.lkStart=null;
+      tmpL.setAttribute('opacity','0');
+      renderDev(topo.devices.find(d=>d.id===prev));
+      setSbHint('Click a device to start drawing a link');
+    }
+  });
+
+  // Background click: deselect
+  bg.addEventListener('click',e=>{
+    if (Math.abs(e.clientX-panStart.x-pan.x)<4&&Math.abs(e.clientY-panStart.y-pan.y)<4) {
+      if (topo.sel) { closeProps(); }
+    }
+  });
+
+  // Mouse move: pan + drag device + temp link line
+  svg.addEventListener('mousemove', e=>{
+    const rect=wrap.getBoundingClientRect();
+    mPos={x:e.clientX-rect.left, y:e.clientY-rect.top};
+
+    if (panning) {
+      pan.x=e.clientX-panStart.x;
+      pan.y=e.clientY-panStart.y;
+      applyTransform(); return;
+    }
+
+    if (dragging) {
+      const dx=e.clientX-dragging.smx;
+      const dy=e.clientY-dragging.smy;
+      const dev=topo.devices.find(d=>d.id===dragging.id);
+      if (dev) {
+        dev.x=dragging.ox+dx/zoom;
+        dev.y=dragging.oy+dy/zoom;
+        document.getElementById('dv-'+dragging.id)?.setAttribute('transform',`translate(${dev.x},${dev.y})`);
+        updateLinksOf(dragging.id);
+      }
+    }
+
+    // Temp link line while drawing
+    if (topo.tool==='link'&&topo.lkStart&&tmpL) {
+      const fDev=topo.devices.find(d=>d.id===topo.lkStart);
+      if (fDev) {
+        const fc=devCenter(fDev);
+        // fc is in canvas coords — convert to SVG coords (before viewport transform)
+        tmpL.setAttribute('x1',fc.x*zoom+pan.x);
+        tmpL.setAttribute('y1',fc.y*zoom+pan.y);
+        tmpL.setAttribute('x2',mPos.x);
+        tmpL.setAttribute('y2',mPos.y);
+        tmpL.setAttribute('opacity','0.7');
+      }
+    }
+  });
+
+  svg.addEventListener('mouseup',   ()=>{ panning=false; dragging=null; svg.style.cursor=topo.tool==='link'?'crosshair':'default'; });
+  svg.addEventListener('mouseleave',()=>{ panning=false; dragging=null; });
+
+  // Scroll wheel zoom
+  wrap.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const rect=wrap.getBoundingClientRect();
+    const cx=e.clientX-rect.left;
+    const cy=e.clientY-rect.top;
+    const factor=e.deltaY<0?1.12:1/1.12;
+    zoomBy(factor,cx,cy);
+  },{ passive:false });
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown',e=>{
+    const tag=document.activeElement.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT') return;
+    if(e.key==='Delete'||e.key==='Backspace'){
+      e.preventDefault();
+      if(topo.sel?.kind==='device') deleteDev(topo.sel.id);
+      else if(topo.sel?.kind==='link') deleteLink(topo.sel.id);
+    }
+    if(e.key==='Escape'){
+      if(topo.lkStart){ const p=topo.lkStart; topo.lkStart=null; tmpL.setAttribute('opacity','0'); renderDev(topo.devices.find(d=>d.id===p)); setSbHint(''); }
+      else if(topo.sel){ closeProps(); }
+      document.getElementById('confirm-modal').classList.remove('show');
+      document.getElementById('oib-modal').classList.remove('show');
+    }
+    if(e.key==='l'||e.key==='L'){ e.preventDefault(); setTool('link'); }
+    if(e.key==='s'||e.key==='S'){ e.preventDefault(); setTool('select'); }
+    if(e.key==='f'||e.key==='F'){ e.preventDefault(); fitToScreen(); }
+  });
+})();
+</script>
+</body>
+</html>
