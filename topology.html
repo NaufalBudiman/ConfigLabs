@@ -452,6 +452,52 @@ nav {
 .modal-btn.secondary { background: var(--surface-hover); color: var(--text); border: 1px solid var(--border); }
 .modal-btn.secondary:hover { border-color: var(--border-strong); }
 
+/* Port picker modal */
+.port-picker-modal { max-width: 560px; }
+.pp-device-row {
+  display: grid; grid-template-columns: 1fr 32px 1fr; gap: 8px;
+  align-items: start; margin: 16px 0;
+}
+.pp-dev-block {
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px;
+}
+.pp-dev-name {
+  font-size: 11px; font-family: var(--mono); color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;
+}
+.pp-dev-label {
+  font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 10px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pp-dev-block select, .pp-speed-row select {
+  width: 100%; padding: 8px 10px; border-radius: 8px;
+  border: 1px solid var(--border-strong); background: var(--surface);
+  color: var(--text); font-size: 12px; font-family: var(--mono);
+  cursor: pointer; outline: none;
+}
+.pp-dev-block select:focus, .pp-speed-row select:focus { border-color: var(--accent); }
+.pp-arrow {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted); font-size: 18px; padding-top: 38px;
+}
+.pp-speed-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  margin-top: 12px;
+}
+.pp-field-label {
+  font-size: 11px; font-family: var(--mono); color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;
+}
+.pp-port-used { color: var(--danger); font-size: 10px; }
+.pp-port-avail { color: var(--accent); font-size: 10px; }
+
+/* Cable label on canvas */
+.cable-label-pill {
+  font-family: var(--mono); font-size: 9px;
+  fill: var(--text-dim);
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -532,8 +578,10 @@ nav {
 
       <div class="sidebar-section">
         <div class="sidebar-label">Devices</div>
-        <div class="pal-dev" data-type="switch_l3" draggable="true"><span class="em">🔶</span><span class="lbl">L3 Switch</span></div>
-        <div class="pal-dev" data-type="switch_l2" draggable="true"><span class="em">🔷</span><span class="lbl">L2 Switch</span></div>
+        <div class="pal-dev" data-type="switch_l3_24" draggable="true"><span class="em">🔶</span><span class="lbl">L3 Switch (24)</span></div>
+        <div class="pal-dev" data-type="switch_l3_48" draggable="true"><span class="em">🔶</span><span class="lbl">L3 Switch (48)</span></div>
+        <div class="pal-dev" data-type="switch_l2_24" draggable="true"><span class="em">🔷</span><span class="lbl">L2 Switch (24)</span></div>
+        <div class="pal-dev" data-type="switch_l2_48" draggable="true"><span class="em">🔷</span><span class="lbl">L2 Switch (48)</span></div>
         <div class="pal-dev" data-type="router"    draggable="true"><span class="em">🔵</span><span class="lbl">Router</span></div>
         <div class="pal-dev" data-type="firewall"  draggable="true"><span class="em">🔴</span><span class="lbl">Firewall</span></div>
         <div class="pal-dev" data-type="server"    draggable="true"><span class="em">💻</span><span class="lbl">Server</span></div>
@@ -695,6 +743,63 @@ nav {
 
 <div class="toast" id="toast"><span class="t-icon">✓</span><span id="toast-msg">Done</span></div>
 
+<!-- Port Picker Modal -->
+<div class="modal-overlay" id="port-picker-modal">
+  <div class="modal port-picker-modal">
+    <h2>Connect <em>Ports</em></h2>
+    <p style="font-size:13px;color:var(--text-muted);margin-top:4px">Select ports and cable type for this link</p>
+    <div class="pp-device-row">
+      <div class="pp-dev-block">
+        <div class="pp-dev-name">From</div>
+        <div class="pp-dev-label" id="pp-from-name">—</div>
+        <div class="pp-field-label">Port <span id="pp-from-avail" class="pp-port-avail"></span></div>
+        <select id="pp-from-port"></select>
+      </div>
+      <div class="pp-arrow">⟶</div>
+      <div class="pp-dev-block">
+        <div class="pp-dev-name">To</div>
+        <div class="pp-dev-label" id="pp-to-name">—</div>
+        <div class="pp-field-label">Port <span id="pp-to-avail" class="pp-port-avail"></span></div>
+        <select id="pp-to-port"></select>
+      </div>
+    </div>
+    <div class="pp-speed-row">
+      <div>
+        <div class="pp-field-label">Speed / Type</div>
+        <select id="pp-speed">
+          <option value="">— Select —</option>
+          <optgroup label="Copper">
+            <option value="100Mbps · Cat5e">100 Mbps · Cat5e</option>
+            <option value="1Gbps · Cat6" selected>1 Gbps · Cat6</option>
+            <option value="2.5Gbps · Cat6A">2.5 Gbps · Cat6A</option>
+            <option value="5Gbps · Cat6A">5 Gbps · Cat6A</option>
+            <option value="10GBase-T · Cat6A">10GBase-T · Cat6A</option>
+          </optgroup>
+          <optgroup label="Fiber / SFP">
+            <option value="1Gbps · SFP">1 Gbps · SFP</option>
+            <option value="10Gbps · SFP+">10 Gbps · SFP+</option>
+            <option value="25Gbps · SFP28">25 Gbps · SFP28</option>
+            <option value="40Gbps · QSFP+">40 Gbps · QSFP+</option>
+            <option value="100Gbps · QSFP28">100 Gbps · QSFP28</option>
+            <option value="400Gbps · QSFP-DD">400 Gbps · QSFP-DD</option>
+          </optgroup>
+        </select>
+      </div>
+      <div>
+        <div class="pp-field-label">Link Mode</div>
+        <select id="pp-mode">
+          <option value="trunk">Trunk</option>
+          <option value="access">Access</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="cancelPortPick()">Cancel</button>
+      <button class="modal-btn primary" onclick="confirmPortPick()">🔗 Connect</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============================================================
      JAVASCRIPT
      ============================================================ -->
@@ -712,40 +817,68 @@ const NAME_H = 30;       // height of the editable name strip on top
 const NAME_GAP = 6;      // gap between name and chassis
 
 const TD = {
-  switch_l3: {
-    emoji:'🔶', label:'L3 Switch', prefix:'SW-CORE', defV:'h3c',   defO:'comware',
-    W: 220, H: 70,
-    color: '#7cf4c7', bg: '#16221a', tag: 'L3 SW',
+  switch_l3_24: {
+    emoji:'🔶', label:'L3 Switch (24)', prefix:'SW-CORE', defV:'h3c', defO:'comware',
+    W: 220, H: 70, shape: 'rect',
+    color: '#7cf4c7', bg: '#16221a', tag: 'L3 SW-24',
+    ports: { copper: 24, fiber: 2 },
+    fiberTypes: ['1G-SFP', '10G-SFP+', '25G-SFP28', '40G-QSFP+', '100G-QSFP28'],
   },
-  switch_l2: {
-    emoji:'🔷', label:'L2 Switch', prefix:'SW-ACC',  defV:'h3c',   defO:'comware',
-    W: 220, H: 70,
-    color: '#5fc8b4', bg: '#152521', tag: 'L2 SW',
+  switch_l3_48: {
+    emoji:'🔶', label:'L3 Switch (48)', prefix:'SW-CORE', defV:'h3c', defO:'comware',
+    W: 220, H: 70, shape: 'rect',
+    color: '#7cf4c7', bg: '#16221a', tag: 'L3 SW-48',
+    ports: { copper: 48, fiber: 2 },
+    fiberTypes: ['1G-SFP', '10G-SFP+', '25G-SFP28', '40G-QSFP+', '100G-QSFP28'],
+  },
+  switch_l2_24: {
+    emoji:'🔷', label:'L2 Switch (24)', prefix:'SW-ACC', defV:'h3c', defO:'comware',
+    W: 220, H: 70, shape: 'rect',
+    color: '#5fc8b4', bg: '#152521', tag: 'L2 SW-24',
+    ports: { copper: 24, fiber: 2 },
+    fiberTypes: ['1G-SFP', '10G-SFP+', '25G-SFP28', '40G-QSFP+', '100G-QSFP28'],
+  },
+  switch_l2_48: {
+    emoji:'🔷', label:'L2 Switch (48)', prefix:'SW-ACC', defV:'h3c', defO:'comware',
+    W: 220, H: 70, shape: 'rect',
+    color: '#5fc8b4', bg: '#152521', tag: 'L2 SW-48',
+    ports: { copper: 48, fiber: 2 },
+    fiberTypes: ['1G-SFP', '10G-SFP+', '25G-SFP28', '40G-QSFP+', '100G-QSFP28'],
   },
   router: {
     emoji:'🔵', label:'Router', prefix:'RTR', defV:'cisco', defO:'ios',
-    W: 220, H: 70,
+    W: 220, H: 70, shape: 'rect',
     color: '#a8b5ff', bg: '#171a26', tag: 'RTR',
+    ports: { copper: 8, fiber: 2 },
+    fiberTypes: ['1G-SFP', '10G-SFP+', '25G-SFP28', '40G-QSFP+', '100G-QSFP28'],
   },
   firewall: {
     emoji:'🔴', label:'Firewall', prefix:'FW', defV:'cisco', defO:'ios',
-    W: 220, H: 70,
+    W: 220, H: 70, shape: 'rect',
     color: '#ff6478', bg: '#241518', tag: 'FW',
+    ports: { copper: 4, fiber: 1 },
+    fiberTypes: ['1G-SFP', '10G-SFP+'],
   },
   server: {
     emoji:'💻', label:'Server', prefix:'SRV', defV:null, defO:null,
-    W: 220, H: 70,
+    W: 220, H: 70, shape: 'rect',
     color: '#ffb86b', bg: '#241c12', tag: 'SRV',
+    ports: { copper: 4, fiber: 0 },
+    fiberTypes: [],
   },
   endpoint: {
     emoji:'📱', label:'Endpoint', prefix:'PC', defV:null, defO:null,
-    W: 220, H: 70,
+    W: 220, H: 70, shape: 'rect',
     color: '#9aa3af', bg: '#1a1d22', tag: 'PC',
+    ports: { copper: 1, fiber: 0 },
+    fiberTypes: [],
   },
   cloud: {
     emoji:'☁️', label:'Cloud/ISP', prefix:'ISP', defV:null, defO:null,
-    W: 220, H: 70,
+    W: 220, H: 70, shape: 'rect',
     color: '#a8b5ff', bg: '#161a26', tag: 'ISP',
+    ports: { copper: 2, fiber: 1 },
+    fiberTypes: ['100G-QSFP28'],
   },
 };
 
@@ -934,17 +1067,16 @@ function renderDev(dev) {
   g.appendChild(fo);
 
   // ============================================================
-  //   2) CHASSIS — front-panel rack unit
-  //   y-offset: NAME_H + NAME_GAP
+  //   2) CHASSIS BODY
   // ============================================================
   const cy = NAME_H + NAME_GAP;
 
-  // Selection glow shadow
+  // Selection glow
   if (isSel) {
-    g.appendChild(mk('rect', { x:2, y:cy+3, width:c.W, height:c.H, rx:8, fill:'rgba(124,244,199,0.12)' }));
+    g.appendChild(mk('rect', { x:2, y:cy+3, width:c.W, height:c.H, rx:9, fill:'rgba(124,244,199,0.12)' }));
   }
 
-  // Main chassis body
+  // Main chassis rect (all device types now use rect)
   const chassis = mk('rect', {
     x:0, y:cy, width:c.W, height:c.H, rx:8,
     fill: c.bg, stroke, 'stroke-width': sw,
@@ -952,126 +1084,179 @@ function renderDev(dev) {
   if (isSel) chassis.setAttribute('filter','url(#glow-sel)');
   g.appendChild(chassis);
 
-  // Subtle inner top highlight (gives metallic feel)
-  g.appendChild(mk('rect', {
-    x:1.5, y:cy+1.5, width:c.W-3, height:1, rx:1,
-    fill: vendorClr, opacity: 0.15
-  }));
+  // ── ROUTER: diagonal band style ──────────────────────────────
+  if (dev.type === 'router') {
 
-  // ============================================================
-  //   3) LCD DISPLAY (top-left of chassis)
-  // ============================================================
-  const lcdX = 8, lcdY = cy + 8, lcdW = 64, lcdH = 16;
-  g.appendChild(mk('rect', { x:lcdX, y:lcdY, width:lcdW, height:lcdH, rx:2, fill:'#001428', stroke: vendorClr, 'stroke-width':0.6, opacity:0.85 }));
-  const lcdText = mk('text', {
-    x: lcdX + lcdW/2, y: lcdY + lcdH/2 + 3,
-    'text-anchor':'middle',
-    'font-family':'JetBrains Mono,monospace',
-    'font-size': 8,
-    fill: vendorClr,
-  });
-  lcdText.textContent = (dev.vendor && dev.os)
-    ? `${dev.vendor.toUpperCase()} ${dev.os.toUpperCase()}`
-    : c.tag;
-  g.appendChild(lcdText);
+    // Clip path scoped to this device so diagonals don't bleed outside chassis
+    const clipId = 'clip-rtr-' + dev.id;
+    const defs = mk('defs');
+    const cp   = mk('clipPath', { id: clipId });
+    cp.appendChild(mk('rect', { x:0, y:cy, width:c.W, height:c.H, rx:8 }));
+    defs.appendChild(cp);
+    g.appendChild(defs);
 
-  // ============================================================
-  //   4) STATUS LEDS (right of LCD)
-  // ============================================================
-  const ledY = cy + 16;
-  const leds = [
-    { x: lcdX + lcdW + 14, color:'#00ff88', label:'PWR' },
-    { x: lcdX + lcdW + 42, color: lkCnt>0?'#00ff88':'#666', label:'SYS' },
-    { x: lcdX + lcdW + 70, color:'#ffaa00', label:'ACT' },
-    { x: lcdX + lcdW + 98, color: hasCfg?'#00ff88':'#444', label:'CFG' },
-  ];
-  leds.forEach(led => {
-    g.appendChild(mk('circle', { cx: led.x, cy: ledY, r: 2.6, fill: led.color, opacity: 0.9 }));
-    const t = mk('text', {
-      x: led.x + 6, y: ledY + 3,
-      'font-family':'JetBrains Mono,monospace',
-      'font-size': 7,
-      fill: '#5b6472'
+    // Diagonal fill zone (left ~85px)
+    const band = mk('g', { 'clip-path': `url(#${clipId})` });
+    band.appendChild(mk('polygon', {
+      points: `0,${cy} 85,${cy} 50,${cy+c.H} 0,${cy+c.H}`,
+      fill: vendorClr, opacity: '0.07',
+    }));
+    // Diagonal stroke lines
+    [
+      { x1:52, x2:14, op:'0.28', sw:'1.1' },
+      { x1:70, x2:28, op:'0.14', sw:'0.6' },
+      { x1:90, x2:48, op:'0.08', sw:'0.5' },
+    ].forEach(({ x1, x2, op, sw: lsw }) => {
+      const l = mk('line', { x1, y1:cy, x2, y2:cy+c.H, stroke:vendorClr, 'stroke-width':lsw, opacity:op });
+      band.appendChild(l);
     });
-    t.textContent = led.label;
-    g.appendChild(t);
-  });
+    g.appendChild(band);
 
-  // ============================================================
-  //   5) PORTS GRID (8 ports, 2 rows x 4 cols on left side)
-  // ============================================================
-  const portsX = 8, portsY = cy + 32, portsW = 100, portsH = 26;
-  g.appendChild(mk('rect', { x: portsX, y: portsY, width: portsW, height: portsH, rx:2, fill:'#0a0a0a' }));
+    // RTR badge (left zone)
+    const badgeX=8, badgeY=cy+10, badgeW=38, badgeH=20;
+    g.appendChild(mk('rect', { x:badgeX, y:badgeY, width:badgeW, height:badgeH, rx:5,
+      fill:'#1c2040', stroke:'#3a4480', 'stroke-width':0.8 }));
+    const badgeTxt = mk('text', {
+      x: badgeX + badgeW/2, y: badgeY + badgeH/2 + 4,
+      'text-anchor':'middle', 'font-family':'JetBrains Mono,monospace',
+      'font-size':10, 'font-weight':'600', fill: vendorClr,
+    });
+    badgeTxt.textContent = 'RTR';
+    g.appendChild(badgeTxt);
 
-  const portCols = 8, portRows = 2;
-  const pW = 10, pH = 8, pGapX = 2, pGapY = 2;
-  const pStartX = portsX + 4, pStartY = portsY + 3;
-  // Use device id hash to pseudo-randomly light up some ports (consistent per device)
-  const seed = [...dev.id].reduce((a,c)=>a + c.charCodeAt(0), 0);
-  for (let r = 0; r < portRows; r++) {
-    for (let cIdx = 0; cIdx < portCols; cIdx++) {
-      const px = pStartX + cIdx * (pW + pGapX);
-      const py = pStartY + r * (pH + pGapY);
-      // Light up ports based on link count + seed
-      const isActive = ((seed + r*7 + cIdx*3) % 4 === 0) && (cIdx < 2 + lkCnt);
-      g.appendChild(mk('rect', {
-        x: px, y: py, width: pW, height: pH, rx: 1,
-        fill: isActive ? vendorClr : '#1a1a1a',
-        stroke: isActive ? vendorClr : '#333',
-        'stroke-width': 0.5,
-        'fill-opacity': isActive ? 0.75 : 1,
-      }));
-    }
-  }
+    // Status LEDs (below badge)
+    const ledY = cy + 40;
+    const ledColors = [
+      '#00ff88',
+      lkCnt > 0 ? '#00ff88' : '#333',
+      hasCfg   ? '#00ff88' : '#333',
+    ];
+    ledColors.forEach((col, i) => {
+      g.appendChild(mk('circle', { cx: 12 + i*14, cy: ledY, r:2.5, fill:col, opacity:'0.85' }));
+    });
 
-  // ============================================================
-  //   6) SFP CAGES (right of ports — 4 SFP slots)
-  // ============================================================
-  const sfpX = portsX + portsW + 8, sfpY = portsY, sfpW = 56, sfpH = 26;
-  g.appendChild(mk('rect', { x: sfpX, y: sfpY, width: sfpW, height: sfpH, rx:2, fill:'#0a0a0a' }));
-  const sfpCols = 4;
-  const sW = 11, sH = 18;
-  for (let i = 0; i < sfpCols; i++) {
-    const sx = sfpX + 4 + i * (sW + 1);
-    const sy = sfpY + 4;
-    const isUsed = (seed + i) % 3 === 0 && i < lkCnt;
+    // Divider
+    g.appendChild(mk('line', {
+      x1:58, y1:cy+6, x2:58, y2:cy+c.H-6,
+      stroke:'#232a34', 'stroke-width':0.8,
+    }));
+
+    // Hostname (center of right zone)
+    const hostnameLabel = mk('text', {
+      x:138, y:cy+30,
+      'text-anchor':'middle', 'font-family':'Geist,sans-serif',
+      'font-size':13, 'font-weight':'500', fill:'#e6e9ee',
+    });
+    hostnameLabel.textContent = dev.hostname;
+    g.appendChild(hostnameLabel);
+
+    // Routing arrow line
+    const arrowY = cy + 50;
+    g.appendChild(mk('line', {
+      x1:66, y1:arrowY, x2:206, y2:arrowY,
+      stroke:vendorClr, 'stroke-width':1.2, 'stroke-linecap':'round', opacity:'0.65',
+    }));
+    // Arrowhead
+    const arrowHead = mk('polyline', {
+      points:`196,${arrowY-5} 206,${arrowY} 196,${arrowY+5}`,
+      fill:'none', stroke:vendorClr, 'stroke-width':1.2,
+      'stroke-linecap':'round', 'stroke-linejoin':'round', opacity:'0.65',
+    });
+    g.appendChild(arrowHead);
+
+    // Vendor / OS text (right zone, below arrow)
+    const vendorTxt = mk('text', {
+      x:138, y:cy+c.H+13,
+      'text-anchor':'middle', 'font-family':'JetBrains Mono,monospace',
+      'font-size':9, fill:'#5b6472',
+    });
+    const vParts = [];
+    if (dev.vendor) vParts.push(`${dev.vendor.toUpperCase()} · ${(dev.os||'').toUpperCase()}`);
+    else vParts.push(c.label.toUpperCase());
+    if (lkCnt > 0) vParts.push(`${lkCnt} link${lkCnt>1?'s':''}`);
+    vendorTxt.textContent = vParts.join('  ·  ');
+    g.appendChild(vendorTxt);
+
+  // ── SWITCH / ALL OTHER DEVICES ────────────────────────────────
+  } else {
+
+    // Subtle inner top highlight
     g.appendChild(mk('rect', {
-      x: sx, y: sy, width: sW, height: sH, rx: 0.5,
-      fill: isUsed ? vendorClr : '#1a1a1a',
-      stroke: isUsed ? vendorClr : '#444',
-      'stroke-width': 0.5,
-      'fill-opacity': isUsed ? 0.55 : 1,
+      x:1.5, y:cy+1.5, width:c.W-3, height:1, rx:1,
+      fill: vendorClr, opacity: 0.15,
     }));
-    // Tiny LED dot on each SFP
-    g.appendChild(mk('circle', {
-      cx: sx + sW - 2, cy: sy + 2, r: 0.8,
-      fill: isUsed ? '#00ff88' : '#222',
-    }));
+
+    // 3) LCD DISPLAY
+    const lcdX=8, lcdY=cy+8, lcdW=64, lcdH=16;
+    g.appendChild(mk('rect', { x:lcdX, y:lcdY, width:lcdW, height:lcdH, rx:2,
+      fill:'#001428', stroke:vendorClr, 'stroke-width':0.6, opacity:0.85 }));
+    const lcdText = mk('text', {
+      x:lcdX+lcdW/2, y:lcdY+lcdH/2+3, 'text-anchor':'middle',
+      'font-family':'JetBrains Mono,monospace', 'font-size':8, fill:vendorClr,
+    });
+    lcdText.textContent = (dev.vendor && dev.os)
+      ? `${dev.vendor.toUpperCase()} ${dev.os.toUpperCase()}` : c.tag;
+    g.appendChild(lcdText);
+
+    // 4) STATUS LEDS
+    const ledY = cy + 16;
+    const leds = [
+      { x: lcdX+lcdW+14, color:'#00ff88',                       label:'PWR' },
+      { x: lcdX+lcdW+42, color: lkCnt>0?'#00ff88':'#666',       label:'SYS' },
+      { x: lcdX+lcdW+70, color:'#ffaa00',                       label:'ACT' },
+      { x: lcdX+lcdW+98, color: hasCfg?'#00ff88':'#444',        label:'CFG' },
+    ];
+    leds.forEach(led => {
+      g.appendChild(mk('circle', { cx:led.x, cy:ledY, r:2.6, fill:led.color, opacity:0.9 }));
+      const t = mk('text', { x:led.x+6, y:ledY+3,
+        'font-family':'JetBrains Mono,monospace', 'font-size':7, fill:'#5b6472' });
+      t.textContent = led.label;
+      g.appendChild(t);
+    });
+
+    // 5) PORTS GRID
+    const portsX=8, portsY=cy+32, portsW=100, portsH=26;
+    g.appendChild(mk('rect', { x:portsX, y:portsY, width:portsW, height:portsH, rx:2, fill:'#0a0a0a' }));
+    const seed = [...dev.id].reduce((a,c)=>a+c.charCodeAt(0),0);
+    for (let r=0; r<2; r++) {
+      for (let ci=0; ci<8; ci++) {
+        const px = portsX+4 + ci*(10+2);
+        const py = portsY+3 + r*(8+2);
+        const isActive = ((seed+r*7+ci*3)%4===0) && (ci < 2+lkCnt);
+        g.appendChild(mk('rect', { x:px,y:py,width:10,height:8,rx:1,
+          fill:isActive?vendorClr:'#1a1a1a',
+          stroke:isActive?vendorClr:'#333', 'stroke-width':0.5,
+          'fill-opacity':isActive?0.75:1 }));
+      }
+    }
+
+    // 6) SFP CAGES
+    const sfpX=portsX+portsW+8, sfpY=portsY, sfpW=56, sfpH=26;
+    g.appendChild(mk('rect', { x:sfpX, y:sfpY, width:sfpW, height:sfpH, rx:2, fill:'#0a0a0a' }));
+    for (let i=0; i<4; i++) {
+      const sx=sfpX+4+i*(11+1), sy=sfpY+4;
+      const isUsed=(seed+i)%3===0 && i<lkCnt;
+      g.appendChild(mk('rect', { x:sx,y:sy,width:11,height:18,rx:0.5,
+        fill:isUsed?vendorClr:'#1a1a1a', stroke:isUsed?vendorClr:'#444',
+        'stroke-width':0.5, 'fill-opacity':isUsed?0.55:1 }));
+      g.appendChild(mk('circle', { cx:sx+9,cy:sy+2,r:0.8, fill:isUsed?'#00ff88':'#222' }));
+    }
+
+    // 7) BOTTOM INFO
+    const infY = cy + c.H + 14;
+    const infParts = [];
+    if (dev.vendor) infParts.push(`${dev.vendor.toUpperCase()} · ${(dev.os||'').toUpperCase()}`);
+    else infParts.push(c.label.toUpperCase());
+    if (lkCnt > 0) infParts.push(`${lkCnt} link${lkCnt>1?'s':''}`);
+    const inf = mk('text', { x:c.W/2, y:infY, 'text-anchor':'middle',
+      'font-family':'JetBrains Mono,monospace', 'font-size':9, fill:'#5b6472' });
+    inf.textContent = infParts.join('  ·  ');
+    g.appendChild(inf);
   }
-
-  // ============================================================
-  //   7) BOTTOM INFO (below chassis — vendor/OS + link/cfg)
-  // ============================================================
-  const infY = cy + c.H + 14;
-  const infParts = [];
-  if (dev.vendor) infParts.push(`${dev.vendor.toUpperCase()} · ${(dev.os||'').toUpperCase()}`);
-  else infParts.push(c.label.toUpperCase());
-  if (lkCnt > 0) infParts.push(`${lkCnt} link${lkCnt>1?'s':''}`);
-
-  const inf = mk('text', {
-    x: c.W/2, y: infY,
-    'text-anchor':'middle',
-    'font-family':'JetBrains Mono,monospace',
-    'font-size': 9,
-    fill: '#5b6472'
-  });
-  inf.textContent = infParts.join('  ·  ');
-  g.appendChild(inf);
 
   // ============================================================
   //   EVENTS
   // ============================================================
-  // Drag (only on the chassis area, not the name input)
   chassis.addEventListener('mousedown', e => {
     e.stopPropagation();
     if (topo.tool==='select') {
@@ -1079,7 +1264,6 @@ function renderDev(dev) {
       if (d) dragging = { id:dev.id, smx:e.clientX, smy:e.clientY, ox:d.x, oy:d.y };
     }
   });
-  // Click (anywhere on group, but name input has its own handler that stops propagation)
   g.addEventListener('click', e => { e.stopPropagation(); onDevClick(dev.id); });
 
   layer.appendChild(g);
@@ -1105,24 +1289,69 @@ function renderLink(lk) {
 
   // Visible line
   const line = mk('line', { x1:fc.x,y1:fc.y,x2:tc.x,y2:tc.y });
-  if      (isSel)   { line.setAttribute('stroke','#7cf4c7'); line.setAttribute('stroke-width','3'); line.setAttribute('filter','url(#glow-sel)'); }
-  else if (isTrunk) { line.setAttribute('stroke','#2e3744'); line.setAttribute('stroke-width','2.5'); }
-  else              { line.setAttribute('stroke','#1b2027'); line.setAttribute('stroke-width','1.5'); line.setAttribute('stroke-dasharray','9 6'); }
+  const lineColor = isSel ? '#7cf4c7' : isTrunk ? '#3a4455' : '#2a3340';
+  line.setAttribute('stroke', lineColor);
+  line.setAttribute('stroke-width', isSel ? '3' : isTrunk ? '2.5' : '1.8');
+  if (!isTrunk && !isSel) line.setAttribute('stroke-dasharray','8 5');
+  if (isSel) line.setAttribute('filter','url(#glow-sel)');
   g.appendChild(line);
 
-  // Label
-  const lbl = lk.label || (lk.allowedVlans ? `VL:${lk.allowedVlans.split(/[\s,]+/).slice(0,2).join(',')}` : '');
-  if (lbl) {
-    const mx=(fc.x+tc.x)/2, my=(fc.y+tc.y)/2, tw=lbl.length*5.4+14;
-    g.appendChild(mk('rect', { x:mx-tw/2,y:my-10,width:tw,height:18,rx:4,fill:'#0b0d10',stroke:'#232a34','stroke-width':1 }));
-    const lt=mk('text',{ x:mx,y:my+5,'text-anchor':'middle',fill:'#9aa3af','font-size':10,'font-family':'JetBrains Mono,monospace' });
-    lt.textContent = lbl; g.appendChild(lt);
+  // ── Port label near FROM device (20% along line) ──
+  if (lk.fromPort) {
+    const t = 0.18;
+    const lx = fc.x + (tc.x-fc.x)*t;
+    const ly = fc.y + (tc.y-fc.y)*t;
+    // Offset perpendicular to line
+    const dx = tc.x-fc.x, dy = tc.y-fc.y, len = Math.sqrt(dx*dx+dy*dy)||1;
+    const ox = -dy/len*14, oy = dx/len*14;
+    const label = lk.fromPort;
+    const tw = label.length * 5 + 12;
+    const rx = lx+ox-tw/2, ry = ly+oy-10;
+    g.appendChild(mk('rect', { x:rx,y:ry,width:tw,height:16,rx:4,fill:'#111c17',stroke:'#7cf4c7','stroke-width':0.7,'opacity':'0.95' }));
+    const lt = mk('text',{ x:lx+ox, y:ly+oy+4, 'text-anchor':'middle', fill:'#7cf4c7',
+      'font-size':9, 'font-family':'JetBrains Mono,monospace','font-weight':'600' });
+    lt.textContent = label; g.appendChild(lt);
   }
 
-  // Mode dots at both ends
-  const mkDot = (x,y) => mk('circle',{ cx:x,cy:y,r:5,fill:isTrunk?'#2e3744':'#1b2027',stroke:isSel?'#7cf4c7':'#2e3744','stroke-width':1 });
-  g.appendChild(mkDot(fc.x+(tc.x-fc.x)*0.12, fc.y+(tc.y-fc.y)*0.12));
-  g.appendChild(mkDot(tc.x-(tc.x-fc.x)*0.12, tc.y-(tc.y-fc.y)*0.12));
+  // ── Port label near TO device (80% along line) ──
+  if (lk.toPort) {
+    const t = 0.82;
+    const lx = fc.x + (tc.x-fc.x)*t;
+    const ly = fc.y + (tc.y-fc.y)*t;
+    const dx = tc.x-fc.x, dy = tc.y-fc.y, len = Math.sqrt(dx*dx+dy*dy)||1;
+    const ox = -dy/len*14, oy = dx/len*14;
+    const label = lk.toPort;
+    const tw = label.length * 5 + 12;
+    const rx = lx+ox-tw/2, ry = ly+oy-10;
+    g.appendChild(mk('rect', { x:rx,y:ry,width:tw,height:16,rx:4,fill:'#111c22',stroke:'#5fc8b4','stroke-width':0.7,'opacity':'0.95' }));
+    const lt = mk('text',{ x:lx+ox, y:ly+oy+4, 'text-anchor':'middle', fill:'#5fc8b4',
+      'font-size':9, 'font-family':'JetBrains Mono,monospace','font-weight':'600' });
+    lt.textContent = label; g.appendChild(lt);
+  }
+
+  // ── Center cable info pill (speed / type / mode) ──
+  const mx = (fc.x+tc.x)/2, my = (fc.y+tc.y)/2;
+  const parts = [];
+  if (lk.speed) parts.push(lk.speed);
+  if (lk.mode)  parts.push(lk.mode.toUpperCase());
+  if (lk.allowedVlans) parts.push(`VL:${lk.allowedVlans.split(/[\s,]+/).slice(0,2).join(',')}`);
+  if (lk.label) parts.push(lk.label);
+  const midLabel = parts.join('  ·  ');
+  if (midLabel) {
+    const tw = midLabel.length * 5 + 18;
+    g.appendChild(mk('rect', { x:mx-tw/2,y:my-11,width:tw,height:18,rx:5,
+      fill:'#0d1014', stroke: isSel?'#7cf4c7':'#2e3744','stroke-width': isSel?1:0.7 }));
+    const lt = mk('text',{ x:mx,y:my+4,'text-anchor':'middle',fill: isSel?'#7cf4c7':'#7a8593',
+      'font-size':9.5,'font-family':'JetBrains Mono,monospace' });
+    lt.textContent = midLabel; g.appendChild(lt);
+  }
+
+  // End dots
+  const dotFill = isTrunk ? '#2e3744' : '#1b2027';
+  const dotStroke = isSel ? '#7cf4c7' : '#2e3744';
+  const mkDot = (x,y) => mk('circle',{ cx:x,cy:y,r:5, fill:dotFill, stroke:dotStroke,'stroke-width':1 });
+  g.appendChild(mkDot(fc.x+(tc.x-fc.x)*0.08, fc.y+(tc.y-fc.y)*0.08));
+  g.appendChild(mkDot(tc.x-(tc.x-fc.x)*0.08, tc.y-(tc.y-fc.y)*0.08));
 
   g.addEventListener('click', e => { e.stopPropagation(); if(topo.tool!=='link'){ topo.sel={kind:'link',id:lk.id}; renderAll(); renderLinkProps(lk.id); updateStatus(); } });
 
@@ -1154,6 +1383,140 @@ function devCenter(d) {
 /* ============================================================
    DEVICE EVENTS
    ============================================================ */
+
+/* ---- Port list generator ---- */
+function getPortList(dev) {
+  const c = TD[dev.type];
+  if (!c) return [];
+  const ports = [];
+  const usedPorts = new Set(
+    topo.links
+      .filter(l => l.from === dev.id || l.to === dev.id)
+      .map(l => l.from === dev.id ? l.fromPort : l.toPort)
+      .filter(Boolean)
+  );
+
+  // Copper ports
+  const copper = (c.ports && c.ports.copper) || 0;
+  if (dev.type.startsWith('switch')) {
+    for (let i = 1; i <= copper; i++) {
+      const name = `Gi 1/0/${i}`;
+      ports.push({ name, fiber: false, used: usedPorts.has(name) });
+    }
+  } else if (dev.type === 'router') {
+    for (let i = 0; i < copper; i++) {
+      const name = `Gi 0/0/${i}`;
+      ports.push({ name, fiber: false, used: usedPorts.has(name) });
+    }
+  } else if (dev.type === 'firewall') {
+    const fwNames = ['Gi 0/0 (Outside)', 'Gi 0/1 (Inside)', 'Gi 0/2 (DMZ)', 'Gi 0/3 (Mgmt)'];
+    fwNames.slice(0, copper).forEach(name => ports.push({ name, fiber: false, used: usedPorts.has(name) }));
+  } else {
+    for (let i = 0; i < copper; i++) {
+      const name = `Eth 0/${i}`;
+      ports.push({ name, fiber: false, used: usedPorts.has(name) });
+    }
+  }
+
+  // Fiber / SFP ports
+  const fiber = (c.ports && c.ports.fiber) || 0;
+  for (let i = 1; i <= fiber; i++) {
+    const name = dev.type.startsWith('switch') ? `SFP 1/0/${copper + i}` :
+                 dev.type === 'router' ? `SFP 0/1/${i-1}` : `SFP ${i}`;
+    ports.push({ name, fiber: true, used: usedPorts.has(name) });
+  }
+  return ports;
+}
+
+function buildPortSelect(selectEl, dev, availEl) {
+  selectEl.innerHTML = '';
+  const ports = getPortList(dev);
+  const avail = ports.filter(p => !p.used).length;
+  if (availEl) availEl.textContent = `(${avail} free)`;
+
+  // Copper group
+  const copperPorts = ports.filter(p => !p.fiber);
+  const fiberPorts  = ports.filter(p =>  p.fiber);
+
+  const addGroup = (label, list) => {
+    if (!list.length) return;
+    const og = document.createElement('optgroup');
+    og.label = label;
+    list.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.name;
+      opt.textContent = p.used ? `${p.name}  ● used` : p.name;
+      if (p.used) opt.style.color = '#ff6478';
+      if (!p.used && !selectEl.value) selectEl.value = p.name; // auto-pick first free
+      og.appendChild(opt);
+    });
+    selectEl.appendChild(og);
+  };
+  addGroup('Copper (RJ45)', copperPorts);
+  addGroup('Fiber (SFP)', fiberPorts);
+
+  // Auto-select first free port
+  const firstFree = ports.find(p => !p.used);
+  if (firstFree) selectEl.value = firstFree.name;
+}
+
+/* ---- Port picker state ---- */
+let _ppFrom = null, _ppTo = null;
+
+function openPortPicker(fromId, toId) {
+  const fDev = topo.devices.find(d => d.id === fromId);
+  const tDev = topo.devices.find(d => d.id === toId);
+  if (!fDev || !tDev) return;
+  _ppFrom = fromId; _ppTo = toId;
+
+  document.getElementById('pp-from-name').textContent = fDev.hostname;
+  document.getElementById('pp-to-name').textContent   = tDev.hostname;
+
+  buildPortSelect(
+    document.getElementById('pp-from-port'), fDev,
+    document.getElementById('pp-from-avail')
+  );
+  buildPortSelect(
+    document.getElementById('pp-to-port'), tDev,
+    document.getElementById('pp-to-avail')
+  );
+
+  document.getElementById('port-picker-modal').classList.add('show');
+}
+
+function cancelPortPick() {
+  document.getElementById('port-picker-modal').classList.remove('show');
+  _ppFrom = null; _ppTo = null;
+  topo.lkStart = null;
+  document.getElementById('temp-link')?.setAttribute('opacity','0');
+  renderAll(); updateStatus();
+  setSbHint(topo.tool === 'link' ? 'Click a device to start drawing a link' : '');
+}
+
+function confirmPortPick() {
+  if (!_ppFrom || !_ppTo) return;
+  const fromPort = document.getElementById('pp-from-port').value;
+  const toPort   = document.getElementById('pp-to-port').value;
+  const speed    = document.getElementById('pp-speed').value;
+  const mode     = document.getElementById('pp-mode').value;
+
+  const lkId = 'lk' + Date.now().toString(36);
+  const lk = {
+    id: lkId, from: _ppFrom, to: _ppTo,
+    fromPort, toPort, speed, mode,
+    allowedVlans: '', nativeVlan: '1', label: ''
+  };
+  topo.links.push(lk);
+  _ppFrom = null; _ppTo = null;
+  topo.lkStart = null;
+  document.getElementById('port-picker-modal').classList.remove('show');
+  document.getElementById('temp-link')?.setAttribute('opacity','0');
+  renderAll();
+  topo.sel = { kind: 'link', id: lkId };
+  renderAll(); renderLinkProps(lkId); updateStatus();
+  setSbHint('Link created — edit properties on the right');
+}
+
 function onDevClick(id) {
   if (topo.tool==='link') {
     if (!topo.lkStart) {
@@ -1162,15 +1525,7 @@ function onDevClick(id) {
     } else if (topo.lkStart!==id) {
       const dup=topo.links.some(l=>(l.from===topo.lkStart&&l.to===id)||(l.from===id&&l.to===topo.lkStart));
       if (dup) { toast('These devices are already connected', true); return; }
-      const lkId='lk'+Date.now().toString(36);
-      const lk={id:lkId,from:topo.lkStart,to:id,fromPort:'',toPort:'',mode:'trunk',allowedVlans:'',nativeVlan:'1',label:''};
-      topo.links.push(lk);
-      const prev=topo.lkStart; topo.lkStart=null;
-      document.getElementById('temp-link')?.setAttribute('opacity','0');
-      renderAll();
-      topo.sel={kind:'link',id:lkId};
-      renderAll(); renderLinkProps(lkId); updateStatus();
-      setSbHint('Link created — edit properties on the right');
+      openPortPicker(topo.lkStart, id);
     }
     return;
   }
@@ -1300,6 +1655,27 @@ function renderLinkProps(id) {
     <div class="pf">
       <label>${tDev?.hostname||'B'} Port</label>
       <input value="${lk.toPort||''}" placeholder="GigabitEthernet1/0/1" oninput="lkPropSet('${id}','toPort',this.value)">
+    </div>
+    <div class="pf">
+      <label>Speed / Type</label>
+      <select onchange="lkPropSet('${id}','speed',this.value)" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px;cursor:pointer;">
+        <option value="">Select speed...</option>
+        <optgroup label="Copper">
+          <option value="100Mbps · Cat5e" ${lk.speed==='100Mbps · Cat5e'?'selected':''}>100 Mbps · Cat5e</option>
+          <option value="1Gbps · Cat6"    ${lk.speed==='1Gbps · Cat6'?'selected':''}>1 Gbps · Cat6</option>
+          <option value="2.5Gbps · Cat6A" ${lk.speed==='2.5Gbps · Cat6A'?'selected':''}>2.5 Gbps · Cat6A</option>
+          <option value="5Gbps · Cat6A"   ${lk.speed==='5Gbps · Cat6A'?'selected':''}>5 Gbps · Cat6A</option>
+          <option value="10GBase-T · Cat6A" ${lk.speed==='10GBase-T · Cat6A'?'selected':''}>10GBase-T · Cat6A</option>
+        </optgroup>
+        <optgroup label="Fiber / SFP">
+          <option value="1Gbps · SFP"      ${lk.speed==='1Gbps · SFP'?'selected':''}>1 Gbps · SFP</option>
+          <option value="10Gbps · SFP+"     ${lk.speed==='10Gbps · SFP+'?'selected':''}>10 Gbps · SFP+</option>
+          <option value="25Gbps · SFP28"    ${lk.speed==='25Gbps · SFP28'?'selected':''}>25 Gbps · SFP28</option>
+          <option value="40Gbps · QSFP+"    ${lk.speed==='40Gbps · QSFP+'?'selected':''}>40 Gbps · QSFP+</option>
+          <option value="100Gbps · QSFP28"  ${lk.speed==='100Gbps · QSFP28'?'selected':''}>100 Gbps · QSFP28</option>
+          <option value="400Gbps · QSFP-DD" ${lk.speed==='400Gbps · QSFP-DD'?'selected':''}>400 Gbps · QSFP-DD</option>
+        </optgroup>
+      </select>
     </div>
     <div class="pf">
       <label>Label <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-left:4px">shown on canvas</span></label>
