@@ -170,7 +170,20 @@ nav {
 }
 .pal-dev:hover { border-color: var(--accent); color: var(--text); transform: translateX(3px); }
 .pal-dev:active { cursor: grabbing; transform: scale(.97); opacity: .75; }
-.pal-dev .em { font-size: 15px; flex-shrink: 0; line-height: 1; }
+.pal-dev .em { 
+  font-size: 15px; 
+  flex-shrink: 0; 
+  line-height: 1; 
+  width: 18px; 
+  height: 18px; 
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.pal-dev .em svg {
+  width: 100%;
+  height: 100%;
+}
 .pal-dev .lbl { font-size: 12px; font-weight: 500; }
 
 /* Tool buttons */
@@ -537,6 +550,18 @@ nav {
   box-shadow: 0 0 0 2px rgba(124,244,199,0.2);
 }
 .dev-name-input::selection { background: var(--accent); color: var(--bg); }
+
+/* ============================================================
+   PROFESSIONAL DEVICE ICONS
+   ============================================================ */
+.icon-l3sw {
+  display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px;
+}
+.icon-l3sw svg {
+  width: 100%; height: 100%;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+}
+
 </style>
 </head>
 <body data-theme="dark">
@@ -578,15 +603,15 @@ nav {
 
       <div class="sidebar-section">
         <div class="sidebar-label">Devices</div>
-        <div class="pal-dev" data-type="switch_l3_24" draggable="true"><span class="em">🔶</span><span class="lbl">L3 Switch (24)</span></div>
-        <div class="pal-dev" data-type="switch_l3_48" draggable="true"><span class="em">🔶</span><span class="lbl">L3 Switch (48)</span></div>
-        <div class="pal-dev" data-type="switch_l2_24" draggable="true"><span class="em">🔷</span><span class="lbl">L2 Switch (24)</span></div>
-        <div class="pal-dev" data-type="switch_l2_48" draggable="true"><span class="em">🔷</span><span class="lbl">L2 Switch (48)</span></div>
-        <div class="pal-dev" data-type="router"    draggable="true"><span class="em">🔵</span><span class="lbl">Router</span></div>
-        <div class="pal-dev" data-type="firewall"  draggable="true"><span class="em">🔴</span><span class="lbl">Firewall</span></div>
-        <div class="pal-dev" data-type="server"    draggable="true"><span class="em">💻</span><span class="lbl">Server</span></div>
-        <div class="pal-dev" data-type="endpoint"  draggable="true"><span class="em">📱</span><span class="lbl">Endpoint</span></div>
-        <div class="pal-dev" data-type="cloud"     draggable="true"><span class="em">☁️</span><span class="lbl">Cloud / ISP</span></div>
+        <div class="pal-dev" data-type="switch_l3_24" draggable="true"><svg class="em" viewBox="0 0 24 24" fill="none" stroke="#a8b5ff" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="16" x2="22" y2="16"/><circle cx="6" cy="10" r="0.8" fill="#a8b5ff"/><circle cx="12" cy="10" r="0.8" fill="#a8b5ff"/><circle cx="18" cy="10" r="0.8" fill="#a8b5ff"/><path d="M 16 20 L 19 20 L 17.5 22 L 14.5 22 Z" fill="#7cf4c7"/></svg><span class="lbl">L3 Switch (24)</span></div>
+        <div class="pal-dev" data-type="switch_l3_48" draggable="true"><svg class="em" viewBox="0 0 24 24" fill="none" stroke="#a8b5ff" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="16" x2="22" y2="16"/><circle cx="6" cy="10" r="0.8" fill="#a8b5ff"/><circle cx="12" cy="10" r="0.8" fill="#a8b5ff"/><circle cx="18" cy="10" r="0.8" fill="#a8b5ff"/><path d="M 16 20 L 19 20 L 17.5 22 L 14.5 22 Z" fill="#7cf4c7"/><path d="M 21 20 L 24 20" stroke="#7cf4c7" stroke-width="1"/></svg><span class="lbl">L3 Switch (48)</span></div>
+        <div class="pal-dev" data-type="switch_l2_24" draggable="true"><svg class="em" viewBox="0 0 24 24" fill="none" stroke="#5fc8b4" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="16" x2="22" y2="16"/><circle cx="6" cy="10" r="0.8" fill="#5fc8b4"/><circle cx="12" cy="10" r="0.8" fill="#5fc8b4"/><circle cx="18" cy="10" r="0.8" fill="#5fc8b4"/></svg><span class="lbl">L2 Switch (24)</span></div>
+        <div class="pal-dev" data-type="switch_l2_48" draggable="true"><svg class="em" viewBox="0 0 24 24" fill="none" stroke="#5fc8b4" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="16" x2="22" y2="16"/><circle cx="5" cy="10" r="0.6" fill="#5fc8b4"/><circle cx="9" cy="10" r="0.6" fill="#5fc8b4"/><circle cx="13" cy="10" r="0.6" fill="#5fc8b4"/><circle cx="17" cy="10" r="0.6" fill="#5fc8b4"/><circle cx="21" cy="10" r="0.6" fill="#5fc8b4"/></svg><span class="lbl">L2 Switch (48)</span></div>
+        <div class="pal-dev" data-type="router"    draggable="true"><svg class="em" viewBox="0 0 24 24" fill="none" stroke="#a8b5ff" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="#a8b5ff" stroke-width="1.2"/><path d="M 7 12 L 8 12" stroke="#7cf4c7" stroke-width="1" stroke-linecap="round"/><path d="M 16 12 L 17 12" stroke="#7cf4c7" stroke-width="1" stroke-linecap="round"/><path d="M 12 7 L 12 8" stroke="#7cf4c7" stroke-width="1" stroke-linecap="round"/><path d="M 12 16 L 12 17" stroke="#7cf4c7" stroke-width="1" stroke-linecap="round"/></svg><span class="lbl">Router</span></div>
+        <div class="pal-dev" data-type="firewall"  draggable="true"><svg class="em" viewBox="0 0 24 24" fill="none" stroke="#ff6478" stroke-width="1.5"><path d="M 12 2 L 19 5 L 19 13 C 19 18 12 22 12 22 C 12 22 5 18 5 13 L 5 5 Z" stroke="#ff6478" fill="none"/><path d="M 10 12 L 12 14 L 14 10" stroke="#ff6478" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="lbl">Firewall</span></div>
+        <div class="pal-dev" data-type="server"    draggable="true"><svg class="em" viewBox="0 0 24 24" fill="none" stroke="#ffb86b" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="1"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="14" x2="21" y2="14"/><line x1="3" y1="19" x2="21" y2="19"/><circle cx="7" cy="6.5" r="0.6" fill="#ffb86b"/><circle cx="13" cy="6.5" r="0.6" fill="#ffb86b"/><circle cx="19" cy="6.5" r="0.6" fill="#ffb86b"/></svg><span class="lbl">Server</span></div>
+        <div class="pal-dev" data-type="endpoint"  draggable="true"><svg class="em" viewBox="0 0 24 24" fill="none" stroke="#9aa3af" stroke-width="1.5"><rect x="2" y="3" width="20" height="13" rx="1"/><line x1="2" y1="16" x2="22" y2="16"/><rect x="9" y="16" width="6" height="3" rx="0.5" fill="none" stroke="#9aa3af" stroke-width="1"/></svg><span class="lbl">Endpoint</span></div>
+        <div class="pal-dev" data-type="cloud"     draggable="true"><svg class="em" viewBox="0 0 24 24" fill="none" stroke="#a8b5ff" stroke-width="1.5"><path d="M 6 16 C 4 15 3 13 3 11 C 3 8 5 6 7 6 C 7.5 4 9 3 11 3 C 13.2 3 15 4.5 15.5 6.5 C 18 6.8 20 8.8 20 11 C 20 13.8 18 16 15 16" fill="none" stroke="#a8b5ff" stroke-linejoin="round"/></svg><span class="lbl">Cloud / ISP</span></div>
       </div>
 
       <div class="sidebar-section">
@@ -1025,9 +1050,21 @@ function renderDev(dev) {
   const g = mk('g', { id:'dv-'+dev.id, transform:`translate(${dev.x},${dev.y})`, cursor:'pointer' });
 
   // ============================================================
-  //   1) EDITABLE NAME INPUT (on top, above chassis)
+  //   1) EDITABLE NAME + ICON (on top, above chassis)
   // ============================================================
-  const fo = mk('foreignObject', { x: 0, y: 0, width: c.W, height: NAME_H });
+  const deviceIcons = {
+    switch_l3_24: '🔶', switch_l3_48: '🔶', switch_l2_24: '🔷', switch_l2_48: '🔷',
+    router: '🔵', firewall: '🔴', server: '💾', endpoint: '🖥️', cloud: '☁️'
+  };
+  const devIcon = deviceIcons[dev.type] || '📦';
+
+  // Icon element (SVG text)
+  const ico = mk('text', { x:8, y:NAME_H/2+2, 'font-size':14, fill:stroke });
+  ico.textContent = devIcon;
+  g.appendChild(ico);
+
+  // Name input group (slightly indented for icon)
+  const fo = mk('foreignObject', { x: 26, y: 0, width: c.W-26, height: NAME_H });
   // foreignObject content must be in XHTML namespace
   const div = document.createElementNS('http://www.w3.org/1999/xhtml','div');
   div.setAttribute('xmlns','http://www.w3.org/1999/xhtml');
@@ -1256,12 +1293,12 @@ function renderDev(dev) {
     // ── FIREWALL ───────────────────────────────────────────────
     } else if (isFirewall) {
 
-      // Background red glow tint
+      // Background red glow tint (non-interactive so clicks pass to chassis)
       const cFW='clip-fw-'+dev.id;
       const dFW=mk('defs'); const cpFW=mk('clipPath',{id:cFW});
       cpFW.appendChild(mk('rect',{x:0,y:cy,width:c.W,height:c.H,rx:8}));
       dFW.appendChild(cpFW); g.appendChild(dFW);
-      const fwBg=mk('g',{'clip-path':`url(#${cFW})`});
+      const fwBg=mk('g',{'clip-path':`url(#${cFW})`,'pointer-events':'none'});
       fwBg.appendChild(mk('rect',{x:0,y:cy,width:c.W,height:c.H,fill:'#ff6478',opacity:'0.04'}));
       // Subtle radial-ish gradient via concentric rects
       fwBg.appendChild(mk('rect',{x:30,y:cy+10,width:c.W-60,height:c.H-20,rx:8,fill:'#ff6478',opacity:'0.04'}));
@@ -1482,7 +1519,11 @@ function renderDev(dev) {
   // ============================================================
   //   EVENTS
   // ============================================================
-  chassis.addEventListener('mousedown', e => {
+  // Drag handler on group so it catches mousedown on any device element (chassis, shield, etc.)
+  // The input element already has stopPropagation on mousedown, so it won't trigger drag
+  g.addEventListener('mousedown', e => {
+    // Don't drag if the event is from the input or any interactive element
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
     e.stopPropagation();
     if (topo.tool==='select') {
       const d = topo.devices.find(x=>x.id===dev.id);
@@ -1791,11 +1832,93 @@ function renderDevProps(id) {
         </div>`).join('')
     : `<div style="font-size:12px;color:var(--text-muted);padding:8px 0">No connections yet. Use Link mode (L) to connect.</div>`;
 
-  const osOpts = dev.vendor==='h3c'
-    ? `<option value="comware" ${dev.os==='comware'?'selected':''}>Comware v7</option>`
-    : `<option value="ios"   ${dev.os==='ios'   ?'selected':''}>IOS</option>
-       <option value="iosxe" ${dev.os==='iosxe' ?'selected':''}>IOS-XE</option>
-       <option value="nxos"  ${dev.os==='nxos'  ?'selected':''}>NX-OS</option>`;
+  // Vendor options per device type
+  const vendorMap = {
+    switch_l3_24: ['h3c','cisco','arista','juniper','dell','bigswitch'],
+    switch_l3_48: ['h3c','cisco','arista','juniper','dell','bigswitch'],
+    switch_l2_24: ['h3c','cisco','arista','juniper','dell','netgear'],
+    switch_l2_48: ['h3c','cisco','arista','juniper','dell','netgear'],
+    router: ['cisco','arista','juniper','mikrotik','ubiquiti','fortinet'],
+    firewall: ['cisco','paloalto','fortinet','checkpoint','juniper','watchguard'],
+    server: ['hp','dell','ibm','supermicro','lenovo'],
+    endpoint: [],
+    cloud: []
+  };
+
+  const vendorNames = {
+    h3c: 'H3C', cisco: 'Cisco', arista: 'Arista', juniper: 'Juniper',
+    dell: 'Dell', bigswitch: 'BigSwitch', netgear: 'Netgear', mikrotik: 'MikroTik',
+    ubiquiti: 'Ubiquiti', fortinet: 'Fortinet', paloalto: 'Palo Alto', checkpoint: 'Check Point',
+    watchguard: 'WatchGuard', hp: 'HP', ibm: 'IBM', supermicro: 'SuperMicro', lenovo: 'Lenovo'
+  };
+
+  const osMap = {
+    h3c: [
+      {v:'comware',lbl:'Comware v7'},
+      {v:'comware8',lbl:'Comware v8'},
+      {v:'isr',lbl:'ISR'}
+    ],
+    cisco: [
+      {v:'ios',lbl:'IOS'},
+      {v:'iosxe',lbl:'IOS-XE'},
+      {v:'nxos',lbl:'NX-OS'},
+      {v:'asa',lbl:'ASA (Firewall)'}
+    ],
+    arista: [
+      {v:'eos',lbl:'EOS'},
+      {v:'cvp',lbl:'CVP'}
+    ],
+    juniper: [
+      {v:'junos',lbl:'Junos'},
+      {v:'srx',lbl:'SRX (Firewall)'},
+      {v:'jsa',lbl:'JSA'}
+    ],
+    dell: [
+      {v:'os10',lbl:'OS10'},
+      {v:'force10',lbl:'Force10'}
+    ],
+    bigswitch: [
+      {v:'controller',lbl:'Controller'},
+      {v:'fabric',lbl:'Fabric'}
+    ],
+    netgear: [
+      {v:'fastironsw',lbl:'FastIron SW'},
+      {v:'mx',lbl:'MX Series'}
+    ],
+    mikrotik: [
+      {v:'routeros',lbl:'RouterOS'},
+      {v:'chr',lbl:'Cloud Hosted'}
+    ],
+    ubiquiti: [
+      {v:'ubios',lbl:'UniFi OS'},
+      {v:'edgeos',lbl:'EdgeOS'}
+    ],
+    fortinet: [
+      {v:'fortios',lbl:'FortiOS'},
+      {v:'fortigatefw',lbl:'FortiGate'}
+    ],
+    paloalto: [
+      {v:'panorama',lbl:'Panorama'},
+      {v:'palos',lbl:'PAN-OS'}
+    ],
+    checkpoint: [
+      {v:'smartcenter',lbl:'SmartCenter'},
+      {v:'gaia',lbl:'Gaia'}
+    ],
+    watchguard: [
+      {v:'xcs',lbl:'XCS'},
+      {v:'wsm',lbl:'WSM'}
+    ]
+  };
+
+  const vendors = vendorMap[dev.type] || [];
+  const vendorOpts = vendors.length > 0
+    ? vendors.map(v=>`<option value="${v}" ${dev.vendor===v?'selected':''}>${vendorNames[v]}</option>`).join('')
+    : `<option value=""  ${!dev.vendor?'selected':''}>N/A</option>`;
+
+  const osOpts = dev.vendor && osMap[dev.vendor]
+    ? osMap[dev.vendor].map(({v,lbl})=>`<option value="${v}" ${dev.os===v?'selected':''}>${lbl}</option>`).join('')
+    : `<option value="">Select OS</option>`;
 
   document.getElementById('props-inner').innerHTML = `
     <div class="props-header">
@@ -1812,14 +1935,12 @@ function renderDevProps(id) {
       <input value="${dev.hostname}" oninput="devPropSet('${id}','hostname',this.value)" style="font-family:var(--mono)">
     </div>
     <div class="pf">
-      <label>Vendor</label>
+      <label>Vendor / Brand</label>
       <select onchange="devVendorSet('${id}',this.value)">
-        <option value="h3c"   ${dev.vendor==='h3c'  ?'selected':''}>H3C</option>
-        <option value="cisco" ${dev.vendor==='cisco' ?'selected':''}>Cisco</option>
-        <option value=""      ${!dev.vendor          ?'selected':''}>N/A</option>
+        ${vendorOpts}
       </select>
     </div>
-    <div class="pf" id="pp-os-${id}" ${!dev.vendor?'style="display:none"':''}>
+    <div class="pf" id="pp-os-${id}" ${vendors.length === 0 || !dev.vendor?'style="display:none"':''}>
       <label>OS / Platform</label>
       <select onchange="devPropSet('${id}','os',this.value)">${osOpts}</select>
     </div>
