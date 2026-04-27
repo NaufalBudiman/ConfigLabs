@@ -1804,24 +1804,111 @@ function clearAll() {
    ============================================================ */
 function exportPNG() {
   if (!topo.devices.length) { toast('Add devices first!', true); return; }
-  const svg   = document.getElementById('topo-svg');
-  const wrap  = document.getElementById('canvas-wrap');
-  const W=wrap.clientWidth, H=wrap.clientHeight;
+
+  const svg  = document.getElementById('topo-svg');
+  const wrap = document.getElementById('canvas-wrap');
+  const W = wrap.clientWidth, H = wrap.clientHeight;
+
+  // ── 1. Deep clone ────────────────────────────────────────────
   const clone = svg.cloneNode(true);
-  clone.setAttribute('width',W); clone.setAttribute('height',H);
-  // Remove temp line opacity artifact
+  clone.setAttribute('width',  W);
+  clone.setAttribute('height', H);
   clone.querySelector('#temp-link')?.setAttribute('opacity','0');
-  const svgStr = new XMLSerializer().serializeToString(clone);
+
+  // ── 2. Replace every <foreignObject> (editable name input)
+  //       with a plain SVG <text> using the LIVE hostname value ─
+  Array.from(clone.querySelectorAll('foreignObject')).forEach(fo => {
+    const inp   = fo.querySelector('input');
+    const devId = inp?.getAttribute('data-dev-id');
+    const dev   = devId ? topo.devices.find(d => d.id === devId) : null;
+    const label = dev ? dev.hostname : (inp?.getAttribute('value') || '');
+
+    const foX = parseFloat(fo.getAttribute('x') || 0);
+    const foY = parseFloat(fo.getAttribute('y') || 0);
+    const foW = parseFloat(fo.getAttribute('width')  || 120);
+    const foH = parseFloat(fo.getAttribute('height') || 20);
+
+    // Background pill (matches dev-name-input style)
+    const bg = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    bg.setAttribute('x', foX + 4);
+    bg.setAttribute('y', foY + 2);
+    bg.setAttribute('width',  foW - 8);
+    bg.setAttribute('height', foH - 4);
+    bg.setAttribute('rx', 5);
+    bg.setAttribute('fill',   '#15191f');
+    bg.setAttribute('stroke', '#2e3744');
+    bg.setAttribute('stroke-width', '0.7');
+
+    const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x', foX + foW / 2);
+    txt.setAttribute('y', foY + foH / 2 + 4);
+    txt.setAttribute('text-anchor',  'middle');
+    txt.setAttribute('font-family',  'monospace');
+    txt.setAttribute('font-size',    '11');
+    txt.setAttribute('font-weight',  '500');
+    txt.setAttribute('fill',         '#e6e9ee');
+    txt.textContent = label;
+
+    fo.replaceWith(bg);
+    bg.insertAdjacentElement('afterend', txt);
+  });
+
+  // ── 3. Serialize → replace external fonts with system fonts ─
+  let svgStr = new XMLSerializer().serializeToString(clone);
+
+  // Ensure proper SVG namespace declaration
+  if (!svgStr.includes('xmlns="http://www.w3.org/2000/svg"')) {
+    svgStr = svgStr.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+  }
+
+  // Swap custom fonts → system equivalents (canvas can't load Google Fonts)
+  svgStr = svgStr
+    .replace(/JetBrains Mono[^"',;]*/g, 'monospace')
+    .replace(/Geist[^"',;]*/g,          'system-ui,sans-serif')
+    .replace(/Instrument Serif[^"',;]*/g,'Georgia,serif');
+
+  // Remove <style> blocks that @import external fonts (they cause canvas tainting)
+  svgStr = svgStr.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+
+  // ── 4. Render to hi-res canvas (2×) ─────────────────────────
+  const SCALE  = 2;
   const canvas = document.createElement('canvas');
-  canvas.width=W*2; canvas.height=H*2;
-  const ctx=canvas.getContext('2d');
-  ctx.scale(2,2); ctx.fillStyle='#0b0d10'; ctx.fillRect(0,0,W,H);
-  const img=new Image();
-  const blob=new Blob([svgStr],{type:'image/svg+xml;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  img.onload=()=>{ ctx.drawImage(img,0,0,W,H); URL.revokeObjectURL(url); const a=document.createElement('a'); a.download=`topology-${Date.now()}.png`; a.href=canvas.toDataURL('image/png'); a.click(); toast('Exported as PNG 📷'); };
-  img.onerror=()=>{ URL.revokeObjectURL(url); toast('Export failed', true); };
-  img.src=url;
+  canvas.width  = W * SCALE;
+  canvas.height = H * SCALE;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(SCALE, SCALE);
+  ctx.fillStyle = '#0b0d10';
+  ctx.fillRect(0, 0, W, H);
+
+  const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const img  = new Image();
+
+  img.onload = () => {
+    try {
+      ctx.drawImage(img, 0, 0, W, H);
+      const a = document.createElement('a');
+      a.download = `configlabs-topology-${Date.now()}.png`;
+      a.href = canvas.toDataURL('image/png');
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast('Exported as PNG 📷');
+    } catch (err) {
+      console.error('PNG export draw error:', err);
+      toast('Export failed — see console', true);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  img.onerror = (err) => {
+    console.error('PNG export image load error:', err);
+    URL.revokeObjectURL(url);
+    toast('Export failed — SVG could not be loaded', true);
+  };
+
+  img.src = url;
 }
 
 function saveJSON() {
