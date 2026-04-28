@@ -1,0 +1,33 @@
+name: Auto-Push Topology Updates
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'topology.html'
+      - 'dashboard-redesign.html'
+      - 'index.html'
+      - 'about.html'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git user
+        run: |
+          git config user.name "ConfigLabs Bot"
+          git config user.email "bot@configlabs.online"
+
+      - name: Commit and push changes
+        run: |
+          git add -A
+          git commit -m "chore: auto-sync topology updates [skip ci]" || echo "No changes to commit"
+          git push origin main --force-with-lease
