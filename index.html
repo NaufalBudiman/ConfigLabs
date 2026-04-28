@@ -5,7 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>ConfigLabs — Network Configuration, Simplified</title>
 <meta name="description" content="Free multi-vendor network config generator with visual topology builder. Build production-ready configs for H3C, Cisco IOS, IOS-XE, and NX-OS. No typos, no CLI headaches."/>
+<meta name="keywords" content="H3C config generator, Cisco IOS config, NX-OS config, network topology builder, Comware CLI, VLAN generator, OSPF config, network automation"/>
+<meta name="author" content="ConfigLabs"/>
+<meta property="og:title" content="ConfigLabs v3.0 — Multi-Vendor Config Generator + Topology Builder"/>
+<meta property="og:description" content="Build production-ready H3C and Cisco configs visually. Now with Topology Builder (Beta)!"/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://configlabs.online"/>
 <meta name="theme-color" content="#0b0d10"/>
+<link rel="icon" type="image/x-icon" href="/favicon.ico"/>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/>
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png"/>
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png"/>
+<link rel="manifest" href="/site.webmanifest"/>
+<meta property="og:image" content="https://configlabs.online/favicon-512.png"/>
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:image" content="https://configlabs.online/favicon-512.png"/>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"ConfigLabs","url":"https://configlabs.online","logo":"https://configlabs.online/favicon-512.png","description":"Free multi-vendor network configuration generator with visual topology builder.","applicationCategory":"DeveloperApplication","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -24,9 +40,17 @@
   --radius:12px;--radius-lg:20px;
   --ease:cubic-bezier(.22,1,.36,1)
 }
+[data-theme="light"]{
+  --bg:#f8f6f1;--bg-2:#fff;--surface:#fff;--surface-2:#f1ede3;
+  --surface-hover:#ebe6d8;--border:#e4dfd0;--border-strong:#d0c9b5;
+  --text:#1a1a1a;--text-dim:#5a5a5a;--text-muted:#8a8a8a;
+  --accent:#0f766e;--accent-2:#4f46e5;--accent-3:#ea580c;
+  --accent-cisco:#4f46e5;--accent-h3c:#0f766e;
+  --glow:0 4px 20px rgba(15,118,110,.08)
+}
 
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+html,body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .3s var(--ease),color .3s var(--ease)}
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 80%);opacity:.3;pointer-events:none;z-index:0}
 
 /* Floating glow orbs */
@@ -34,26 +58,25 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .orb-1{top:10%;left:10%;width:400px;height:400px;background:var(--accent)}
 .orb-2{top:40%;right:5%;width:500px;height:500px;background:var(--accent-2);animation-delay:-7s}
 .orb-3{bottom:10%;left:30%;width:350px;height:350px;background:var(--accent-3);animation-delay:-14s}
-@keyframes float{
-  0%,100%{transform:translate(0,0) scale(1)}
-  33%{transform:translate(30px,-30px) scale(1.1)}
-  66%{transform:translate(-20px,20px) scale(.95)}
-}
+@keyframes float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-30px) scale(1.1)}66%{transform:translate(-20px,20px) scale(.95)}}
+[data-theme="light"] .orb{opacity:.08}
 
-/* NAV */
+/* NAV — matches existing site exactly */
 nav{position:sticky;top:0;z-index:50;padding:16px 32px;background:color-mix(in srgb,var(--bg) 75%,transparent);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .brand{display:flex;align-items:center;gap:12px;font-weight:600;font-size:17px;letter-spacing:-.3px;text-decoration:none;color:var(--text)}
 .brand-logo{width:32px;height:32px;border-radius:8px;background:conic-gradient(from 180deg,var(--accent),var(--accent-2),var(--accent-3),var(--accent));display:grid;place-items:center;position:relative}
 .brand-logo::after{content:'';position:absolute;inset:2px;border-radius:6px;background:var(--bg)}
 .brand-logo svg{position:relative;z-index:1;width:18px;height:18px;color:var(--text)}
 .brand em{font-family:var(--serif);font-style:italic;color:var(--accent);font-weight:400}
-.nav-links{display:flex;gap:6px;align-items:center}
-.nav-link{color:var(--text-dim);text-decoration:none;font-size:13px;font-weight:500;transition:all .2s;padding:8px 14px;border-radius:8px}
+.nav-actions{display:flex;gap:8px;align-items:center}
+.nav-link{padding:8px 14px;color:var(--text-dim);text-decoration:none;font-size:13px;font-weight:500;border-radius:8px;transition:all .2s}
 .nav-link:hover{color:var(--text);background:var(--surface)}
 .nav-link.active{color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
-.chip{font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:999px;border:1px solid var(--border-strong);color:var(--text-dim);display:inline-flex;align-items:center;gap:6px;margin-left:12px}
+.chip{font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:999px;border:1px solid var(--border-strong);color:var(--text-dim);display:inline-flex;align-items:center;gap:6px}
 .chip .dot{width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success);animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.icon-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);width:36px;height:36px;border-radius:10px;cursor:pointer;display:grid;place-items:center;transition:all .2s var(--ease);font-size:16px}
+.icon-btn:hover{background:var(--surface-hover);color:var(--text);border-color:var(--border-strong)}
 
 /* HERO */
 .hero{text-align:center;padding:80px 32px 60px;position:relative;z-index:1}
@@ -69,7 +92,7 @@ nav{position:sticky;top:0;z-index:50;padding:16px 32px;background:color-mix(in s
 .btn-secondary:hover{background:var(--surface-hover);border-color:var(--accent)}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 
-/* STATS BAR */
+/* STATS */
 .stats-bar{max-width:1100px;margin:0 auto 80px;padding:24px 32px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative;z-index:1;animation:fadeUp .7s var(--ease) .4s both}
 .stat-item{text-align:center;padding:8px 16px;border-right:1px solid var(--border)}
 .stat-item:last-child{border-right:none}
@@ -77,7 +100,7 @@ nav{position:sticky;top:0;z-index:50;padding:16px 32px;background:color-mix(in s
 .stat-label{font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px;margin-top:8px}
 @media(max-width:768px){.stats-bar{grid-template-columns:repeat(2,1fr);gap:16px}.stat-item{border-right:none;border-bottom:1px solid var(--border);padding-bottom:16px}.stat-item:nth-child(3),.stat-item:nth-child(4){border-bottom:none}}
 
-/* FEATURES GRID */
+/* FEATURES */
 .container{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:0 32px}
 .section-head-center{text-align:center;margin-bottom:48px}
 .section-head-center .eyebrow{font-family:var(--mono);font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;font-weight:500}
@@ -89,27 +112,23 @@ nav{position:sticky;top:0;z-index:50;padding:16px 32px;background:color-mix(in s
 @media(max-width:1024px){.features-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:640px){.features-grid{grid-template-columns:1fr}}
 
-.feature-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px;transition:all .4s var(--ease);cursor:pointer;position:relative;overflow:hidden;opacity:0;transform:translateY(20px);animation:fadeCard .8s var(--ease) forwards}
+.feature-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px;transition:all .4s var(--ease);position:relative;overflow:hidden;opacity:0;transform:translateY(20px);animation:fadeCard .8s var(--ease) forwards;text-decoration:none;color:inherit;display:block}
 .feature-card:nth-child(1){animation-delay:.5s}
 .feature-card:nth-child(2){animation-delay:.6s}
 .feature-card:nth-child(3){animation-delay:.7s}
 @keyframes fadeCard{to{opacity:1;transform:translateY(0)}}
 
-/* Glow border on hover */
-.feature-card::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;border-radius:var(--radius-lg);padding:1px;background:linear-gradient(135deg,transparent,transparent);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:0;transition:opacity .3s var(--ease);pointer-events:none}
-.feature-card.builder:hover::before{background:linear-gradient(135deg,var(--accent-2),transparent);opacity:1}
-.feature-card.topology:hover::before{background:linear-gradient(135deg,var(--accent),transparent);opacity:1}
-.feature-card.about:hover::before{background:linear-gradient(135deg,var(--accent-3),transparent);opacity:1}
-
 .feature-card:hover{transform:translateY(-6px);background:var(--surface-2);box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.feature-card.builder:hover{border-color:var(--accent-2)}
+.feature-card.topology:hover{border-color:var(--accent)}
+.feature-card.about:hover{border-color:var(--accent-3)}
 .feature-card:hover .feature-icon{transform:scale(1.1) rotate(-5deg)}
-.feature-card:hover .feature-cta{transform:translateX(4px)}
+.feature-card:hover .feature-cta::after{transform:translateX(4px)}
 
 .feature-icon{width:64px;height:64px;border-radius:14px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:24px;transition:transform .4s var(--ease);position:relative}
 .feature-card.builder .feature-icon{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent-2) 30%,transparent)}
 .feature-card.topology .feature-icon{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent)}
 .feature-card.about .feature-icon{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent-3) 30%,transparent)}
-
 .feature-icon svg{width:32px;height:32px}
 
 .feature-status{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1.5px;padding:4px 10px;border-radius:99px;background:var(--bg);border:1px solid var(--border);margin-bottom:14px}
@@ -133,9 +152,8 @@ nav{position:sticky;top:0;z-index:50;padding:16px 32px;background:color-mix(in s
 .feature-card.topology .feature-cta{color:var(--accent)}
 .feature-card.about .feature-cta{color:var(--accent-3)}
 .feature-cta::after{content:'→';transition:transform .3s var(--ease)}
-.feature-card:hover .feature-cta::after{transform:translateX(4px)}
 
-/* WHAT'S NEW SECTION */
+/* WHAT'S NEW */
 .whats-new{background:linear-gradient(135deg,var(--surface),var(--surface-2));border:1px solid var(--border);border-radius:var(--radius-lg);padding:40px;margin-bottom:80px;position:relative;overflow:hidden}
 .whats-new::before{content:'';position:absolute;top:-100px;right:-100px;width:300px;height:300px;background:radial-gradient(circle,var(--accent) 0%,transparent 70%);opacity:.05}
 .whats-new-grid{display:grid;grid-template-columns:1fr 2fr;gap:48px;align-items:center;position:relative;z-index:1}
@@ -166,7 +184,7 @@ nav{position:sticky;top:0;z-index:50;padding:16px 32px;background:color-mix(in s
 .tpl-tab.active .count{background:var(--accent);color:var(--bg);border-color:transparent}
 
 .templates-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
-.tpl{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;cursor:pointer;transition:all .2s var(--ease);position:relative;overflow:hidden;text-decoration:none;color:inherit}
+.tpl{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;cursor:pointer;transition:all .2s var(--ease);position:relative;overflow:hidden;text-decoration:none;color:inherit;display:block}
 .tpl:hover{border-color:var(--accent);transform:translateY(-3px);background:var(--surface-2)}
 .tpl-icon{width:36px;height:36px;border-radius:8px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:12px}
 .tpl-icon svg{width:20px;height:20px}
@@ -191,7 +209,7 @@ nav{position:sticky;top:0;z-index:50;padding:16px 32px;background:color-mix(in s
 .rm-col.progress .rm-item .check{background:var(--accent-3);color:var(--bg)}
 .rm-col.exploring .rm-item .check{background:var(--surface-hover);color:var(--text-muted);border:1px dashed var(--border-strong)}
 
-/* CTA SECTION */
+/* FINAL CTA */
 .final-cta{text-align:center;padding:80px 32px;background:linear-gradient(135deg,var(--surface),var(--surface-2));border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:60px;position:relative;overflow:hidden}
 .final-cta::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:600px;background:radial-gradient(circle,var(--accent) 0%,transparent 60%);opacity:.04;pointer-events:none}
 .final-cta h2{font-size:42px;font-weight:600;letter-spacing:-1px;margin-bottom:16px;position:relative}
@@ -214,38 +232,51 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
 .legal-links a{color:var(--text-muted);text-decoration:none;transition:color .15s}
 .legal-links a:hover{color:var(--accent)}
 
-/* Scrollbars */
+/* Support FAB */
+.support-fab{position:fixed;bottom:28px;right:28px;z-index:90;padding:12px 18px 12px 14px;border-radius:999px;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--bg);font-family:var(--sans);font-size:13px;font-weight:600;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(124,244,199,.25),0 2px 8px rgba(0,0,0,.3);transition:transform .2s var(--ease),box-shadow .2s;animation:fabIn .6s var(--ease) 1s both;text-decoration:none}
+.support-fab:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 12px 32px rgba(124,244,199,.4)}
+@keyframes fabIn{from{opacity:0;transform:translateY(20px) scale(.8)}to{opacity:1;transform:translateY(0) scale(1)}}
+
 ::-webkit-scrollbar{width:8px;height:8px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:4px}
 ::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
 </style>
 </head>
-<body>
+<body data-theme="dark">
 
 <!-- Background orbs -->
 <div class="orb orb-1"></div>
 <div class="orb orb-2"></div>
 <div class="orb orb-3"></div>
 
-<!-- NAV -->
+<!-- ============================================================
+     NAV — matches existing site (real beaker logo, real links)
+     ============================================================ -->
 <nav>
-  <a href="#" class="brand">
+  <a href="/" class="brand">
     <div class="brand-logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L9 6M9 6L21 18M9 6V18M21 6L15 12"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/>
+        <path d="M8.5 2h7"/><path d="M7 16h10"/>
+      </svg>
     </div>
-    Config<em>Labs</em>
+    <div>Config<em>Labs</em></div>
   </a>
-  <div class="nav-links">
-    <a href="#" class="nav-link active">Dashboard</a>
-    <a href="#" class="nav-link">Builder</a>
-    <a href="#" class="nav-link">Topology</a>
-    <a href="#" class="nav-link">About</a>
-    <span class="chip"><span class="dot"></span>v3.0 Live</span>
+  <div class="nav-actions">
+    <a href="/" class="nav-link active">Home</a>
+    <a href="/builder.html" class="nav-link">⚡ Builder</a>
+    <a href="/topology.html" class="nav-link">🗺️ Topology</a>
+    <a href="/about.html" class="nav-link">About</a>
+    <div class="chip"><span class="dot"></span><span id="backend-status">v3.0 Live</span></div>
+    <button class="icon-btn" onclick="window.open('https://github.com/NaufalBudiman/ConfigLabs','_blank')" title="GitHub">⭐</button>
+    <button class="icon-btn" onclick="toggleTheme()" title="Theme" id="theme-btn">🌙</button>
   </div>
 </nav>
 
-<!-- HERO -->
+<!-- ============================================================
+     HERO
+     ============================================================ -->
 <section class="hero">
   <div class="hero-tag">
     <span class="live"></span>
@@ -254,38 +285,25 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
   <h1>Network configuration,<br><span class="serif">without the pain.</span></h1>
   <p>Visual topology builder meets multi-vendor config generator. H3C to NX-OS. VLAN to OSPF. No typos, no guesswork — just clean, production-ready configs.</p>
   <div class="hero-cta-row">
-    <a href="#" class="btn-primary">
+    <a href="/builder.html" class="btn-primary">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
       Start Building
     </a>
-    <a href="#" class="btn-secondary">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
-      Watch Demo
+    <a href="/topology.html" class="btn-secondary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><path d="M9 6h6M7.5 8l3 8M16.5 8l-3 8"/></svg>
+      Try Topology
     </a>
   </div>
 </section>
 
 <!-- STATS -->
 <div class="stats-bar">
-  <div class="stat-item">
-    <div class="stat-num">25+</div>
-    <div class="stat-label">Templates</div>
-  </div>
-  <div class="stat-item">
-    <div class="stat-num">4</div>
-    <div class="stat-label">Vendors Live</div>
-  </div>
-  <div class="stat-item">
-    <div class="stat-num">100%</div>
-    <div class="stat-label">Free Forever</div>
-  </div>
-  <div class="stat-item">
-    <div class="stat-num">0</div>
-    <div class="stat-label">Login Required</div>
-  </div>
+  <div class="stat-item"><div class="stat-num">25+</div><div class="stat-label">Templates</div></div>
+  <div class="stat-item"><div class="stat-num">4</div><div class="stat-label">Vendors Live</div></div>
+  <div class="stat-item"><div class="stat-num">100%</div><div class="stat-label">Free Forever</div></div>
+  <div class="stat-item"><div class="stat-num">0</div><div class="stat-label">Login Required</div></div>
 </div>
 
-<!-- FEATURES -->
 <div class="container">
 
   <div class="section-head-center">
@@ -297,7 +315,7 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
   <div class="features-grid">
 
     <!-- BUILDER -->
-    <div class="feature-card builder">
+    <a href="/builder.html" class="feature-card builder">
       <div class="feature-icon">
         <svg viewBox="0 0 64 64" fill="none">
           <path d="M32 4L52 28H38L32 60L12 36H26L32 4Z" stroke="#a8b5ff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
@@ -310,15 +328,15 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
       <p>Generate production-ready configs from 25+ templates. Multi-vendor support, one-click copy, instant download. No syntax errors. No typos.</p>
       <ul class="feature-benefits">
         <li>25+ pre-built templates</li>
-        <li>H3C, Cisco, Arista, Juniper</li>
+        <li>H3C, Cisco IOS / IOS-XE / NX-OS</li>
         <li>VLAN · Routing · OSPF · BGP</li>
         <li>Browser session history</li>
       </ul>
-      <a href="#" class="feature-cta">Start Building</a>
-    </div>
+      <span class="feature-cta">Start Building</span>
+    </a>
 
     <!-- TOPOLOGY -->
-    <div class="feature-card topology">
+    <a href="/topology.html" class="feature-card topology">
       <div class="feature-icon">
         <svg viewBox="0 0 64 64" fill="none">
           <circle cx="16" cy="16" r="6" stroke="#7cf4c7" stroke-width="2.5"/>
@@ -342,11 +360,11 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
         <li>Cable labels & link properties</li>
         <li>PNG export for documentation</li>
       </ul>
-      <a href="#" class="feature-cta">Open Topology Builder</a>
-    </div>
+      <span class="feature-cta">Open Topology Builder</span>
+    </a>
 
     <!-- ABOUT -->
-    <div class="feature-card about">
+    <a href="/about.html" class="feature-card about">
       <div class="feature-icon">
         <svg viewBox="0 0 64 64" fill="none">
           <path d="M12 12C10.9 12 10 12.9 10 14V54C10 55.1 10.9 56 12 56H52C53.1 56 54 55.1 54 54V14C54 12.9 53.1 12 52 12H12Z" stroke="#ffb86b" stroke-width="2.5" stroke-linejoin="round"/>
@@ -366,8 +384,8 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
         <li>Community templates</li>
         <li>Built-in feedback loop</li>
       </ul>
-      <a href="#" class="feature-cta">Explore Docs</a>
-    </div>
+      <span class="feature-cta">Explore Docs</span>
+    </a>
 
   </div>
 
@@ -379,27 +397,9 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
         <p>Active development with regular releases. Here's what shipped recently:</p>
       </div>
       <div class="changelog">
-        <div class="cl-item">
-          <span class="cl-version">v3.0</span>
-          <div class="cl-content">
-            <h4>Topology Builder Beta</h4>
-            <p>Visual network builder with port mapping & cable labels</p>
-          </div>
-        </div>
-        <div class="cl-item">
-          <span class="cl-version">v2.5</span>
-          <div class="cl-content">
-            <h4>Cisco IOS-XE & NX-OS Support</h4>
-            <p>Catalyst 9000, ISR 4k, and Nexus templates</p>
-          </div>
-        </div>
-        <div class="cl-item">
-          <span class="cl-version">v2.0</span>
-          <div class="cl-content">
-            <h4>Multi-vendor Config Engine</h4>
-            <p>H3C Comware v7 & Cisco IOS in parallel</p>
-          </div>
-        </div>
+        <div class="cl-item"><span class="cl-version">v3.0</span><div class="cl-content"><h4>Topology Builder Beta</h4><p>Visual network builder with port mapping & cable labels</p></div></div>
+        <div class="cl-item"><span class="cl-version">v2.5</span><div class="cl-content"><h4>Cisco IOS-XE & NX-OS Support</h4><p>Catalyst 9000, ISR 4k, and Nexus templates</p></div></div>
+        <div class="cl-item"><span class="cl-version">v2.0</span><div class="cl-content"><h4>Multi-vendor Config Engine</h4><p>H3C Comware v7 & Cisco IOS in parallel</p></div></div>
       </div>
     </div>
   </section>
@@ -423,70 +423,14 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
     </div>
 
     <div class="templates-grid">
-      <a href="#" class="tpl">
-        <span class="tpl-vendor-tag">H3C</span>
-        <div class="tpl-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#7cf4c7" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="6" cy="14" r="0.8" fill="#7cf4c7"/><circle cx="9" cy="14" r="0.8" fill="#7cf4c7"/></svg>
-        </div>
-        <div class="tpl-name">Access Switch</div>
-        <div class="tpl-desc">Standard access switch with user VLAN and uplink trunk</div>
-      </a>
-      <a href="#" class="tpl">
-        <span class="tpl-vendor-tag">H3C</span>
-        <div class="tpl-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#7cf4c7" stroke-width="1.8"><path d="M3 21h18M5 21V10l7-7 7 7v11M9 21V14h6v7"/></svg>
-        </div>
-        <div class="tpl-name">Core Switch (L3)</div>
-        <div class="tpl-desc">Layer 3 core with SVI gateways, OSPF, static routes</div>
-      </a>
-      <a href="#" class="tpl">
-        <span class="tpl-vendor-tag">CISCO</span>
-        <div class="tpl-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#a8b5ff" stroke-width="1.8"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg>
-        </div>
-        <div class="tpl-name">DHCP on VLAN</div>
-        <div class="tpl-desc">VLAN + SVI + DHCP pool — full L3 server setup</div>
-      </a>
-      <a href="#" class="tpl">
-        <span class="tpl-vendor-tag">CISCO</span>
-        <div class="tpl-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#a8b5ff" stroke-width="1.8"><path d="M7 17l5-5 5 5M7 12l5-5 5 5"/></svg>
-        </div>
-        <div class="tpl-name">DHCP Relay</div>
-        <div class="tpl-desc">VLAN with DHCP Relay to central server</div>
-      </a>
-      <a href="#" class="tpl">
-        <span class="tpl-vendor-tag">IOS-XE</span>
-        <div class="tpl-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#ffb86b" stroke-width="1.8"><path d="M5 3a16 16 0 0014 0M5 21a16 16 0 0114 0M3 5a16 16 0 010 14M21 5a16 16 0 000 14"/></svg>
-        </div>
-        <div class="tpl-name">Guest WiFi VLAN</div>
-        <div class="tpl-desc">Isolated guest VLAN with DHCP and ACL</div>
-      </a>
-      <a href="#" class="tpl">
-        <span class="tpl-vendor-tag">NX-OS</span>
-        <div class="tpl-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#ff6478" stroke-width="1.8"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-        </div>
-        <div class="tpl-name">VPC Configuration</div>
-        <div class="tpl-desc">Virtual Port Channel for Nexus dual-homing</div>
-      </a>
-      <a href="#" class="tpl">
-        <span class="tpl-vendor-tag">CISCO</span>
-        <div class="tpl-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#a8b5ff" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
-        </div>
-        <div class="tpl-name">OSPF Single Area</div>
-        <div class="tpl-desc">OSPF area 0 with stub networks and redistribution</div>
-      </a>
-      <a href="#" class="tpl">
-        <span class="tpl-vendor-tag">H3C</span>
-        <div class="tpl-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#7cf4c7" stroke-width="1.8"><path d="M9 12l2 2 4-4M21 12c0 5-9 9-9 9s-9-4-9-9V5l9-3 9 3v7z"/></svg>
-        </div>
-        <div class="tpl-name">Port Security</div>
-        <div class="tpl-desc">MAC address binding with violation actions</div>
-      </a>
+      <a href="/builder.html" class="tpl"><span class="tpl-vendor-tag">H3C</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#7cf4c7" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="6" cy="14" r="0.8" fill="#7cf4c7"/><circle cx="9" cy="14" r="0.8" fill="#7cf4c7"/></svg></div><div class="tpl-name">Access Switch</div><div class="tpl-desc">Standard access switch with user VLAN and uplink trunk</div></a>
+      <a href="/builder.html" class="tpl"><span class="tpl-vendor-tag">H3C</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#7cf4c7" stroke-width="1.8"><path d="M3 21h18M5 21V10l7-7 7 7v11M9 21V14h6v7"/></svg></div><div class="tpl-name">Core Switch (L3)</div><div class="tpl-desc">Layer 3 core with SVI gateways, OSPF, static routes</div></a>
+      <a href="/builder.html" class="tpl"><span class="tpl-vendor-tag">CISCO</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#a8b5ff" stroke-width="1.8"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg></div><div class="tpl-name">DHCP on VLAN</div><div class="tpl-desc">VLAN + SVI + DHCP pool — full L3 server setup</div></a>
+      <a href="/builder.html" class="tpl"><span class="tpl-vendor-tag">CISCO</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#a8b5ff" stroke-width="1.8"><path d="M7 17l5-5 5 5M7 12l5-5 5 5"/></svg></div><div class="tpl-name">DHCP Relay</div><div class="tpl-desc">VLAN with DHCP Relay to central server</div></a>
+      <a href="/builder.html" class="tpl"><span class="tpl-vendor-tag">IOS-XE</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#ffb86b" stroke-width="1.8"><path d="M5 3a16 16 0 0014 0M5 21a16 16 0 0114 0M3 5a16 16 0 010 14M21 5a16 16 0 000 14"/></svg></div><div class="tpl-name">Guest WiFi VLAN</div><div class="tpl-desc">Isolated guest VLAN with DHCP and ACL</div></a>
+      <a href="/builder.html" class="tpl"><span class="tpl-vendor-tag">NX-OS</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#ff6478" stroke-width="1.8"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div><div class="tpl-name">VPC Configuration</div><div class="tpl-desc">Virtual Port Channel for Nexus dual-homing</div></a>
+      <a href="/builder.html" class="tpl"><span class="tpl-vendor-tag">CISCO</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#a8b5ff" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg></div><div class="tpl-name">OSPF Single Area</div><div class="tpl-desc">OSPF area 0 with stub networks and redistribution</div></a>
+      <a href="/builder.html" class="tpl"><span class="tpl-vendor-tag">H3C</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#7cf4c7" stroke-width="1.8"><path d="M9 12l2 2 4-4M21 12c0 5-9 9-9 9s-9-4-9-9V5l9-3 9 3v7z"/></svg></div><div class="tpl-name">Port Security</div><div class="tpl-desc">MAC address binding with violation actions</div></a>
     </div>
   </section>
 
@@ -537,11 +481,11 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
     <h2>Ready to <em>ship</em> faster?</h2>
     <p>Free forever. No login. No tracking. No vendor lock-in. Built by network engineers who got tired of CLI typos.</p>
     <div class="hero-cta-row">
-      <a href="#" class="btn-primary">
+      <a href="/builder.html" class="btn-primary">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
         Start Building Now
       </a>
-      <a href="#" class="btn-secondary">
+      <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" class="btn-secondary">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
         Star on GitHub
       </a>
@@ -556,7 +500,10 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
     <div>
       <div class="footer-brand-block">
         <div class="brand-logo" style="width:24px;height:24px">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M3 12L9 6M9 6L21 18M9 6V18M21 6L15 12"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px">
+            <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/>
+            <path d="M8.5 2h7"/><path d="M7 16h10"/>
+          </svg>
         </div>
         Config<em>Labs</em>
       </div>
@@ -564,37 +511,63 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
     </div>
     <div class="footer-col">
       <h4>Product</h4>
-      <a href="#">Builder</a>
-      <a href="#">Topology</a>
-      <a href="#">Templates</a>
-      <a href="#">Roadmap</a>
+      <a href="/builder.html">Builder</a>
+      <a href="/topology.html">Topology</a>
+      <a href="/builder.html#templates">Templates</a>
+      <a href="#roadmap">Roadmap</a>
     </div>
     <div class="footer-col">
       <h4>Resources</h4>
-      <a href="#">Documentation</a>
-      <a href="#">GitHub</a>
-      <a href="#">Community</a>
-      <a href="#">Changelog</a>
+      <a href="/about.html">About</a>
+      <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank">GitHub</a>
+      <a href="https://github.com/NaufalBudiman/ConfigLabs/issues" target="_blank">Issues</a>
+      <a href="https://github.com/NaufalBudiman/ConfigLabs/releases" target="_blank">Changelog</a>
     </div>
     <div class="footer-col">
       <h4>Support</h4>
-      <a href="#">Donate (Saweria)</a>
-      <a href="#">Report a Bug</a>
-      <a href="#">Feature Request</a>
-      <a href="#">Contact</a>
+      <a href="https://saweria.co/configlabs" target="_blank">Donate (Saweria)</a>
+      <a href="https://github.com/NaufalBudiman/ConfigLabs/issues/new" target="_blank">Report a Bug</a>
+      <a href="https://github.com/NaufalBudiman/ConfigLabs/issues/new" target="_blank">Feature Request</a>
+      <a href="/about.html">Contact</a>
     </div>
   </div>
   <div class="legal">
     <span>© 2026 ConfigLabs · Built with care in Indonesia 🇮🇩</span>
     <div class="legal-links">
-      <a href="#">Privacy</a>
-      <a href="#">Terms</a>
-      <a href="#">License (MIT)</a>
+      <a href="/about.html">Privacy</a>
+      <a href="/about.html">Terms</a>
+      <a href="https://github.com/NaufalBudiman/ConfigLabs/blob/main/LICENSE" target="_blank">License (MIT)</a>
     </div>
   </div>
 </footer>
 
+<!-- Support FAB -->
+<a href="https://saweria.co/configlabs" target="_blank" class="support-fab" title="Support ConfigLabs">
+  ☕ <span>Support us</span>
+</a>
+
 <script>
+// Theme toggle (matches existing site)
+function toggleTheme(){
+  const html = document.documentElement;
+  const body = document.body;
+  const cur = body.dataset.theme || 'dark';
+  const next = cur === 'dark' ? 'light' : 'dark';
+  body.dataset.theme = next;
+  html.dataset.theme = next;
+  document.getElementById('theme-btn').textContent = next === 'dark' ? '🌙' : '☀️';
+  try{ localStorage.setItem('configlabs-theme', next); }catch(e){}
+}
+// Restore theme from localStorage
+try{
+  const saved = localStorage.getItem('configlabs-theme');
+  if(saved){
+    document.body.dataset.theme = saved;
+    document.documentElement.dataset.theme = saved;
+    document.getElementById('theme-btn').textContent = saved === 'dark' ? '🌙' : '☀️';
+  }
+}catch(e){}
+
 // Animate stats on scroll
 const stats = document.querySelectorAll('.stat-num');
 const observer = new IntersectionObserver(entries => {
@@ -632,6 +605,12 @@ document.querySelectorAll('.tpl-tab').forEach(tab => {
     tab.classList.add('active');
   });
 });
+
+// Backend status check (matches existing pattern)
+const statusEl = document.getElementById('backend-status');
+if(statusEl){
+  fetch('/api/health').then(r => r.ok ? statusEl.textContent = 'v3.0 Live' : statusEl.textContent = 'v3.0').catch(()=>{ statusEl.textContent = 'v3.0'; });
+}
 </script>
 
 </body>

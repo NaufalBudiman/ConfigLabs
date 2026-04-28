@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ConfigLabs — Network Configuration, Simplified</title>
+<meta name="description" content="Free multi-vendor network config generator with visual topology builder. Build production-ready configs for H3C, Cisco IOS, IOS-XE, and NX-OS. No typos, no CLI headaches."/>
+<meta name="keywords" content="H3C config generator, Cisco IOS config, NX-OS config, network topology builder, Comware CLI, VLAN generator, OSPF config, network automation"/>
+<meta name="author" content="ConfigLabs"/>
+<meta property="og:title" content="ConfigLabs v3.0 — Multi-Vendor Config Generator + Topology Builder"/>
+<meta property="og:description" content="Build production-ready H3C and Cisco configs visually. Now with Topology Builder (Beta)!"/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://configlabs.online"/>
+<meta name="theme-color" content="#0b0d10"/>
+<link rel="icon" type="image/x-icon" href="/favicon.ico"/>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/>
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png"/>
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png"/>
+<link rel="manifest" href="/site.webmanifest"/>
+<meta property="og:image" content="https://configlabs.online/favicon-512.png"/>
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:image" content="https://configlabs.online/favicon-512.png"/>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"ConfigLabs","url":"https://configlabs.online","logo":"https://configlabs.online/favicon-512.png","description":"Free multi-vendor network configuration generator with visual topology builder.","applicationCategory":"DeveloperApplication","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   BASE TOKENS
+   ============================================================ */
+:root{
+  --bg:#0b0d10;--bg-2:#111418;--surface:#15191f;--surface-2:#1b2027;
+  --surface-hover:#222831;--border:#232a34;--border-strong:#2e3744;
+  --text:#e6e9ee;--text-dim:#9aa3af;--text-muted:#5b6472;
+  --accent:#7cf4c7;--accent-2:#a8b5ff;--accent-3:#ffb86b;
+  --accent-cisco:#a8b5ff;--accent-h3c:#7cf4c7;
+  --danger:#ff6478;--success:#7cf4c7;--warning:#ffc857;
+  --glow:0 0 40px rgba(124,244,199,.15);
+  --sans:'Geist',system-ui,sans-serif;
+  --serif:'Instrument Serif',Georgia,serif;
+  --mono:'JetBrains Mono',monospace;
+  --radius:12px;--radius-lg:20px;
+  --ease:cubic-bezier(.22,1,.36,1)
+}
+[data-theme="light"]{
+  --bg:#f8f6f1;--bg-2:#fff;--surface:#fff;--surface-2:#f1ede3;
+  --surface-hover:#ebe6d8;--border:#e4dfd0;--border-strong:#d0c9b5;
+  --text:#1a1a1a;--text-dim:#5a5a5a;--text-muted:#8a8a8a;
+  --accent:#0f766e;--accent-2:#4f46e5;--accent-3:#ea580c;
+  --accent-cisco:#4f46e5;--accent-h3c:#0f766e;
+  --glow:0 4px 20px rgba(15,118,110,.08)
+}
+
+/* ============================================================
+   RESET & GLOBAL
+   ============================================================ */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;transition:background .3s var(--ease),color .3s var(--ease)}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 80%);opacity:.3;pointer-events:none;z-index:0}
+
+/* ============================================================
+   NAV
+   ============================================================ */
+nav{position:sticky;top:0;z-index:50;padding:16px 32px;background:color-mix(in srgb,var(--bg) 75%,transparent);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:12px;font-weight:600;font-size:17px;letter-spacing:-.3px;text-decoration:none;color:var(--text)}
+.brand-logo{width:32px;height:32px;border-radius:8px;background:conic-gradient(from 180deg,var(--accent),var(--accent-2),var(--accent-3),var(--accent));display:grid;place-items:center;position:relative}
+.brand-logo::after{content:'';position:absolute;inset:2px;border-radius:6px;background:var(--bg)}
+.brand-logo svg{position:relative;z-index:1;width:18px;height:18px;color:var(--text)}
+.brand em{font-family:var(--serif);font-style:italic;color:var(--accent);font-weight:400}
+.nav-actions{display:flex;gap:8px;align-items:center}
+.nav-link{padding:8px 14px;color:var(--text-dim);text-decoration:none;font-size:13px;font-weight:500;border-radius:8px;transition:all .2s}
+.nav-link:hover{color:var(--text);background:var(--surface)}
+.chip{font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:999px;border:1px solid var(--border-strong);color:var(--text-dim);display:inline-flex;align-items:center;gap:6px}
+.chip .dot{width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.icon-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);width:36px;height:36px;border-radius:10px;cursor:pointer;display:grid;place-items:center;transition:all .2s var(--ease);font-size:16px}
+.icon-btn:hover{background:var(--surface-hover);color:var(--text);border-color:var(--border-strong)}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.container{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:40px 32px 80px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero{text-align:center;padding:60px 0 40px}
+.hero-tag{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font-size:12px;color:var(--text-dim);font-family:var(--mono);margin-bottom:28px;animation:fadeUp .6s var(--ease) both}
+.hero-tag .live{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.hero h1{font-size:clamp(40px,6vw,68px);line-height:1.02;letter-spacing:-2px;font-weight:600;margin-bottom:24px;animation:fadeUp .7s var(--ease) .1s both}
+.hero h1 .serif{font-family:var(--serif);font-style:italic;font-weight:400;background:linear-gradient(135deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;padding-right:4px}
+.hero p{color:var(--text-dim);font-size:18px;max-width:600px;margin:0 auto 32px;animation:fadeUp .7s var(--ease) .2s both}
+
+/* Vendor pills */
+.vendor-pills{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;animation:fadeUp .7s var(--ease) .3s both}
+.vendor-pill{padding:10px 18px;border-radius:999px;border:1.5px solid var(--border);background:var(--surface);font-size:13px;display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);color:var(--text-dim);transition:all .2s var(--ease);cursor:pointer;font-weight:500}
+.vendor-pill:not(.disabled):hover{border-color:var(--border-strong);color:var(--text);transform:translateY(-1px)}
+.vendor-pill.active{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface));box-shadow:0 4px 16px color-mix(in srgb,var(--accent) 20%,transparent)}
+.vendor-pill[data-vendor="cisco"].active{border-color:var(--accent-cisco);color:var(--accent-cisco);background:color-mix(in srgb,var(--accent-cisco) 12%,var(--surface))}
+.vendor-pill.disabled{opacity:.45;cursor:not-allowed}
+.vendor-pill .soon-badge{font-size:9px;padding:2px 7px;border-radius:99px;background:var(--surface-hover);color:var(--text-muted);border:1px solid var(--border);letter-spacing:.5px;font-weight:600}
+
+/* OS picker */
+.os-picker-wrap{margin-top:20px;max-width:700px;margin-left:auto;margin-right:auto;animation:fadeUp .7s var(--ease) .4s both}
+.os-picker{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.os-picker-label{font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;text-align:center}
+.os-btn{padding:12px 20px;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;cursor:pointer;transition:all .2s var(--ease);color:var(--text-dim);font-family:var(--sans);font-size:13px;font-weight:500;display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:140px;text-align:left}
+.os-btn:hover{border-color:var(--border-strong);color:var(--text);transform:translateY(-1px)}
+.os-btn.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--bg));color:var(--text)}
+.os-btn[data-vendor="cisco"].active{border-color:var(--accent-cisco);background:color-mix(in srgb,var(--accent-cisco) 10%,var(--bg))}
+.os-btn .os-name{font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px}
+.os-btn .os-check{color:var(--accent);opacity:0;transition:opacity .2s}
+.os-btn[data-vendor="cisco"] .os-check{color:var(--accent-cisco)}
+.os-btn.active .os-check{opacity:1}
+.os-btn .os-desc{font-size:11px;color:var(--text-muted);font-family:var(--mono)}
+
+/* ============================================================
+   TEMPLATES
+   ============================================================ */
+.templates-section{margin-bottom:48px;margin-top:60px;animation:fadeUp .7s var(--ease) .4s both}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.section-head h2{font-size:22px;font-weight:500;letter-spacing:-.5px}
+.section-head h2 em{font-family:var(--serif);font-style:italic;color:var(--accent);font-weight:400}
+.section-head .count{font-family:var(--mono);font-size:12px;color:var(--text-muted)}
+.templates-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.tpl{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:all .2s var(--ease);position:relative;overflow:hidden}
+.tpl:hover{border-color:var(--accent);transform:translateY(-2px)}
+.tpl-emoji{font-size:26px;margin-bottom:10px;display:block}
+.tpl-name{font-weight:500;font-size:14px;margin-bottom:4px}
+.tpl-desc{font-size:12px;color:var(--text-dim);line-height:1.5}
+.tpl-vendor-tag{position:absolute;top:10px;right:10px;font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:99px;background:var(--surface-2);color:var(--text-muted);letter-spacing:.5px;text-transform:uppercase}
+
+/* ============================================================
+   MAIN LAYOUT (builder + output)
+   ============================================================ */
+.main-layout{display:grid;grid-template-columns:1.1fr 1fr;gap:20px}
+@media(max-width:960px){.main-layout{grid-template-columns:1fr}}
+.builder,.output-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;animation:fadeUp .7s var(--ease) .5s both}
+
+/* Panel */
+.panel-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface-2)}
+.panel-title{font-weight:500;font-size:14px;display:flex;align-items:center;gap:10px}
+.panel-title .num{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:6px;background:var(--bg);color:var(--text-dim);border:1px solid var(--border)}
+.panel-title .vendor-label{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:99px;background:var(--accent);color:var(--bg);font-weight:700;letter-spacing:.5px}
+.panel-title .vendor-label.cisco{background:var(--accent-cisco)}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;padding:12px 12px 0;background:var(--surface-2);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:thin}
+.tab{padding:10px 13px;background:transparent;border:none;color:var(--text-dim);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;border-radius:8px 8px 0 0;transition:all .2s;display:flex;align-items:center;gap:6px;white-space:nowrap;position:relative;flex-shrink:0}
+.tab:hover{color:var(--text);background:var(--surface-hover)}
+.tab.active{color:var(--text);background:var(--surface)}
+.tab.active::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:2px;background:var(--accent)}
+.tab .badge{font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:99px;background:var(--surface-2);color:var(--text-muted);border:1px solid var(--border)}
+.tab.active .badge{background:var(--accent);color:var(--bg);border-color:transparent}
+.tab .beta-badge{font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:99px;background:var(--accent-3);color:#1a0e00;font-weight:700;letter-spacing:.5px}
+
+/* Panel body */
+.panel-body{padding:24px}
+.tab-panel{display:none;animation:fadeIn .2s var(--ease)}
+.tab-panel.active{display:block}
+
+/* Form */
+.field{margin-bottom:14px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:6px;font-weight:500}
+label .hint{font-family:var(--mono);color:var(--text-muted);font-weight:400;margin-left:6px}
+input,select,textarea{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;transition:all .15s var(--ease)}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent)}
+input::placeholder{color:var(--text-muted)}
+textarea{resize:vertical;min-height:80px;font-family:var(--sans)}
+.segmented{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;padding:4px;background:var(--bg);border:1px solid var(--border);border-radius:10px}
+.segmented button{padding:8px 12px;background:transparent;border:none;color:var(--text-dim);font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer;border-radius:7px;transition:all .2s;text-transform:uppercase;letter-spacing:.5px}
+.segmented button:hover{color:var(--text)}
+.segmented button.active{background:var(--accent);color:var(--bg);font-weight:600}
+.repeater{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.repeater-item{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative;transition:border-color .2s;animation:fadeIn .3s var(--ease)}
+.repeater-item:hover{border-color:var(--border-strong)}
+.repeater-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.repeater-title{font-size:12px;font-family:var(--mono);color:var(--text-dim);text-transform:uppercase;letter-spacing:1px}
+.repeater-item .btn-remove{background:transparent;border:1px solid var(--border);color:var(--text-muted);width:24px;height:24px;border-radius:6px;cursor:pointer;display:grid;place-items:center;font-size:14px;transition:all .2s}
+.repeater-item .btn-remove:hover{background:var(--danger);color:#fff;border-color:var(--danger)}
+.btn-add{background:transparent;border:1.5px dashed var(--border-strong);color:var(--text-dim);padding:12px;border-radius:10px;cursor:pointer;width:100%;font-family:var(--sans);font-size:13px;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-add:hover{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 5%,transparent)}
+.check{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:13px;color:var(--text-dim)}
+.check input{width:auto;margin:0}
+.info-banner{background:color-mix(in srgb,var(--accent-2) 8%,var(--bg));border:1px solid color-mix(in srgb,var(--accent-2) 25%,var(--border));border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text-dim);margin-bottom:16px;display:flex;gap:10px;align-items:flex-start;line-height:1.5}
+.info-banner .icon{flex-shrink:0}
+
+/* Footer */
+.panel-footer{padding:16px 20px;border-top:1px solid var(--border);display:flex;gap:10px;background:var(--surface-2)}
+.btn{padding:11px 18px;border:none;border-radius:10px;font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s var(--ease);display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn-primary{background:var(--accent);color:var(--bg);flex:1;font-weight:600;box-shadow:var(--glow)}
+.btn-primary:hover{transform:translateY(-1px);filter:brightness(1.05)}
+.btn-secondary{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--surface-hover);border-color:var(--border-strong)}
+
+/* ============================================================
+   OUTPUT
+   ============================================================ */
+.output-wrap{display:flex;flex-direction:column;min-height:600px}
+.output-toolbar{display:flex;gap:6px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface-2);align-items:center;justify-content:space-between}
+.output-toolbar-left,.output-toolbar-right{display:flex;gap:6px}
+.tool-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:6px 10px;border-radius:7px;font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:5px}
+.tool-btn:hover{color:var(--text);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.tool-btn.active{color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.output{flex:1;overflow:auto;padding:20px;font-family:var(--mono);font-size:13px;line-height:1.8;background:var(--bg)}
+.output.empty{color:var(--text-muted);font-style:italic;display:grid;place-items:center;text-align:center}
+.empty-art{font-size:48px;margin-bottom:12px;display:block;opacity:.4}
+.line{display:grid;grid-template-columns:40px 1fr;gap:14px;padding:1px 6px;border-radius:4px;transition:background .15s}
+.line:hover{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+.line .ln{color:var(--text-muted);user-select:none;text-align:right;font-size:11px}
+.line.comment .content{color:var(--text-muted)}
+.line.cmd .kw{color:var(--accent-2)}
+.line.cmd .val{color:var(--accent)}
+.status-bar{padding:8px 16px;border-top:1px solid var(--border);background:var(--surface-2);font-family:var(--mono);font-size:11px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center}
+.s-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--text-muted);margin-right:6px;vertical-align:middle}
+.status-bar.ok .s-dot{background:var(--success);box-shadow:0 0 6px var(--success)}
+.status-bar.err .s-dot{background:var(--danger)}
+
+
+/* ============================================================
+   HISTORY DRAWER
+   ============================================================ */
+.history-drawer{position:fixed;top:0;right:-420px;width:420px;max-width:100%;height:100vh;background:var(--bg-2);border-left:1px solid var(--border);transition:right .4s var(--ease);z-index:100;display:flex;flex-direction:column}
+.history-drawer.open{right:0}
+.drawer-head{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.drawer-head h3{font-size:18px;font-weight:500}
+.drawer-head h3 em{font-family:var(--serif);font-style:italic;color:var(--accent);font-weight:400}
+.drawer-body{flex:1;overflow-y:auto;padding:16px}
+.history-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;cursor:pointer;transition:all .2s}
+.history-item:hover{border-color:var(--accent);transform:translateX(-4px)}
+.h-time{font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:6px;display:flex;justify-content:space-between}
+.h-tag{font-size:9px;padding:1px 6px;border-radius:99px;background:var(--surface-2);color:var(--text-muted);letter-spacing:.5px;text-transform:uppercase}
+.h-preview{font-family:var(--mono);font-size:12px;color:var(--text-dim);max-height:60px;overflow:hidden;white-space:pre-wrap;position:relative}
+.h-preview::after{content:'';position:absolute;bottom:0;left:0;right:0;height:28px;background:linear-gradient(transparent,var(--surface))}
+.history-empty{text-align:center;color:var(--text-muted);padding:40px 20px;font-size:13px}
+
+/* ============================================================
+   OVERLAY, TOAST, MODALS
+   ============================================================ */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);z-index:99;opacity:0;pointer-events:none;transition:opacity .3s}
+.overlay.show{opacity:1;pointer-events:auto}
+.toast{position:fixed;bottom:24px;left:50%;transform:translate(-50%,100px);background:var(--surface);border:1px solid var(--border-strong);color:var(--text);padding:12px 18px;border-radius:999px;font-size:13px;box-shadow:0 20px 40px rgba(0,0,0,.3);z-index:200;transition:transform .3s var(--ease);display:flex;align-items:center;gap:10px;white-space:nowrap}
+.toast.show{transform:translate(-50%,0)}
+.t-icon{width:20px;height:20px;border-radius:50%;background:var(--success);color:var(--bg);display:grid;place-items:center;font-weight:700;font-size:11px;flex-shrink:0}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);z-index:150;opacity:0;pointer-events:none;transition:opacity .25s;display:grid;place-items:center;padding:20px}
+.modal-overlay.show{opacity:1;pointer-events:auto}
+.modal{background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-lg);padding:28px;max-width:500px;width:100%;transform:translateY(20px);transition:transform .25s var(--ease);max-height:90vh;overflow-y:auto}
+.modal-overlay.show .modal{transform:translateY(0)}
+.modal h2{font-size:22px;font-weight:500;margin-bottom:8px;letter-spacing:-.5px}
+.modal h2 em{font-family:var(--serif);font-style:italic;color:var(--accent);font-weight:400}
+.modal p{color:var(--text-dim);font-size:14px;line-height:1.6;margin-bottom:4px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+footer{margin-top:80px;padding:40px 0 30px;border-top:1px solid var(--border)}
+.footer-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:32px;margin-bottom:32px}
+@media(max-width:768px){.footer-grid{grid-template-columns:1fr 1fr}}
+.footer-col h4{font-family:var(--mono);font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;font-weight:500}
+.footer-col a{display:block;color:var(--text-muted);text-decoration:none;font-size:13px;padding:4px 0;transition:color .15s;cursor:pointer}
+.footer-col a:hover{color:var(--accent)}
+.footer-col a::before{content:'→ ';opacity:.35;margin-right:2px}
+.footer-brand-block{font-size:15px;color:var(--text);margin-bottom:12px;font-weight:500}
+.footer-brand-block em{font-family:var(--serif);font-style:italic;color:var(--accent);font-weight:400}
+.footer-tagline{color:var(--text-muted);font-size:13px;line-height:1.65;margin-bottom:14px}
+.legal{border-top:1px solid var(--border);padding-top:20px;text-align:center;font-size:11px;color:var(--text-muted);line-height:1.85;font-family:var(--mono);max-width:900px;margin:0 auto}
+.legal strong{color:var(--text-dim);font-weight:500}
+
+/* Scrollbars */
+::-webkit-scrollbar{width:7px;height:7px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
+
+/* ============================================================
+   SUPPORT FAB
+   ============================================================ */
+.support-fab{position:fixed;bottom:28px;right:28px;z-index:90;padding:12px 18px 12px 14px;border-radius:999px;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--bg);font-family:var(--sans);font-size:13px;font-weight:600;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(124,244,199,.25),0 2px 8px rgba(0,0,0,.3);transition:transform .2s var(--ease),box-shadow .2s;animation:fabIn .6s var(--ease) 1s both}
+.support-fab:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 12px 32px rgba(124,244,199,.4)}
+@keyframes fabIn{from{opacity:0;transform:translateY(20px) scale(.8)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+/* Support modal */
+.support-hero{font-size:56px;text-align:center;margin-bottom:12px;line-height:1}
+.support-reasons{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin:16px 0 24px}
+.support-reasons h4{font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-bottom:12px;letter-spacing:1.5px;text-transform:uppercase;font-weight:500}
+.support-reasons li{color:var(--text-dim);font-size:13px;padding:4px 0;list-style:none;display:flex;align-items:center;gap:10px}
+.support-reasons li::before{content:'✓';color:var(--accent);font-weight:700;font-size:12px}
+.btn-saweria{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--bg);border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;text-decoration:none;transition:filter .15s}
+.btn-saweria:hover{filter:brightness(1.05)}
+.saweria-pill{background:var(--bg);color:var(--accent);padding:2px 8px;border-radius:5px;font-size:10px;font-weight:800;font-family:var(--mono);letter-spacing:1px}
+</style>
+</head>
+<body data-theme="dark">
+
+<!-- ============================================================
+     NAV
+     ============================================================ -->
+<nav>
+  <a href="/" class="brand">
+    <div class="brand-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/>
+        <path d="M8.5 2h7"/><path d="M7 16h10"/>
+      </svg>
+    </div>
+    <div>Config<em>Labs</em></div>
+  </a>
+  <div class="nav-actions">
+    <a href="/topology.html" class="nav-link">🗺️ Topology</a>
+    <a href="/about.html" class="nav-link">About</a>
+    <div class="chip"><span class="dot"></span><span id="backend-status">Connecting...</span></div>
+    <button class="icon-btn" onclick="openFeedback()" title="Feedback">💬</button>
+    <button class="icon-btn" onclick="toggleHistory()" title="History">🕐</button>
+    <button class="icon-btn" onclick="toggleTheme()" title="Theme" id="theme-btn">🌙</button>
+  </div>
+</nav>
+
+<!-- ============================================================
+     MAIN
+     ============================================================ -->
+<div class="container">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-tag"><span class="live"></span> v3.0 · Topology Builder (Beta) · H3C + Cisco</div>
+    <h1>Network configuration,<br><span class="serif">without the pain.</span></h1>
+    <p>Visual topology builder meets multi-vendor config generator. H3C to NX-OS. VLAN to OSPF. No typos, no guesswork.</p>
+    <div class="vendor-pills" id="vendor-pills"></div>
+    <div class="os-picker-wrap" id="os-picker-wrap" style="display:none">
+      <div class="os-picker-label">Select OS / Platform</div>
+      <div class="os-picker" id="os-picker"></div>
+    </div>
+  </section>
+
+  <!-- TEMPLATES -->
+  <section class="templates-section">
+    <div class="section-head">
+      <h2>Start from a <em>template</em></h2>
+      <span class="count" id="tpl-count">loading...</span>
+    </div>
+    <div class="templates-grid" id="templates-grid"></div>
+  </section>
+
+  <!-- BUILDER + OUTPUT -->
+  <div class="main-layout">
+
+    <!-- BUILDER -->
+    <section class="builder">
+      <div class="panel-head">
+        <div class="panel-title">
+          <span class="num">01</span>
+          Configuration Builder
+          <span class="vendor-label" id="active-vendor-label">H3C · COMWARE</span>
+        </div>
+        <button class="icon-btn" onclick="clearAll()" title="Clear all">🗑️</button>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="system">⚙️ System</button>
+        <button class="tab" data-tab="vlan">🔷 VLAN <span class="badge" id="b-vlan">0</span></button>
+        <button class="tab" data-tab="svi">🌐 VLAN-int <span class="badge" id="b-svi">0</span></button>
+        <button class="tab" data-tab="intf">🔌 Interfaces <span class="badge" id="b-intf">0</span></button>
+        <button class="tab" data-tab="dhcp">📡 DHCP <span class="badge" id="b-dhcp">0</span></button>
+        <button class="tab" data-tab="route">🛣️ Routing <span class="badge" id="b-route">0</span></button>
+        <button class="tab" data-tab="ospf">🧭 OSPF</button>
+        <button class="tab" data-tab="acl">🛡️ ACL <span class="badge" id="b-acl">0</span></button>
+      </div>
+
+      <div class="panel-body">
+
+        <!-- ==================== SYSTEM ==================== -->
+        <div class="tab-panel active" id="pane-system">
+          <div class="field"><label>Hostname <span class="hint" id="hint-hostname">sysname</span></label><input id="sys-hostname" placeholder="SW-CORE-01"></div>
+          <div class="field-row">
+            <div class="field"><label>NTP Server</label><input id="sys-ntp" placeholder="time.google.com"></div>
+            <div class="field"><label>Timezone</label><input id="sys-tz" placeholder="JKT 07:00:00"></div>
+          </div>
+          <div class="field"><label>Login Banner</label><input id="sys-banner" placeholder="Authorized users only"></div>
+        </div>
+
+        <!-- ==================== VLAN ==================== -->
+        <div class="tab-panel" id="pane-vlan">
+          <div class="info-banner"><span class="icon">ℹ️</span><span>Create Layer 2 VLANs here. For L3 gateway/IP, use the <strong style="color:var(--text)">VLAN-int</strong> tab.</span></div>
+          <div class="repeater" id="rep-vlans"></div>
+          <button class="btn-add" onclick="addVlan()">＋ Add VLAN</button>
+        </div>
+
+        <!-- ==================== SVI ==================== -->
+        <div class="tab-panel" id="pane-svi">
+          <div class="info-banner"><span class="icon">🌐</span><span>Layer 3 gateway for each VLAN (SVI). <span id="svi-hint-extra"></span></span></div>
+          <div class="repeater" id="rep-svis"></div>
+          <button class="btn-add" onclick="addSvi()">＋ Add VLAN-interface</button>
+        </div>
+
+        <!-- ==================== INTERFACES ==================== -->
+        <div class="tab-panel" id="pane-intf">
+          <div class="repeater" id="rep-intfs"></div>
+          <button class="btn-add" onclick="addIntf()">＋ Add Interface</button>
+        </div>
+
+        <!-- ==================== DHCP ==================== -->
+        <div class="tab-panel" id="pane-dhcp">
+          <div class="info-banner"><span class="icon">💡</span><span>Define DHCP pools. H3C: link pools to SVIs via "Apply Pool". Cisco: SVI IP must be inside pool subnet.</span></div>
+          <div class="repeater" id="rep-dhcp"></div>
+          <button class="btn-add" onclick="addDhcp()">＋ Add DHCP Pool</button>
+        </div>
+
+        <!-- ==================== ROUTING ==================== -->
+        <div class="tab-panel" id="pane-route">
+          <div class="repeater" id="rep-routes"></div>
+          <button class="btn-add" onclick="addRoute()">＋ Add Static Route</button>
+        </div>
+
+        <!-- ==================== OSPF ==================== -->
+        <div class="tab-panel" id="pane-ospf">
+          <div class="field-row">
+            <div class="field"><label>Process ID</label><input id="ospf-pid" placeholder="1"></div>
+            <div class="field"><label>Router ID</label><input id="ospf-rid" placeholder="1.1.1.1"></div>
+          </div>
+          <div class="field"><label>Area</label><input id="ospf-area" placeholder="0"></div>
+          <label style="margin-top:8px">Networks</label>
+          <div class="repeater" id="rep-ospf-nets"></div>
+          <button class="btn-add" onclick="addOspfNet()">＋ Add Network</button>
+        </div>
+
+        <!-- ==================== ACL ==================== -->
+        <div class="tab-panel" id="pane-acl">
+          <div class="repeater" id="rep-acls"></div>
+          <button class="btn-add" onclick="addAcl()">＋ Add ACL</button>
+        </div>
+
+      </div><!-- /panel-body -->
+
+      <div class="panel-footer">
+        <button class="btn btn-secondary" onclick="loadExample()">✨ Example</button>
+        <button class="btn btn-primary" onclick="generate()">⚡ Generate Config <span style="font-family:var(--mono);font-size:11px;opacity:.65">⌘↵</span></button>
+      </div>
+    </section>
+
+    <!-- OUTPUT -->
+    <section class="output-wrap">
+      <div class="panel-head"><div class="panel-title"><span class="num">02</span>CLI Output</div></div>
+      <div class="output-toolbar">
+        <div class="output-toolbar-left">
+          <button class="tool-btn" onclick="copyConfig()">📋 Copy</button>
+          <button class="tool-btn" onclick="downloadConfig()">⬇ Download</button>
+        </div>
+        <div class="output-toolbar-right">
+          <button class="tool-btn active" id="toggle-ln" onclick="toggleLineNumbers()">#️⃣ Lines</button>
+          <button class="tool-btn active" id="toggle-hl" onclick="toggleHighlight()">✨ Highlight</button>
+        </div>
+      </div>
+      <div class="output empty" id="output">
+        <div><span class="empty-art">⌨️</span><div>Fill in the form and click <strong>Generate</strong></div><div style="font-size:11px;margin-top:8px;color:var(--text-muted)">Or pick a template to start fast</div></div>
+      </div>
+      <div class="status-bar" id="status">
+        <div><span class="s-dot"></span><span id="status-text">Ready</span></div>
+        <span id="line-info"></span>
+      </div>
+    </section>
+
+  </div><!-- /main-layout -->
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <div class="footer-brand-block">Config<em>Labs</em></div>
+        <div class="footer-tagline">Built with care for network engineers.<br>Free, open, always improving.</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">v3.0 · Topology + Multi-vendor</div>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="/about.html">About</a>
+        <a onclick="document.querySelector('.templates-section').scrollIntoView({behavior:'smooth'})">Templates</a>
+        <a onclick="openFeedback()">Send feedback</a>
+        <a onclick="openSupport()">☕ Support us</a>
+        <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank">GitHub</a>
+      </div>
+      <div class="footer-col">
+        <h4>Vendors</h4>
+        <a href="https://www.h3c.com" target="_blank">H3C Official</a>
+        <a href="https://www.cisco.com" target="_blank">Cisco Official</a>
+        <a href="https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/" target="_blank">IOS Docs</a>
+        <a href="https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/" target="_blank">NX-OS Docs</a>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <a onclick="openDisclaimer()">Disclaimer</a>
+        <a onclick="openTerms()">Terms of Use</a>
+      </div>
+    </div>
+    <div class="legal">
+      <p><strong>ConfigLabs is independent</strong> — not affiliated with, endorsed by, or sponsored by New H3C Technologies Co., Ltd. or Cisco Systems, Inc.</p>
+      <p style="margin-top:6px">H3C®, Comware®, Cisco®, IOS®, IOS-XE®, NX-OS® are trademarks of their respective owners.</p>
+      <p style="margin-top:6px">Always verify configs before production deployment. Use at your own risk.</p>
+      <p style="margin-top:14px;opacity:.6">© <span id="year"></span> ConfigLabs · configlabs.online</p>
+    </div>
+  </footer>
+
+</div><!-- /container -->
+
+<!-- ============================================================
+     SUPPORT FAB
+     ============================================================ -->
+<button class="support-fab" onclick="openSupport()">☕ Support us</button>
+
+<!-- ============================================================
+     DRAWERS & OVERLAYS
+     ============================================================ -->
+<div class="overlay" id="overlay" onclick="toggleHistory()"></div>
+<aside class="history-drawer" id="history-drawer">
+  <div class="drawer-head"><h3>Config <em>History</em></h3><button class="icon-btn" onclick="toggleHistory()">✕</button></div>
+  <div class="drawer-body" id="history-body"><div class="history-empty">No configs saved yet.</div></div>
+</aside>
+
+<!-- Modals -->
+<div class="modal-overlay" id="feedback-modal" onclick="if(event.target===this)closeFeedback()">
+  <div class="modal">
+    <h2>Send <em>feedback</em></h2>
+    <p>Found a bug? Want a feature? I'm listening.</p>
+    <div class="field" style="margin-top:16px"><label>Email <span class="hint">optional</span></label><input id="fb-email" type="email" placeholder="you@example.com"></div>
+    <div class="field"><label>Message</label><textarea id="fb-message" placeholder="What's on your mind?"></textarea></div>
+    <div class="modal-actions"><button class="btn btn-secondary" onclick="closeFeedback()">Cancel</button><button class="btn btn-primary" onclick="submitFeedback()">Send 💚</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="disclaimer-modal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal">
+    <h2>Legal <em>Disclaimer</em></h2>
+    <p>ConfigLabs is an independent tool — not affiliated with H3C, Cisco, or any vendor. Trademarks belong to their owners. Configs are provided "AS IS". Always test in a lab before production use.</p>
+    <div class="modal-actions"><button class="btn btn-primary" onclick="document.getElementById('disclaimer-modal').classList.remove('show')">I understand</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="terms-modal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal">
+    <h2>Terms of <em>Use</em></h2>
+    <p>Use for lawful purposes only. Review all configs before deployment. ConfigLabs is not liable for network issues. Don't redistribute as your own product. No warranties provided.</p>
+    <div class="modal-actions"><button class="btn btn-primary" onclick="document.getElementById('terms-modal').classList.remove('show')">I agree</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="support-modal" onclick="if(event.target===this)closeSupport()">
+  <div class="modal">
+    <div class="support-hero">☕</div>
+    <h2 style="text-align:center">Support <em>ConfigLabs</em></h2>
+    <p style="text-align:center;margin:8px 0 0">ConfigLabs is free and will stay free. No ads, no tracking.</p>
+    <div class="support-reasons">
+      <h4>Your support helps:</h4>
+      <ul><li>Cover Railway server hosting</li><li>Keep the domain alive</li><li>Stay completely ad-free</li><li>Add more vendors &amp; features</li></ul>
+    </div>
+    <a href="https://saweria.co/configlabs" target="_blank" class="btn-saweria">💚 Support via <span class="saweria-pill">SAWERIA</span></a>
+    <p style="text-align:center;font-family:var(--mono);font-size:12px;color:var(--text-muted);margin-top:14px">Terima kasih banyak! 🙏</p>
+    <div class="modal-actions" style="justify-content:center"><button class="btn btn-secondary" onclick="closeSupport()">Maybe later</button></div>
+  </div>
+</div>
+
+
+<div class="toast" id="toast"><span class="t-icon">✓</span><span id="toast-msg">Done</span></div>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+'use strict';
+
+/* ============================================================
+   CONFIG & STATE
+   ============================================================ */
+const API = 'https://configlabs-production.up.railway.app';
+const APP_VERSION = '3.0.0';
+
+let state = { vendor:'h3c', os:'comware', vendors:{}, allTemplates:{} };
+let showLineNumbers = true, showHighlight = true;
+let lastConfig = '', historyArr = [];
+
+document.getElementById('year').textContent = new Date().getFullYear();
+
+/* ============================================================
+   THEME
+   ============================================================ */
+function toggleTheme() {
+  const next = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.body.dataset.theme = next;
+  document.getElementById('theme-btn').textContent = next === 'dark' ? '🌙' : '☀️';
+  try { localStorage.setItem('clab_theme', next); } catch(e) {}
+}
+(function initTheme() {
+  try {
+    const s = localStorage.getItem('clab_theme');
+    if (s) { document.body.dataset.theme = s; document.getElementById('theme-btn').textContent = s==='dark'?'🌙':'☀️'; }
+    const v = localStorage.getItem('clab_vendor'), o = localStorage.getItem('clab_os');
+    if (v) state.vendor = v;
+    if (o) state.os = o;
+  } catch(e) {}
+})();
+
+/* ============================================================
+   VENDOR / OS PICKER
+   ============================================================ */
+async function loadVendors() {
+  try {
+    const res = await fetch(API + '/vendors');
+    state.vendors = await res.json();
+    renderVendorPills(); renderOSPicker(); updateVendorLabel();
+    document.getElementById('backend-status').textContent = 'Connected';
+  } catch(e) {
+    document.getElementById('backend-status').textContent = 'Offline';
+    document.querySelector('.chip .dot').style.background = 'var(--danger)';
+  }
+}
+
+function renderVendorPills() {
+  const c = document.getElementById('vendor-pills');
+  const ORDER = ['h3c','cisco','huawei','juniper','arista','mikrotik'];
+  const EMOJIS = {h3c:'🟢',cisco:'🔵',huawei:'🟡',juniper:'🟠',arista:'🔴',mikrotik:'⚪'};
+  c.innerHTML = ORDER.map(k => {
+    const v = state.vendors[k]; if (!v) return '';
+    const live = v.status === 'available';
+    return `<button class="vendor-pill ${k===state.vendor?'active':''} ${!live?'disabled':''}" data-vendor="${k}" ${live?`onclick="selectVendor('${k}')"`:''}>${EMOJIS[k]||'●'} ${v.name}<span class="soon-badge">${live?'LIVE':'SOON'}</span></button>`;
+  }).join('');
+}
+
+function renderOSPicker() {
+  const wrap = document.getElementById('os-picker-wrap');
+  const picker = document.getElementById('os-picker');
+  const vendor = state.vendors[state.vendor];
+  if (!vendor || !vendor.os_list) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  picker.innerHTML = vendor.os_list.map(os => {
+    const live = os.status === 'available';
+    return `<button class="os-btn ${os.id===state.os?'active':''}" data-vendor="${state.vendor}" ${live?`onclick="selectOS('${os.id}')"`:''}><div class="os-name">${os.name}<span class="os-check">✓</span></div><div class="os-desc">${os.desc||''}</div></button>`;
+  }).join('');
+}
+
+function selectVendor(v) {
+  const vd = state.vendors[v]; if (!vd || vd.status !== 'available') return;
+  state.vendor = v;
+  const first = vd.os_list.find(o => o.status === 'available');
+  if (first) state.os = first.id;
+  try { localStorage.setItem('clab_vendor', v); localStorage.setItem('clab_os', state.os); } catch(e) {}
+  renderVendorPills(); renderOSPicker(); updateVendorLabel(); loadTemplates(); updateHints();
+}
+
+function selectOS(osId) {
+  state.os = osId;
+  try { localStorage.setItem('clab_os', osId); } catch(e) {}
+  renderOSPicker(); updateVendorLabel(); loadTemplates(); updateHints();
+}
+
+function updateVendorLabel() {
+  const v = state.vendors[state.vendor]; if (!v) return;
+  const os = v.os_list.find(o => o.id === state.os);
+  const lbl = document.getElementById('active-vendor-label');
+  lbl.textContent = `${v.name} · ${os ? os.name : ''}`.toUpperCase();
+  lbl.className = 'vendor-label' + (state.vendor === 'cisco' ? ' cisco' : '');
+}
+
+function updateHints() {
+  document.getElementById('hint-hostname').textContent = state.vendor === 'h3c' ? 'sysname' : 'hostname';
+  const extra = document.getElementById('svi-hint-extra');
+  if (state.vendor === 'h3c') extra.textContent = 'H3C: link pool via "Apply Pool".';
+  else if (state.os === 'nxos') extra.textContent = 'NX-OS: use prefix notation (10.0.0.1/24) for IPs.';
+  else extra.textContent = 'Cisco: use "ip helper-address" for DHCP relay.';
+}
+
+/* ============================================================
+   TABS
+   ============================================================ */
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('pane-' + t.dataset.tab).classList.add('active');
+    if (t.dataset.tab === 'svi') refreshSviDropdowns();
+  });
+});
+
+/* ============================================================
+   BUILDER HELPERS
+   ============================================================ */
+function makeItem(title, html) {
+  const div = document.createElement('div');
+  div.className = 'repeater-item';
+  div.innerHTML = `<div class="repeater-head"><div class="repeater-title">${title}</div><button class="btn-remove" onclick="this.closest('.repeater-item').remove();updateBadges();refreshSviDropdowns()">✕</button></div>${html}`;
+  return div;
+}
+
+function addVlan(data = {}) {
+  const html = `<div class="field-row-3">
+    <div class="field"><label>VLAN ID</label><input class="v-id" value="${data.vlan||''}" placeholder="10" oninput="refreshSviDropdowns()"></div>
+    <div class="field"><label>Name</label><input class="v-name" value="${data.name||''}" placeholder="USERS"></div>
+    <div class="field"><label>Description</label><input class="v-desc" value="${data.description||''}" placeholder="Office users"></div>
+  </div>`;
+  document.getElementById('rep-vlans').appendChild(makeItem('VLAN', html));
+  updateBadges(); refreshSviDropdowns();
+}
+
+function addSvi(data = {}) {
+  const mode = data.dhcp_mode || 'none';
+  const html = `<div class="field-row">
+    <div class="field"><label>VLAN ID</label><select class="s-vlan" data-sel="${data.vlan||''}"><option value="">— select —</option></select></div>
+    <div class="field"><label>Description</label><input class="s-desc" value="${data.description||''}" placeholder="User gateway"></div>
+  </div>
+  <div class="field"><label>IP Address <span class="hint">CIDR e.g. 10.0.0.1/24</span></label><input class="s-ip" value="${data.ip||''}" placeholder="10.10.10.1/24"></div>
+  <div class="field"><label>DHCP Mode</label>
+    <div class="segmented dhcp-seg">
+      <button type="button" data-m="none"   class="${mode==='none'   ?'active':''}">None</button>
+      <button type="button" data-m="server" class="${mode==='server' ?'active':''}">Server</button>
+      <button type="button" data-m="relay"  class="${mode==='relay'  ?'active':''}">Relay</button>
+      <button type="button" data-m="client" class="${mode==='client' ?'active':''}">Client</button>
+    </div>
+    <input type="hidden" class="s-dhcp-mode" value="${mode}">
+  </div>
+  <div class="field s-server-wrap" style="display:${mode==='server'?'block':'none'}"><label>Apply Pool</label><select class="s-pool" data-sel="${data.dhcp_apply_pool||''}"><option value="">— select pool —</option></select></div>
+  <div class="field s-relay-wrap"  style="display:${mode==='relay' ?'block':'none'}"><label>Relay IP</label><input class="s-relay" value="${data.dhcp_relay||''}" placeholder="10.10.100.10"></div>
+  <label class="check" style="margin-top:8px"><input type="checkbox" class="s-shut" ${data.shutdown?'checked':''}> Shutdown</label>`;
+  const el = makeItem('VLAN-interface', html);
+  document.getElementById('rep-svis').appendChild(el);
+  el.querySelectorAll('.dhcp-seg button').forEach(b => {
+    b.addEventListener('click', () => {
+      el.querySelectorAll('.dhcp-seg button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      el.querySelector('.s-dhcp-mode').value = b.dataset.m;
+      el.querySelector('.s-server-wrap').style.display = b.dataset.m === 'server' ? 'block' : 'none';
+      el.querySelector('.s-relay-wrap').style.display  = b.dataset.m === 'relay'  ? 'block' : 'none';
+    });
+  });
+  refreshSviDropdowns(); updateBadges();
+}
+
+function refreshSviDropdowns() {
+  const vlanIds = [...document.querySelectorAll('#rep-vlans .v-id')].map(i => i.value.trim()).filter(Boolean);
+  const vlanNames = {};
+  [...document.querySelectorAll('#rep-vlans .repeater-item')].forEach(el => {
+    const id = el.querySelector('.v-id').value.trim(), name = el.querySelector('.v-name').value.trim();
+    if (id) vlanNames[id] = name;
+  });
+  const poolNames = [...document.querySelectorAll('#rep-dhcp .d-name')].map(i => i.value.trim()).filter(Boolean);
+  document.querySelectorAll('#rep-svis .repeater-item').forEach(el => {
+    const vs = el.querySelector('.s-vlan'), prev = vs.value || vs.dataset.sel || '';
+    vs.innerHTML = '<option value="">— select VLAN —</option>' + vlanIds.map(id => `<option value="${id}" ${id===prev?'selected':''}>${id}${vlanNames[id]?' ('+vlanNames[id]+')':''}</option>`).join('');
+    const ps = el.querySelector('.s-pool'), prevP = ps.value || ps.dataset.sel || '';
+    ps.innerHTML = '<option value="">— select pool —</option>' + poolNames.map(p => `<option value="${p}" ${p===prevP?'selected':''}>${p}</option>`).join('');
+  });
+}
+
+function addIntf(data = {}) {
+  const mode = data.mode || 'access';
+  const ifEx = state.vendor==='cisco' && state.os==='nxos' ? 'Ethernet1/1' : state.vendor==='cisco' ? 'GigabitEthernet0/1' : 'GigabitEthernet1/0/1';
+  const html = `<div class="field-row">
+    <div class="field"><label>Interface</label><input class="i-name" value="${data.interface||''}" placeholder="${ifEx}"></div>
+    <div class="field"><label>Description</label><input class="i-desc" value="${data.description||''}" placeholder="Uplink"></div>
+  </div>
+  <div class="field"><label>Mode</label>
+    <div class="segmented mode-seg">
+      <button type="button" data-m="access" class="${mode==='access'?'active':''}">Access</button>
+      <button type="button" data-m="trunk"  class="${mode==='trunk' ?'active':''}">Trunk</button>
+      <button type="button" data-m="hybrid" class="${mode==='hybrid'?'active':''}">Hybrid</button>
+    </div>
+    <input type="hidden" class="i-mode" value="${mode}">
+  </div>
+  <div class="field i-access-w" style="display:${mode==='access'?'block':'none'}"><label>Access VLAN</label><input class="i-vlan" value="${data.vlan||''}" placeholder="10"></div>
+  <div class="field i-trunk-w"  style="display:${mode==='trunk' ?'block':'none'}">
+    <div class="field-row"><div class="field"><label>Allowed VLANs</label><input class="i-allowed" value="${data.allowed||''}" placeholder="10 20 30"></div><div class="field"><label>Native/PVID</label><input class="i-pvid" value="${data.pvid||''}" placeholder="1"></div></div>
+  </div>
+  <div class="field i-hybrid-w" style="display:${mode==='hybrid'?'block':'none'}">
+    <div class="field-row"><div class="field"><label>Untagged</label><input class="i-untagged" value="${data.untagged||''}" placeholder="10"></div><div class="field"><label>Tagged</label><input class="i-tagged" value="${data.tagged||''}" placeholder="20 30"></div></div>
+  </div>
+  <div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap">
+    <label class="check"><input type="checkbox" class="i-edge" ${data.stp_edge?'checked':''}> STP Edge/PortFast</label>
+    <label class="check"><input type="checkbox" class="i-poe"  ${data.poe?'checked':''}>      PoE</label>
+    <label class="check"><input type="checkbox" class="i-shut" ${data.shutdown?'checked':''}>  Shutdown</label>
+  </div>`;
+  const el = makeItem('Interface', html);
+  document.getElementById('rep-intfs').appendChild(el);
+  el.querySelectorAll('.mode-seg button').forEach(b => {
+    b.addEventListener('click', () => {
+      el.querySelectorAll('.mode-seg button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      el.querySelector('.i-mode').value = b.dataset.m;
+      el.querySelector('.i-access-w').style.display = b.dataset.m === 'access' ? 'block' : 'none';
+      el.querySelector('.i-trunk-w').style.display  = b.dataset.m === 'trunk'  ? 'block' : 'none';
+      el.querySelector('.i-hybrid-w').style.display = b.dataset.m === 'hybrid' ? 'block' : 'none';
+    });
+  });
+  updateBadges();
+}
+
+function addDhcp(data = {}) {
+  let forbidden = data.forbidden_ips;
+  if (Array.isArray(forbidden)) forbidden = forbidden.join(' ');
+  forbidden = forbidden || '';
+  const html = `<div class="field-row">
+    <div class="field"><label>Pool Name</label><input class="d-name" value="${data.pool_name||''}" placeholder="USERS_POOL" oninput="refreshSviDropdowns()"></div>
+    <div class="field"><label>Lease Days</label><input class="d-lease" value="${data.lease_days||'7'}" placeholder="7"></div>
+  </div>
+  <div class="field-row-3">
+    <div class="field"><label>Network</label><input class="d-net" value="${data.network||''}" placeholder="10.10.10.0"></div>
+    <div class="field"><label>CIDR</label><input class="d-cidr" value="${data.cidr||''}" placeholder="24"></div>
+    <div class="field"><label>Gateway</label><input class="d-gw" value="${data.gateway||''}" placeholder="10.10.10.1"></div>
+  </div>
+  <div class="field-row">
+    <div class="field"><label>DNS Servers</label><input class="d-dns" value="${data.dns||'8.8.8.8 1.1.1.1'}" placeholder="8.8.8.8"></div>
+    <div class="field"><label>Domain</label><input class="d-domain" value="${data.domain||''}" placeholder="company.local"></div>
+  </div>
+  <div class="field"><label>Excluded IPs <span class="hint">space-separated</span></label><input class="d-forbidden" value="${forbidden}" placeholder="10.10.10.1 10.10.10.2"></div>`;
+  document.getElementById('rep-dhcp').appendChild(makeItem('DHCP Pool', html));
+  updateBadges(); refreshSviDropdowns();
+}
+
+function addRoute(data = {}) {
+  const html = `<div class="field-row-3">
+    <div class="field"><label>Destination</label><input class="r-net" value="${data.network||''}" placeholder="0.0.0.0"></div>
+    <div class="field"><label>CIDR</label><input class="r-cidr" value="${data.cidr||''}" placeholder="0"></div>
+    <div class="field"><label>Next Hop</label><input class="r-nh" value="${data.next_hop||''}" placeholder="192.168.1.1"></div>
+  </div>
+  <div class="field-row">
+    <div class="field"><label>Preference</label><input class="r-pref" value="${data.preference||''}" placeholder="60"></div>
+    <div class="field"><label>Description</label><input class="r-desc" value="${data.description||''}" placeholder="Default route"></div>
+  </div>`;
+  document.getElementById('rep-routes').appendChild(makeItem('Static Route', html));
+  updateBadges();
+}
+
+function addOspfNet(data = {}) {
+  const html = `<div class="field-row">
+    <div class="field"><label>Network</label><input class="o-net" value="${data.network||''}" placeholder="10.0.0.0"></div>
+    <div class="field"><label>CIDR</label><input class="o-cidr" value="${data.cidr||''}" placeholder="16"></div>
+  </div>`;
+  document.getElementById('rep-ospf-nets').appendChild(makeItem('Network', html));
+}
+
+function addAcl(data = {}) {
+  const rules = (data.rules && data.rules.length) ? data.rules : [{}];
+  const rowHtml = r => `<div class="acl-row" style="display:grid;grid-template-columns:50px 76px 68px 1fr 1fr;gap:6px;margin-bottom:6px">
+    <input class="acl-rid" value="${r.rule_id||''}" placeholder="5">
+    <select class="acl-act"><option value="permit" ${r.action==='permit'?'selected':''}>permit</option><option value="deny" ${r.action==='deny'?'selected':''}>deny</option></select>
+    <select class="acl-proto"><option value="ip"   ${(r.protocol||'ip')==='ip'  ?'selected':''}>ip</option><option value="tcp" ${r.protocol==='tcp' ?'selected':''}>tcp</option><option value="udp" ${r.protocol==='udp' ?'selected':''}>udp</option><option value="icmp" ${r.protocol==='icmp'?'selected':''}>icmp</option></select>
+    <input class="acl-src" value="${r.source||'any'}" placeholder="any">
+    <input class="acl-wc"  value="${r.wildcard||''}"  placeholder="0.0.0.255">
+  </div>`;
+  const html = `<div class="field-row">
+    <div class="field"><label>ACL Number</label><input class="a-num" value="${data.acl_number||'3000'}" placeholder="3000"></div>
+    <div class="field"><label>Description</label><input class="a-desc" value="${data.description||''}" placeholder="ACL-NAME"></div>
+  </div>
+  <label>Rules <span class="hint">id · action · proto · source · wildcard</span></label>
+  <div class="acl-rules">${rules.map(rowHtml).join('')}</div>
+  <button class="btn-add" style="margin-top:8px" onclick="addAclRow(this)">＋ Add Rule</button>`;
+  document.getElementById('rep-acls').appendChild(makeItem('ACL', html));
+  updateBadges();
+}
+
+function addAclRow(btn) {
+  const row = document.createElement('div');
+  row.className = 'acl-row';
+  row.style.cssText = 'display:grid;grid-template-columns:50px 76px 68px 1fr 1fr;gap:6px;margin-bottom:6px';
+  row.innerHTML = `<input class="acl-rid" placeholder="10"><select class="acl-act"><option>permit</option><option>deny</option></select><select class="acl-proto"><option>ip</option><option>tcp</option><option>udp</option><option>icmp</option></select><input class="acl-src" placeholder="any"><input class="acl-wc" placeholder="0.0.0.255">`;
+  btn.previousElementSibling.appendChild(row);
+}
+
+function updateBadges() {
+  const MAP = {vlan:'rep-vlans',svi:'rep-svis',intf:'rep-intfs',dhcp:'rep-dhcp',route:'rep-routes',acl:'rep-acls'};
+  for (const [k, v] of Object.entries(MAP)) {
+    const el = document.getElementById('b-' + k);
+    if (el) el.textContent = document.getElementById(v).children.length;
+  }
+}
+
+function collectData() {
+  const sys = {};
+  const val = id => document.getElementById(id).value.trim();
+  if (val('sys-hostname')) sys.hostname = val('sys-hostname');
+  if (val('sys-ntp'))      sys.ntp      = val('sys-ntp');
+  if (val('sys-tz'))       sys.timezone = val('sys-tz');
+  if (val('sys-banner'))   sys.banner   = val('sys-banner');
+  return {
+    system: Object.keys(sys).length ? sys : undefined,
+    vlans: [...document.querySelectorAll('#rep-vlans .repeater-item')].map(el => ({
+      vlan: el.querySelector('.v-id').value.trim(),
+      name: el.querySelector('.v-name').value.trim(),
+      description: el.querySelector('.v-desc').value.trim()
+    })).filter(v => v.vlan),
+    svis: [...document.querySelectorAll('#rep-svis .repeater-item')].map(el => ({
+      vlan: el.querySelector('.s-vlan').value.trim(),
+      description: el.querySelector('.s-desc').value.trim(),
+      ip: el.querySelector('.s-ip').value.trim(),
+      dhcp_mode: el.querySelector('.s-dhcp-mode').value,
+      dhcp_apply_pool: el.querySelector('.s-pool').value.trim(),
+      dhcp_relay: el.querySelector('.s-relay').value.trim(),
+      shutdown: el.querySelector('.s-shut').checked
+    })).filter(s => s.vlan),
+    interfaces: [...document.querySelectorAll('#rep-intfs .repeater-item')].map(el => ({
+      interface: el.querySelector('.i-name').value.trim(),
+      description: el.querySelector('.i-desc').value.trim(),
+      mode: el.querySelector('.i-mode').value,
+      vlan: el.querySelector('.i-vlan').value.trim(),
+      allowed: el.querySelector('.i-allowed').value.trim(),
+      pvid: el.querySelector('.i-pvid').value.trim(),
+      untagged: el.querySelector('.i-untagged').value.trim(),
+      tagged: el.querySelector('.i-tagged').value.trim(),
+      stp_edge: el.querySelector('.i-edge').checked,
+      poe: el.querySelector('.i-poe').checked,
+      shutdown: el.querySelector('.i-shut').checked
+    })).filter(i => i.interface),
+    dhcp_pools: [...document.querySelectorAll('#rep-dhcp .repeater-item')].map(el => ({
+      pool_name: el.querySelector('.d-name').value.trim(),
+      network: el.querySelector('.d-net').value.trim(),
+      cidr: el.querySelector('.d-cidr').value.trim(),
+      gateway: el.querySelector('.d-gw').value.trim(),
+      dns: el.querySelector('.d-dns').value.trim(),
+      domain: el.querySelector('.d-domain').value.trim(),
+      lease_days: el.querySelector('.d-lease').value.trim(),
+      forbidden_ips: el.querySelector('.d-forbidden').value.trim()
+    })).filter(p => p.pool_name),
+    static_routes: [...document.querySelectorAll('#rep-routes .repeater-item')].map(el => ({
+      network: el.querySelector('.r-net').value.trim(),
+      cidr: el.querySelector('.r-cidr').value.trim(),
+      next_hop: el.querySelector('.r-nh').value.trim(),
+      preference: el.querySelector('.r-pref').value.trim(),
+      description: el.querySelector('.r-desc').value.trim()
+    })).filter(r => r.network && r.next_hop),
+    ospf: val('ospf-pid') ? {
+      process_id: val('ospf-pid'),
+      router_id: val('ospf-rid'),
+      area: val('ospf-area'),
+      networks: [...document.querySelectorAll('#rep-ospf-nets .repeater-item')].map(el => ({
+        network: el.querySelector('.o-net').value.trim(),
+        cidr: el.querySelector('.o-cidr').value.trim()
+      })).filter(n => n.network)
+    } : undefined,
+    acls: [...document.querySelectorAll('#rep-acls .repeater-item')].map(el => ({
+      acl_number: el.querySelector('.a-num').value.trim(),
+      description: el.querySelector('.a-desc').value.trim(),
+      rules: [...el.querySelectorAll('.acl-row')].map(r => ({
+        rule_id: r.querySelector('.acl-rid').value.trim(),
+        action: r.querySelector('.acl-act').value,
+        protocol: r.querySelector('.acl-proto').value,
+        source: r.querySelector('.acl-src').value.trim(),
+        wildcard: r.querySelector('.acl-wc').value.trim()
+      })).filter(r => r.source)
+    })).filter(a => a.acl_number)
+  };
+}
+
+function applyTemplate(data) {
+  clearAll(true);
+  if (data.system) {
+    document.getElementById('sys-hostname').value = data.system.hostname || '';
+    document.getElementById('sys-ntp').value      = data.system.ntp      || '';
+    document.getElementById('sys-tz').value       = data.system.timezone || '';
+    document.getElementById('sys-banner').value   = data.system.banner   || '';
+  }
+  (data.vlans || []).forEach(v => addVlan(v));
+  (data.dhcp_pools || []).forEach(d => addDhcp(d));
+  (data.svis || []).forEach(s => addSvi(s));
+  (data.interfaces || []).forEach(i => addIntf(i));
+  (data.static_routes || []).forEach(r => addRoute(r));
+  if (data.ospf) {
+    document.getElementById('ospf-pid').value  = data.ospf.process_id || '';
+    document.getElementById('ospf-rid').value  = data.ospf.router_id  || '';
+    document.getElementById('ospf-area').value = data.ospf.area       || '';
+    (data.ospf.networks || []).forEach(n => addOspfNet(n));
+  }
+  (data.acls || []).forEach(a => addAcl(a));
+  updateBadges();
+  setTimeout(refreshSviDropdowns, 50);
+}
+
+function clearAll(silent) {
+  ['sys-hostname','sys-ntp','sys-tz','sys-banner','ospf-pid','ospf-rid','ospf-area'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  ['rep-vlans','rep-svis','rep-intfs','rep-dhcp','rep-routes','rep-ospf-nets','rep-acls'].forEach(id => {
+    document.getElementById(id).innerHTML = '';
+  });
+  updateBadges();
+  if (!silent) {
+    document.getElementById('output').className = 'output empty';
+    document.getElementById('output').innerHTML = '<div><span class="empty-art">⌨️</span><div>Fill in the form and click <strong>Generate</strong></div></div>';
+    document.getElementById('line-info').textContent = '';
+    setStatus('Ready', '');
+    toast('Cleared');
+  }
+}
+
+function loadExample() {
+  const EXAMPLES = {
+    'h3c|comware': {system:{hostname:'SW-DEMO-H3C'},vlans:[{vlan:'10',name:'USERS'},{vlan:'20',name:'SERVERS'}],dhcp_pools:[{pool_name:'USERS_POOL',network:'10.10.10.0',cidr:'24',gateway:'10.10.10.1',dns:'8.8.8.8 1.1.1.1',lease_days:'7',forbidden_ips:'10.10.10.1 10.10.10.2'}],svis:[{vlan:'10',description:'User gateway',ip:'10.10.10.1/24',dhcp_mode:'server',dhcp_apply_pool:'USERS_POOL'},{vlan:'20',description:'Server gateway',ip:'10.10.20.1/24'}],interfaces:[{interface:'GigabitEthernet1/0/1',mode:'access',vlan:'10',stp_edge:true},{interface:'GigabitEthernet1/0/24',mode:'trunk',allowed:'10 20'}]},
+    'cisco|ios':   {system:{hostname:'SW-DEMO-IOS'},vlans:[{vlan:'10',name:'USERS'},{vlan:'20',name:'SERVERS'}],dhcp_pools:[{pool_name:'USERS_POOL',network:'10.10.10.0',cidr:'24',gateway:'10.10.10.1',dns:'8.8.8.8',lease_days:'7',forbidden_ips:'10.10.10.1'}],svis:[{vlan:'10',description:'Users',ip:'10.10.10.1/24'},{vlan:'20',description:'Servers',ip:'10.10.20.1/24'}],interfaces:[{interface:'GigabitEthernet0/1',mode:'access',vlan:'10',stp_edge:true},{interface:'GigabitEthernet0/24',mode:'trunk',allowed:'10,20'}]},
+    'cisco|iosxe': {system:{hostname:'C9K-DEMO'},vlans:[{vlan:'10',name:'USERS'}],svis:[{vlan:'10',description:'Users',ip:'10.10.10.1/24'}],interfaces:[{interface:'GigabitEthernet1/0/1',mode:'access',vlan:'10',stp_edge:true},{interface:'TenGigabitEthernet1/1/1',mode:'trunk',allowed:'10,20'}]},
+    'cisco|nxos':  {system:{hostname:'N9K-DEMO'},vlans:[{vlan:'10',name:'USERS'}],svis:[{vlan:'10',description:'Users',ip:'10.10.10.1/24'}],interfaces:[{interface:'Ethernet1/1',mode:'access',vlan:'10',stp_edge:true},{interface:'Ethernet1/49',mode:'trunk',allowed:'10,20'}],ospf:{process_id:'1',router_id:'1.1.1.1',area:'0',networks:[{network:'10.10.0.0',cidr:'16'}]}}
+  };
+  applyTemplate(EXAMPLES[`${state.vendor}|${state.os}`] || EXAMPLES['h3c|comware']);
+  toast('Example loaded!');
+}
+
+/* ============================================================
+   GENERATE
+   ============================================================ */
+async function generate() {
+  const data = collectData();
+  const hasData = data.system || (data.vlans||[]).length || (data.svis||[]).length || (data.interfaces||[]).length || (data.dhcp_pools||[]).length || (data.static_routes||[]).length || data.ospf || (data.acls||[]).length;
+  if (!hasData) { toast('Add something first!', true); return; }
+  setStatus('Generating...', '');
+  try {
+    const res = await fetch(API + '/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vendor: state.vendor, os: state.os, data })
+    });
+    if (!res.ok) throw new Error('API error');
+    const result = await res.json();
+    lastConfig = result.config;
+    renderOutput(lastConfig);
+    const lines = result.lines || lastConfig.split('\n').length;
+    document.getElementById('line-info').textContent = `${lines} lines`;
+    setStatus(`Generated ${new Date().toLocaleTimeString()} · ${state.vendor.toUpperCase()}/${state.os.toUpperCase()}`, 'ok');
+    saveHistory(lastConfig);
+    toast('Config generated!');
+  } catch(e) {
+    setStatus('Backend offline — check Railway', 'err');
+    toast('Cannot reach backend', true);
+  }
+}
+
+function renderOutput(text) {
+  const out = document.getElementById('output');
+  out.classList.remove('empty');
+  const lines = text.split('\n');
+  out.innerHTML = lines.map((line, i) => {
+    const ln = showLineNumbers ? `<span class="ln">${i+1}</span>` : '<span></span>';
+    const trimmed = line.trim();
+    const isComment = trimmed === '#' || trimmed === '!' || trimmed.startsWith('# ') || trimmed.startsWith('! ');
+    if (isComment) return `<div class="line comment">${ln}<span class="content">${escH(line)}</span></div>`;
+    return `<div class="line cmd">${ln}<span class="content">${showHighlight ? hlLine(line) : escH(line)}</span></div>`;
+  }).join('');
+}
+
+function hlLine(line) {
+  let s = escH(line);
+  s = s.replace(/\b(system-view|sysname|hostname|vlan|name|description|interface|port|link-type|access|trunk|hybrid|permit|tagged|untagged|ip|address|route-static|dhcp|server|ip-pool|network|gateway-list|dns-list|expired|domain-name|forbidden-ip|excluded-address|ospf|router-id|area|acl|number|rule|source|any|mask|quit|save|force|return|header|banner|motd|ntp|ntp-service|unicast-server|clock|timezone|poe|enable|stp|spanning-tree|edged-port|portfast|shutdown|undo|no|pvid|relay|select|preference|deny|apply|advanced|basic|destination|Vlan-interface|GigabitEthernet|TenGigabitEthernet|XGigabitEthernet|Ethernet|FastEthernet|switchport|mode|allowed|encapsulation|dot1q|native|helper-address|feature|service|pool|lease|router|default-router|dns-server|write|memory|copy|running-config|startup-config|end|configure|terminal|remark|access-list|extended|standard|version)\b/g, '<span class="kw">$1</span>');
+  s = s.replace(/\b(\d{1,3}(?:\.\d{1,3}){3}(?:\/\d+)?)\b/g, '<span class="val">$1</span>');
+  return s;
+}
+
+function escH(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function setStatus(t, cls) { const s = document.getElementById('status'); s.className = 'status-bar' + (cls?' '+cls:''); document.getElementById('status-text').textContent = t; }
+function toggleLineNumbers() { showLineNumbers = !showLineNumbers; document.getElementById('toggle-ln').classList.toggle('active', showLineNumbers); if (lastConfig) renderOutput(lastConfig); }
+function toggleHighlight()   { showHighlight   = !showHighlight;   document.getElementById('toggle-hl').classList.toggle('active', showHighlight);   if (lastConfig) renderOutput(lastConfig); }
+function copyConfig()     { if (!lastConfig) { toast('Nothing to copy', true); return; } navigator.clipboard.writeText(lastConfig); toast('Copied to clipboard!'); }
+function downloadConfig() { if (!lastConfig) { toast('Nothing to download', true); return; } const h = document.getElementById('sys-hostname').value.trim() || 'config'; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([lastConfig],{type:'text/plain'})); a.download = `${h}-${state.vendor}-${state.os}-${Date.now()}.txt`; a.click(); toast('Downloaded!'); }
+
+/* ============================================================
+   HISTORY
+   ============================================================ */
+function saveHistory(cfg) {
+  historyArr.unshift({ time: Date.now(), config: cfg, vendor: state.vendor, os: state.os });
+  if (historyArr.length > 20) historyArr = historyArr.slice(0, 20);
+  renderHistory();
+}
+function renderHistory() {
+  const body = document.getElementById('history-body');
+  if (!historyArr.length) { body.innerHTML = '<div class="history-empty">No configs saved yet.</div>'; return; }
+  body.innerHTML = historyArr.map((h, i) =>
+    `<div class="history-item" onclick="restoreHistory(${i})"><div class="h-time"><span>${new Date(h.time).toLocaleString()}</span><span class="h-tag">${h.vendor}·${h.os}</span></div><div class="h-preview">${escH(h.config.split('\n').slice(0,6).join('\n'))}</div></div>`
+  ).join('');
+}
+function restoreHistory(i) {
+  if (!historyArr[i]) return;
+  lastConfig = historyArr[i].config;
+  renderOutput(lastConfig);
+  document.getElementById('line-info').textContent = lastConfig.split('\n').length + ' lines';
+  setStatus(`Restored · ${historyArr[i].vendor}/${historyArr[i].os}`, 'ok');
+  toggleHistory();
+  toast('Restored!');
+}
+function toggleHistory() {
+  document.getElementById('history-drawer').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
+
+/* ============================================================
+   TEMPLATES
+   ============================================================ */
+async function loadTemplates() {
+  try {
+    const res = await fetch(`${API}/templates?vendor=${state.vendor}&os=${state.os}`);
+    const data = await res.json();
+    state.allTemplates = data;
+    const keys = Object.keys(data);
+    document.getElementById('tpl-count').textContent = `${keys.length} templates for ${state.vendor.toUpperCase()}/${state.os.toUpperCase()}`;
+    const grid = document.getElementById('templates-grid');
+    if (!keys.length) { grid.innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--text-muted);background:var(--surface);border-radius:12px">No templates yet for this vendor/OS. More coming soon! 🚀</div>'; return; }
+    grid.innerHTML = keys.map(k => {
+      const t = data[k];
+      const emojiMatch = t.name.match(/\p{Emoji}/u);
+      const emoji = emojiMatch ? emojiMatch[0] : '📋';
+      const name = t.name.replace(/\p{Emoji}/u, '').trim();
+      return `<div class="tpl" data-k="${k}"><span class="tpl-vendor-tag">${t.vendor}·${t.os}</span><span class="tpl-emoji">${emoji}</span><div class="tpl-name">${name}</div><div class="tpl-desc">${t.description}</div></div>`;
+    }).join('');
+    document.querySelectorAll('.tpl').forEach(el => {
+      el.addEventListener('click', () => {
+        try { applyTemplate(data[el.dataset.k].data); } catch(e) { console.error(e); }
+      });
+    });
+  } catch(e) {
+    document.getElementById('tpl-count').textContent = 'backend offline';
+    document.getElementById('templates-grid').innerHTML = '<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--text-muted)">⚠️ Backend waking up... refresh in 30 seconds.</div>';
+  }
+}
+
+/* ============================================================
+   MODALS
+   ============================================================ */
+function toast(msg, isErr) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.querySelector('.t-icon').style.background = isErr ? 'var(--danger)' : 'var(--success)';
+  t.querySelector('.t-icon').textContent = isErr ? '!' : '✓';
+  t.classList.add('show');
+  clearTimeout(window._tt);
+  window._tt = setTimeout(() => t.classList.remove('show'), 2400);
+}
+function openFeedback()  { document.getElementById('feedback-modal').classList.add('show'); }
+function closeFeedback() { document.getElementById('feedback-modal').classList.remove('show'); }
+async function submitFeedback() {
+  const msg = document.getElementById('fb-message').value.trim();
+  if (!msg) { toast('Please enter a message', true); return; }
+  try {
+    await fetch(API + '/feedback', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ email: document.getElementById('fb-email').value.trim(), message: msg }) });
+    document.getElementById('fb-email').value = '';
+    document.getElementById('fb-message').value = '';
+    closeFeedback();
+    toast('Thanks for the feedback! 💚');
+  } catch(e) { toast('Could not send — try again later', true); }
+}
+function openDisclaimer() { document.getElementById('disclaimer-modal').classList.add('show'); }
+function openTerms()      { document.getElementById('terms-modal').classList.add('show'); }
+function openSupport()    { document.getElementById('support-modal').classList.add('show'); }
+function closeSupport()   { document.getElementById('support-modal').classList.remove('show'); }
+
+/* ============================================================
+   GLOBAL KEYBOARD
+   ============================================================ */
+document.addEventListener('keydown', e => {
+  if ((e.metaKey||e.ctrlKey) && e.key==='Enter') { e.preventDefault(); generate(); }
+  if (e.key==='Escape') {
+    document.getElementById('history-drawer').classList.remove('open');
+    document.getElementById('overlay').classList.remove('show');
+    ['feedback-modal','disclaimer-modal','terms-modal','support-modal'].forEach(id => document.getElementById(id)?.classList.remove('show'));
+  }
+});
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+(async function boot() {
+  await loadVendors();
+  await loadTemplates();
+  updateHints();
+  addVlan({ vlan:'10', name:'USERS' });
+
+  // ── localStorage bridge: load device sent from topology.html ──
+  try {
+    const raw = localStorage.getItem('clab_pending_device');
+    if (raw) {
+      const pending = JSON.parse(raw);
+      // Only apply if sent within the last 5 minutes
+      if (pending && Date.now() - pending.timestamp < 5 * 60 * 1000) {
+        // Sync vendor / OS
+        if (pending.vendor) {
+          state.vendor = pending.vendor;
+          state.os     = pending.os || 'comware';
+          renderVendorPills(); renderOSPicker(); updateVendorLabel(); updateHints();
+        }
+        // Pre-fill form
+        clearAll(true);
+        if (pending.hostname) document.getElementById('sys-hostname').value = pending.hostname;
+        if (pending.configData && Object.keys(pending.configData).length) {
+          applyTemplate(pending.configData);
+        }
+        // Show welcome toast
+        setTimeout(() => toast(`⚡ Loaded "${pending.hostname}" from Topology Builder`), 600);
+      }
+      localStorage.removeItem('clab_pending_device');
+    }
+  } catch(e) { /* localStorage unavailable or corrupt — silently ignore */ }
+})();
+</script>
+</body>
+</html>
