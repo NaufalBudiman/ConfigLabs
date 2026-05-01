@@ -4,8 +4,6 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>ConfigLabs — Network Configuration, Simplified</title>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2996022257090290"
-     crossorigin="anonymous"></script>
 <meta name="description" content="Free multi-vendor network config generator with visual topology builder. Build production-ready configs for H3C, Cisco IOS, IOS-XE, and NX-OS. No typos, no CLI headaches."/>
 <meta name="keywords" content="H3C config generator, Cisco IOS config, NX-OS config, network topology builder, Comware CLI, VLAN generator, OSPF config, network automation"/>
 <meta name="author" content="ConfigLabs"/>
@@ -314,7 +312,14 @@ footer{margin-top:80px;padding:40px 0 30px;border-top:1px solid var(--border)}
     <div>Config<em>Labs</em></div>
   </a>
   <div class="nav-actions">
-    <a href="/topology.html" class="nav-link">🗺️ Topology</a>
+    <a href="/" class="nav-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M3 12L12 3l9 9M5 10v10h14V10"/></svg>
+      Home
+    </a>
+    <a href="/topology.html" class="nav-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8 7l8 0M7.5 8l3.5 8M16.5 8l-3.5 8"/></svg>
+      Topology
+    </a>
     <a href="/about.html" class="nav-link">About</a>
     <div class="chip"><span class="dot"></span><span id="backend-status">Connecting...</span></div>
     <button class="icon-btn" onclick="openFeedback()" title="Feedback">💬</button>
@@ -364,14 +369,14 @@ footer{margin-top:80px;padding:40px 0 30px;border-top:1px solid var(--border)}
       </div>
 
       <div class="tabs">
-        <button class="tab active" data-tab="system">⚙️ System</button>
-        <button class="tab" data-tab="vlan">🔷 VLAN <span class="badge" id="b-vlan">0</span></button>
-        <button class="tab" data-tab="svi">🌐 VLAN-int <span class="badge" id="b-svi">0</span></button>
-        <button class="tab" data-tab="intf">🔌 Interfaces <span class="badge" id="b-intf">0</span></button>
-        <button class="tab" data-tab="dhcp">📡 DHCP <span class="badge" id="b-dhcp">0</span></button>
-        <button class="tab" data-tab="route">🛣️ Routing <span class="badge" id="b-route">0</span></button>
-        <button class="tab" data-tab="ospf">🧭 OSPF</button>
-        <button class="tab" data-tab="acl">🛡️ ACL <span class="badge" id="b-acl">0</span></button>
+        <button class="tab active" data-tab="system">System</button>
+        <button class="tab" data-tab="vlan">VLAN <span class="badge" id="b-vlan">0</span></button>
+        <button class="tab" data-tab="svi">VLAN-int <span class="badge" id="b-svi">0</span></button>
+        <button class="tab" data-tab="intf">Interfaces <span class="badge" id="b-intf">0</span></button>
+        <button class="tab" data-tab="dhcp">DHCP <span class="badge" id="b-dhcp">0</span></button>
+        <button class="tab" data-tab="route">Routing <span class="badge" id="b-route">0</span></button>
+        <button class="tab" data-tab="ospf">OSPF</button>
+        <button class="tab" data-tab="acl">ACL <span class="badge" id="b-acl">0</span></button>
       </div>
 
       <div class="panel-body">
