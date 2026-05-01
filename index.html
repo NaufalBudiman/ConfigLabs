@@ -7,7 +7,7 @@
 <meta name="description" content="Free multi-vendor network config generator with visual topology builder. Build production-ready configs for H3C, Cisco IOS, IOS-XE, and NX-OS. No typos, no CLI headaches."/>
 <meta name="keywords" content="H3C config generator, Cisco IOS config, NX-OS config, network topology builder, Comware CLI, VLAN generator, OSPF config, network automation"/>
 <meta name="author" content="ConfigLabs"/>
-<meta property="og:title" content="ConfigLabs v3.0 — Multi-Vendor Config Generator + Topology Builder"/>
+<meta property="og:title" content="ConfigLabs v4.1.2 — Multi-Vendor Config Generator + Topology Builder"/>
 <meta property="og:description" content="Build production-ready H3C and Cisco configs visually. Now with Topology Builder (Beta)!"/>
 <meta property="og:type" content="website"/>
 <meta property="og:url" content="https://configlabs.online"/>
@@ -303,7 +303,7 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       About
     </a>
-    <div class="chip"><span class="dot"></span><span id="backend-status">v3.0 Live</span></div>
+    <div class="chip"><span class="dot"></span><span id="backend-status">v4.1.2</span></div>
     <button class="icon-btn" onclick="window.open('https://github.com/NaufalBudiman/ConfigLabs','_blank')" title="GitHub">⭐</button>
     <button class="icon-btn" onclick="toggleTheme()" title="Theme" id="theme-btn">🌙</button>
   </div>
@@ -315,7 +315,7 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
 <section class="hero">
   <div class="hero-tag">
     <span class="live"></span>
-    <span>v3.0 · Topology Builder (Beta) · H3C + Cisco · Multi-vendor</span>
+    <span>v4.1.2 · Topology Builder (Beta) · H3C + Cisco · Multi-vendor</span>
   </div>
   <h1>Network configuration,<br><span class="serif">without the pain.</span></h1>
   <p>Visual topology builder meets multi-vendor config generator. H3C to NX-OS. VLAN to OSPF. No typos, no guesswork — just clean, production-ready configs.</p>
@@ -432,6 +432,7 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
         <p>Active development with regular releases. Here's what shipped recently:</p>
       </div>
       <div class="changelog">
+        <div class="cl-item"><span class="cl-version">v4.1.2</span><div class="cl-content"><h4>UI/UX Overhaul</h4><p>Curved cables, custom SVG icons, support modal, port picker</p></div></div>
         <div class="cl-item"><span class="cl-version">v3.0</span><div class="cl-content"><h4>Topology Builder Beta</h4><p>Visual network builder with port mapping & cable labels</p></div></div>
         <div class="cl-item"><span class="cl-version">v2.5</span><div class="cl-content"><h4>Cisco IOS-XE & NX-OS Support</h4><p>Catalyst 9000, ISR 4k, and Nexus templates</p></div></div>
         <div class="cl-item"><span class="cl-version">v2.0</span><div class="cl-content"><h4>Multi-vendor Config Engine</h4><p>H3C Comware v7 & Cisco IOS in parallel</p></div></div>
@@ -675,7 +676,7 @@ document.querySelectorAll('.tpl-tab').forEach(tab => {
 // Backend status check (matches existing pattern)
 const statusEl = document.getElementById('backend-status');
 if(statusEl){
-  fetch('/api/health').then(r => r.ok ? statusEl.textContent = 'v3.0 Live' : statusEl.textContent = 'v3.0').catch(()=>{ statusEl.textContent = 'v3.0'; });
+  fetch('/api/health').then(r => r.ok ? statusEl.textContent = 'v4.1.2' : statusEl.textContent = 'v4.1.2').catch(()=>{ statusEl.textContent = 'v4.1.2'; });
 }
 </script>
 

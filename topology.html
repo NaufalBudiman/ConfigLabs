@@ -205,6 +205,25 @@ nav {
   padding: 1px 5px; border-radius: 4px; color: var(--text-muted);
 }
 
+/* CABLE STYLE PICKER */
+.cable-style-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 5px;
+}
+.cs-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 8px 4px; background: var(--bg); border: 1px solid var(--border);
+  color: var(--text-dim); border-radius: 8px; cursor: pointer;
+  font-family: var(--sans); font-size: 10px; font-weight: 500;
+  transition: all .15s var(--ease);
+}
+.cs-btn:hover { border-color: var(--border-strong); color: var(--text); }
+.cs-btn.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg));
+  color: var(--accent);
+}
+.cs-btn svg { flex-shrink: 0; }
+
 /* Zoom controls row */
 .zoom-row {
   display: grid; grid-template-columns: 1fr auto 1fr; gap: 5px; align-items: center;
@@ -581,13 +600,19 @@ nav {
   </a>
 
   <div class="nav-center">
-    <a href="/index.html" class="nav-tab">⚡ Builder</a>
-    <a href="/topology.html" class="nav-tab active">🗺️ Topology <span class="beta-pill">BETA</span></a>
+    <a href="/builder.html" class="nav-tab">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+      Builder
+    </a>
+    <a href="/topology.html" class="nav-tab active">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8 7l8 0M7.5 8l3.5 8M16.5 8l-3.5 8"/></svg>
+      Topology <span class="beta-pill">BETA</span>
+    </a>
     <a href="/about.html" class="nav-tab">About</a>
   </div>
 
   <div class="nav-right">
-    <div class="chip"><span class="dot"></span><span>v3.0</span></div>
+    <div class="chip"><span class="dot"></span><span>v4.1.2</span></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
 </nav>
@@ -603,25 +628,172 @@ nav {
 
       <div class="sidebar-section">
         <div class="sidebar-label">Devices</div>
-        <div class="pal-dev" data-type="switch_l3_24" draggable="true"><svg class="em" viewBox="0 0 24 24" fill="none" stroke="#a8b5ff" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="16" x2="22" y2="16"/><circle cx="6" cy="10" r="0.8" fill="#a8b5ff"/><circle cx="12" cy="10" r="0.8" fill="#a8b5ff"/><circle cx="18" cy="10" r="0.8" fill="#a8b5ff"/><path d="M 16 20 L 19 20 L 17.5 22 L 14.5 22 Z" fill="#7cf4c7"/></svg><span class="lbl">L3 Switch (24)</span></div>
-        <div class="pal-dev" data-type="switch_l3_48" draggable="true"><svg class="em" viewBox="0 0 24 24" fill="none" stroke="#a8b5ff" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="16" x2="22" y2="16"/><circle cx="6" cy="10" r="0.8" fill="#a8b5ff"/><circle cx="12" cy="10" r="0.8" fill="#a8b5ff"/><circle cx="18" cy="10" r="0.8" fill="#a8b5ff"/><path d="M 16 20 L 19 20 L 17.5 22 L 14.5 22 Z" fill="#7cf4c7"/><path d="M 21 20 L 24 20" stroke="#7cf4c7" stroke-width="1"/></svg><span class="lbl">L3 Switch (48)</span></div>
-        <div class="pal-dev" data-type="switch_l2_24" draggable="true"><svg class="em" viewBox="0 0 24 24" fill="none" stroke="#5fc8b4" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="16" x2="22" y2="16"/><circle cx="6" cy="10" r="0.8" fill="#5fc8b4"/><circle cx="12" cy="10" r="0.8" fill="#5fc8b4"/><circle cx="18" cy="10" r="0.8" fill="#5fc8b4"/></svg><span class="lbl">L2 Switch (24)</span></div>
-        <div class="pal-dev" data-type="switch_l2_48" draggable="true"><svg class="em" viewBox="0 0 24 24" fill="none" stroke="#5fc8b4" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="16" x2="22" y2="16"/><circle cx="5" cy="10" r="0.6" fill="#5fc8b4"/><circle cx="9" cy="10" r="0.6" fill="#5fc8b4"/><circle cx="13" cy="10" r="0.6" fill="#5fc8b4"/><circle cx="17" cy="10" r="0.6" fill="#5fc8b4"/><circle cx="21" cy="10" r="0.6" fill="#5fc8b4"/></svg><span class="lbl">L2 Switch (48)</span></div>
-        <div class="pal-dev" data-type="router"    draggable="true"><svg class="em" viewBox="0 0 24 24" fill="none" stroke="#a8b5ff" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="#a8b5ff" stroke-width="1.2"/><path d="M 7 12 L 8 12" stroke="#7cf4c7" stroke-width="1" stroke-linecap="round"/><path d="M 16 12 L 17 12" stroke="#7cf4c7" stroke-width="1" stroke-linecap="round"/><path d="M 12 7 L 12 8" stroke="#7cf4c7" stroke-width="1" stroke-linecap="round"/><path d="M 12 16 L 12 17" stroke="#7cf4c7" stroke-width="1" stroke-linecap="round"/></svg><span class="lbl">Router</span></div>
-        <div class="pal-dev" data-type="firewall"  draggable="true"><svg class="em" viewBox="0 0 24 24" fill="none" stroke="#ff6478" stroke-width="1.5"><path d="M 12 2 L 19 5 L 19 13 C 19 18 12 22 12 22 C 12 22 5 18 5 13 L 5 5 Z" stroke="#ff6478" fill="none"/><path d="M 10 12 L 12 14 L 14 10" stroke="#ff6478" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="lbl">Firewall</span></div>
-        <div class="pal-dev" data-type="server"    draggable="true"><svg class="em" viewBox="0 0 24 24" fill="none" stroke="#ffb86b" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="1"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="14" x2="21" y2="14"/><line x1="3" y1="19" x2="21" y2="19"/><circle cx="7" cy="6.5" r="0.6" fill="#ffb86b"/><circle cx="13" cy="6.5" r="0.6" fill="#ffb86b"/><circle cx="19" cy="6.5" r="0.6" fill="#ffb86b"/></svg><span class="lbl">Server</span></div>
-        <div class="pal-dev" data-type="endpoint"  draggable="true"><svg class="em" viewBox="0 0 24 24" fill="none" stroke="#9aa3af" stroke-width="1.5"><rect x="2" y="3" width="20" height="13" rx="1"/><line x1="2" y1="16" x2="22" y2="16"/><rect x="9" y="16" width="6" height="3" rx="0.5" fill="none" stroke="#9aa3af" stroke-width="1"/></svg><span class="lbl">Endpoint</span></div>
-        <div class="pal-dev" data-type="cloud"     draggable="true"><svg class="em" viewBox="0 0 24 24" fill="none" stroke="#a8b5ff" stroke-width="1.5"><path d="M 6 16 C 4 15 3 13 3 11 C 3 8 5 6 7 6 C 7.5 4 9 3 11 3 C 13.2 3 15 4.5 15.5 6.5 C 18 6.8 20 8.8 20 11 C 20 13.8 18 16 15 16" fill="none" stroke="#a8b5ff" stroke-linejoin="round"/></svg><span class="lbl">Cloud / ISP</span></div>
+        <!-- L2 Switches (only) — visually distinct: rack chassis with port grid -->
+        <div class="pal-dev" data-type="switch_l2_24" draggable="true">
+          <svg class="em" viewBox="0 0 24 24" fill="none" stroke="#7cf4c7" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="7" width="20" height="10" rx="1.2"/>
+            <rect x="3.5" y="9.5" width="2" height="1.5" fill="#7cf4c7" rx="0.2"/>
+            <rect x="6.5" y="9.5" width="2" height="1.5" fill="#7cf4c7" rx="0.2"/>
+            <rect x="9.5" y="9.5" width="2" height="1.5" fill="#7cf4c7" rx="0.2"/>
+            <rect x="12.5" y="9.5" width="2" height="1.5" fill="#7cf4c7" rx="0.2"/>
+            <rect x="15.5" y="9.5" width="2" height="1.5" fill="#7cf4c7" rx="0.2"/>
+            <rect x="3.5" y="13" width="2" height="1.5" fill="#7cf4c7" rx="0.2"/>
+            <rect x="6.5" y="13" width="2" height="1.5" fill="#7cf4c7" rx="0.2"/>
+            <rect x="9.5" y="13" width="2" height="1.5" fill="#7cf4c7" rx="0.2"/>
+            <rect x="12.5" y="13" width="2" height="1.5" fill="#7cf4c7" rx="0.2"/>
+            <rect x="15.5" y="13" width="2" height="1.5" fill="#7cf4c7" rx="0.2"/>
+            <circle cx="20" cy="11" r="0.6" fill="#00ff88"/>
+            <circle cx="20" cy="13.5" r="0.6" fill="#00ff88"/>
+          </svg>
+          <span class="lbl">Switch (24p)</span>
+        </div>
+        <div class="pal-dev" data-type="switch_l2_48" draggable="true">
+          <svg class="em" viewBox="0 0 24 24" fill="none" stroke="#5fc8b4" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1.5" y="6" width="21" height="12" rx="1.2"/>
+            <rect x="2.5" y="8.5" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="4.3" y="8.5" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="6.1" y="8.5" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="7.9" y="8.5" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="9.7" y="8.5" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="11.5" y="8.5" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="13.3" y="8.5" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="15.1" y="8.5" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="16.9" y="8.5" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="18.7" y="8.5" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="2.5" y="11" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="4.3" y="11" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="6.1" y="11" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="7.9" y="11" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="9.7" y="11" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="11.5" y="11" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="13.3" y="11" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="15.1" y="11" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="16.9" y="11" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="18.7" y="11" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="2.5" y="13.5" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="4.3" y="13.5" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="6.1" y="13.5" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="7.9" y="13.5" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="9.7" y="13.5" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="11.5" y="13.5" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="13.3" y="13.5" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="15.1" y="13.5" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="16.9" y="13.5" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="18.7" y="13.5" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="2.5" y="16" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="4.3" y="16" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="6.1" y="16" width="1.2" height="1" fill="#5fc8b4"/>
+            <rect x="7.9" y="16" width="1.2" height="1" fill="#5fc8b4"/>
+          </svg>
+          <span class="lbl">Switch (48p)</span>
+        </div>
+
+        <!-- Router — circular routing rings + directional arrows (very different from switch!) -->
+        <div class="pal-dev" data-type="router" draggable="true">
+          <svg class="em" viewBox="0 0 24 24" fill="none" stroke="#a8b5ff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <circle cx="12" cy="12" r="5" stroke="#a8b5ff" opacity="0.6"/>
+            <circle cx="12" cy="12" r="2" fill="#a8b5ff" opacity="0.3"/>
+            <path d="M 12 3 L 14 5 L 12 5" fill="#7cf4c7" stroke="#7cf4c7"/>
+            <path d="M 12 21 L 10 19 L 12 19" fill="#7cf4c7" stroke="#7cf4c7"/>
+            <path d="M 3 12 L 5 14 L 5 12" fill="#7cf4c7" stroke="#7cf4c7"/>
+            <path d="M 21 12 L 19 10 L 19 12" fill="#7cf4c7" stroke="#7cf4c7"/>
+          </svg>
+          <span class="lbl">Router</span>
+        </div>
+
+        <!-- Firewall — shield with checkmark (red, distinctive) -->
+        <div class="pal-dev" data-type="firewall" draggable="true">
+          <svg class="em" viewBox="0 0 24 24" fill="none" stroke="#ff6478" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M 12 2 L 20 5 L 20 12 C 20 17 16 21 12 22 C 8 21 4 17 4 12 L 4 5 Z" fill="#ff647810"/>
+            <path d="M 8 12 L 11 15 L 16 9" stroke="#ff6478" stroke-width="2"/>
+          </svg>
+          <span class="lbl">Firewall</span>
+        </div>
+
+        <!-- Server — vertical rack with drives + LEDs (very distinct) -->
+        <div class="pal-dev" data-type="server" draggable="true">
+          <svg class="em" viewBox="0 0 24 24" fill="none" stroke="#ffb86b" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="2" width="14" height="20" rx="1"/>
+            <line x1="5" y1="6" x2="19" y2="6"/>
+            <line x1="5" y1="10" x2="19" y2="10"/>
+            <line x1="5" y1="14" x2="19" y2="14"/>
+            <line x1="5" y1="18" x2="19" y2="18"/>
+            <rect x="7" y="3" width="3" height="2" fill="#ffb86b" opacity="0.6"/>
+            <rect x="7" y="7" width="3" height="2" fill="#ffb86b" opacity="0.6"/>
+            <rect x="7" y="11" width="3" height="2" fill="#ffb86b" opacity="0.6"/>
+            <rect x="7" y="15" width="3" height="2" fill="#ffb86b" opacity="0.6"/>
+            <rect x="7" y="19" width="3" height="2" fill="#ffb86b" opacity="0.6"/>
+            <circle cx="16" cy="4" r="0.6" fill="#00ff88"/>
+            <circle cx="16" cy="8" r="0.6" fill="#00ff88"/>
+            <circle cx="16" cy="12" r="0.6" fill="#ffaa00"/>
+            <circle cx="16" cy="16" r="0.6" fill="#00ff88"/>
+            <circle cx="16" cy="20" r="0.6" fill="#666"/>
+          </svg>
+          <span class="lbl">Server</span>
+        </div>
+
+        <!-- Endpoint — desktop monitor with stand (very distinct) -->
+        <div class="pal-dev" data-type="endpoint" draggable="true">
+          <svg class="em" viewBox="0 0 24 24" fill="none" stroke="#9aa3af" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="13" rx="1.5"/>
+            <rect x="4" y="6" width="16" height="9" rx="0.5" fill="#9aa3af" opacity="0.15"/>
+            <line x1="6" y1="9" x2="14" y2="9" stroke="#7cf4c7" stroke-width="0.8"/>
+            <line x1="6" y1="11" x2="11" y2="11" stroke="#7cf4c7" stroke-width="0.8"/>
+            <line x1="6" y1="13" x2="13" y2="13" stroke="#7cf4c7" stroke-width="0.8"/>
+            <line x1="9" y1="17" x2="15" y2="17"/>
+            <path d="M 10 17 L 10 20 L 14 20 L 14 17" fill="#9aa3af" opacity="0.3"/>
+            <line x1="8" y1="22" x2="16" y2="22" stroke-width="2"/>
+          </svg>
+          <span class="lbl">Endpoint</span>
+        </div>
+
+        <!-- Cloud — fluffy cloud with WiFi waves (very distinct, nothing like a chassis) -->
+        <div class="pal-dev" data-type="cloud" draggable="true">
+          <svg class="em" viewBox="0 0 24 24" fill="none" stroke="#a8b5ff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M 6 16 C 3.5 15.5 2.5 13 3 11 C 3.5 9 5.5 8 7.5 8.5 C 8 6 10 4.5 12.5 4.5 C 15 4.5 17 6.5 17.5 8.5 C 19.5 8.5 21 10.5 21 12.5 C 21 15 19 17 16.5 17 L 7 17 Z" fill="#a8b5ff10"/>
+            <circle cx="9" cy="20" r="0.6" fill="#a8b5ff" opacity="0.7"/>
+            <circle cx="12" cy="21" r="0.6" fill="#a8b5ff" opacity="0.5"/>
+            <circle cx="15" cy="20" r="0.6" fill="#a8b5ff" opacity="0.7"/>
+            <path d="M 10 19 L 11.5 19" stroke="#a8b5ff" stroke-width="0.6" opacity="0.5" stroke-dasharray="0.5 0.5"/>
+            <path d="M 13 19 L 14.5 19" stroke="#a8b5ff" stroke-width="0.6" opacity="0.5" stroke-dasharray="0.5 0.5"/>
+          </svg>
+          <span class="lbl">Cloud / ISP</span>
+        </div>
       </div>
 
       <div class="sidebar-section">
         <div class="sidebar-label">Tools</div>
         <button class="tool-btn active" data-tool="select" onclick="setTool('select')">
-          ↖ Select <span class="kbd">S</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex-shrink:0"><path d="M3 3l7 19 2-8 8-2L3 3z"/></svg>
+          Select <span class="kbd">S</span>
         </button>
         <button class="tool-btn" data-tool="link" onclick="setTool('link')">
-          🔗 Link Mode <span class="kbd">L</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex-shrink:0"><path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1"/><path d="M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/></svg>
+          Link Mode <span class="kbd">L</span>
         </button>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Cable Style</div>
+        <div class="cable-style-row">
+          <button class="cs-btn active" data-style="curved" onclick="setCableStyle('curved')" title="Curved (smooth Bezier)">
+            <svg width="22" height="14" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 11 Q 11 -2, 20 11"/></svg>
+            <span>Curved</span>
+          </button>
+          <button class="cs-btn" data-style="straight" onclick="setCableStyle('straight')" title="Straight line">
+            <svg width="22" height="14" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="2" y1="7" x2="20" y2="7"/></svg>
+            <span>Straight</span>
+          </button>
+          <button class="cs-btn" data-style="orthogonal" onclick="setCableStyle('orthogonal')" title="Right-angle (orthogonal)">
+            <svg width="22" height="14" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 11 L 11 11 L 11 4 L 20 4"/></svg>
+            <span>Orthogonal</span>
+          </button>
+          <button class="cs-btn" data-style="stepped" onclick="setCableStyle('stepped')" title="Stepped (staircase)">
+            <svg width="22" height="14" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 11 L 7 11 L 7 7 L 14 7 L 14 4 L 20 4"/></svg>
+            <span>Stepped</span>
+          </button>
+        </div>
       </div>
 
       <div class="sidebar-section">
@@ -842,64 +1014,50 @@ const NAME_H = 30;       // height of the editable name strip on top
 const NAME_GAP = 6;      // gap between name and chassis
 
 const TD = {
-  switch_l3_24: {
-    emoji:'🔶', label:'L3 Switch (24)', prefix:'SW-CORE', defV:'h3c', defO:'comware',
-    W: 220, H: 70, shape: 'rect',
-    color: '#7cf4c7', bg: '#16221a', tag: 'L3 SW-24',
-    ports: { copper: 24, fiber: 2 },
-    fiberTypes: ['1G-SFP', '10G-SFP+', '25G-SFP28', '40G-QSFP+', '100G-QSFP28'],
-  },
-  switch_l3_48: {
-    emoji:'🔶', label:'L3 Switch (48)', prefix:'SW-CORE', defV:'h3c', defO:'comware',
-    W: 220, H: 70, shape: 'rect',
-    color: '#7cf4c7', bg: '#16221a', tag: 'L3 SW-48',
-    ports: { copper: 48, fiber: 2 },
-    fiberTypes: ['1G-SFP', '10G-SFP+', '25G-SFP28', '40G-QSFP+', '100G-QSFP28'],
-  },
   switch_l2_24: {
-    emoji:'🔷', label:'L2 Switch (24)', prefix:'SW-ACC', defV:'h3c', defO:'comware',
+    emoji:'', label:'Switch (24)', prefix:'SW', defV:'h3c', defO:'comware',
     W: 220, H: 70, shape: 'rect',
-    color: '#5fc8b4', bg: '#152521', tag: 'L2 SW-24',
+    color: '#7cf4c7', bg: '#16221a', tag: 'SW-24',
     ports: { copper: 24, fiber: 2 },
     fiberTypes: ['1G-SFP', '10G-SFP+', '25G-SFP28', '40G-QSFP+', '100G-QSFP28'],
   },
   switch_l2_48: {
-    emoji:'🔷', label:'L2 Switch (48)', prefix:'SW-ACC', defV:'h3c', defO:'comware',
+    emoji:'', label:'Switch (48)', prefix:'SW', defV:'h3c', defO:'comware',
     W: 220, H: 70, shape: 'rect',
-    color: '#5fc8b4', bg: '#152521', tag: 'L2 SW-48',
+    color: '#5fc8b4', bg: '#152521', tag: 'SW-48',
     ports: { copper: 48, fiber: 2 },
     fiberTypes: ['1G-SFP', '10G-SFP+', '25G-SFP28', '40G-QSFP+', '100G-QSFP28'],
   },
   router: {
-    emoji:'🔵', label:'Router', prefix:'RTR', defV:'cisco', defO:'ios',
+    emoji:'', label:'Router', prefix:'RTR', defV:'cisco', defO:'ios',
     W: 220, H: 70, shape: 'rect',
     color: '#a8b5ff', bg: '#171a26', tag: 'RTR',
     ports: { copper: 8, fiber: 2 },
     fiberTypes: ['1G-SFP', '10G-SFP+', '25G-SFP28', '40G-QSFP+', '100G-QSFP28'],
   },
   firewall: {
-    emoji:'🔴', label:'Firewall', prefix:'FW', defV:'cisco', defO:'ios',
+    emoji:'', label:'Firewall', prefix:'FW', defV:'cisco', defO:'ios',
     W: 220, H: 70, shape: 'rect',
     color: '#ff6478', bg: '#241518', tag: 'FW',
     ports: { copper: 4, fiber: 1 },
     fiberTypes: ['1G-SFP', '10G-SFP+'],
   },
   server: {
-    emoji:'💻', label:'Server', prefix:'SRV', defV:null, defO:null,
+    emoji:'', label:'Server', prefix:'SRV', defV:null, defO:null,
     W: 220, H: 70, shape: 'rect',
     color: '#ffb86b', bg: '#241c12', tag: 'SRV',
     ports: { copper: 4, fiber: 0 },
     fiberTypes: [],
   },
   endpoint: {
-    emoji:'📱', label:'Endpoint', prefix:'PC', defV:null, defO:null,
+    emoji:'', label:'Endpoint', prefix:'PC', defV:null, defO:null,
     W: 220, H: 70, shape: 'rect',
     color: '#9aa3af', bg: '#1a1d22', tag: 'PC',
     ports: { copper: 1, fiber: 0 },
     fiberTypes: [],
   },
   cloud: {
-    emoji:'☁️', label:'Cloud/ISP', prefix:'ISP', defV:null, defO:null,
+    emoji:'', label:'Cloud/ISP', prefix:'ISP', defV:null, defO:null,
     W: 220, H: 70, shape: 'rect',
     color: '#a8b5ff', bg: '#161a26', tag: 'ISP',
     ports: { copper: 2, fiber: 1 },
@@ -920,6 +1078,7 @@ let topo = {
   tool:     'select',
   lkStart:  null,    // device id when drawing a link
   counters: {},
+  cableStyle: 'curved', // 'curved' | 'straight' | 'orthogonal' | 'stepped'
 };
 
 let pan     = { x: 120, y: 80 };
@@ -1050,21 +1209,10 @@ function renderDev(dev) {
   const g = mk('g', { id:'dv-'+dev.id, transform:`translate(${dev.x},${dev.y})`, cursor:'pointer' });
 
   // ============================================================
-  //   1) EDITABLE NAME + ICON (on top, above chassis)
+  //   1) EDITABLE NAME (on top, above chassis) — no emoji icon
   // ============================================================
-  const deviceIcons = {
-    switch_l3_24: '🔶', switch_l3_48: '🔶', switch_l2_24: '🔷', switch_l2_48: '🔷',
-    router: '🔵', firewall: '🔴', server: '💾', endpoint: '🖥️', cloud: '☁️'
-  };
-  const devIcon = deviceIcons[dev.type] || '📦';
-
-  // Icon element (SVG text)
-  const ico = mk('text', { x:8, y:NAME_H/2+2, 'font-size':14, fill:stroke });
-  ico.textContent = devIcon;
-  g.appendChild(ico);
-
-  // Name input group (slightly indented for icon)
-  const fo = mk('foreignObject', { x: 26, y: 0, width: c.W-26, height: NAME_H });
+  // Name input takes full width (no icon prefix anymore)
+  const fo = mk('foreignObject', { x: 0, y: 0, width: c.W, height: NAME_H });
   // foreignObject content must be in XHTML namespace
   const div = document.createElementNS('http://www.w3.org/1999/xhtml','div');
   div.setAttribute('xmlns','http://www.w3.org/1999/xhtml');
@@ -1439,8 +1587,8 @@ function renderDev(dev) {
       chassis.setAttribute('stroke-opacity','0.25');
       chassis.setAttribute('fill','#0d1020');
 
-      // Cloud SVG path — single smooth curve
-      const cX=c.W/2-10, cY=cy+c.H/2-2;
+      // Cloud SVG path — single smooth curve, perfectly centered
+      const cX=c.W/2, cY=cy+c.H/2;
       // Glow halo
       g.appendChild(mk('ellipse',{cx:cX,cy:cY+4,rx:70,ry:18,fill:drawClr,opacity:'0.06'}));
 
@@ -1547,79 +1695,177 @@ function renderLink(lk) {
   const fc=devCenter(fDev), tc=devCenter(tDev);
   const isSel   = topo.sel?.kind==='link'&&topo.sel?.id===lk.id;
   const isTrunk = lk.mode==='trunk';
+  const style   = topo.cableStyle || 'curved';
 
   const g = mk('g', { id:'lk-'+lk.id, cursor:'pointer' });
 
-  // Wide hit area
-  g.appendChild(mk('line', { x1:fc.x,y1:fc.y,x2:tc.x,y2:tc.y, stroke:'transparent','stroke-width':22 }));
+  // ============================================================
+  // Build the cable path based on selected style
+  // Returns: { d (SVG path), midX, midY, t02 (point at t=0.2), t08 (point at t=0.8) }
+  // ============================================================
+  let pathD, midX, midY, t02, t08;
+  const dx = tc.x - fc.x, dy = tc.y - fc.y;
+  const dist = Math.sqrt(dx*dx + dy*dy) || 1;
 
-  // Visible line
-  const line = mk('line', { x1:fc.x,y1:fc.y,x2:tc.x,y2:tc.y });
+  if (style === 'straight') {
+    pathD = `M ${fc.x} ${fc.y} L ${tc.x} ${tc.y}`;
+    midX = (fc.x + tc.x) / 2;
+    midY = (fc.y + tc.y) / 2;
+    t02 = { x: fc.x + dx*0.2, y: fc.y + dy*0.2 };
+    t08 = { x: fc.x + dx*0.8, y: fc.y + dy*0.8 };
+  }
+  else if (style === 'orthogonal') {
+    // Right-angle: horizontal first, then vertical
+    const midPx = tc.x;
+    pathD = `M ${fc.x} ${fc.y} L ${midPx} ${fc.y} L ${tc.x} ${tc.y}`;
+    midX = midPx;
+    midY = fc.y;
+    t02 = { x: fc.x + (tc.x-fc.x)*0.4, y: fc.y };
+    t08 = { x: tc.x, y: fc.y + (tc.y-fc.y)*0.4 };
+  }
+  else if (style === 'stepped') {
+    // Staircase: half horizontal, half vertical, half horizontal
+    const midPx = (fc.x + tc.x) / 2;
+    pathD = `M ${fc.x} ${fc.y} L ${midPx} ${fc.y} L ${midPx} ${tc.y} L ${tc.x} ${tc.y}`;
+    midX = midPx;
+    midY = (fc.y + tc.y) / 2;
+    t02 = { x: fc.x + (midPx-fc.x)*0.5, y: fc.y };
+    t08 = { x: midPx + (tc.x-midPx)*0.5, y: tc.y };
+  }
+  else {
+    // CURVED (default) — Quadratic Bezier with deterministic bend
+    const px = -dy / dist, py = dx / dist;
+    let hash = 0; for (let i=0; i<lk.id.length; i++) hash = ((hash<<5)-hash) + lk.id.charCodeAt(i);
+    const bendSign = (hash % 2 === 0) ? 1 : -1;
+    const bend = Math.min(dist * 0.18, 90) * bendSign;
+    const mx = (fc.x + tc.x) / 2;
+    const my = (fc.y + tc.y) / 2;
+    const cpx = mx + px * bend;
+    const cpy = my + py * bend;
+    pathD = `M ${fc.x} ${fc.y} Q ${cpx} ${cpy} ${tc.x} ${tc.y}`;
+    // Bezier point at t: (1-t)²P₀ + 2t(1-t)P₁ + t²P₂
+    const ptAt = (t) => ({
+      x: (1-t)*(1-t)*fc.x + 2*t*(1-t)*cpx + t*t*tc.x,
+      y: (1-t)*(1-t)*fc.y + 2*t*(1-t)*cpy + t*t*tc.y,
+    });
+    const m = ptAt(0.5);
+    midX = m.x; midY = m.y;
+    t02 = ptAt(0.20);
+    t08 = ptAt(0.80);
+  }
+
+  // ============================================================
+  // Wide invisible hit area for easier clicking
+  // ============================================================
+  g.appendChild(mk('path', { d: pathD, fill:'none', stroke:'transparent','stroke-width':22 }));
+
+  // ============================================================
+  // Visible cable path
+  // ============================================================
+  const path = mk('path', { d: pathD, fill:'none' });
   const lineColor = isSel ? '#7cf4c7' : isTrunk ? '#3a4455' : '#2a3340';
-  line.setAttribute('stroke', lineColor);
-  line.setAttribute('stroke-width', isSel ? '3' : isTrunk ? '2.5' : '1.8');
-  if (!isTrunk && !isSel) line.setAttribute('stroke-dasharray','8 5');
-  if (isSel) line.setAttribute('filter','url(#glow-sel)');
-  g.appendChild(line);
+  path.setAttribute('stroke', lineColor);
+  path.setAttribute('stroke-width', isSel ? 3 : isTrunk ? 2.5 : 1.8);
+  path.setAttribute('stroke-linecap', 'round');
+  path.setAttribute('stroke-linejoin', 'round');
+  if (!isTrunk && !isSel) path.setAttribute('stroke-dasharray','8 5');
+  if (isSel) path.setAttribute('filter','url(#glow-sel)');
+  g.appendChild(path);
 
-  // ── Port label near FROM device (20% along line) ──
+  // ============================================================
+  // PORT LABELS with GE/FE/10GE notation
+  // ============================================================
+  const portFmt = (raw) => {
+    if (!raw) return '';
+    return raw
+      .replace(/^TenGigabitEthernet/i, '10GE')
+      .replace(/^XGigabitEthernet/i, '10GE')
+      .replace(/^GigabitEthernet/i, 'GE')
+      .replace(/^FastEthernet/i, 'FE')
+      .replace(/^Ethernet/i, 'ETH');
+  };
+
+  // ── Port label near FROM device (at t=0.2 position) ──
   if (lk.fromPort) {
-    const t = 0.18;
-    const lx = fc.x + (tc.x-fc.x)*t;
-    const ly = fc.y + (tc.y-fc.y)*t;
-    // Offset perpendicular to line
-    const dx = tc.x-fc.x, dy = tc.y-fc.y, len = Math.sqrt(dx*dx+dy*dy)||1;
-    const ox = -dy/len*14, oy = dx/len*14;
-    const label = lk.fromPort;
-    const tw = label.length * 5 + 12;
-    const rx = lx+ox-tw/2, ry = ly+oy-10;
-    g.appendChild(mk('rect', { x:rx,y:ry,width:tw,height:16,rx:4,fill:'#111c17',stroke:'#7cf4c7','stroke-width':0.7,'opacity':'0.95' }));
-    const lt = mk('text',{ x:lx+ox, y:ly+oy+4, 'text-anchor':'middle', fill:'#7cf4c7',
-      'font-size':9, 'font-family':'JetBrains Mono,monospace','font-weight':'600' });
-    lt.textContent = label; g.appendChild(lt);
+    const label = portFmt(lk.fromPort);
+    const tw = label.length * 5.4 + 12;
+    g.appendChild(mk('rect', {
+      x: t02.x - tw/2, y: t02.y - 8, width: tw, height: 16, rx: 4,
+      fill: '#111c17', stroke: '#7cf4c7', 'stroke-width': 0.8, opacity: 0.95
+    }));
+    const lt = mk('text', {
+      x: t02.x, y: t02.y + 4, 'text-anchor':'middle',
+      fill: '#7cf4c7', 'font-size': 9, 'font-weight':'600',
+      'font-family':'JetBrains Mono,monospace'
+    });
+    lt.textContent = label;
+    g.appendChild(lt);
   }
 
-  // ── Port label near TO device (80% along line) ──
+  // ── Port label near TO device (at t=0.8 position) ──
   if (lk.toPort) {
-    const t = 0.82;
-    const lx = fc.x + (tc.x-fc.x)*t;
-    const ly = fc.y + (tc.y-fc.y)*t;
-    const dx = tc.x-fc.x, dy = tc.y-fc.y, len = Math.sqrt(dx*dx+dy*dy)||1;
-    const ox = -dy/len*14, oy = dx/len*14;
-    const label = lk.toPort;
-    const tw = label.length * 5 + 12;
-    const rx = lx+ox-tw/2, ry = ly+oy-10;
-    g.appendChild(mk('rect', { x:rx,y:ry,width:tw,height:16,rx:4,fill:'#111c22',stroke:'#5fc8b4','stroke-width':0.7,'opacity':'0.95' }));
-    const lt = mk('text',{ x:lx+ox, y:ly+oy+4, 'text-anchor':'middle', fill:'#5fc8b4',
-      'font-size':9, 'font-family':'JetBrains Mono,monospace','font-weight':'600' });
-    lt.textContent = label; g.appendChild(lt);
+    const label = portFmt(lk.toPort);
+    const tw = label.length * 5.4 + 12;
+    g.appendChild(mk('rect', {
+      x: t08.x - tw/2, y: t08.y - 8, width: tw, height: 16, rx: 4,
+      fill: '#111c22', stroke: '#5fc8b4', 'stroke-width': 0.8, opacity: 0.95
+    }));
+    const lt = mk('text', {
+      x: t08.x, y: t08.y + 4, 'text-anchor':'middle',
+      fill: '#5fc8b4', 'font-size': 9, 'font-weight':'600',
+      'font-family':'JetBrains Mono,monospace'
+    });
+    lt.textContent = label;
+    g.appendChild(lt);
   }
 
-  // ── Center cable info pill (speed / type / mode) ──
-  const mx = (fc.x+tc.x)/2, my = (fc.y+tc.y)/2;
+  // ============================================================
+  // Center cable info pill (speed / mode / vlans)
+  // ============================================================
   const parts = [];
   if (lk.speed) parts.push(lk.speed);
   if (lk.mode)  parts.push(lk.mode.toUpperCase());
-  if (lk.allowedVlans) parts.push(`VL:${lk.allowedVlans.split(/[\s,]+/).slice(0,2).join(',')}`);
+  if (lk.allowedVlans) parts.push(`VL ${lk.allowedVlans.split(/[\s,]+/).slice(0,2).join(',')}`);
   if (lk.label) parts.push(lk.label);
-  const midLabel = parts.join('  ·  ');
+  const midLabel = parts.join(' · ');
   if (midLabel) {
-    const tw = midLabel.length * 5 + 18;
-    g.appendChild(mk('rect', { x:mx-tw/2,y:my-11,width:tw,height:18,rx:5,
-      fill:'#0d1014', stroke: isSel?'#7cf4c7':'#2e3744','stroke-width': isSel?1:0.7 }));
-    const lt = mk('text',{ x:mx,y:my+4,'text-anchor':'middle',fill: isSel?'#7cf4c7':'#7a8593',
-      'font-size':9.5,'font-family':'JetBrains Mono,monospace' });
-    lt.textContent = midLabel; g.appendChild(lt);
+    const tw = midLabel.length * 5.2 + 18;
+    g.appendChild(mk('rect', {
+      x: midX - tw/2, y: midY - 11, width: tw, height: 20, rx: 5,
+      fill: '#0d1014',
+      stroke: isSel ? '#7cf4c7' : '#2e3744',
+      'stroke-width': isSel ? 1.2 : 0.7
+    }));
+    const lt = mk('text', {
+      x: midX, y: midY + 4, 'text-anchor':'middle',
+      fill: isSel ? '#7cf4c7' : '#7a8593',
+      'font-size': 9.5,
+      'font-family':'JetBrains Mono,monospace'
+    });
+    lt.textContent = midLabel;
+    g.appendChild(lt);
   }
 
-  // End dots
+  // ============================================================
+  // End connector dots
+  // ============================================================
   const dotFill = isTrunk ? '#2e3744' : '#1b2027';
   const dotStroke = isSel ? '#7cf4c7' : '#2e3744';
-  const mkDot = (x,y) => mk('circle',{ cx:x,cy:y,r:5, fill:dotFill, stroke:dotStroke,'stroke-width':1 });
-  g.appendChild(mkDot(fc.x+(tc.x-fc.x)*0.08, fc.y+(tc.y-fc.y)*0.08));
-  g.appendChild(mkDot(tc.x-(tc.x-fc.x)*0.08, tc.y-(tc.y-fc.y)*0.08));
+  const mkDot = (x, y) => mk('circle', { cx:x, cy:y, r:5, fill:dotFill, stroke:dotStroke, 'stroke-width':1 });
+  // Position dots near (but inside) each device endpoint
+  const ddx = dx / dist * 12, ddy = dy / dist * 12;
+  g.appendChild(mkDot(fc.x + ddx, fc.y + ddy));
+  g.appendChild(mkDot(tc.x - ddx, tc.y - ddy));
 
-  g.addEventListener('click', e => { e.stopPropagation(); if(topo.tool!=='link'){ topo.sel={kind:'link',id:lk.id}; renderAll(); renderLinkProps(lk.id); updateStatus(); } });
+  g.addEventListener('click', e => {
+    e.stopPropagation();
+    if (topo.tool!=='link') {
+      topo.sel = {kind:'link', id:lk.id};
+      renderAll();
+      renderLinkProps(lk.id);
+      updateStatus();
+    }
+  });
 
   layer.insertBefore(g, layer.firstChild);
 }
@@ -1834,8 +2080,6 @@ function renderDevProps(id) {
 
   // Vendor options per device type
   const vendorMap = {
-    switch_l3_24: ['h3c','cisco','arista','juniper','dell','bigswitch'],
-    switch_l3_48: ['h3c','cisco','arista','juniper','dell','bigswitch'],
     switch_l2_24: ['h3c','cisco','arista','juniper','dell','netgear'],
     switch_l2_48: ['h3c','cisco','arista','juniper','dell','netgear'],
     router: ['cisco','arista','juniper','mikrotik','ubiquiti','fortinet'],
@@ -2089,6 +2333,16 @@ function setTool(tool) {
   sbMode.textContent=tool.toUpperCase();
   sbMode.className='sb-mode '+tool;
   setSbHint(tool==='link'?'Click a device to start drawing a link':'');
+}
+
+/* ============================================================
+   CABLE STYLE PICKER
+   ============================================================ */
+function setCableStyle(style) {
+  topo.cableStyle = style;
+  document.querySelectorAll('.cs-btn').forEach(b => b.classList.toggle('active', b.dataset.style === style));
+  renderAll();
+  toast(`Cable style: ${style}`);
 }
 
 /* ============================================================
