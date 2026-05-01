@@ -264,6 +264,37 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:4px}
 ::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
+/* ── AUTH NAV BUTTON ─────────────────────────────────────── */
+.auth-login-btn{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--bg);border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all .15s var(--ease)}
+.auth-login-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.auth-user-wrap{position:relative}
+.auth-avatar{width:34px;height:34px;border-radius:50%;border:2px solid var(--border);cursor:pointer;transition:border-color .15s;object-fit:cover}
+.auth-avatar:hover{border-color:var(--accent)}
+.auth-dropdown{position:absolute;top:calc(100% + 10px);right:0;background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;min-width:210px;box-shadow:0 16px 48px rgba(0,0,0,.4);z-index:9999;opacity:0;pointer-events:none;transform:translateY(-6px);transition:all .18s var(--ease)}
+.auth-dropdown.open{opacity:1;pointer-events:auto;transform:translateY(0)}
+.auth-dropdown-header{padding:14px 16px;border-bottom:1px solid var(--border)}
+.auth-dropdown-name{font-weight:600;color:var(--text);font-size:14px;margin-bottom:2px}
+.auth-dropdown-email{font-size:11px;color:var(--text-dim)}
+.auth-dropdown-provider{font-size:10px;font-family:var(--mono);color:var(--text-muted);margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
+.auth-dropdown-item{display:flex;align-items:center;gap:10px;width:100%;padding:10px 16px;background:none;border:none;color:var(--text);text-decoration:none;font-size:13px;font-family:var(--sans);cursor:pointer;transition:background .1s}
+.auth-dropdown-item:hover{background:var(--surface-hover);color:var(--accent)}
+.auth-dropdown-item.danger{color:var(--danger)}
+.auth-dropdown-item.danger:hover{background:rgba(255,100,120,.08)}
+.auth-dropdown-sep{height:1px;background:var(--border);margin:4px 0}
+/* ── LOGIN MODAL ─────────────────────────────────────────── */
+.auth-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);z-index:200;display:none;place-items:center;padding:20px}
+.auth-modal-overlay.open{display:grid}
+.auth-modal{background:var(--surface);border:1px solid var(--border-strong);border-radius:20px;padding:32px;max-width:400px;width:100%;position:relative}
+.auth-modal-title{font-size:26px;font-weight:600;letter-spacing:-.5px;margin-bottom:4px}
+.auth-modal-title em{font-family:var(--serif);color:var(--accent);font-style:italic;font-weight:400}
+.auth-modal-sub{font-size:13px;color:var(--text-dim);margin-bottom:24px}
+.auth-modal-close{position:absolute;top:20px;right:20px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);font-size:14px;transition:all .15s}
+.auth-modal-close:hover{background:var(--surface-hover);color:var(--text)}
+.oauth-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text);border-radius:12px;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:all .15s var(--ease);margin-bottom:10px}
+.oauth-btn:hover{background:var(--surface-hover);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.15)}
+.oauth-btn.google:hover{border-color:#4285f4;color:#4285f4}
+.auth-terms{text-align:center;font-size:11px;color:var(--text-muted);margin-top:20px;line-height:1.6}
+.auth-terms a{color:var(--accent);text-decoration:none}
 </style>
 </head>
 <body data-theme="dark">
@@ -305,9 +336,38 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
     </a>
     <div class="chip"><span class="dot"></span><span id="backend-status">v4.1.2</span></div>
     <button class="icon-btn" onclick="window.open('https://github.com/NaufalBudiman/ConfigLabs','_blank')" title="GitHub">⭐</button>
+    <!-- AUTH SECTION -->
+    <div id="auth-nav"></div>
     <button class="icon-btn" onclick="toggleTheme()" title="Theme" id="theme-btn">🌙</button>
   </div>
 </nav>
+
+<!-- ============================================================
+     LOGIN MODAL
+     ============================================================ -->
+<div class="auth-modal-overlay" id="auth-modal" onclick="if(event.target===this)authCloseModal()">
+  <div class="auth-modal">
+    <button class="auth-modal-close" onclick="authCloseModal()">✕</button>
+    <h2 class="auth-modal-title">Sign in to <em>ConfigLabs</em></h2>
+    <p class="auth-modal-sub">Save configs · Share topologies · It's free</p>
+
+    <!-- Google OAuth Button -->
+    <button class="oauth-btn google" onclick="window.location.href='/auth/google'">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      </svg>
+      Continue with Google
+    </button>
+
+    <p class="auth-terms">
+      By signing in you agree to our <a href="/about.html">Terms</a>.<br>
+      We never share your data. No spam, ever.
+    </p>
+  </div>
+</div>
 
 <!-- ============================================================
      HERO
@@ -680,5 +740,113 @@ if(statusEl){
 }
 </script>
 
+<!-- ============================================================
+     AUTH MANAGER
+     ============================================================ -->
+<script>
+(function() {
+  // ── State ────────────────────────────────────────────────
+  let _user  = null;
+  let _token = localStorage.getItem('clab_token') || '';
+
+  // ── Open / Close Modal ───────────────────────────────────
+  window.authOpenModal  = () => document.getElementById('auth-modal').classList.add('open');
+  window.authCloseModal = () => document.getElementById('auth-modal').classList.remove('open');
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') authCloseModal(); });
+
+  // ── Toggle dropdown ──────────────────────────────────────
+  window.authToggleDropdown = () => {
+    const dd = document.getElementById('auth-dd');
+    if (dd) dd.classList.toggle('open');
+  };
+  document.addEventListener('click', e => {
+    const wrap = document.getElementById('auth-nav');
+    if (wrap && !wrap.contains(e.target)) {
+      const dd = document.getElementById('auth-dd');
+      if (dd) dd.classList.remove('open');
+    }
+  });
+
+  // ── Logout ───────────────────────────────────────────────
+  window.authLogout = () => {
+    localStorage.removeItem('clab_token');
+    _user  = null;
+    _token = '';
+    renderAuthNav();
+    if (typeof toast === 'function') toast('Logged out');
+  };
+
+  // ── Render nav UI ────────────────────────────────────────
+  function renderAuthNav() {
+    const el = document.getElementById('auth-nav');
+    if (!el) return;
+
+    if (_user) {
+      const avatar = _user.avatar_url
+        ? `<img class="auth-avatar" src="${_user.avatar_url}" alt="avatar" onclick="authToggleDropdown()">`
+        : `<button class="auth-avatar" onclick="authToggleDropdown()" style="background:var(--accent);color:var(--bg);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center">${_user.name[0].toUpperCase()}</button>`;
+
+      el.innerHTML = `
+        <div class="auth-user-wrap">
+          ${avatar}
+          <div class="auth-dropdown" id="auth-dd">
+            <div class="auth-dropdown-header">
+              <div class="auth-dropdown-name">${_user.name}</div>
+              <div class="auth-dropdown-email">${_user.email}</div>
+              <div class="auth-dropdown-provider">via ${_user.provider}</div>
+            </div>
+            <button class="auth-dropdown-item danger" onclick="authLogout()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              Logout
+            </button>
+          </div>
+        </div>`;
+    } else {
+      el.innerHTML = `<button class="auth-login-btn" onclick="authOpenModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        Login
+      </button>`;
+    }
+  }
+
+  // ── Fetch current user from API ──────────────────────────
+  async function fetchMe() {
+    if (!_token) { renderAuthNav(); return; }
+    try {
+      const res = await fetch('/api/me', {
+        headers: { 'Authorization': `Bearer ${_token}` }
+      });
+      if (res.ok) {
+        _user = await res.json();
+      } else {
+        localStorage.removeItem('clab_token');
+        _token = '';
+        _user  = null;
+      }
+    } catch (_) {
+      _user = null;
+    }
+    renderAuthNav();
+  }
+
+  // ── Handle OAuth callback (?auth_token=...) ──────────────
+  const params = new URLSearchParams(window.location.search);
+  const incoming = params.get('auth_token');
+  const authErr  = params.get('auth_error');
+
+  if (incoming) {
+    localStorage.setItem('clab_token', incoming);
+    _token = incoming;
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+  if (authErr) {
+    window.history.replaceState({}, '', window.location.pathname);
+    alert('Login failed — please try again.');
+  }
+
+  // ── Init ─────────────────────────────────────────────────
+  fetchMe();
+})();
+</script>
 </body>
 </html>

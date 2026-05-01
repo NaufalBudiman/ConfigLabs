@@ -14,12 +14,83 @@
 ║  https://configlabs.online                                   ║
 ╚══════════════════════════════════════════════════════════════╝
 """
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, redirect, url_for, g
 from flask_cors import CORS
+from authlib.integrations.flask_client import OAuth
+from models import db, User
+from datetime import datetime, timedelta
+from functools import wraps
+import jwt
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True)
+
+# ── Database ────────────────────────────────────────────────
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+    'DATABASE_URL', 'sqlite:///configlabs.db'
+)
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.environ.get('SESSION_SECRET', 'dev-secret-change-me')
+
+db.init_app(app)
+
+# ── OAuth ───────────────────────────────────────────────────
+oauth = OAuth(app)
+
+google = oauth.register(
+    name='google',
+    client_id=os.environ.get('GOOGLE_CLIENT_ID'),
+    client_secret=os.environ.get('GOOGLE_CLIENT_SECRET'),
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={'scope': 'openid email profile'}
+)
+
+# ── JWT helpers ─────────────────────────────────────────────
+JWT_SECRET  = os.environ.get('JWT_SECRET', 'dev-jwt-secret-change-me')
+JWT_EXPIRES = 60 * 60 * 24 * 30   # 30 days
+
+def create_token(user):
+    payload = {
+        'user_id':    user.id,
+        'email':      user.email,
+        'name':       user.name,
+        'avatar_url': user.avatar_url,
+        'exp': datetime.utcnow() + timedelta(seconds=JWT_EXPIRES),
+        'iat': datetime.utcnow(),
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm='HS256')
+
+def decode_token(token):
+    try:
+        return jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
+    except Exception:
+        return None
+
+def login_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        raw   = request.headers.get('Authorization', '')
+        token = raw.replace('Bearer ', '').strip()
+        data  = decode_token(token)
+        if not data:
+            return jsonify({'error': 'Unauthorized'}), 401
+        g.current_user = data
+        return f(*args, **kwargs)
+    return wrapper
+
+# ── Init DB on first request ────────────────────────────────
+with_app_context_done = False
+
+@app.before_request
+def init_db_once():
+    global with_app_context_done
+    if not with_app_context_done:
+        db.create_all()
+        with_app_context_done = True
 
 APP_NAME = "ConfigLabs"
 APP_VERSION = "2.0.0"
@@ -1172,6 +1243,68 @@ def feedback():
         return jsonify({"success": True, "message": "Thanks for your feedback!"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
+
+# ============================================================
+# AUTH — Google OAuth
+# ============================================================
+
+@app.route('/auth/google')
+def auth_google():
+    """Redirect user to Google login page"""
+    redirect_uri = url_for('auth_google_callback', _external=True)
+    return google.authorize_redirect(redirect_uri)
+
+@app.route('/auth/google/callback')
+def auth_google_callback():
+    """Google sends user back here after they log in"""
+    try:
+        token     = google.authorize_access_token()
+        user_info = token.get('userinfo')
+
+        # Find existing user or create new one
+        user = User.query.filter_by(email=user_info['email']).first()
+        if not user:
+            user = User(
+                email       = user_info['email'],
+                name        = user_info.get('name', 'User'),
+                avatar_url  = user_info.get('picture'),
+                provider    = 'google',
+                provider_id = user_info.get('sub'),
+            )
+            db.session.add(user)
+
+        user.last_login = datetime.utcnow()
+        db.session.commit()
+
+        jwt_token = create_token(user)
+        # Redirect back to frontend with token in URL (JS grabs it)
+        return redirect(f'/?auth_token={jwt_token}')
+
+    except Exception as e:
+        print(f"[AUTH ERROR] Google callback: {e}")
+        return redirect(f'/?auth_error=Login+failed')
+
+# ── Current user ─────────────────────────────────────────────
+
+@app.route('/api/me', methods=['GET'])
+def api_me():
+    """Return current user based on JWT token"""
+    raw   = request.headers.get('Authorization', '')
+    token = raw.replace('Bearer ', '').strip()
+    data  = decode_token(token)
+    if not data:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    user = User.query.get(data['user_id'])
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    return jsonify(user.to_dict())
+
+@app.route('/api/logout', methods=['POST'])
+def api_logout():
+    """Logout is handled client-side (just deletes token from localStorage)"""
+    return jsonify({'message': 'Logged out'}), 200
 
 # ============================================================
 if __name__ == "__main__":

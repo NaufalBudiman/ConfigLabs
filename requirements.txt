@@ -1,3 +1,8 @@
 flask
 flask-cors
+flask-sqlalchemy
+authlib
+pyjwt
+python-dotenv
 gunicorn
+requests
