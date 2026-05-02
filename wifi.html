@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ConfigLabs — WiFi Planner</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0d10;--bg-2:#111418;--surface:#15191f;--surface-2:#1b2027;
+  --surface-hover:#222831;--border:#232a34;--border-strong:#2e3744;
+  --text:#e6e9ee;--text-dim:#9aa3af;--text-muted:#5b6472;
+  --accent:#7cf4c7;--accent-2:#a8b5ff;--accent-3:#ffb86b;
+  --danger:#ff6478;--success:#7cf4c7;--warning:#ffc857;
+  --sans:'Geist',sans-serif;--mono:'JetBrains Mono',monospace;--serif:'Instrument Serif',serif;
+  --radius:12px;--radius-lg:20px;--ease:cubic-bezier(.22,1,.36,1)
+}
+[data-theme="light"]{
+  --bg:#f4f5f7;--bg-2:#eceef1;--surface:#ffffff;--surface-2:#f0f2f5;
+  --surface-hover:#e8eaed;--border:#dde0e5;--border-strong:#c8ccd3;
+  --text:#1a1d23;--text-dim:#4a5060;--text-muted:#8a909a
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+
+/* NAV */
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:54px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;z-index:100;position:relative}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);font-weight:600;font-size:15px}
+.brand svg{color:var(--accent)}
+.brand em{font-style:italic;font-family:var(--serif);color:var(--accent)}
+.nav-center{display:flex;align-items:center;gap:2px}
+.nav-tab{padding:7px 14px;color:var(--text-dim);text-decoration:none;font-size:13px;font-weight:500;border-radius:8px;transition:all .2s;display:inline-flex;align-items:center;gap:5px}
+.nav-tab:hover{color:var(--text);background:var(--surface-hover)}
+.nav-tab.active{color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+.beta-pill{background:color-mix(in srgb,var(--accent-3) 15%,transparent);color:var(--accent-3);font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;letter-spacing:.5px}
+.nav-right{display:flex;align-items:center;gap:8px}
+.chip{display:flex;align-items:center;gap:7px;padding:5px 11px;background:var(--surface-2);border:1px solid var(--border);border-radius:99px;font-size:11px;font-family:var(--mono);color:var(--text-dim)}
+.chip .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);flex-shrink:0}
+.icon-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);width:36px;height:36px;border-radius:10px;cursor:pointer;display:grid;place-items:center;transition:all .2s;font-size:16px}
+.icon-btn:hover{background:var(--surface-hover);color:var(--text);border-color:var(--border-strong)}
+
+/* LAYOUT */
+.wifi-page{display:flex;flex:1;overflow:hidden}
+.wifi-sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.wifi-main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.wifi-props{width:240px;background:var(--surface);border-left:1px solid var(--border);overflow-y:auto;flex-shrink:0}
+
+/* SIDEBAR */
+.sb-section{padding:12px;border-bottom:1px solid var(--border)}
+.sb-label{font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;font-weight:500}
+.tool-btn{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;background:transparent;border:1px solid transparent;color:var(--text-dim);border-radius:8px;cursor:pointer;font-family:var(--sans);font-size:12px;font-weight:500;transition:all .15s;text-align:left;margin-bottom:3px}
+.tool-btn:hover{background:var(--surface-hover);color:var(--text);border-color:var(--border)}
+.tool-btn.active{background:color-mix(in srgb,var(--accent) 10%,var(--bg));color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,var(--border))}
+.tool-btn svg{flex-shrink:0;width:14px;height:14px}
+.tool-kbd{margin-left:auto;font-family:var(--mono);font-size:9px;background:var(--surface-2);border:1px solid var(--border);padding:1px 5px;border-radius:4px;color:var(--text-muted)}
+
+/* AP PALETTE */
+.vendor-group{margin-bottom:8px}
+.vendor-header{font-size:10px;font-weight:600;color:var(--text-muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;display:flex;align-items:center;gap:6px}
+.vendor-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ap-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:grab;border:1px solid var(--border);background:var(--bg);margin-bottom:3px;transition:all .15s;user-select:none}
+.ap-item:hover{border-color:var(--border-strong);background:var(--surface-hover)}
+.ap-item:active{cursor:grabbing}
+.ap-icon{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ap-info{flex:1;min-width:0}
+.ap-name{font-size:11px;font-weight:600;color:var(--text);line-height:1.2}
+.ap-spec{font-size:10px;color:var(--text-muted);font-family:var(--mono)}
+.wifi-badge{display:inline-block;font-size:8px;font-weight:700;font-family:var(--mono);padding:1px 4px;border-radius:3px;margin-left:3px}
+
+/* WALL MATERIALS */
+.mat-btn{display:flex;align-items:center;gap:8px;width:100%;padding:7px 8px;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:var(--bg);margin-bottom:3px;font-family:var(--sans);font-size:11px;color:var(--text-dim);transition:all .15s}
+.mat-btn:hover{border-color:var(--border-strong);color:var(--text)}
+.mat-btn.active{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--bg))}
+.mat-swatch{width:14px;height:14px;border-radius:3px;flex-shrink:0}
+.mat-attn{margin-left:auto;font-family:var(--mono);font-size:9px}
+
+/* MAIN CANVAS AREA */
+.canvas-toolbar{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--surface-2);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
+.canvas-toolbar-group{display:flex;align-items:center;gap:6px}
+.tb-divider{width:1px;height:24px;background:var(--border)}
+.tb-btn{display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--border);background:var(--bg);color:var(--text-dim);border-radius:8px;font-size:12px;font-family:var(--sans);cursor:pointer;transition:all .15s}
+.tb-btn:hover{border-color:var(--border-strong);color:var(--text)}
+.tb-btn.accent{border-color:color-mix(in srgb,var(--accent) 40%,var(--border));color:var(--accent)}
+.tb-label{font-size:11px;color:var(--text-muted);font-family:var(--mono)}
+.tb-select{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:5px 8px;font-size:11px;font-family:var(--sans);cursor:pointer}
+.tb-range{width:80px;accent-color:var(--accent)}
+.tb-val{font-family:var(--mono);font-size:11px;color:var(--text-dim);min-width:32px}
+
+.canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--bg-2)}
+#floor-canvas{position:absolute;top:0;left:0;cursor:crosshair}
+.canvas-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;pointer-events:none}
+.canvas-empty-icon{font-size:48px;opacity:.3}
+.canvas-empty h3{font-size:18px;font-weight:500;color:var(--text-dim)}
+.canvas-empty p{font-size:13px;color:var(--text-muted);text-align:center;max-width:280px;line-height:1.6}
+.upload-btn-big{padding:10px 20px;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--bg);border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;pointer-events:auto;font-family:var(--sans)}
+
+/* LEGEND */
+.legend{position:absolute;bottom:16px;left:16px;background:color-mix(in srgb,var(--surface) 90%,transparent);border:1px solid var(--border);border-radius:10px;padding:10px 14px;pointer-events:none;backdrop-filter:blur(8px)}
+.legend-title{font-size:10px;color:var(--text-muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.legend-bar{width:160px;height:14px;border-radius:4px;background:linear-gradient(to right,#ff2020,#ff6020,#ffcc00,#80ff40,#00ff80);margin-bottom:6px}
+.legend-labels{display:flex;justify-content:space-between;font-size:9px;font-family:var(--mono);color:var(--text-muted)}
+
+/* STATS BAR */
+.stats-bar{display:flex;gap:12px;padding:8px 14px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0}
+.stat-chip{display:flex;align-items:center;gap:6px;font-size:11px;font-family:var(--mono);color:var(--text-dim)}
+.stat-val{font-weight:600;color:var(--text)}
+.stat-good{color:var(--accent)}
+.stat-warn{color:var(--warning)}
+.stat-bad{color:var(--danger)}
+
+/* PROPS PANEL */
+.props-header{padding:14px;border-bottom:1px solid var(--border)}
+.props-title{font-size:14px;font-weight:600;color:var(--text)}
+.props-sub{font-size:11px;color:var(--text-muted);font-family:var(--mono);margin-top:3px}
+.pf{padding:10px 14px;border-bottom:1px solid var(--border)}
+.pf label{display:block;font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-family:var(--mono)}
+.pf input,.pf select{width:100%;padding:7px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:12px;transition:border-color .15s}
+.pf input:focus,.pf select:focus{outline:none;border-color:var(--accent)}
+.pf input[type=range]{border:none;background:none;padding:4px 0;accent-color:var(--accent)}
+.pf-row{display:flex;align-items:center;gap:8px}
+.pf-val{font-family:var(--mono);font-size:11px;color:var(--accent);min-width:40px;text-align:right}
+.channel-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:4px}
+.ch-btn{padding:5px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);font-size:10px;font-family:var(--mono);cursor:pointer;text-align:center;transition:all .1s}
+.ch-btn:hover{border-color:var(--border-strong);color:var(--text)}
+.ch-btn.active{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--bg))}
+.ch-btn.conflict{border-color:var(--danger);color:var(--danger)}
+.delete-btn{width:100%;padding:9px;background:color-mix(in srgb,var(--danger) 10%,transparent);border:1px solid color-mix(in srgb,var(--danger) 40%,var(--border));color:var(--danger);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all .15s;margin:10px 14px;width:calc(100% - 28px)}
+.delete-btn:hover{background:color-mix(in srgb,var(--danger) 20%,transparent)}
+.no-sel{padding:20px 14px;text-align:center;color:var(--text-muted);font-size:12px;line-height:1.6}
+.no-sel-icon{font-size:28px;display:block;margin-bottom:10px;opacity:.4}
+
+/* SCALE MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);z-index:200;display:none;place-items:center;padding:20px}
+.modal-overlay.open{display:grid}
+.modal{background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-lg);padding:28px;max-width:420px;width:100%;position:relative}
+.modal h2{font-size:20px;font-weight:600;margin-bottom:8px;color:var(--text)}
+.modal h2 em{font-family:var(--serif);color:var(--accent);font-style:italic}
+.modal p{font-size:13px;color:var(--text-dim);margin-bottom:20px;line-height:1.6}
+.modal-close{position:absolute;top:16px;right:16px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);font-size:13px}
+.modal-close:hover{background:var(--surface-hover)}
+.modal-input{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-family:var(--sans);margin-bottom:12px}
+.modal-input:focus{outline:none;border-color:var(--accent)}
+.btn-primary-modal{width:100%;padding:11px;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--bg);border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;font-family:var(--sans)}
+.btn-secondary-modal{width:100%;padding:10px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text);border-radius:10px;font-size:13px;cursor:pointer;font-family:var(--sans);margin-bottom:8px}
+
+/* AUTH (matching existing) */
+.auth-login-btn{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--bg);border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all .15s}
+.auth-login-btn:hover{filter:brightness(1.1)}
+.auth-user-wrap{position:relative;display:inline-flex;align-items:center}
+.auth-avatar{width:34px;height:34px;border-radius:50%;border:2px solid var(--border);cursor:pointer;transition:border-color .15s;object-fit:cover;display:block}
+.auth-avatar:hover{border-color:var(--accent)}
+.auth-dropdown{position:absolute;top:calc(100% + 10px);right:0;background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;min-width:200px;box-shadow:0 16px 48px rgba(0,0,0,.4);z-index:9999;opacity:0;pointer-events:none;transform:translateY(-6px);transition:all .18s var(--ease)}
+.auth-dropdown.open{opacity:1;pointer-events:auto;transform:translateY(0)}
+.auth-dropdown-header{padding:12px 14px;border-bottom:1px solid var(--border)}
+.auth-dropdown-name{font-weight:600;color:var(--text);font-size:13px}
+.auth-dropdown-email{font-size:11px;color:var(--text-dim)}
+.auth-dropdown-item{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;color:var(--text);font-size:13px;font-family:var(--sans);cursor:pointer;transition:background .1s}
+.auth-dropdown-item:hover{background:var(--surface-hover)}
+.auth-dropdown-item.danger{color:var(--danger)}
+.auth-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);z-index:200;display:none;place-items:center;padding:20px}
+.auth-modal-overlay.open{display:grid}
+.auth-modal{background:var(--surface);border:1px solid var(--border-strong);border-radius:20px;padding:32px;max-width:400px;width:100%;position:relative}
+.auth-modal-title{font-size:24px;font-weight:600;letter-spacing:-.5px;margin-bottom:4px}
+.auth-modal-title em{font-family:var(--serif);color:var(--accent);font-style:italic;font-weight:400}
+.auth-modal-sub{font-size:13px;color:var(--text-dim);margin-bottom:24px}
+.auth-modal-close{position:absolute;top:18px;right:18px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim)}
+.oauth-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text);border-radius:12px;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:all .15s;margin-bottom:10px}
+.oauth-btn:hover{background:var(--surface-hover);transform:translateY(-1px)}
+.oauth-btn.google:hover{border-color:#4285f4;color:#4285f4}
+.auth-terms{text-align:center;font-size:11px;color:var(--text-muted);margin-top:16px;line-height:1.6}
+.auth-terms a{color:var(--accent);text-decoration:none}
+
+/* TOAST */
+.toast-container{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:500;pointer-events:none}
+.toast{padding:10px 16px;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px;animation:slideIn .3s var(--ease);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.toast.success{border-left:3px solid var(--accent)}
+.toast.error{border-left:3px solid var(--danger)}
+
+/* SAVE MODAL */
+.savename-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);z-index:200;display:none;place-items:center;padding:20px}
+.savename-modal-overlay.open{display:grid}
+</style>
+</head>
+<body data-theme="dark">
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="brand">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
+    Config<em>Labs</em>
+  </a>
+  <div class="nav-center">
+    <a href="/builder.html" class="nav-tab">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>Builder
+    </a>
+    <a href="/topology.html" class="nav-tab">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8 7l8 0M7.5 8l3.5 8M16.5 8l-3.5 8"/></svg>Topology
+    </a>
+    <a href="/wifi.html" class="nav-tab active">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>WiFi Planner
+      <span class="beta-pill">BETA</span>
+    </a>
+    <a href="/about.html" class="nav-tab">About</a>
+  </div>
+  <div class="nav-right">
+    <div class="chip"><span class="dot"></span><span>v5.0.0-beta</span></div>
+    <div id="auth-nav" style="display:flex;align-items:center"></div>
+    <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
+  </div>
+</nav>
+
+<!-- LOGIN MODAL -->
+<div class="auth-modal-overlay" id="auth-modal" onclick="if(event.target===this)authCloseModal()">
+  <div class="auth-modal">
+    <button class="auth-modal-close" onclick="authCloseModal()">✕</button>
+    <h2 class="auth-modal-title">Sign in to <em>ConfigLabs</em></h2>
+    <p class="auth-modal-sub">Save heatmaps · Share plans · It's free</p>
+    <button class="oauth-btn google" onclick="window.location.href='/auth/google'">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+      Continue with Google
+    </button>
+    <p class="auth-terms">By signing in you agree to our <a href="/about.html">Terms</a>. We never share your data.</p>
+  </div>
+</div>
+
+<!-- SAVE PLAN MODAL -->
+<div class="savename-modal-overlay" id="saveplan-modal" onclick="if(event.target===this)closeSavePlan()">
+  <div class="auth-modal" style="max-width:380px">
+    <button class="auth-modal-close" onclick="closeSavePlan()">✕</button>
+    <h2 class="auth-modal-title" style="font-size:20px;margin-bottom:16px">Save WiFi Plan</h2>
+    <input id="saveplan-input" type="text" class="modal-input" placeholder="e.g. Office Floor 2 — WiFi Plan" onkeydown="if(event.key==='Enter')confirmSavePlan()">
+    <button onclick="confirmSavePlan()" class="btn-primary-modal">💾 Save Plan</button>
+  </div>
+</div>
+
+<!-- SCALE MODAL -->
+<div class="modal-overlay" id="scale-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeScaleModal()">✕</button>
+    <h2>Set floor plan <em>scale</em></h2>
+    <p>Enter the real-world width of your floor plan so signal distances are accurate.</p>
+    <label style="display:block;font-size:11px;font-family:var(--mono);color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Floor plan width (meters)</label>
+    <input type="number" id="scale-input" class="modal-input" value="30" min="1" max="500" step="1" placeholder="e.g. 30">
+    <p style="font-size:11px;color:var(--text-muted);margin-bottom:16px;font-family:var(--mono)">Current: <span id="scale-current">not set</span></p>
+    <button onclick="confirmScale()" class="btn-primary-modal">Apply Scale</button>
+  </div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="wifi-page">
+
+  <!-- SIDEBAR -->
+  <div class="wifi-sidebar">
+
+    <div class="sb-section">
+      <div class="sb-label">Tools</div>
+      <button class="tool-btn active" data-tool="select" onclick="setTool('select')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l7 19 2-8 8-2L3 3z"/></svg>
+        Select <span class="tool-kbd">S</span>
+      </button>
+      <button class="tool-btn" data-tool="place" onclick="setTool('place')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>
+        Place AP <span class="tool-kbd">A</span>
+      </button>
+      <button class="tool-btn" data-tool="wall" onclick="setTool('wall')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="3" x2="21" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+        Draw Wall <span class="tool-kbd">W</span>
+      </button>
+      <button class="tool-btn" data-tool="erase" onclick="setTool('erase')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H7L3 16l9.16-9.16a2 2 0 012.83 0L20 12a2 2 0 010 2.83L13.5 20"/></svg>
+        Erase <span class="tool-kbd">E</span>
+      </button>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-label">Wall Material</div>
+      <div id="mat-list"></div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-label">Access Points</div>
+      <div id="ap-palette"></div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-label">Heatmap</div>
+      <div style="margin-bottom:8px">
+        <label style="font-size:11px;color:var(--text-muted);font-family:var(--mono);display:block;margin-bottom:5px">THRESHOLD (dBm)</label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="range" min="-100" max="-50" value="-75" id="threshold-range" oninput="updateThreshold(this.value)" style="flex:1;accent-color:var(--accent)">
+          <span id="threshold-val" style="font-family:var(--mono);font-size:10px;color:var(--accent);min-width:32px">-75</span>
+        </div>
+      </div>
+      <div style="margin-bottom:8px">
+        <label style="font-size:11px;color:var(--text-muted);font-family:var(--mono);display:block;margin-bottom:5px">OPACITY</label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="range" min="20" max="100" value="75" id="opacity-range" oninput="updateOpacity(this.value)" style="flex:1;accent-color:var(--accent)">
+          <span id="opacity-val" style="font-family:var(--mono);font-size:10px;color:var(--accent);min-width:32px">75%</span>
+        </div>
+      </div>
+      <button class="tool-btn" onclick="toggleHeatmap()" id="btn-toggle-hm" style="width:100%;justify-content:center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Hide Heatmap
+      </button>
+    </div>
+
+    <div class="sb-section" style="margin-top:auto">
+      <div class="sb-label">File</div>
+      <button class="tool-btn" onclick="document.getElementById('floor-upload').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Upload Floor Plan
+      </button>
+      <button class="tool-btn" onclick="openScaleModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3H3v18"/><path d="M7 7h.01M12 12h.01M17 17h.01"/></svg>
+        Set Scale
+      </button>
+      <button class="tool-btn" onclick="exportPNG()" style="color:var(--accent-2)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Export PNG
+      </button>
+      <button class="tool-btn" onclick="savePlan()" style="color:var(--accent)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Save Plan
+      </button>
+      <button class="tool-btn" onclick="clearAll()" style="color:var(--danger)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        Clear All
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN CANVAS -->
+  <div class="wifi-main">
+    <div style="background:linear-gradient(90deg,color-mix(in srgb,var(--accent-3) 18%,transparent),color-mix(in srgb,var(--accent) 12%,transparent));border-bottom:1px solid color-mix(in srgb,var(--accent-3) 40%,var(--border));padding:7px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;font-size:11px;color:var(--text-dim);font-family:var(--mono)">
+      <span style="background:var(--accent-3);color:var(--bg);font-weight:700;padding:2px 7px;border-radius:4px;font-size:10px;letter-spacing:.5px">BETA</span>
+      <span>Predictive heatmap based on FSPL + wall ray-casting. Real-world accuracy may vary — feedback welcome on GitHub.</span>
+    </div>
+    <div class="canvas-toolbar">
+      <div class="canvas-toolbar-group">
+        <span class="tb-label">Band:</span>
+        <select class="tb-select" id="global-band" onchange="updateGlobalBand(this.value)">
+          <option value="2.4">2.4 GHz</option>
+          <option value="5" selected>5 GHz</option>
+          <option value="6">6 GHz</option>
+        </select>
+      </div>
+      <div class="tb-divider"></div>
+      <div class="canvas-toolbar-group">
+        <span class="tb-label">TX Power:</span>
+        <input type="range" class="tb-range" min="1" max="30" value="20" id="global-tx" oninput="document.getElementById('global-tx-val').textContent=this.value+'dBm';scheduleRender()">
+        <span class="tb-val" id="global-tx-val">20dBm</span>
+      </div>
+      <div class="tb-divider"></div>
+      <div class="canvas-toolbar-group">
+        <span class="tb-label">View:</span>
+        <select class="tb-select" id="heatmap-mode" onchange="scheduleRender()">
+          <option value="rssi">Signal (RSSI)</option>
+          <option value="snr">Signal/Noise (SNR)</option>
+          <option value="coverage">Coverage Zones</option>
+        </select>
+      </div>
+      <div class="tb-divider"></div>
+      <div class="canvas-toolbar-group">
+        <span class="tb-label">Scale:</span>
+        <span id="scale-display" style="font-family:var(--mono);font-size:11px;color:var(--text-dim)">not set</span>
+        <button class="tb-btn" onclick="openScaleModal()">Set</button>
+      </div>
+    </div>
+
+    <div class="canvas-wrap" id="canvas-wrap">
+      <canvas id="floor-canvas"></canvas>
+      <div class="canvas-empty" id="canvas-empty">
+        <div class="canvas-empty-icon">📡</div>
+        <h3>WiFi Heatmap Planner</h3>
+        <p>Upload a floor plan image to get started, or start placing APs on a blank canvas.</p>
+        <div style="display:flex;gap:8px;pointer-events:auto">
+          <button class="upload-btn-big" onclick="document.getElementById('floor-upload').click()">Upload Floor Plan</button>
+          <button class="upload-btn-big" style="background:var(--surface-2);color:var(--text);border:1px solid var(--border-strong)" onclick="startBlankCanvas()">Blank Canvas</button>
+        </div>
+      </div>
+      <div class="legend" id="legend" style="display:none">
+        <div class="legend-title">Signal Strength (RSSI)</div>
+        <div class="legend-bar"></div>
+        <div class="legend-labels">
+          <span>Poor<br>-90dBm</span>
+          <span style="text-align:center">Fair<br>-70dBm</span>
+          <span style="text-align:right">Excellent<br>-50dBm</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-bar" id="stats-bar">
+      <div class="stat-chip">APs: <span class="stat-val" id="stat-aps">0</span></div>
+      <div class="stat-chip">Coverage: <span class="stat-val stat-good" id="stat-cov">—</span></div>
+      <div class="stat-chip">Excellent: <span class="stat-val" id="stat-exc">—</span></div>
+      <div class="stat-chip">Dead zones: <span class="stat-val stat-bad" id="stat-dead">—</span></div>
+      <div class="stat-chip" style="margin-left:auto">Walls: <span class="stat-val" id="stat-walls">0</span></div>
+    </div>
+  </div>
+
+  <!-- PROPERTIES PANEL -->
+  <div class="wifi-props" id="wifi-props">
+    <div id="props-content">
+      <div class="no-sel">
+        <span class="no-sel-icon">📡</span>
+        Select an AP or wall to edit its properties.
+        <br><br>
+        Use <strong>Place AP</strong> tool to drop access points, or <strong>Draw Wall</strong> to add walls with materials.
+      </div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="floor-upload" accept="image/*" style="display:none" onchange="loadFloorPlan(this)">
+<div class="toast-container" id="toast-container"></div>
+<script>
+// ============================================================
+// AP DATABASE — Real specs from datasheets
+// ============================================================
+const VENDORS = {
+  h3c: {
+    name: 'H3C', color: '#7cf4c7', bg: '#16221a',
+    models: [
+      { id:'wa6320', name:'WA6320',     wifi:6, bands:['2.4','5'],     tx:20, gain:3.0, range_m:30, indoor:true,  desc:'Wi-Fi 6 2x2 Indoor' },
+      { id:'wa6636', name:'WA6636',     wifi:6, bands:['2.4','5'],     tx:23, gain:4.0, range_m:40, indoor:true,  desc:'Wi-Fi 6 4x4 Tri-Radio' },
+      { id:'wa7338', name:'WA7338-HI',  wifi:7, bands:['2.4','5','6'], tx:23, gain:5.0, range_m:45, indoor:true,  desc:'Wi-Fi 7 Tri-Band' },
+      { id:'wa5620', name:'WA5620E',    wifi:5, bands:['2.4','5'],     tx:26, gain:7.0, range_m:100,indoor:false, desc:'Wi-Fi 5 Outdoor 4x4' },
+    ]
+  },
+  ruijie: {
+    name: 'Ruijie', color: '#a8b5ff', bg: '#171a26',
+    models: [
+      { id:'ap820',  name:'RG-AP820-L', wifi:6, bands:['2.4','5'],     tx:20, gain:3.0, range_m:30, indoor:true,  desc:'Wi-Fi 6 AX3000 Indoor' },
+      { id:'ap840',  name:'RG-AP840-I', wifi:6, bands:['2.4','5'],     tx:23, gain:4.0, range_m:40, indoor:true,  desc:'Wi-Fi 6 AX5400 Indoor' },
+      { id:'ap880',  name:'RG-AP880-I', wifi:7, bands:['2.4','5','6'], tx:23, gain:4.5, range_m:45, indoor:true,  desc:'Wi-Fi 7 Tri-Band' },
+      { id:'ap6262', name:'RG-RAP6262', wifi:6, bands:['2.4','5'],     tx:26, gain:7.0, range_m:150,indoor:false, desc:'Wi-Fi 6 Outdoor Omni' },
+    ]
+  },
+  aruba: {
+    name: 'Aruba', color: '#ffb86b', bg: '#241c12',
+    models: [
+      { id:'ap303',  name:'AP-303',    wifi:5, bands:['2.4','5'],     tx:21, gain:4.5, range_m:30, indoor:true,  desc:'Wi-Fi 5 2x2 Campus' },
+      { id:'ap535',  name:'AP-535',    wifi:6, bands:['2.4','5'],     tx:24, gain:5.1, range_m:40, indoor:true,  desc:'Wi-Fi 6 4x4 Campus' },
+      { id:'ap735',  name:'AP-735',    wifi:7, bands:['2.4','5','6'], tx:21, gain:5.3, range_m:40, indoor:true,  desc:'Wi-Fi 7 Tri-Band' },
+      { id:'ap575',  name:'AP-577',    wifi:6, bands:['2.4','5','6'], tx:26, gain:6.0, range_m:120,indoor:false, desc:'Wi-Fi 6E Outdoor' },
+    ]
+  },
+  tplink: {
+    name: 'TP-Link', color: '#ff6478', bg: '#241518',
+    models: [
+      { id:'eap620', name:'EAP620 HD', wifi:6, bands:['2.4','5'],     tx:20, gain:5.2, range_m:35, indoor:true,  desc:'Wi-Fi 6 AX1800' },
+      { id:'eap670', name:'EAP670',    wifi:6, bands:['2.4','5'],     tx:23, gain:5.4, range_m:40, indoor:true,  desc:'Wi-Fi 6 AX5400' },
+      { id:'eap772', name:'EAP772',    wifi:7, bands:['2.4','5','6'], tx:23, gain:4.0, range_m:40, indoor:true,  desc:'Wi-Fi 7 Tri-Band' },
+      { id:'eap225o',name:'EAP225-O',  wifi:5, bands:['2.4','5'],     tx:27, gain:8.0, range_m:200,indoor:false, desc:'Wi-Fi 5 Outdoor' },
+    ]
+  }
+};
+
+// Wall material attenuation (dB) — based on Ekahau/RF engineering standards
+const WALL_MATS = [
+  { id:'drywall',  name:'Drywall',       attn:3,  color:'#d4c4a0', hex:'#d4c4a0' },
+  { id:'wood',     name:'Wood',          attn:4,  color:'#c8a060', hex:'#c8a060' },
+  { id:'glass',    name:'Glass',         attn:2,  color:'#80c8e0', hex:'#80c8e0' },
+  { id:'brick',    name:'Brick',         attn:8,  color:'#c87060', hex:'#c87060' },
+  { id:'concrete', name:'Concrete',      attn:15, color:'#909090', hex:'#909090' },
+  { id:'metal',    name:'Metal / Steel', attn:25, color:'#607080', hex:'#607080' },
+  { id:'elevator', name:'Elevator Shaft',attn:30, color:'#404850', hex:'#404850' },
+];
+
+// Frequency constants for FSPL
+const FREQ_MHZ = { '2.4': 2437, '5': 5200, '6': 6000 };
+
+// Noise floor (dBm) per band
+const NOISE_FLOOR = { '2.4': -95, '5': -93, '6': -91 };
+
+// RSSI color scale
+function rssiToRGBA(rssi, alpha) {
+  const a = Math.round(alpha * 255);
+  if (rssi >= -50) return [0, 230, 120, a];          // excellent — bright teal
+  if (rssi >= -60) return [80, 220, 60, a];           // good — green
+  if (rssi >= -67) return [180, 230, 0, a];           // fair — yellow-green
+  if (rssi >= -75) return [255, 200, 0, a];           // weak — yellow
+  if (rssi >= -82) return [255, 110, 0, a];           // poor — orange
+  return [220, 30, 30, a];                             // very poor — red
+}
+
+// FSPL model: PL(dB) = 20log10(d) + 20log10(f_mhz) - 27.55
+function fspl(d_m, freq_mhz) {
+  if (d_m < 0.1) d_m = 0.1;
+  return 20 * Math.log10(d_m) + 20 * Math.log10(freq_mhz) - 27.55;
+}
+
+// Line segment intersection — for wall ray casting
+function segIntersects(ax,ay,bx,by,cx,cy,dx,dy){
+  const d=(ax-bx)*(cy-dy)-(ay-by)*(cx-dx);
+  if(Math.abs(d)<1e-10)return false;
+  const t=((ax-cx)*(cy-dy)-(ay-cy)*(cx-dx))/d;
+  const u=-((ax-bx)*(ay-cy)-(ay-by)*(ax-cx))/d;
+  return t>=0&&t<=1&&u>=0&&u<=1;
+}
+
+// ============================================================
+// STATE
+// ============================================================
+const wifi = {
+  aps:      [],      // placed access points
+  walls:    [],      // drawn walls
+  sel:      null,    // { kind:'ap'|'wall', id }
+  tool:     'select',
+  band:     '5',
+  mat:      'drywall',
+  pxPerMeter: null,  // pixels per meter
+  floorPlan: null,   // ImageBitmap of floor plan
+  floorW:   800, floorH: 600,
+  wallStart: null,   // {x,y} when drawing wall
+  counters: { ap:0, wall:0 },
+  hmVisible: true,
+  threshold: -75,
+  opacity: 0.75,
+  dragging: null,    // {id, offX, offY}
+  placingVendor: null,
+  placingModel: null,
+};
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('load', () => {
+  buildAPPalette();
+  buildMatList();
+  initCanvas();
+  initAuth();
+  document.addEventListener('keydown', onKey);
+});
+
+function buildAPPalette() {
+  const el = document.getElementById('ap-palette');
+  for (const [vid, vendor] of Object.entries(VENDORS)) {
+    const grp = document.createElement('div');
+    grp.className = 'vendor-group';
+    grp.innerHTML = `<div class="vendor-header"><div class="vendor-dot" style="background:${vendor.color}"></div>${vendor.name}</div>`;
+    for (const model of vendor.models) {
+      const wfColors = {5:'#a8b5ff',6:'#7cf4c7',7:'#ffb86b'};
+      const item = document.createElement('div');
+      item.className = 'ap-item';
+      item.draggable = true;
+      item.dataset.vendor = vid;
+      item.dataset.model = model.id;
+      item.innerHTML = `
+        <div class="ap-icon" style="background:${vendor.bg};border:1px solid ${vendor.color}40">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${vendor.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/>
+          </svg>
+        </div>
+        <div class="ap-info">
+          <div class="ap-name">${model.name}<span class="wifi-badge" style="background:${wfColors[model.wifi]}20;color:${wfColors[model.wifi]}">Wi-Fi ${model.wifi}</span></div>
+          <div class="ap-spec">${model.desc}</div>
+        </div>`;
+      item.addEventListener('dragstart', e => {
+        wifi.placingVendor = vid;
+        wifi.placingModel  = model.id;
+        setTool('place');
+      });
+      item.addEventListener('click', () => {
+        wifi.placingVendor = vid;
+        wifi.placingModel  = model.id;
+        setTool('place');
+        toast(`Click canvas to place ${model.name}`);
+      });
+      grp.appendChild(item);
+    }
+    el.appendChild(grp);
+  }
+}
+
+function buildMatList() {
+  const el = document.getElementById('mat-list');
+  for (const mat of WALL_MATS) {
+    const btn = document.createElement('button');
+    btn.className = 'mat-btn' + (mat.id === wifi.mat ? ' active' : '');
+    btn.dataset.mat = mat.id;
+    btn.innerHTML = `<div class="mat-swatch" style="background:${mat.color};border:1px solid rgba(255,255,255,.2)"></div><span>${mat.name}</span><span class="mat-attn">${mat.attn}dB</span>`;
+    btn.addEventListener('click', () => {
+      wifi.mat = mat.id;
+      document.querySelectorAll('.mat-btn').forEach(b => b.classList.toggle('active', b.dataset.mat === mat.id));
+    });
+    el.appendChild(btn);
+  }
+}
+
+// ============================================================
+// CANVAS
+// ============================================================
+let canvas, ctx;
+function initCanvas() {
+  canvas = document.getElementById('floor-canvas');
+  ctx    = canvas.getContext('2d');
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+  canvas.addEventListener('mousedown', onMouseDown);
+  canvas.addEventListener('mousemove', onMouseMove);
+  canvas.addEventListener('mouseup',   onMouseUp);
+  canvas.addEventListener('dblclick',  onDblClick);
+  canvas.addEventListener('dragover',  e => e.preventDefault());
+  canvas.addEventListener('drop',      onCanvasDrop);
+}
+
+function resizeCanvas() {
+  const wrap = document.getElementById('canvas-wrap');
+  canvas.width  = wrap.clientWidth;
+  canvas.height = wrap.clientHeight - 0;
+  wifi.floorW   = canvas.width;
+  wifi.floorH   = canvas.height;
+  if (!wifi.pxPerMeter) wifi.pxPerMeter = canvas.width / 30;
+  scheduleRender();
+}
+
+let _renderTimer = null;
+function scheduleRender() {
+  if (_renderTimer) cancelAnimationFrame(_renderTimer);
+  _renderTimer = requestAnimationFrame(renderAll);
+}
+
+// ============================================================
+// RENDER PIPELINE
+// ============================================================
+let _hmDirty = true;
+let _hmCanvas = null;
+
+function markHMDirty() { _hmDirty = true; }
+
+function renderAll() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // 1. Floor plan background
+  if (wifi.floorPlan) {
+    ctx.globalAlpha = 0.9;
+    ctx.drawImage(wifi.floorPlan, 0, 0, canvas.width, canvas.height);
+    ctx.globalAlpha = 1;
+  } else {
+    ctx.fillStyle = '#0e1117';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawGrid();
+  }
+
+  // 2. Heatmap
+  if (wifi.hmVisible && wifi.aps.length > 0) {
+    renderHeatmap();
+  }
+
+  // 3. Walls
+  renderWalls();
+
+  // 4. Wall-being-drawn
+  if (wifi.wallStart && _mousePos) {
+    ctx.beginPath();
+    ctx.moveTo(wifi.wallStart.x, wifi.wallStart.y);
+    ctx.lineTo(_mousePos.x, _mousePos.y);
+    const mat = WALL_MATS.find(m => m.id === wifi.mat);
+    ctx.strokeStyle = mat ? mat.color : '#fff';
+    ctx.lineWidth   = 4;
+    ctx.setLineDash([6, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // 5. APs
+  renderAPs();
+
+  // 6. Legend & stats
+  if (wifi.aps.length > 0) {
+    document.getElementById('legend').style.display = 'block';
+  }
+
+  updateStats();
+}
+
+function drawGrid() {
+  const step = Math.round(wifi.pxPerMeter);
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < canvas.width; x += step) {
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke();
+  }
+  for (let y = 0; y < canvas.height; y += step) {
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke();
+  }
+}
+
+// ============================================================
+// HEATMAP — pixel-by-pixel RSSI calculation
+// ============================================================
+function renderHeatmap() {
+  const mode = document.getElementById('heatmap-mode').value;
+  const band  = document.getElementById('global-band').value;
+  const freq  = FREQ_MHZ[band];
+  const noise = NOISE_FLOOR[band];
+  const alpha = wifi.opacity;
+  const threshold = wifi.threshold;
+
+  const W = canvas.width, H = canvas.height;
+  const STEP = 5; // px per calculation cell (performance)
+
+  const imgData = ctx.createImageData(W, H);
+  const d = imgData.data;
+
+  for (let py = 0; py < H; py += STEP) {
+    for (let px = 0; px < W; px += STEP) {
+      // Find best RSSI at this cell from all APs
+      let bestRSSI = -200, bestSNR = -200;
+
+      for (const ap of wifi.aps) {
+        const apModel = getAPModel(ap.vendor, ap.model);
+        if (!apModel) continue;
+
+        // Use AP-specific band if set, else global
+        const apBand  = ap.band || band;
+        const apFreq  = FREQ_MHZ[apBand] || freq;
+        const apNoise = NOISE_FLOOR[apBand] || noise;
+        const txPower = ap.txPower !== undefined ? ap.txPower : apModel.tx;
+        const gain    = apModel.gain;
+
+        // Distance in meters
+        const dx_m = (px - ap.x) / wifi.pxPerMeter;
+        const dy_m = (py - ap.y) / wifi.pxPerMeter;
+        const d_m  = Math.sqrt(dx_m*dx_m + dy_m*dy_m);
+
+        // Wall attenuation via ray casting
+        let wallLoss = 0;
+        for (const wall of wifi.walls) {
+          if (segIntersects(ap.x, ap.y, px, py, wall.x1, wall.y1, wall.x2, wall.y2)) {
+            wallLoss += wall.attn;
+          }
+        }
+
+        const pl   = fspl(d_m, apFreq);
+        const rssi = txPower + gain - pl - wallLoss;
+        const snr  = rssi - apNoise;
+
+        if (rssi > bestRSSI) bestRSSI = rssi;
+        if (snr  > bestSNR)  bestSNR  = snr;
+      }
+
+      if (bestRSSI < threshold) continue;
+
+      let color;
+      if (mode === 'snr') {
+        color = snrToRGBA(bestSNR, alpha);
+      } else if (mode === 'coverage') {
+        color = coverageToRGBA(bestRSSI, alpha);
+      } else {
+        color = rssiToRGBA(bestRSSI, alpha);
+      }
+
+      // Fill STEP x STEP block
+      for (let dy = 0; dy < STEP && py+dy < H; dy++) {
+        for (let dx = 0; dx < STEP && px+dx < W; dx++) {
+          const i = ((py+dy)*W + (px+dx)) * 4;
+          d[i]   = color[0];
+          d[i+1] = color[1];
+          d[i+2] = color[2];
+          d[i+3] = color[3];
+        }
+      }
+    }
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+}
+
+function snrToRGBA(snr, alpha) {
+  const a = Math.round(alpha * 255);
+  if (snr >= 40) return [0, 230, 120, a];
+  if (snr >= 25) return [80, 220, 60, a];
+  if (snr >= 15) return [255, 200, 0, a];
+  if (snr >= 10) return [255, 110, 0, a];
+  return [220, 30, 30, a];
+}
+
+function coverageToRGBA(rssi, alpha) {
+  const a = Math.round(alpha * 255);
+  if (rssi >= -65) return [0, 200, 100, a];   // primary — green
+  if (rssi >= -75) return [120, 160, 255, a];  // secondary — blue
+  return [200, 80, 80, a];                      // edge — red
+}
+
+// ============================================================
+// RENDER WALLS
+// ============================================================
+function renderWalls() {
+  for (const wall of wifi.walls) {
+    const mat = WALL_MATS.find(m => m.id === wall.mat) || WALL_MATS[0];
+    const isSel = wifi.sel?.kind === 'wall' && wifi.sel?.id === wall.id;
+    ctx.beginPath();
+    ctx.moveTo(wall.x1, wall.y1);
+    ctx.lineTo(wall.x2, wall.y2);
+    ctx.strokeStyle = isSel ? '#7cf4c7' : mat.color;
+    ctx.lineWidth   = isSel ? 5 : 3;
+    ctx.lineCap     = 'round';
+    ctx.setLineDash([]);
+    if (!isSel) ctx.globalAlpha = 0.8;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Midpoint label (attn dB)
+    const mx = (wall.x1 + wall.x2) / 2;
+    const my = (wall.y1 + wall.y2) / 2;
+    ctx.fillStyle = isSel ? '#7cf4c7' : mat.color;
+    ctx.font = '9px JetBrains Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(mat.attn + 'dB', mx, my - 4);
+  }
+}
+
+// ============================================================
+// RENDER APs
+// ============================================================
+function renderAPs() {
+  for (const ap of wifi.aps) {
+    const vendor  = VENDORS[ap.vendor];
+    const apModel = getAPModel(ap.vendor, ap.model);
+    const isSel   = wifi.sel?.kind === 'ap' && wifi.sel?.id === ap.id;
+    const color   = vendor?.color || '#7cf4c7';
+
+    const r = 18;
+
+    // Glow on select
+    if (isSel) {
+      ctx.beginPath();
+      ctx.arc(ap.x, ap.y, r + 6, 0, Math.PI*2);
+      ctx.fillStyle = color + '30';
+      ctx.fill();
+    }
+
+    // Circle background
+    ctx.beginPath();
+    ctx.arc(ap.x, ap.y, r, 0, Math.PI*2);
+    ctx.fillStyle = vendor?.bg || '#15191f';
+    ctx.fill();
+    ctx.strokeStyle = isSel ? '#7cf4c7' : color;
+    ctx.lineWidth   = isSel ? 2.5 : 1.5;
+    ctx.stroke();
+
+    // WiFi icon inside
+    ctx.strokeStyle = color;
+    ctx.lineWidth   = 1.5;
+    ctx.lineCap     = 'round';
+    // Simplified wifi arcs
+    const waves = [{r:5},{r:9},{r:13}];
+    for (const w of waves) {
+      ctx.beginPath();
+      ctx.arc(ap.x, ap.y + 4, w.r, Math.PI*1.2, Math.PI*1.8);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.arc(ap.x, ap.y + 4, 2, 0, Math.PI*2);
+    ctx.fillStyle = color;
+    ctx.fill();
+
+    // AP name label below
+    ctx.fillStyle = color;
+    ctx.font = 'bold 10px JetBrains Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(ap.name, ap.x, ap.y + r + 13);
+
+    // Band badge
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    const bw = 26, bh = 12;
+    ctx.beginPath();
+    ctx.roundRect(ap.x - bw/2, ap.y - r - bh - 2, bw, bh, 3);
+    ctx.fill();
+    ctx.fillStyle = color;
+    ctx.font = '8px JetBrains Mono, monospace';
+    ctx.fillText((ap.band || document.getElementById('global-band').value) + 'G', ap.x, ap.y - r - bh/2 + 3);
+  }
+}
+
+// ============================================================
+// MOUSE EVENTS
+// ============================================================
+let _mousePos = null;
+
+function onMouseDown(e) {
+  const {x, y} = canvasPos(e);
+
+  if (wifi.tool === 'select') {
+    // Check APs
+    const ap = wifi.aps.find(a => Math.hypot(a.x-x, a.y-y) < 22);
+    if (ap) {
+      wifi.sel = {kind:'ap', id:ap.id};
+      wifi.dragging = {id:ap.id, offX:x-ap.x, offY:y-ap.y};
+      renderPropsPanel();
+      scheduleRender();
+      return;
+    }
+    // Check walls
+    const wall = findWallNear(x, y);
+    if (wall) {
+      wifi.sel = {kind:'wall', id:wall.id};
+      renderPropsPanel();
+      scheduleRender();
+      return;
+    }
+    wifi.sel = null;
+    renderPropsPanel();
+    scheduleRender();
+  }
+  else if (wifi.tool === 'place') {
+    placeAP(x, y);
+  }
+  else if (wifi.tool === 'wall') {
+    if (!wifi.wallStart) {
+      wifi.wallStart = {x, y};
+    } else {
+      // Finish wall
+      wifi.counters.wall++;
+      const mat = WALL_MATS.find(m => m.id === wifi.mat);
+      wifi.walls.push({
+        id: 'w' + wifi.counters.wall,
+        x1: wifi.wallStart.x, y1: wifi.wallStart.y,
+        x2: x, y2: y,
+        mat: wifi.mat,
+        attn: mat ? mat.attn : 3
+      });
+      wifi.wallStart = null;
+      scheduleRender();
+    }
+  }
+  else if (wifi.tool === 'erase') {
+    // Erase AP
+    const apIdx = wifi.aps.findIndex(a => Math.hypot(a.x-x, a.y-y) < 22);
+    if (apIdx >= 0) { wifi.aps.splice(apIdx, 1); scheduleRender(); return; }
+    // Erase wall
+    const wall = findWallNear(x, y);
+    if (wall) { wifi.walls = wifi.walls.filter(w => w.id !== wall.id); scheduleRender(); }
+  }
+}
+
+function onMouseMove(e) {
+  const {x, y} = canvasPos(e);
+  _mousePos = {x, y};
+
+  if (wifi.dragging) {
+    const ap = wifi.aps.find(a => a.id === wifi.dragging.id);
+    if (ap) {
+      ap.x = x - wifi.dragging.offX;
+      ap.y = y - wifi.dragging.offY;
+      scheduleRender();
+    }
+    return;
+  }
+
+  if (wifi.wallStart || (wifi.tool === 'wall' && !wifi.wallStart)) {
+    scheduleRender();
+  }
+
+  // Cursor style
+  let cur = 'default';
+  if (wifi.tool === 'place') cur = 'crosshair';
+  else if (wifi.tool === 'wall') cur = wifi.wallStart ? 'crosshair' : 'crosshair';
+  else if (wifi.tool === 'erase') cur = 'cell';
+  else {
+    const ap = wifi.aps.find(a => Math.hypot(a.x-x, a.y-y) < 22);
+    if (ap) cur = 'grab';
+  }
+  canvas.style.cursor = cur;
+}
+
+function onMouseUp(e) {
+  if (wifi.dragging) {
+    wifi.dragging = null;
+    scheduleRender();
+  }
+}
+
+function onDblClick(e) {
+  if (wifi.tool === 'wall' && wifi.wallStart) {
+    wifi.wallStart = null;
+    scheduleRender();
+  }
+}
+
+function onCanvasDrop(e) {
+  e.preventDefault();
+  const {x, y} = canvasPos(e);
+  if (wifi.placingVendor && wifi.placingModel) {
+    placeAP(x, y);
+  }
+}
+
+function canvasPos(e) {
+  const r = canvas.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+// ============================================================
+// PLACE AP
+// ============================================================
+function placeAP(x, y) {
+  if (!wifi.placingVendor) {
+    // Default to first model
+    wifi.placingVendor = 'h3c';
+    wifi.placingModel  = 'wa6320';
+  }
+  const vendor  = VENDORS[wifi.placingVendor];
+  const apModel = vendor.models.find(m => m.id === wifi.placingModel);
+  wifi.counters.ap++;
+
+  const band = document.getElementById('global-band').value;
+  const txPower = parseInt(document.getElementById('global-tx').value);
+
+  const ap = {
+    id:      'ap' + wifi.counters.ap,
+    vendor:  wifi.placingVendor,
+    model:   wifi.placingModel,
+    name:    vendor.name + '-' + wifi.counters.ap,
+    x, y,
+    band:    apModel.bands.includes(band) ? band : apModel.bands[apModel.bands.length-1],
+    channel: band === '2.4' ? 1 : band === '5' ? 36 : 1,
+    txPower: txPower,
+    height:  2.5,
+  };
+
+  wifi.aps.push(ap);
+  wifi.sel = {kind:'ap', id:ap.id};
+  document.getElementById('canvas-empty').style.display = 'none';
+  renderPropsPanel();
+  scheduleRender();
+  toast(`Placed ${vendor.name} ${apModel.name}`);
+}
+
+// ============================================================
+// WALL FINDER
+// ============================================================
+function findWallNear(x, y, thresh=8) {
+  for (const wall of wifi.walls) {
+    // Distance from point to segment
+    const dx = wall.x2-wall.x1, dy = wall.y2-wall.y1;
+    const len2 = dx*dx+dy*dy;
+    const t = len2 ? Math.max(0,Math.min(1,((x-wall.x1)*dx+(y-wall.y1)*dy)/len2)) : 0;
+    const nx = wall.x1+t*dx, ny = wall.y1+t*dy;
+    if (Math.hypot(x-nx,y-ny) < thresh) return wall;
+  }
+  return null;
+}
+
+// ============================================================
+// PROPS PANEL
+// ============================================================
+function renderPropsPanel() {
+  const el = document.getElementById('props-content');
+  if (!wifi.sel) {
+    el.innerHTML = `<div class="no-sel"><span class="no-sel-icon">📡</span>Select an AP or wall to edit properties.</div>`;
+    return;
+  }
+
+  if (wifi.sel.kind === 'ap') {
+    const ap     = wifi.aps.find(a => a.id === wifi.sel.id);
+    if (!ap) return;
+    const vendor  = VENDORS[ap.vendor];
+    const apModel = getAPModel(ap.vendor, ap.model);
+    if (!vendor || !apModel) return;
+
+    // Build channel options based on band
+    const channels24 = [1,2,3,4,5,6,7,8,9,10,11];
+    const channels5  = [36,40,44,48,52,56,60,64,100,104,108,112,116,120,124,128,132,136,140,144,149,153,157,161,165];
+    const channels6  = [1,5,9,13,17,21,25,29,33,37,41,45,49,53,57,61,65,69,73,77,81,85,89,93];
+    const chList = ap.band === '2.4' ? channels24 : ap.band === '6' ? channels6 : channels5;
+
+    // Detect channel conflicts
+    const conflictChs = wifi.aps
+      .filter(a => a.id !== ap.id && a.band === ap.band)
+      .map(a => a.channel);
+
+    const chButtons = chList.map(ch => {
+      const isActive   = ap.channel === ch;
+      const isConflict = conflictChs.includes(ch) && !isActive;
+      return `<button class="ch-btn ${isActive?'active':''} ${isConflict?'conflict':''}" onclick="setAPChannel('${ap.id}',${ch})">${ch}</button>`;
+    }).join('');
+
+    const wfColors = {5:'#a8b5ff',6:'#7cf4c7',7:'#ffb86b'};
+    el.innerHTML = `
+      <div class="props-header" style="border-left:3px solid ${vendor.color}">
+        <div class="props-title">${ap.name}</div>
+        <div class="props-sub">${vendor.name} ${apModel.name} · <span style="color:${wfColors[apModel.wifi]}">Wi-Fi ${apModel.wifi}</span></div>
+      </div>
+      <div class="pf">
+        <label>Hostname / Label</label>
+        <input value="${ap.name}" oninput="updateAP('${ap.id}','name',this.value)">
+      </div>
+      <div class="pf">
+        <label>Band</label>
+        <select onchange="updateAP('${ap.id}','band',this.value);renderPropsPanel();scheduleRender()">
+          ${apModel.bands.map(b => `<option value="${b}" ${ap.band===b?'selected':''}>${b} GHz</option>`).join('')}
+        </select>
+      </div>
+      <div class="pf">
+        <label>TX Power</label>
+        <div class="pf-row">
+          <input type="range" min="1" max="30" value="${ap.txPower}" oninput="updateAP('${ap.id}','txPower',+this.value);this.nextSibling.textContent=this.value+'dBm';scheduleRender()">
+          <span class="pf-val">${ap.txPower}dBm</span>
+        </div>
+      </div>
+      <div class="pf">
+        <label>Antenna gain: <span style="color:var(--accent)">${apModel.gain}dBi</span> &nbsp;|&nbsp; EIRP: <span style="color:var(--accent)">${ap.txPower+apModel.gain}dBm</span></label>
+      </div>
+      <div class="pf">
+        <label>Mount height (m)</label>
+        <div class="pf-row">
+          <input type="range" min="1" max="10" step="0.5" value="${ap.height||2.5}" oninput="updateAP('${ap.id}','height',+this.value);this.nextSibling.textContent=this.value+'m'">
+          <span class="pf-val">${ap.height||2.5}m</span>
+        </div>
+      </div>
+      <div class="pf">
+        <label>Channel &nbsp;<span style="font-weight:400;color:var(--text-muted)">(red = used by other AP)</span></label>
+        <div class="channel-grid">${chButtons}</div>
+      </div>
+      <div class="pf">
+        <label>Effective range</label>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--accent)">~${apModel.range_m}m${apModel.indoor?'':' outdoor'}</div>
+      </div>
+      <button class="delete-btn" onclick="deleteSelected()">Delete AP</button>`;
+  }
+  else if (wifi.sel.kind === 'wall') {
+    const wall = wifi.walls.find(w => w.id === wifi.sel.id);
+    if (!wall) return;
+    const mat  = WALL_MATS.find(m => m.id === wall.mat);
+    const len  = Math.round(Math.hypot(wall.x2-wall.x1, wall.y2-wall.y1) / wifi.pxPerMeter * 10) / 10;
+
+    el.innerHTML = `
+      <div class="props-header" style="border-left:3px solid ${mat?.color||'#fff'}">
+        <div class="props-title">Wall Segment</div>
+        <div class="props-sub">${mat?.name||'Unknown'} · ${mat?.attn}dB attenuation</div>
+      </div>
+      <div class="pf">
+        <label>Material</label>
+        <select onchange="updateWall('${wall.id}','mat',this.value);renderPropsPanel();scheduleRender()">
+          ${WALL_MATS.map(m=>`<option value="${m.id}" ${wall.mat===m.id?'selected':''}>${m.name} (${m.attn}dB)</option>`).join('')}
+        </select>
+      </div>
+      <div class="pf">
+        <label>Attenuation</label>
+        <div style="font-family:var(--mono);font-size:20px;font-weight:600;color:var(--danger)">${wall.attn}dB</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Signal loss through this material</div>
+      </div>
+      <div class="pf">
+        <label>Length</label>
+        <div style="font-family:var(--mono);font-size:14px;color:var(--text)">${len}m <span style="color:var(--text-muted);font-size:10px">(${Math.round(len*3.28)}ft)</span></div>
+      </div>
+      <button class="delete-btn" onclick="deleteSelected()">Delete Wall</button>`;
+  }
+}
+
+function updateAP(id, key, val) {
+  const ap = wifi.aps.find(a => a.id === id);
+  if (ap) { ap[key] = val; scheduleRender(); }
+}
+
+function updateWall(id, key, val) {
+  const wall = wifi.walls.find(w => w.id === id);
+  if (wall) {
+    wall[key] = val;
+    if (key === 'mat') {
+      const mat = WALL_MATS.find(m => m.id === val);
+      if (mat) wall.attn = mat.attn;
+    }
+    scheduleRender();
+  }
+}
+
+function setAPChannel(id, ch) {
+  updateAP(id, 'channel', ch);
+  renderPropsPanel();
+  scheduleRender();
+}
+
+function deleteSelected() {
+  if (!wifi.sel) return;
+  if (wifi.sel.kind === 'ap') wifi.aps = wifi.aps.filter(a => a.id !== wifi.sel.id);
+  if (wifi.sel.kind === 'wall') wifi.walls = wifi.walls.filter(w => w.id !== wifi.sel.id);
+  wifi.sel = null;
+  renderPropsPanel();
+  scheduleRender();
+}
+
+// ============================================================
+// TOOL SWITCHING
+// ============================================================
+function setTool(tool) {
+  wifi.tool = tool;
+  wifi.wallStart = null;
+  document.querySelectorAll('.tool-btn[data-tool]').forEach(b =>
+    b.classList.toggle('active', b.dataset.tool === tool));
+  canvas.style.cursor = tool === 'place' || tool === 'wall' ? 'crosshair' : tool === 'erase' ? 'cell' : 'default';
+}
+
+function onKey(e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+  const map = { s:'select', a:'place', w:'wall', e:'erase' };
+  if (map[e.key.toLowerCase()]) setTool(map[e.key.toLowerCase()]);
+  if (e.key === 'Escape') { wifi.wallStart = null; wifi.sel = null; renderPropsPanel(); scheduleRender(); }
+  if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
+}
+
+// ============================================================
+// FLOOR PLAN
+// ============================================================
+function loadFloorPlan(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    createImageBitmap(img).then(bmp => {
+      wifi.floorPlan = bmp;
+      document.getElementById('canvas-empty').style.display = 'none';
+      scheduleRender();
+      openScaleModal();
+      toast('Floor plan loaded — set the real-world scale');
+    });
+  };
+  img.src = url;
+}
+
+function startBlankCanvas() {
+  document.getElementById('canvas-empty').style.display = 'none';
+  scheduleRender();
+  toast('Blank canvas ready — place APs or draw walls');
+}
+
+// ============================================================
+// SCALE
+// ============================================================
+function openScaleModal() {
+  document.getElementById('scale-input').value = Math.round(canvas.width / (wifi.pxPerMeter || (canvas.width/30)));
+  document.getElementById('scale-current').textContent = wifi.pxPerMeter
+    ? `${Math.round(canvas.width / wifi.pxPerMeter)}m wide`
+    : 'not set';
+  document.getElementById('scale-modal').classList.add('open');
+}
+
+function closeScaleModal() {
+  document.getElementById('scale-modal').classList.remove('open');
+}
+
+function confirmScale() {
+  const meters = parseFloat(document.getElementById('scale-input').value);
+  if (!meters || meters <= 0) return;
+  wifi.pxPerMeter = canvas.width / meters;
+  document.getElementById('scale-display').textContent = `${meters}m × ${Math.round(canvas.height/wifi.pxPerMeter)}m`;
+  document.getElementById('scale-current').textContent = `${meters}m wide`;
+  closeScaleModal();
+  scheduleRender();
+  toast(`Scale set: 1m = ${Math.round(wifi.pxPerMeter)}px`);
+}
+
+// ============================================================
+// TOOLBAR CONTROLS
+// ============================================================
+function updateGlobalBand(band) {
+  wifi.band = band;
+  // Update legend label
+  scheduleRender();
+}
+
+function updateThreshold(val) {
+  wifi.threshold = parseInt(val);
+  document.getElementById('threshold-val').textContent = val + 'dBm';
+  scheduleRender();
+}
+
+function updateOpacity(val) {
+  wifi.opacity = parseInt(val) / 100;
+  document.getElementById('opacity-val').textContent = val + '%';
+  scheduleRender();
+}
+
+function toggleHeatmap() {
+  wifi.hmVisible = !wifi.hmVisible;
+  document.getElementById('btn-toggle-hm').textContent = wifi.hmVisible ? 'Hide Heatmap' : 'Show Heatmap';
+  scheduleRender();
+}
+
+// ============================================================
+// STATS
+// ============================================================
+function updateStats() {
+  document.getElementById('stat-aps').textContent   = wifi.aps.length;
+  document.getElementById('stat-walls').textContent = wifi.walls.length;
+
+  if (!wifi.aps.length) {
+    document.getElementById('stat-cov').textContent  = '—';
+    document.getElementById('stat-exc').textContent  = '—';
+    document.getElementById('stat-dead').textContent = '—';
+    return;
+  }
+
+  // Sample grid for coverage stats
+  const SAMPLE = 20;
+  let total=0, covered=0, excellent=0, dead=0;
+  const band  = document.getElementById('global-band').value;
+  const freq  = FREQ_MHZ[band];
+
+  for (let py=0; py<canvas.height; py+=SAMPLE) {
+    for (let px=0; px<canvas.width; px+=SAMPLE) {
+      total++;
+      let bestRSSI = -200;
+      for (const ap of wifi.aps) {
+        const apModel = getAPModel(ap.vendor, ap.model);
+        if (!apModel) continue;
+        const dx_m = (px-ap.x)/wifi.pxPerMeter, dy_m = (py-ap.y)/wifi.pxPerMeter;
+        const d_m  = Math.sqrt(dx_m*dx_m+dy_m*dy_m);
+        let wallLoss = 0;
+        for (const w of wifi.walls) if(segIntersects(ap.x,ap.y,px,py,w.x1,w.y1,w.x2,w.y2)) wallLoss+=w.attn;
+        const rssi = (ap.txPower||apModel.tx) + apModel.gain - fspl(d_m,FREQ_MHZ[ap.band||band]) - wallLoss;
+        if (rssi > bestRSSI) bestRSSI = rssi;
+      }
+      if (bestRSSI > wifi.threshold) { covered++; if (bestRSSI > -60) excellent++; }
+      else dead++;
+    }
+  }
+
+  const covPct  = Math.round(covered/total*100);
+  const excPct  = Math.round(excellent/total*100);
+  const deadPct = Math.round(dead/total*100);
+
+  const covEl = document.getElementById('stat-cov');
+  covEl.textContent = covPct + '%';
+  covEl.className   = 'stat-val ' + (covPct>80?'stat-good':covPct>60?'stat-warn':'stat-bad');
+  document.getElementById('stat-exc').textContent  = excPct + '%';
+  document.getElementById('stat-dead').textContent = deadPct + '%';
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function getAPModel(vid, mid) {
+  return VENDORS[vid]?.models.find(m => m.id === mid);
+}
+
+// ============================================================
+// EXPORT PNG
+// ============================================================
+function exportPNG() {
+  // Composite: floor + heatmap + walls + APs on offscreen canvas
+  const offscreen = document.createElement('canvas');
+  offscreen.width  = canvas.width;
+  offscreen.height = canvas.height;
+  const octx = offscreen.getContext('2d');
+  octx.drawImage(canvas, 0, 0);
+
+  const link = document.createElement('a');
+  link.download = 'wifi-heatmap.png';
+  link.href = offscreen.toDataURL('image/png');
+  link.click();
+  toast('✅ Exported as PNG');
+}
+
+// ============================================================
+// SAVE PLAN
+// ============================================================
+function savePlan() {
+  if (!localStorage.getItem('clab_token')) { authOpenModal(); return; }
+  document.getElementById('saveplan-input').value = 'WiFi Plan ' + new Date().toLocaleDateString();
+  document.getElementById('saveplan-modal').classList.add('open');
+  setTimeout(() => document.getElementById('saveplan-input').select(), 100);
+}
+
+function closeSavePlan() {
+  document.getElementById('saveplan-modal').classList.remove('open');
+}
+
+async function confirmSavePlan() {
+  const name = document.getElementById('saveplan-input').value.trim();
+  if (!name) return;
+  closeSavePlan();
+  const token = localStorage.getItem('clab_token') || '';
+  // Serialize state (floor plan omitted for size)
+  const saveData = {
+    aps:   wifi.aps,
+    walls: wifi.walls,
+    pxPerMeter: wifi.pxPerMeter,
+    band: document.getElementById('global-band').value,
+  };
+  try {
+    const res = await fetch('/api/files', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify({
+        name, file_type:'wifi', data:saveData,
+        device_count: wifi.aps.length,
+      })
+    });
+    if (res.ok) toast('✅ Plan saved: ' + name);
+    else toast('Save failed — try again', 'error');
+  } catch(err) { toast('Error: '+err.message, 'error'); }
+}
+
+// ============================================================
+// CLEAR
+// ============================================================
+function clearAll() {
+  if (!confirm('Clear all APs and walls?')) return;
+  wifi.aps = []; wifi.walls = []; wifi.sel = null;
+  renderPropsPanel(); scheduleRender();
+  toast('Canvas cleared');
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function toast(msg, type='success') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ============================================================
+// THEME
+// ============================================================
+function toggleTheme() {
+  const body = document.body;
+  const cur  = body.dataset.theme || 'dark';
+  const next = cur === 'dark' ? 'light' : 'dark';
+  body.dataset.theme = next;
+  document.documentElement.dataset.theme = next;
+  document.getElementById('theme-btn').textContent = next === 'dark' ? '🌙' : '☀️';
+  try { localStorage.setItem('configlabs-theme', next); } catch(e){}
+  scheduleRender();
+}
+
+// ============================================================
+// AUTH (same pattern as other pages)
+// ============================================================
+function initAuth() {
+  const token = localStorage.getItem('clab_token') || '';
+  const params = new URLSearchParams(window.location.search);
+  const incoming = params.get('auth_token');
+  if (incoming) {
+    localStorage.setItem('clab_token', incoming);
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+  if (token || incoming) {
+    fetch('/api/me', {headers:{'Authorization':'Bearer '+(incoming||token)}})
+      .then(r => r.ok ? r.json() : null)
+      .then(user => { if(user) renderAuthUser(user); else renderAuthLogin(); })
+      .catch(() => renderAuthLogin());
+  } else {
+    renderAuthLogin();
+  }
+}
+
+function renderAuthLogin() {
+  document.getElementById('auth-nav').innerHTML =
+    `<button class="auth-login-btn" onclick="authOpenModal()">Login</button>`;
+}
+
+function renderAuthUser(user) {
+  const av = user.avatar_url
+    ? `<img class="auth-avatar" src="${user.avatar_url}" onclick="document.getElementById('auth-dd').classList.toggle('open')">`
+    : `<button class="auth-avatar" onclick="document.getElementById('auth-dd').classList.toggle('open')" style="background:var(--accent);color:var(--bg);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center">${user.name[0]}</button>`;
+  document.getElementById('auth-nav').innerHTML = `
+    <div class="auth-user-wrap">
+      ${av}
+      <div class="auth-dropdown" id="auth-dd">
+        <div class="auth-dropdown-header"><div class="auth-dropdown-name">${user.name}</div><div class="auth-dropdown-email">${user.email}</div></div>
+        <button class="auth-dropdown-item danger" onclick="localStorage.removeItem('clab_token');location.reload()">Logout</button>
+      </div>
+    </div>`;
+  document.addEventListener('click', e => {
+    const nav = document.getElementById('auth-nav');
+    if (nav && !nav.contains(e.target)) {
+      const dd = document.getElementById('auth-dd');
+      if (dd) dd.classList.remove('open');
+    }
+  });
+}
+
+window.authOpenModal  = () => document.getElementById('auth-modal').classList.add('open');
+window.authCloseModal = () => document.getElementById('auth-modal').classList.remove('open');
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { authCloseModal(); closeScaleModal(); closeSavePlan(); }});
+</script>
+</body>
+</html>
