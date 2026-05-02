@@ -1251,7 +1251,7 @@ def feedback():
 @app.route('/auth/google')
 def auth_google():
     """Redirect user to Google login page"""
-    redirect_uri = url_for('auth_google_callback', _external=True)
+    redirect_uri = 'https://configlabs.online/auth/google/callback'
     return google.authorize_redirect(redirect_uri)
 
 @app.route('/auth/google/callback')
