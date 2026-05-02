@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/auth/:path*",
+      "destination": "https://configlabs-production.up.railway.app/auth/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://configlabs-production.up.railway.app/api/:path*"
+    }
+  ]
+}
