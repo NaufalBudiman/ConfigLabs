@@ -93,7 +93,7 @@ nav{position:sticky;top:0;z-index:50;padding:16px 32px;background:color-mix(in s
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 
 /* STATS */
-.stats-bar{max-width:1100px;margin:0 auto 80px;padding:24px 32px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative;z-index:1;animation:fadeUp .7s var(--ease) .4s both}
+.stats-bar{max-width:1100px;margin:0 auto 80px;padding:24px 32px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);display:grid;grid-template-columns:repeat(3,1fr);gap:0;position:relative;z-index:1;animation:fadeUp .7s var(--ease) .4s both}
 .stat-item{text-align:center;padding:8px 16px;border-right:1px solid var(--border)}
 .stat-item:last-child{border-right:none}
 .stat-num{font-size:32px;font-weight:600;letter-spacing:-1px;background:linear-gradient(135deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
@@ -267,8 +267,8 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
 /* ── AUTH NAV BUTTON ─────────────────────────────────────── */
 .auth-login-btn{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--bg);border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all .15s var(--ease)}
 .auth-login-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
-.auth-user-wrap{position:relative}
-.auth-avatar{width:34px;height:34px;border-radius:50%;border:2px solid var(--border);cursor:pointer;transition:border-color .15s;object-fit:cover}
+.auth-user-wrap{position:relative;display:inline-flex;align-items:center}
+.auth-avatar{width:34px;height:34px;border-radius:50%;border:2px solid var(--border);cursor:pointer;transition:border-color .15s;object-fit:cover;display:block;vertical-align:middle}
 .auth-avatar:hover{border-color:var(--accent)}
 .auth-dropdown{position:absolute;top:calc(100% + 10px);right:0;background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;min-width:210px;box-shadow:0 16px 48px rgba(0,0,0,.4);z-index:9999;opacity:0;pointer-events:none;transform:translateY(-6px);transition:all .18s var(--ease)}
 .auth-dropdown.open{opacity:1;pointer-events:auto;transform:translateY(0)}
@@ -337,7 +337,7 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
     <div class="chip"><span class="dot"></span><span id="backend-status">v4.1.2</span></div>
     <button class="icon-btn" onclick="window.open('https://github.com/NaufalBudiman/ConfigLabs','_blank')" title="GitHub">⭐</button>
     <!-- AUTH SECTION -->
-    <div id="auth-nav"></div>
+    <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" title="Theme" id="theme-btn">🌙</button>
   </div>
 </nav>
@@ -396,7 +396,6 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
   <div class="stat-item"><div class="stat-num">25+</div><div class="stat-label">Templates</div></div>
   <div class="stat-item"><div class="stat-num">4</div><div class="stat-label">Vendors Live</div></div>
   <div class="stat-item"><div class="stat-num">100%</div><div class="stat-label">Free Forever</div></div>
-  <div class="stat-item"><div class="stat-num">0</div><div class="stat-label">Login Required</div></div>
 </div>
 
 <div class="container">

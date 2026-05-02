@@ -17,7 +17,7 @@
 from flask import Flask, request, jsonify, redirect, url_for, g
 from flask_cors import CORS
 from authlib.integrations.flask_client import OAuth
-from models import db, User
+from models import db, User, SavedFile
 from datetime import datetime, timedelta
 from functools import wraps
 import jwt
@@ -1243,6 +1243,108 @@ def feedback():
         return jsonify({"success": True, "message": "Thanks for your feedback!"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
+
+# ============================================================
+# SAVED FILES API
+# ============================================================
+
+@app.route('/api/files', methods=['GET'])
+def api_get_files():
+    """Get all saved files for current user"""
+    raw   = request.headers.get('Authorization', '')
+    token = raw.replace('Bearer ', '').strip()
+    data  = decode_token(token)
+    if not data:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    file_type = request.args.get('type')   # optional filter: 'config' | 'topology'
+    query = SavedFile.query.filter_by(user_id=data['user_id'])
+    if file_type:
+        query = query.filter_by(file_type=file_type)
+    files = query.order_by(SavedFile.updated_at.desc()).all()
+    return jsonify([f.to_dict() for f in files])
+
+@app.route('/api/files', methods=['POST'])
+def api_save_file():
+    """Save a new file (config or topology)"""
+    raw   = request.headers.get('Authorization', '')
+    token = raw.replace('Bearer ', '').strip()
+    data  = decode_token(token)
+    if not data:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    body = request.json
+    if not body or not body.get('name') or not body.get('file_type') or not body.get('data'):
+        return jsonify({'error': 'Missing required fields: name, file_type, data'}), 400
+
+    import json as _json
+    saved = SavedFile(
+        user_id      = data['user_id'],
+        name         = body['name'],
+        file_type    = body['file_type'],
+        data         = _json.dumps(body['data']),
+        vendor       = body.get('vendor'),
+        hostname     = body.get('hostname'),
+        device_count = body.get('device_count'),
+    )
+    db.session.add(saved)
+    db.session.commit()
+    return jsonify({'id': saved.id, 'message': 'Saved!'}), 201
+
+@app.route('/api/files/<int:file_id>', methods=['GET'])
+def api_get_file(file_id):
+    """Load a specific saved file"""
+    raw   = request.headers.get('Authorization', '')
+    token = raw.replace('Bearer ', '').strip()
+    data  = decode_token(token)
+    if not data:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    saved = SavedFile.query.filter_by(id=file_id, user_id=data['user_id']).first()
+    if not saved:
+        return jsonify({'error': 'File not found'}), 404
+    return jsonify(saved.to_dict_full())
+
+@app.route('/api/files/<int:file_id>', methods=['PUT'])
+def api_update_file(file_id):
+    """Update (overwrite) an existing saved file"""
+    raw   = request.headers.get('Authorization', '')
+    token = raw.replace('Bearer ', '').strip()
+    data  = decode_token(token)
+    if not data:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    saved = SavedFile.query.filter_by(id=file_id, user_id=data['user_id']).first()
+    if not saved:
+        return jsonify({'error': 'File not found'}), 404
+
+    body = request.json
+    import json as _json
+    if body.get('name'):         saved.name         = body['name']
+    if body.get('data'):         saved.data         = _json.dumps(body['data'])
+    if body.get('vendor'):       saved.vendor       = body['vendor']
+    if body.get('hostname'):     saved.hostname     = body['hostname']
+    if body.get('device_count'): saved.device_count = body['device_count']
+    saved.updated_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({'message': 'Updated!'})
+
+@app.route('/api/files/<int:file_id>', methods=['DELETE'])
+def api_delete_file(file_id):
+    """Delete a saved file"""
+    raw   = request.headers.get('Authorization', '')
+    token = raw.replace('Bearer ', '').strip()
+    data  = decode_token(token)
+    if not data:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    saved = SavedFile.query.filter_by(id=file_id, user_id=data['user_id']).first()
+    if not saved:
+        return jsonify({'error': 'File not found'}), 404
+
+    db.session.delete(saved)
+    db.session.commit()
+    return jsonify({'message': 'Deleted'})
 
 # ============================================================
 # AUTH — Google OAuth

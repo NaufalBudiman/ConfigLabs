@@ -584,8 +584,8 @@ nav {
 /* ── AUTH ───────────────────────────────────────────────────────── */
 .auth-login-btn{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--bg);border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all .15s var(--ease)}
 .auth-login-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
-.auth-user-wrap{position:relative}
-.auth-avatar{width:34px;height:34px;border-radius:50%;border:2px solid var(--border);cursor:pointer;transition:border-color .15s;object-fit:cover}
+.auth-user-wrap{position:relative;display:inline-flex;align-items:center}
+.auth-avatar{width:34px;height:34px;border-radius:50%;border:2px solid var(--border);cursor:pointer;transition:border-color .15s;object-fit:cover;display:block;vertical-align:middle}
 .auth-avatar:hover{border-color:var(--accent)}
 .auth-dropdown{position:absolute;top:calc(100% + 10px);right:0;background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;min-width:210px;box-shadow:0 16px 48px rgba(0,0,0,.4);z-index:9999;opacity:0;pointer-events:none;transform:translateY(-6px);transition:all .18s var(--ease)}
 .auth-dropdown.open{opacity:1;pointer-events:auto;transform:translateY(0)}
@@ -642,7 +642,7 @@ nav {
 
   <div class="nav-right">
     <div class="chip"><span class="dot"></span><span>v4.1.2</span></div>
-    <div id="auth-nav"></div>
+    <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
 </nav>
@@ -857,6 +857,14 @@ nav {
         <button class="action-btn" onclick="exportPNG()">📷 Export PNG</button>
         <button class="action-btn" onclick="saveJSON()">💾 Save JSON</button>
         <button class="action-btn" onclick="loadJSON()">📂 Load JSON</button>
+        <button class="action-btn" onclick="saveTopologyToAccount()" style="color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,var(--border))">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-1px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save to Account
+        </button>
+        <button class="action-btn" onclick="openMyTopologies()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-1px"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+          My Topologies
+        </button>
         <button class="action-btn danger" onclick="clearAll()">🗑️ Clear All</button>
       </div>
 
@@ -2755,6 +2763,128 @@ function toast(msg, isErr=false) {
 </script>
 <script>
 (function(){var _u=null,_t=localStorage.getItem("clab_token")||"";window.authOpenModal=function(){document.getElementById("auth-modal").classList.add("open")};window.authCloseModal=function(){document.getElementById("auth-modal").classList.remove("open")};document.addEventListener("keydown",function(e){if(e.key==="Escape")authCloseModal()});window.authToggleDropdown=function(){var d=document.getElementById("auth-dd");if(d)d.classList.toggle("open")};document.addEventListener("click",function(e){var w=document.getElementById("auth-nav");if(w&&!w.contains(e.target)){var d=document.getElementById("auth-dd");if(d)d.classList.remove("open")}});window.authLogout=function(){localStorage.removeItem("clab_token");_u=null;_t="";rAN();if(typeof toast==="function")toast("Logged out")};function rAN(){var el=document.getElementById("auth-nav");if(!el)return;if(_u){var av=_u.avatar_url?"<img class=\'auth-avatar\' src=\'"+_u.avatar_url+"\' alt=\'\'  onclick=\'authToggleDropdown()\'>":" <button class=\'auth-avatar\' onclick=\'authToggleDropdown()\' style=\'background:var(--accent);color:var(--bg);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center\'>" +_u.name[0].toUpperCase()+"</button>";el.innerHTML="<div class=\'auth-user-wrap\'>"+av+"<div class=\'auth-dropdown\' id=\'auth-dd\'><div class=\'auth-dropdown-header\'><div class=\'auth-dropdown-name\'>"+_u.name+"</div><div class=\'auth-dropdown-email\'>"+_u.email+"</div><div class=\'auth-dropdown-provider\'>via "+_u.provider+"</div></div><button class=\'auth-dropdown-item danger\' onclick=\'authLogout()\'>Logout</button></div></div>";}else{el.innerHTML="<button class=\'auth-login-btn\' onclick=\'authOpenModal()\'>Login</button>";}}async function fetchMe(){if(!_t){rAN();return;}try{var r=await fetch("/api/me",{headers:{"Authorization":"Bearer "+_t}});if(r.ok){_u=await r.json();}else{localStorage.removeItem("clab_token");_t="";_u=null;}}catch(e){_u=null;}rAN();}var p=new URLSearchParams(window.location.search);var tk=p.get("auth_token"),er=p.get("auth_error");if(tk){localStorage.setItem("clab_token",tk);_t=tk;window.history.replaceState({},"",window.location.pathname);}if(er){window.history.replaceState({},"",window.location.pathname);}fetchMe();})();
+</script>
+<!-- MY TOPOLOGIES MODAL -->
+<div class="auth-modal-overlay" id="mytopo-modal" onclick="if(event.target===this)closeMytopo()">
+  <div class="auth-modal" style="max-width:560px">
+    <button class="auth-modal-close" onclick="closeMytopo()">✕</button>
+    <h2 class="auth-modal-title" style="font-size:20px;margin-bottom:4px">My Topologies</h2>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:20px">Load a saved topology — your canvas will be replaced.</p>
+    <div id="mytopo-list" style="display:grid;gap:8px;max-height:400px;overflow-y:auto"></div>
+    <p id="mytopo-empty" style="text-align:center;color:var(--text-muted);font-size:13px;padding:32px 0;display:none">No saved topologies yet. Build one and hit Save to Account!</p>
+  </div>
+</div>
+
+<!-- SAVE TOPO NAME MODAL -->
+<div class="auth-modal-overlay" id="savetopo-modal" onclick="if(event.target===this)closeSaveTopo()">
+  <div class="auth-modal" style="max-width:380px">
+    <button class="auth-modal-close" onclick="closeSaveTopo()">✕</button>
+    <h2 class="auth-modal-title" style="font-size:20px;margin-bottom:16px">Name your topology</h2>
+    <input id="savetopo-input" type="text" placeholder="e.g. Office Network v2" style="
+      width:100%;padding:11px 14px;background:var(--bg);border:1px solid var(--border);
+      border-radius:10px;color:var(--text);font-family:var(--sans);font-size:14px;
+      margin-bottom:14px;box-sizing:border-box
+    " onkeydown="if(event.key==='Enter')confirmSaveTopo()">
+    <button onclick="confirmSaveTopo()" style="
+      width:100%;padding:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));
+      color:var(--bg);border:none;border-radius:10px;font-weight:700;font-size:14px;
+      cursor:pointer;font-family:var(--sans)
+    ">💾 Save Topology</button>
+  </div>
+</div>
+
+<script>
+function getToken() { return localStorage.getItem('clab_token') || ''; }
+
+function saveTopologyToAccount() {
+  if (!getToken()) { authOpenModal(); return; }
+  if (!topo.devices.length) { toast('Add some devices first!'); return; }
+  document.getElementById('savetopo-input').value = 'My Topology ' + new Date().toLocaleDateString();
+  document.getElementById('savetopo-modal').classList.add('open');
+  setTimeout(() => document.getElementById('savetopo-input').select(), 100);
+}
+function closeSaveTopo() { document.getElementById('savetopo-modal').classList.remove('open'); }
+
+async function confirmSaveTopo() {
+  const name = document.getElementById('savetopo-input').value.trim();
+  if (!name) return;
+  closeSaveTopo();
+  try {
+    const res = await fetch('/api/files', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+      body: JSON.stringify({
+        name:         name,
+        file_type:    'topology',
+        data:         { devices: topo.devices, links: topo.links },
+        device_count: topo.devices.length,
+      })
+    });
+    if (res.ok) { toast('✅ Saved: ' + name); }
+    else { toast('Save failed'); }
+  } catch(e) { toast('Error: ' + e.message); }
+}
+
+function openMyTopologies() {
+  if (!getToken()) { authOpenModal(); return; }
+  document.getElementById('mytopo-modal').classList.add('open');
+  loadMyTopologies();
+}
+function closeMytopo() { document.getElementById('mytopo-modal').classList.remove('open'); }
+
+async function loadMyTopologies() {
+  const list = document.getElementById('mytopo-list');
+  const empty = document.getElementById('mytopo-empty');
+  list.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:24px;font-size:13px">Loading...</div>';
+  empty.style.display = 'none';
+  try {
+    const res = await fetch('/api/files?type=topology', { headers: { 'Authorization': 'Bearer ' + getToken() } });
+    if (!res.ok) { list.innerHTML=''; empty.style.display='block'; return; }
+    const files = await res.json();
+    if (!files.length) { list.innerHTML=''; empty.style.display='block'; return; }
+    list.innerHTML = files.map(f => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;transition:border-color .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13px;color:var(--text)">${f.name}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:3px;font-family:var(--mono)">${f.device_count || 0} devices · ${new Date(f.updated_at).toLocaleDateString()}</div>
+        </div>
+        <div style="display:flex;gap:6px;margin-left:12px">
+          <button onclick="loadTopology(${f.id})" style="padding:6px 12px;background:var(--accent);color:var(--bg);border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans)">Load</button>
+          <button onclick="deleteTopology(${f.id},this)" style="padding:6px 10px;background:none;border:1px solid var(--border);color:var(--danger);border-radius:7px;font-size:12px;cursor:pointer;font-family:var(--sans)">✕</button>
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    list.innerHTML = '<div style="color:var(--danger);text-align:center;padding:24px">Error loading topologies</div>';
+  }
+}
+
+async function loadTopology(id) {
+  try {
+    const res = await fetch('/api/files/' + id, { headers: { 'Authorization': 'Bearer ' + getToken() } });
+    if (!res.ok) { alert('Could not load topology'); return; }
+    const file = await res.json();
+    const data = file.data;
+    if (data.devices && data.links) {
+      topo.devices = data.devices;
+      topo.links   = data.links;
+      topo.sel     = null;
+      renderAll();
+      fitToScreen();
+      closeMytopo();
+      toast('✅ Loaded: ' + file.name);
+    }
+  } catch(e) { alert('Load failed: ' + e.message); }
+}
+
+async function deleteTopology(id, btn) {
+  if (!confirm('Delete this topology?')) return;
+  const row = btn.closest('div[style*="border"]');
+  try {
+    const res = await fetch('/api/files/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + getToken() } });
+    if (res.ok) { row.style.opacity='0.4'; setTimeout(()=>row.remove(),300); }
+    else alert('Delete failed');
+  } catch(e) { alert('Delete failed'); }
+}
 </script>
 </body>
 </html>
