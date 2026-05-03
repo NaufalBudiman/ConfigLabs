@@ -29,9 +29,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);display:flex
 
 /* NAV */
 nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:54px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;z-index:100;position:relative}
-.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);font-weight:600;font-size:15px}
-.brand svg{color:var(--accent)}
-.brand em{font-style:italic;font-family:var(--serif);color:var(--accent)}
+.brand{display:flex;align-items:center;gap:12px;font-weight:600;font-size:17px;letter-spacing:-.3px;text-decoration:none;color:var(--text)}
+.brand-logo{width:32px;height:32px;border-radius:8px;background:conic-gradient(from 180deg,var(--accent),var(--accent-2),var(--accent-3),var(--accent));display:grid;place-items:center;position:relative}
+.brand-logo::after{content:'';position:absolute;inset:2px;border-radius:6px;background:var(--bg)}
+.brand-logo svg{position:relative;z-index:1;width:18px;height:18px;color:var(--text)}
+.brand em{font-family:var(--serif);font-style:italic;color:var(--accent);font-weight:400}
 .nav-center{display:flex;align-items:center;gap:2px}
 .nav-tab{padding:7px 14px;color:var(--text-dim);text-decoration:none;font-size:13px;font-weight:500;border-radius:8px;transition:all .2s;display:inline-flex;align-items:center;gap:5px}
 .nav-tab:hover{color:var(--text);background:var(--surface-hover)}
@@ -191,8 +193,13 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
 <!-- NAV -->
 <nav>
   <a href="/" class="brand">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
-    Config<em>Labs</em>
+    <div class="brand-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/>
+        <path d="M8.5 2h7"/><path d="M7 16h10"/>
+      </svg>
+    </div>
+    <div>Config<em>Labs</em></div>
   </a>
   <div class="nav-center">
     <a href="/builder.html" class="nav-tab">

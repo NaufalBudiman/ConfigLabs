@@ -82,11 +82,11 @@ body::before { content: ''; position: fixed; inset: 0; background-image: linear-
 
 /* ========== NAV (matches index.html) ========== */
 nav { position: sticky; top: 0; z-index: 50; padding: 16px 32px; background: color-mix(in srgb, var(--bg) 75%, transparent); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-.brand { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 17px; letter-spacing: -0.3px; text-decoration: none; color: var(--text); }
-.brand-logo { width: 32px; height: 32px; border-radius: 8px; background: conic-gradient(from 180deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent)); display: grid; place-items: center; position: relative; }
-.brand-logo::after { content: ''; position: absolute; inset: 2px; border-radius: 6px; background: var(--bg); }
-.brand-logo svg { position: relative; z-index: 1; width: 18px; height: 18px; color: var(--text); }
-.brand em { font-family: var(--serif); font-style: italic; color: var(--accent); font-weight: 400; }
+.brand{display:flex;align-items:center;gap:12px;font-weight:600;font-size:17px;letter-spacing:-.3px;text-decoration:none;color:var(--text)}
+.brand-logo{width:32px;height:32px;border-radius:8px;background:conic-gradient(from 180deg,var(--accent),var(--accent-2),var(--accent-3),var(--accent));display:grid;place-items:center;position:relative}
+.brand-logo::after{content:'';position:absolute;inset:2px;border-radius:6px;background:var(--bg)}
+.brand-logo svg{position:relative;z-index:1;width:18px;height:18px;color:var(--text)}
+.brand em{font-family:var(--serif);font-style:italic;color:var(--accent);font-weight:400}
 .nav-actions { display: flex; gap: 8px; align-items: center; }
 .nav-link { padding: 8px 14px; color: var(--text-dim); text-decoration: none; font-size: 13px; font-weight: 500; border-radius: 8px; transition: all 0.2s; }
 .nav-link:hover { color: var(--text); background: var(--surface); }
@@ -255,8 +255,7 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
     <div class="brand-logo">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/>
-        <path d="M8.5 2h7"/>
-        <path d="M7 16h10"/>
+        <path d="M8.5 2h7"/><path d="M7 16h10"/>
       </svg>
     </div>
     <div>Config<em>Labs</em></div>
