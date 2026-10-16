@@ -27,7 +27,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
+# Same-origin in production; allow the site itself and local dev only.
+CORS(app, supports_credentials=True, origins=[
+    'https://configlabs.online', 'https://www.configlabs.online',
+    r'http://localhost:\d+', r'http://127\.0\.0\.1:\d+',
+])
 
 # ── Database ────────────────────────────────────────────────
 _db_url = os.environ.get('DATABASE_URL', 'sqlite:///configlabs.db')
@@ -39,7 +43,21 @@ app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
 # Neon scales to zero -> reconnect cleanly after idle
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True, 'pool_recycle': 280}
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.environ.get('SESSION_SECRET', 'dev-secret-change-me')
+def _secret(env_name, label):
+    """Return the configured secret. Never fall back to a value that is public in the repo:
+    if the env var is missing, derive a private one from other server-side secrets (stable across
+    instances), or as a last resort use a random per-process value (local dev)."""
+    val = os.environ.get(env_name)
+    if val:
+        return val
+    import hashlib, secrets as _sec
+    base = os.environ.get('GOOGLE_CLIENT_SECRET') or os.environ.get('DATABASE_URL')
+    print(f"[WARN] {env_name} is not set - set it in the environment (Vercel project settings).")
+    if base:
+        return hashlib.sha256((label + ':' + base).encode()).hexdigest()
+    return _sec.token_hex(32)
+
+app.config['SECRET_KEY'] = _secret('SESSION_SECRET', 'session')
 
 db.init_app(app)
 
@@ -55,7 +73,7 @@ google = oauth.register(
 )
 
 # ── JWT helpers ─────────────────────────────────────────────
-JWT_SECRET  = os.environ.get('JWT_SECRET', 'dev-jwt-secret-change-me')
+JWT_SECRET  = _secret('JWT_SECRET', 'jwt')
 JWT_EXPIRES = 60 * 60 * 24 * 30   # 30 days
 
 def create_token(user):
@@ -98,7 +116,7 @@ def init_db_once():
         with_app_context_done = True
 
 APP_NAME = "ConfigLabs"
-APP_VERSION = "2.0.0"
+APP_VERSION = "6.0.0"
 
 # ==========================================================
 # VENDOR / OS REGISTRY
@@ -1271,8 +1289,8 @@ def api_get_files():
     if not data:
         return jsonify({'error': 'Unauthorized'}), 401
 
-    file_type = request.args.get('type')   # optional filter: 'config' | 'topology'
-    query = SavedFile.query.filter_by(user_id=data['user_id'])
+    file_type = request.args.get('type')   # optional filter (only 'config' exists now)
+    query = SavedFile.query.filter_by(user_id=data['user_id']).filter(SavedFile.file_type != 'topology')  # legacy rows hidden
     if file_type:
         query = query.filter_by(file_type=file_type)
     files = query.order_by(SavedFile.updated_at.desc()).all()
@@ -1280,7 +1298,7 @@ def api_get_files():
 
 @app.route('/api/files', methods=['POST'])
 def api_save_file():
-    """Save a new file (config or topology)"""
+    """Save a new file (config)"""
     raw   = request.headers.get('Authorization', '')
     token = raw.replace('Bearer ', '').strip()
     data  = decode_token(token)
@@ -1290,6 +1308,9 @@ def api_save_file():
     body = request.json
     if not body or not body.get('name') or not body.get('file_type') or not body.get('data'):
         return jsonify({'error': 'Missing required fields: name, file_type, data'}), 400
+
+    if body['file_type'] != 'config':
+        return jsonify({'error': 'Unsupported file_type'}), 400
 
     import json as _json
     saved = SavedFile(

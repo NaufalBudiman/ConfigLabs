@@ -3,14 +3,15 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>ConfigLabs — Network Configuration, Simplified</title>
-<meta name="description" content="Free multi-vendor network config generator with visual topology builder. Build production-ready configs for H3C, Cisco IOS, IOS-XE, and NX-OS. No typos, no CLI headaches."/>
-<meta name="keywords" content="H3C config generator, Cisco IOS config, NX-OS config, network topology builder, Comware CLI, VLAN generator, OSPF config, network automation"/>
+<title>ConfigLabs — Network Config Generator &amp; WiFi Planner</title>
+<meta name="description" content="Free network config generator for H3C Comware and Cisco IOS, IOS-XE, NX-OS, plus a WiFi heatmap planner with Word reports. No login needed."/>
+<meta name="keywords" content="H3C config generator, Cisco IOS config, NX-OS config, Comware CLI, VLAN generator, OSPF config, WiFi heatmap planner, WiFi site survey, H3C access point"/>
 <meta name="author" content="ConfigLabs"/>
-<meta property="og:title" content="ConfigLabs v5.0.0-beta — Multi-Vendor Config Generator + Topology Builder"/>
-<meta property="og:description" content="Build production-ready H3C and Cisco configs visually. Now with Topology Builder (Beta)!"/>
+<meta property="og:title" content="ConfigLabs — Network Config Generator &amp; WiFi Planner"/>
+<meta property="og:description" content="Generate H3C and Cisco configs in seconds, and plan WiFi coverage with heatmaps and ready-to-send reports. Free."/>
 <meta property="og:type" content="website"/>
-<meta property="og:url" content="https://configlabs.online"/>
+<link rel="canonical" href="https://configlabs.online/"/>
+<meta property="og:url" content="https://configlabs.online/"/>
 <meta name="theme-color" content="#0b0d10"/>
 <link rel="icon" type="image/x-icon" href="/favicon.ico"/>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/>
@@ -18,10 +19,12 @@
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/>
 <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png"/>
 <link rel="manifest" href="/site.webmanifest"/>
-<meta property="og:image" content="https://configlabs.online/favicon-512.png"/>
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:image" content="https://configlabs.online/favicon-512.png"/>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"ConfigLabs","url":"https://configlabs.online","logo":"https://configlabs.online/favicon-512.png","description":"Free multi-vendor network configuration generator with visual topology builder.","applicationCategory":"DeveloperApplication","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
+<meta property="og:image" content="https://configlabs.online/og-image.png"/>
+<meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://configlabs.online/og-image.png"/>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"ConfigLabs","url":"https://configlabs.online","logo":"https://configlabs.online/favicon-512.png","description":"Free network configuration generator (H3C, Cisco) and WiFi heatmap planner.","applicationCategory":"DeveloperApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"license":"https://opensource.org/licenses/MIT"}</script>
+<script src="/site.js" defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -120,14 +123,14 @@ nav{position:sticky;top:0;z-index:50;padding:16px 32px;background:color-mix(in s
 
 .feature-card:hover{transform:translateY(-6px);background:var(--surface-2);box-shadow:0 20px 60px rgba(0,0,0,.4)}
 .feature-card.builder:hover{border-color:var(--accent-2)}
-.feature-card.topology:hover{border-color:var(--accent)}
+.feature-card.wifi:hover{border-color:var(--accent)}
 .feature-card.about:hover{border-color:var(--accent-3)}
 .feature-card:hover .feature-icon{transform:scale(1.1) rotate(-5deg)}
 .feature-card:hover .feature-cta::after{transform:translateX(4px)}
 
 .feature-icon{width:64px;height:64px;border-radius:14px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:24px;transition:transform .4s var(--ease);position:relative}
 .feature-card.builder .feature-icon{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent-2) 30%,transparent)}
-.feature-card.topology .feature-icon{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent)}
+.feature-card.wifi .feature-icon{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent)}
 .feature-card.about .feature-icon{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent-3) 30%,transparent)}
 .feature-icon svg{width:32px;height:32px}
 
@@ -149,7 +152,7 @@ nav{position:sticky;top:0;z-index:50;padding:16px 32px;background:color-mix(in s
 .feature-card.about .feature-benefits li::after{border-color:var(--accent-3)}
 
 .feature-cta{display:inline-flex;align-items:center;gap:8px;color:var(--accent-2);font-weight:500;font-size:14px;text-decoration:none;transition:transform .3s var(--ease)}
-.feature-card.topology .feature-cta{color:var(--accent)}
+.feature-card.wifi .feature-cta{color:var(--accent)}
 .feature-card.about .feature-cta{color:var(--accent-3)}
 .feature-cta::after{content:'→';transition:transform .3s var(--ease)}
 
@@ -295,6 +298,28 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
 .oauth-btn.google:hover{border-color:#4285f4;color:#4285f4}
 .auth-terms{text-align:center;font-size:11px;color:var(--text-muted);margin-top:20px;line-height:1.6}
 .auth-terms a{color:var(--accent);text-decoration:none}
+
+/* ---- v6 nav & mobile ---- */
+.nav-links{display:flex;gap:2px;margin-left:auto;margin-right:12px}
+.nav-link{white-space:nowrap}
+@media(max-width:900px){
+  nav{flex-wrap:wrap;padding:10px 16px!important;row-gap:8px}
+  nav .brand{order:1}
+  nav .nav-actions{order:2;margin-left:auto}
+  .nav-links{order:3;flex:0 0 100%;margin:0;overflow-x:auto;scrollbar-width:none}
+  .nav-links::-webkit-scrollbar{display:none}
+  .nav-link{padding:7px 12px}
+  nav .chip{display:none}
+}
+@media(max-width:640px){
+  .support-fab{bottom:14px!important;right:14px!important;padding:12px!important}
+  .support-fab span{display:none}
+}
+@media(max-width:640px){
+  .nav-link svg{display:none}
+  .nav-link{padding:7px 10px;font-size:13px}
+  .hero-tag{border-radius:14px;text-align:center;line-height:1.5}
+}
 </style>
 </head>
 <body data-theme="dark">
@@ -317,28 +342,14 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
     </div>
     <div>Config<em>Labs</em></div>
   </a>
+  <div class="nav-links">
+    <a href="/" class="nav-link active"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M3 12L12 3l9 9M5 10v10h14V10"/></svg>Home</a>
+    <a href="/builder.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>Builder</a>
+    <a href="/wifi.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>WiFi Planner <span style="background:color-mix(in srgb,var(--accent-3) 15%,transparent);color:var(--accent-3);font-family:var(--mono);font-size:9px;padding:2px 5px;border-radius:4px;font-weight:700;margin-left:3px">BETA</span></a>
+    <a href="/about.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>About</a>
+  </div>
   <div class="nav-actions">
-    <a href="/" class="nav-link active">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M3 12L12 3l9 9M5 10v10h14V10"/></svg>
-      Home
-    </a>
-    <a href="/builder.html" class="nav-link">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
-      Builder
-    </a>
-    <a href="/topology.html" class="nav-link">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8 7l8 0M7.5 8l3.5 8M16.5 8l-3.5 8"/></svg>
-      Topology
-    </a>
-    <a href="/wifi.html" class="nav-link">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>
-      WiFi <span style="background:color-mix(in srgb,var(--accent-3) 15%,transparent);color:var(--accent-3);font-family:var(--mono);font-size:9px;padding:2px 5px;border-radius:4px;font-weight:700;margin-left:3px">BETA</span>
-    </a>
-    <a href="/about.html" class="nav-link">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      About
-    </a>
-    <div class="chip"><span class="dot"></span><span id="backend-status">v5.0.0-beta</span></div>
+    <div class="chip"><span class="dot"></span><span id="backend-status" data-cl-version>v6.0.0</span></div>
     <button class="icon-btn" onclick="window.open('https://github.com/NaufalBudiman/ConfigLabs','_blank')" title="GitHub">⭐</button>
     <!-- AUTH SECTION -->
     <div id="auth-nav" style="display:flex;align-items:center"></div>
@@ -353,7 +364,7 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
   <div class="auth-modal">
     <button class="auth-modal-close" onclick="authCloseModal()">✕</button>
     <h2 class="auth-modal-title">Sign in to <em>ConfigLabs</em></h2>
-    <p class="auth-modal-sub">Save configs · Share topologies · It's free</p>
+    <p class="auth-modal-sub">Save your configs · It's free</p>
 
     <!-- Google OAuth Button -->
     <button class="oauth-btn google" onclick="window.location.href='/auth/google'">
@@ -379,35 +390,35 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
 <section class="hero">
   <div class="hero-tag">
     <span class="live"></span>
-    <span>v5.0.0-beta · Topology Builder (Beta) · H3C + Cisco · Multi-vendor</span>
+    <span><b data-cl-version>v6.0.0</b> · Config Builder + WiFi Planner · H3C + Cisco</span>
   </div>
   <h1>Network configuration,<br><span class="serif">without the pain.</span></h1>
-  <p>Visual topology builder meets multi-vendor config generator. H3C to NX-OS. VLAN to OSPF. Fewer typos, less guesswork — just clean, production-ready configs.</p>
+  <p>A multi-vendor config generator and a WiFi heatmap planner in one place. H3C to NX-OS, VLAN to OSPF, floor plan to report. Fewer typos, less guesswork.</p>
   <div class="hero-cta-row">
     <a href="/builder.html" class="btn-primary">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
       Start Building
     </a>
-    <a href="/topology.html" class="btn-secondary">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><path d="M9 6h6M7.5 8l3 8M16.5 8l-3 8"/></svg>
-      Try Topology
+    <a href="/wifi.html" class="btn-secondary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>
+      Plan WiFi
     </a>
   </div>
 </section>
 
 <!-- STATS -->
 <div class="stats-bar">
-  <div class="stat-item"><div class="stat-num">25+</div><div class="stat-label">Templates</div></div>
-  <div class="stat-item"><div class="stat-num">4</div><div class="stat-label">Platforms Live</div></div>
+  <div class="stat-item"><div class="stat-num">17</div><div class="stat-label">Templates</div></div>
+  <div class="stat-item"><div class="stat-num">4</div><div class="stat-label">Platforms</div></div>
   <div class="stat-item"><div class="stat-num">100%</div><div class="stat-label">Free Forever</div></div>
 </div>
 
 <div class="container">
 
   <div class="section-head-center">
-    <div class="eyebrow">Three tools, one workflow</div>
+    <div class="eyebrow">Two tools, one workflow</div>
     <h2>Everything you need to <em>ship faster</em></h2>
-    <p>From writing configs to visualizing networks to learning the craft — ConfigLabs has every step covered.</p>
+    <p>Generate the switch and router configs, then plan the WiFi that connects to them.</p>
   </div>
 
   <div class="features-grid">
@@ -423,9 +434,9 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
       <div class="feature-status live"><span class="dot"></span>Live</div>
       <h2>Builder</h2>
       <div class="subtitle">Write & Generate</div>
-      <p>Generate production-ready configs from 25+ templates. Multi-vendor support, one-click copy, instant download. Generated from tested templates.</p>
+      <p>Generate ready-to-review configs from 17 templates. Multi-vendor support, one-click copy, instant download. Generated from tested templates.</p>
       <ul class="feature-benefits">
-        <li>25+ pre-built templates</li>
+        <li>17 pre-built templates</li>
         <li>H3C, Cisco IOS / IOS-XE / NX-OS</li>
         <li>VLAN · Routing · OSPF · BGP</li>
         <li>Browser session history</li>
@@ -433,32 +444,27 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
       <span class="feature-cta">Start Building</span>
     </a>
 
-    <!-- TOPOLOGY -->
-    <a href="/topology.html" class="feature-card topology">
+    <!-- WIFI -->
+    <a href="/wifi.html" class="feature-card wifi">
       <div class="feature-icon">
         <svg viewBox="0 0 64 64" fill="none">
-          <circle cx="16" cy="16" r="6" stroke="#7cf4c7" stroke-width="2.5"/>
-          <circle cx="48" cy="16" r="6" stroke="#7cf4c7" stroke-width="2.5"/>
-          <circle cx="32" cy="48" r="6" stroke="#7cf4c7" stroke-width="2.5"/>
-          <circle cx="16" cy="16" r="6" fill="#7cf4c7" opacity="0.15"/>
-          <circle cx="48" cy="16" r="6" fill="#7cf4c7" opacity="0.15"/>
-          <circle cx="32" cy="48" r="6" fill="#7cf4c7" opacity="0.15"/>
-          <line x1="20" y1="19" x2="44" y2="19" stroke="#7cf4c7" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="19" y1="22" x2="30" y2="44" stroke="#7cf4c7" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="45" y1="22" x2="34" y2="44" stroke="#7cf4c7" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M10 26a31 31 0 0 1 44 0" stroke="#7cf4c7" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M17 34a21 21 0 0 1 30 0" stroke="#7cf4c7" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M24 42a11 11 0 0 1 16 0" stroke="#7cf4c7" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="32" cy="50" r="3.5" fill="#7cf4c7"/>
         </svg>
       </div>
-      <div class="feature-status beta"><span class="dot"></span>Beta</div>
-      <h2>Topology</h2>
-      <div class="subtitle">Design & Export</div>
-      <p>Drag-and-drop visual network builder. Place devices, draw cables, manage ports & VLANs. Export network diagrams as PNG or share via link.</p>
+      <div class="feature-status beta"><span class="dot"></span>Beta · <span data-cl-wifi>v5.6</span></div>
+      <h2>WiFi Planner</h2>
+      <div class="subtitle">Plan & Report</div>
+      <p>Import a floor plan, place access points, and see signal, SINR and weak spots on a heatmap. Calibrate with field readings and export a Word report.</p>
       <ul class="feature-benefits">
-        <li>Visual device placement</li>
-        <li>Port & VLAN management</li>
-        <li>Cable labels & link properties</li>
-        <li>PNG export for documentation</li>
+        <li>H3C, Ruijie, Aruba, TP-Link APs</li>
+        <li>Per-radio power, channels, walls</li>
+        <li>Signal / SINR / coverage heatmaps</li>
+        <li>Word report in English or Bahasa</li>
       </ul>
-      <span class="feature-cta">Open Topology Builder</span>
+      <span class="feature-cta">Open WiFi Planner</span>
     </a>
 
     <!-- ABOUT - Opens GitHub -->
@@ -472,17 +478,17 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
           <line x1="22" y1="44" x2="32" y2="44" stroke="#ffb86b" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </div>
-      <div class="feature-status live"><span class="dot"></span>Open Source</div>
-      <h2>Learn & Share</h2>
-      <div class="subtitle">Docs & Community</div>
-      <p>Open-source project built by network engineers, for network engineers. Read the docs, contribute on GitHub, share your templates with the community.</p>
+      <div class="feature-status live"><span class="dot"></span>Open Source · MIT</div>
+      <h2>Open Source</h2>
+      <div class="subtitle">Source & Feedback</div>
+      <p>Built by a network engineer, for network engineers. Browse the source, report bugs, or ask for a template you need.</p>
       <ul class="feature-benefits">
-        <li>Complete documentation</li>
-        <li>GitHub repo & issues</li>
-        <li>Community templates</li>
-        <li>Built-in feedback loop</li>
+        <li>MIT licensed</li>
+        <li>GitHub repo &amp; issues</li>
+        <li>Request a template</li>
+        <li>Built-in feedback form</li>
       </ul>
-      <span class="feature-cta">Explore Docs</span>
+      <span class="feature-cta">View on GitHub</span>
     </a>
 
   </div>
@@ -495,11 +501,12 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
         <p>Active development with regular releases. Here's what shipped recently:</p>
       </div>
       <div class="changelog">
-        <div class="cl-item"><span class="cl-version">v5.0.0-beta</span><div class="cl-content"><h4>WiFi Heatmap Planner <span style="background:color-mix(in srgb,var(--accent-3) 18%,transparent);color:var(--accent-3);font-size:9px;font-family:var(--mono);padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:700">BETA</span></h4><p>Ekahau-style predictive WiFi planning · H3C, Ruijie, Aruba, TP-Link APs · wall attenuation · channel conflict detection</p></div></div>
-        <div class="cl-item"><span class="cl-version">v4.1.2</span><div class="cl-content"><h4>Account & Save Files</h4><p>Google login · save configs and topologies to your account · curved cables, redesigned icons</p></div></div>
-        <div class="cl-item"><span class="cl-version">v3.0</span><div class="cl-content"><h4>Topology Builder Beta</h4><p>Visual network builder with port mapping & cable labels</p></div></div>
-        <div class="cl-item"><span class="cl-version">v2.5</span><div class="cl-content"><h4>Cisco IOS-XE & NX-OS Support</h4><p>Catalyst 9000, ISR 4k, and Nexus templates</p></div></div>
-        <div class="cl-item"><span class="cl-version">v2.0</span><div class="cl-content"><h4>Multi-vendor Config Engine</h4><p>H3C Comware v7 & Cisco IOS in parallel</p></div></div>
+        <div class="cl-item"><span class="cl-version"><span data-cl-version>v6.0.0</span></span><div class="cl-content"><h4>Website v6</h4><p>Topology Builder retired to focus on the Config Builder and WiFi Planner · one version number across the site · refreshed content, mobile navigation and SEO</p></div></div>
+        <div class="cl-item"><span class="cl-version"><span data-cl-wifi="WiFi v">WiFi v5.6</span></span><div class="cl-content"><h4>WiFi Planner update</h4><p>Per-radio power from H3C datasheets · SINR and weak-field view · field calibration · Word report (EN/ID) with a Reports config dialog</p></div></div>
+        <div class="cl-item"><span class="cl-version">WiFi v5.0</span><div class="cl-content"><h4>WiFi Heatmap Planner</h4><p>Predictive WiFi planning · H3C, Ruijie, Aruba, TP-Link APs · wall attenuation · channel conflict detection</p></div></div>
+        <div class="cl-item"><span class="cl-version">v4.1</span><div class="cl-content"><h4>Account &amp; Save Files</h4><p>Google login (optional) · save configs to your account</p></div></div>
+        <div class="cl-item"><span class="cl-version">v2.5</span><div class="cl-content"><h4>Cisco IOS-XE &amp; NX-OS Support</h4><p>Catalyst 9000, ISR 4k, and Nexus templates</p></div></div>
+        <div class="cl-item"><span class="cl-version">v2.0</span><div class="cl-content"><h4>Multi-vendor Config Engine</h4><p>H3C Comware v7 &amp; Cisco IOS in parallel</p></div></div>
       </div>
     </div>
   </section>
@@ -509,33 +516,33 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
     <div class="section-head">
       <div>
         <h2>Featured <em>templates</em></h2>
-        <div class="meta" style="margin-top:6px">Production-ready configs · Click to load in Builder</div>
+        <div class="meta" style="margin-top:6px">A selection · open the Builder to see all 17</div>
       </div>
-      <span class="meta">25+ templates total</span>
+      <span class="meta">17 templates total</span>
     </div>
 
     <div class="tpl-tabs">
-      <button class="tpl-tab active">All <span class="count">25</span></button>
-      <button class="tpl-tab">H3C Comware <span class="count">7</span></button>
-      <button class="tpl-tab">Cisco IOS <span class="count">8</span></button>
-      <button class="tpl-tab">IOS-XE <span class="count">6</span></button>
-      <button class="tpl-tab">NX-OS <span class="count">4</span></button>
+      <button class="tpl-tab active" data-f="all">All <span class="count">17</span></button>
+      <button class="tpl-tab" data-f="h3c">H3C Comware <span class="count">7</span></button>
+      <button class="tpl-tab" data-f="ios">Cisco IOS <span class="count">4</span></button>
+      <button class="tpl-tab" data-f="iosxe">IOS-XE <span class="count">3</span></button>
+      <button class="tpl-tab" data-f="nxos">NX-OS <span class="count">3</span></button>
     </div>
 
     <div class="templates-grid">
-      <a href="/builder.html" class="tpl"><span class="tpl-vendor-tag">H3C</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#7cf4c7" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="6" cy="14" r="0.8" fill="#7cf4c7"/><circle cx="9" cy="14" r="0.8" fill="#7cf4c7"/></svg></div><div class="tpl-name">Access Switch</div><div class="tpl-desc">Standard access switch with user VLAN and uplink trunk</div></a>
-      <a href="/builder.html" class="tpl"><span class="tpl-vendor-tag">H3C</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#7cf4c7" stroke-width="1.8"><path d="M3 21h18M5 21V10l7-7 7 7v11M9 21V14h6v7"/></svg></div><div class="tpl-name">Core Switch (L3)</div><div class="tpl-desc">Layer 3 core with SVI gateways, OSPF, static routes</div></a>
-      <a href="/builder.html" class="tpl"><span class="tpl-vendor-tag">CISCO</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#a8b5ff" stroke-width="1.8"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg></div><div class="tpl-name">DHCP on VLAN</div><div class="tpl-desc">VLAN + SVI + DHCP pool — full L3 server setup</div></a>
-      <a href="/builder.html" class="tpl"><span class="tpl-vendor-tag">CISCO</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#a8b5ff" stroke-width="1.8"><path d="M7 17l5-5 5 5M7 12l5-5 5 5"/></svg></div><div class="tpl-name">DHCP Relay</div><div class="tpl-desc">VLAN with DHCP Relay to central server</div></a>
-      <a href="/builder.html" class="tpl"><span class="tpl-vendor-tag">IOS-XE</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#ffb86b" stroke-width="1.8"><path d="M5 3a16 16 0 0014 0M5 21a16 16 0 0114 0M3 5a16 16 0 010 14M21 5a16 16 0 000 14"/></svg></div><div class="tpl-name">Guest WiFi VLAN</div><div class="tpl-desc">Isolated guest VLAN with DHCP and ACL</div></a>
-      <a href="/builder.html" class="tpl"><span class="tpl-vendor-tag">NX-OS</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#ff6478" stroke-width="1.8"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div><div class="tpl-name">VPC Configuration</div><div class="tpl-desc">Virtual Port Channel for Nexus dual-homing</div></a>
-      <a href="/builder.html" class="tpl"><span class="tpl-vendor-tag">CISCO</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#a8b5ff" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg></div><div class="tpl-name">OSPF Single Area</div><div class="tpl-desc">OSPF area 0 with stub networks and redistribution</div></a>
-      <a href="/builder.html" class="tpl"><span class="tpl-vendor-tag">H3C</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#7cf4c7" stroke-width="1.8"><path d="M9 12l2 2 4-4M21 12c0 5-9 9-9 9s-9-4-9-9V5l9-3 9 3v7z"/></svg></div><div class="tpl-name">Port Security</div><div class="tpl-desc">MAC address binding with violation actions</div></a>
+      <a href="/builder.html" class="tpl" data-os="h3c"><span class="tpl-vendor-tag">H3C</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#7cf4c7" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="6" cy="14" r="0.8" fill="currentColor"/><circle cx="10" cy="14" r="0.8" fill="currentColor"/></svg></div><div class="tpl-name">Access Switch</div><div class="tpl-desc">Standard access switch with user VLAN and uplink trunk</div></a>
+      <a href="/builder.html" class="tpl" data-os="h3c"><span class="tpl-vendor-tag">H3C</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#7cf4c7" stroke-width="1.8"><path d="M3 21h18M5 21V10l7-7 7 7v11M9 21V14h6v7"/></svg></div><div class="tpl-name">Core Switch (L3)</div><div class="tpl-desc">Layer 3 core with SVI gateways, OSPF and static routes</div></a>
+      <a href="/builder.html" class="tpl" data-os="h3c"><span class="tpl-vendor-tag">H3C</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#7cf4c7" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg></div><div class="tpl-name">DHCP on VLAN</div><div class="tpl-desc">VLAN + SVI + DHCP pool — full L3 server setup</div></a>
+      <a href="/builder.html" class="tpl" data-os="h3c"><span class="tpl-vendor-tag">H3C</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#7cf4c7" stroke-width="1.8"><path d="M7 17l5-5 5 5M7 12l5-5 5 5"/></svg></div><div class="tpl-name">DHCP Relay</div><div class="tpl-desc">VLAN with DHCP Relay to central server</div></a>
+      <a href="/builder.html" class="tpl" data-os="h3c"><span class="tpl-vendor-tag">H3C</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#7cf4c7" stroke-width="1.8"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0"/><circle cx="12" cy="20" r="1"/></svg></div><div class="tpl-name">Guest WiFi VLAN</div><div class="tpl-desc">Isolated guest VLAN with DHCP and ACL</div></a>
+      <a href="/builder.html" class="tpl" data-os="ios"><span class="tpl-vendor-tag">CISCO IOS</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#a8b5ff" stroke-width="1.8"><path d="M3 21h18M5 21V10l7-7 7 7v11M9 21V14h6v7"/></svg></div><div class="tpl-name">ISR Core Router</div><div class="tpl-desc">Cisco ISR with SVI gateways and OSPF</div></a>
+      <a href="/builder.html" class="tpl" data-os="iosxe"><span class="tpl-vendor-tag">IOS-XE</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#ffb86b" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="6" cy="14" r="0.8" fill="currentColor"/><circle cx="10" cy="14" r="0.8" fill="currentColor"/></svg></div><div class="tpl-name">Catalyst 9000 Switch</div><div class="tpl-desc">Modern Catalyst 9k access switch</div></a>
+      <a href="/builder.html" class="tpl" data-os="nxos"><span class="tpl-vendor-tag">NX-OS</span><div class="tpl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#ff6478" stroke-width="1.8"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div><div class="tpl-name">Nexus 9k Spine (L3)</div><div class="tpl-desc">Nexus spine with SVIs and OSPF</div></a>
     </div>
   </section>
 
   <!-- ROADMAP -->
-  <section class="roadmap">
+  <section class="roadmap" id="roadmap">
     <div class="section-head-center">
       <div class="eyebrow">Public roadmap</div>
       <h2>What's <em>coming next</em></h2>
@@ -546,7 +553,7 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
       <div class="rm-col shipped">
         <div class="rm-status shipped"><span class="dot"></span>Shipped</div>
         <div class="rm-list">
-          <div class="rm-item"><span class="check">✓</span>Topology Builder Beta</div>
+          <div class="rm-item"><span class="check">✓</span>WiFi Heatmap Planner (beta)</div>
           <div class="rm-item"><span class="check">✓</span>Multi-vendor support</div>
           <div class="rm-item"><span class="check">✓</span>Dark/Light themes</div>
           <div class="rm-item"><span class="check">✓</span>Session history</div>
@@ -557,8 +564,8 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
       <div class="rm-col progress">
         <div class="rm-status progress"><span class="dot"></span>In Progress</div>
         <div class="rm-list">
-          <div class="rm-item"><span class="check">→</span>AI config validator</div>
-          <div class="rm-item"><span class="check">→</span>Topology → Config sync</div>
+          <div class="rm-item"><span class="check">→</span>WiFi: auto channel &amp; power plan</div>
+          <div class="rm-item"><span class="check">→</span>WiFi: acceptance test points</div>
           <div class="rm-item"><span class="check">→</span>Huawei VRP support</div>
           <div class="rm-item"><span class="check">→</span>Juniper Junos templates</div>
         </div>
@@ -566,6 +573,7 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
       <div class="rm-col exploring">
         <div class="rm-status exploring"><span class="dot"></span>Exploring</div>
         <div class="rm-list">
+          <div class="rm-item"><span class="check">○</span>AI config validator</div>
           <div class="rm-item"><span class="check">○</span>Config diff tool</div>
           <div class="rm-item"><span class="check">○</span>Arista EOS</div>
           <div class="rm-item"><span class="check">○</span>MikroTik RouterOS</div>
@@ -602,13 +610,13 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);flex-shrink:0"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
         Config<em>Labs</em>
       </div>
-      <p class="footer-tagline">Free multi-vendor network config generator. Built for engineers, by engineers. Login optional. No paywall. No vendor lock-in.</p>
+      <p class="footer-tagline">Free multi-vendor config generator and WiFi planner. Built for engineers, by engineers. Login optional. No paywall. No vendor lock-in.</p>
     </div>
     <div class="footer-col">
       <h4>Product</h4>
       <a href="/builder.html">Builder</a>
-      <a href="/topology.html">Topology</a>
-      <a href="/builder.html#templates">Templates</a>
+      <a href="/wifi.html">WiFi Planner</a>
+      <a href="/builder.html">Templates</a>
       <a href="#roadmap">Roadmap</a>
     </div>
     <div class="footer-col">
@@ -623,14 +631,14 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
       <a href="https://saweria.co/configlabs" target="_blank">Donate (Saweria)</a>
       <a href="https://github.com/NaufalBudiman/ConfigLabs/issues/new" target="_blank">Report a Bug</a>
       <a href="https://github.com/NaufalBudiman/ConfigLabs/issues/new" target="_blank">Feature Request</a>
-      <a href="/about.html">Contact</a>
+      <a href="/about.html#contact">Contact</a>
     </div>
   </div>
   <div class="legal">
-    <span>© 2026 ConfigLabs · Built with care in Indonesia 🇮🇩</span>
+    <span>© 2026 ConfigLabs · <span data-cl-version>v6.0.0</span> · Built with care in Indonesia 🇮🇩</span>
     <div class="legal-links">
-      <a href="/about.html">Privacy</a>
-      <a href="/about.html">Terms</a>
+      <a href="/about.html#privacy">Privacy</a>
+      <a href="/about.html#terms">Terms</a>
       <a href="https://github.com/NaufalBudiman/ConfigLabs/blob/main/LICENSE" target="_blank">License (MIT)</a>
     </div>
   </div>
@@ -650,7 +658,7 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
     <div class="support-reasons">
       <h4>Your support helps:</h4>
       <ul>
-        <li>Cover Railway server hosting</li>
+        <li>Cover server &amp; database hosting</li>
         <li>Keep the domain alive</li>
         <li>Stay completely ad-free</li>
         <li>Add more vendors &amp; features</li>
@@ -729,13 +737,15 @@ document.querySelectorAll('.tpl-tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.tpl-tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
+    const f=tab.dataset.f;
+    document.querySelectorAll('.templates-grid .tpl').forEach(c=>{c.style.display=(f==='all'||c.dataset.os===f)?'':'none'});
   });
 });
 
 // Backend status check (matches existing pattern)
 const statusEl = document.getElementById('backend-status');
 if(statusEl){
-  fetch('/api/health').then(r => r.ok ? statusEl.textContent = 'v5.0.0-beta' : statusEl.textContent = 'v5.0.0-beta').catch(()=>{ statusEl.textContent = 'v5.0.0-beta'; });
+  fetch('/api/health').then(r=>{ if(!r.ok){ const d=document.querySelector('.chip .dot'); if(d) d.style.background='var(--warning)'; } }).catch(()=>{ const d=document.querySelector('.chip .dot'); if(d) d.style.background='var(--warning)'; });
 }
 </script>
 

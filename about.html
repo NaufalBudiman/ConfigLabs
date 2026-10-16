@@ -3,14 +3,15 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>About — ConfigLabs · The Story Behind The Tool</title>
-<meta name="description" content="ConfigLabs is a free, independent network configuration generator built by network engineers, for network engineers. Learn about the mission, the maker, and what's coming next."/>
-<meta name="keywords" content="about ConfigLabs, network config generator, Naufal Budiman, H3C Cisco config tool, free networking tool"/>
+<title>About — ConfigLabs</title>
+<meta name="description" content="ConfigLabs is a free, independent network configuration generator and WiFi planner built by a network engineer, for network engineers."/>
+<meta name="keywords" content="ConfigLabs, about, H3C, Cisco, network configuration, WiFi planner"/>
 <meta name="author" content="ConfigLabs"/>
 <meta property="og:title" content="About ConfigLabs — Network Configuration, Simplified"/>
-<meta property="og:description" content="The story behind ConfigLabs. Built by a network engineer, for network engineers. Free forever."/>
+<meta property="og:description" content="The story behind ConfigLabs. Built by a network engineer, for network engineers. Free and open source."/>
 <meta property="og:type" content="website"/>
-<meta property="og:url" content="https://configlabs.online/about"/>
+<link rel="canonical" href="https://configlabs.online/about.html"/>
+<meta property="og:url" content="https://configlabs.online/about.html"/>
 <meta name="theme-color" content="#0b0d10"/>
 
 <!-- Proper favicon setup -->
@@ -22,21 +23,8 @@
 <link rel="manifest" href="/site.webmanifest"/>
 
 <!-- Schema.org for the About page -->
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "AboutPage",
-  "url": "https://configlabs.online/about",
-  "name": "About ConfigLabs",
-  "description": "The story behind ConfigLabs — a free multi-vendor network configuration generator.",
-  "publisher": {
-    "@type": "Organization",
-    "name": "ConfigLabs",
-    "url": "https://configlabs.online",
-    "logo": "https://configlabs.online/favicon-512.png"
-  }
-}
-</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"ConfigLabs","url":"https://configlabs.online","logo":"https://configlabs.online/favicon-512.png","description":"Free network configuration generator (H3C, Cisco) and WiFi heatmap planner.","applicationCategory":"DeveloperApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"license":"https://opensource.org/licenses/MIT"}</script>
+<script src="/site.js" defer></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -246,6 +234,28 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
 .oauth-btn.google:hover{border-color:#4285f4;color:#4285f4}
 .auth-terms{text-align:center;font-size:11px;color:var(--text-muted);margin-top:20px;line-height:1.6}
 .auth-terms a{color:var(--accent);text-decoration:none}
+
+/* ---- v6 nav & mobile ---- */
+.nav-links{display:flex;gap:2px;margin-left:auto;margin-right:12px}
+.nav-link{white-space:nowrap}
+@media(max-width:900px){
+  nav{flex-wrap:wrap;padding:10px 16px!important;row-gap:8px}
+  nav .brand{order:1}
+  nav .nav-actions{order:2;margin-left:auto}
+  .nav-links{order:3;flex:0 0 100%;margin:0;overflow-x:auto;scrollbar-width:none}
+  .nav-links::-webkit-scrollbar{display:none}
+  .nav-link{padding:7px 12px}
+  nav .chip{display:none}
+}
+@media(max-width:640px){
+  .support-fab{bottom:14px!important;right:14px!important;padding:12px!important}
+  .support-fab span{display:none}
+}
+@media(max-width:640px){
+  .nav-link svg{display:none}
+  .nav-link{padding:7px 10px;font-size:13px}
+  .hero-tag{border-radius:14px;text-align:center;line-height:1.5}
+}
 </style>
 </head>
 <body data-theme="dark">
@@ -260,20 +270,13 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
     </div>
     <div>Config<em>Labs</em></div>
   </a>
+  <div class="nav-links">
+    <a href="/" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M3 12L12 3l9 9M5 10v10h14V10"/></svg>Home</a>
+    <a href="/builder.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>Builder</a>
+    <a href="/wifi.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>WiFi Planner <span style="background:color-mix(in srgb,var(--accent-3) 15%,transparent);color:var(--accent-3);font-family:var(--mono);font-size:9px;padding:2px 5px;border-radius:4px;font-weight:700;margin-left:3px">BETA</span></a>
+    <a href="/about.html" class="nav-link active"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>About</a>
+  </div>
   <div class="nav-actions">
-    <a href="/builder.html" class="nav-link">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
-      Builder
-    </a>
-    <a href="/topology.html" class="nav-link">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8 7l8 0M7.5 8l3.5 8M16.5 8l-3.5 8"/></svg>
-      Topology
-    </a>
-    <a href="/wifi.html" class="nav-link">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>
-      WiFi <span class="beta-pill">BETA</span>
-    </a>
-    <a href="/about.html" class="nav-link active">About</a>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" title="Theme" id="theme-btn">🌙</button>
   </div>
@@ -283,7 +286,7 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
   <div class="auth-modal">
     <button class="auth-modal-close" onclick="authCloseModal()">✕</button>
     <h2 class="auth-modal-title">Sign in to <em>ConfigLabs</em></h2>
-    <p class="auth-modal-sub">Save configs · Share topologies · It's free</p>
+    <p class="auth-modal-sub">Save your configs · It's free</p>
     <button class="oauth-btn google" onclick="window.location.href='/auth/google'">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
       Continue with Google
@@ -296,7 +299,7 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
 
   <!-- ===================== HERO ===================== -->
   <section class="hero">
-    <div class="hero-tag"><span class="live"></span> About ConfigLabs · v5.0.0-beta</div>
+    <div class="hero-tag"><span class="live"></span> About ConfigLabs · <span data-cl-version>v6.0.0</span></div>
     <h1>Network configuration,<br><span class="serif">simplified.</span></h1>
     <p>Built by network engineers, for network engineers. ConfigLabs is a free, independent tool that generates production-ready configs for H3C and Cisco devices — without the CLI headaches.</p>
     <a href="/builder.html" class="cta-btn">Start Building →</a>
@@ -388,9 +391,9 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
     <p>Active development. Updates ship regularly:</p>
     <div class="roadmap">
       <div class="roadmap-section live">
-        <h3><span class="dot"></span>Live now — v5.0.0-beta</h3>
+        <h3><span class="dot"></span>Live now — <span data-cl-version>v6.0.0</span></h3>
         <ul class="roadmap-list">
-          <li>🗺️ Topology Builder (Beta) — drag, drop, connect devices visually</li>
+          <li>📶 WiFi Planner (beta) — heatmaps, calibration, Word reports</li>
           <li>Google login &amp; saved configs (optional)</li>
           <li>H3C Comware v7</li>
           <li>Cisco IOS (Catalyst 2960/3750, ISR)</li>
@@ -401,8 +404,8 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
       <div class="roadmap-section soon">
         <h3><span class="dot"></span>Coming soon</h3>
         <ul class="roadmap-list">
-          <li>AI-powered config validator</li>
-          <li>Full topology → config sync (generate configs per-device from topology)</li>
+          <li>WiFi: auto channel &amp; power plan</li>
+          <li>WiFi: acceptance test points</li>
           <li>Huawei VRP support</li>
           <li>Juniper Junos support</li>
         </ul>
@@ -410,6 +413,7 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
       <div class="roadmap-section maybe">
         <h3><span class="dot"></span>Exploring</h3>
         <ul class="roadmap-list">
+          <li>AI-powered config validator</li>
           <li>Config diff &amp; comparison tool</li>
           <li>Arista EOS &amp; MikroTik RouterOS</li>
           <li>Mobile app (iOS &amp; Android)</li>
@@ -423,7 +427,7 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
     <h2>Common <em>questions</em></h2>
     <div class="faq">
 
-      <details class="faq-item">
+      <details class="faq-item" id="disclaimer">
         <summary>Is ConfigLabs affiliated with H3C or Cisco?</summary>
         <div class="faq-body">No. ConfigLabs is an independent tool — not affiliated with, endorsed by, or sponsored by New H3C Technologies Co., Ltd., Cisco Systems, Inc., or any other vendor. H3C®, Comware®, Cisco®, IOS®, IOS-XE®, and NX-OS® are registered trademarks of their respective owners. We just respect their platforms.</div>
       </details>
@@ -433,9 +437,23 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
         <div class="faq-body">Always review and test in a lab environment first. ConfigLabs follows official vendor syntax and best practices, but every network is different. The tool is provided "AS IS" — you're responsible for what you deploy.</div>
       </details>
 
-      <details class="faq-item">
-        <summary>Is my data private? Do you store my configs?</summary>
-        <div class="faq-body"><strong>Yes, your data is private.</strong> ConfigLabs doesn't require login, doesn't track you, and doesn't store your configurations on our servers. Configs are generated on-demand and only kept in your browser session (history clears when you close the tab).</div>
+      <details class="faq-item" id="privacy">
+        <summary>Is my data private? What do you store?</summary>
+        <div class="faq-body"><strong>Short version: very little.</strong> The Config Builder and WiFi Planner work without an account, and there are no ads or tracking scripts.<br><br>
+        <strong>Config Builder:</strong> the values you enter are sent to our server only to render the config; they are not stored. Your session history stays in your browser tab.<br>
+        <strong>WiFi Planner:</strong> projects, floor plans and measurements are stored in your own browser (IndexedDB) and are not uploaded. Clear your browser data and they are gone, so export what you need.<br>
+        <strong>If you sign in with Google:</strong> we keep your name, email and avatar, plus any configs you choose to save, in our database (Neon PostgreSQL).<br>
+        <strong>Feedback:</strong> messages you send through the feedback form are logged so we can read them.</div>
+      </details>
+
+      <details class="faq-item" id="terms">
+        <summary>Terms of use</summary>
+        <div class="faq-body">ConfigLabs is provided "AS IS", without warranty of any kind. You are responsible for reviewing and testing everything you generate or plan before using it on real equipment or sites. WiFi predictions are estimates and should be validated with a site survey. The source code is released under the <a href="https://github.com/NaufalBudiman/ConfigLabs/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>.</div>
+      </details>
+
+      <details class="faq-item" id="contact">
+        <summary>How do I contact you or report a bug?</summary>
+        <div class="faq-body">Open an issue on <a href="https://github.com/NaufalBudiman/ConfigLabs/issues/new" target="_blank" rel="noopener">GitHub</a>, or use the feedback button (💬) in the Config Builder.</div>
       </details>
 
       <details class="faq-item">
@@ -487,11 +505,12 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
         Built with <em style="font-family:var(--serif); font-style:italic; color:var(--accent);">care</em> for network engineers.<br>
         Free, open, always improving.
       </div>
-      <div style="font-family:var(--mono); font-size:11px; color:var(--text-muted);">v2.0 · H3C + Cisco multi-vendor</div>
+      <div style="font-family:var(--mono); font-size:11px; color:var(--text-muted);"><span data-cl-version>v6.0.0</span> · Config Builder + WiFi Planner</div>
     </div>
     <div class="footer-col">
       <h4>Product</h4>
-      <a href="/">App</a>
+      <a href="/builder.html">Config Builder</a>
+      <a href="/wifi.html">WiFi Planner</a>
       <a href="/about.html">About</a>
       <a href="https://saweria.co/configlabs" target="_blank" rel="noopener">☕ Support us</a>
       <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" rel="noopener">GitHub</a>
@@ -505,8 +524,9 @@ footer { margin-top: 80px; padding: 40px 0 30px; border-top: 1px solid var(--bor
     </div>
     <div class="footer-col">
       <h4>Legal</h4>
-      <a href="/#disclaimer">Disclaimer</a>
-      <a href="/#terms">Terms of Use</a>
+      <a href="#disclaimer">Disclaimer</a>
+      <a href="#terms">Terms of Use</a>
+      <a href="#privacy">Privacy</a>
     </div>
   </div>
   <div class="legal">
@@ -546,6 +566,10 @@ function toggleTheme() {
 
 <script>
 (function(){var _u=null,_t=localStorage.getItem("clab_token")||"";window.authOpenModal=function(){document.getElementById("auth-modal").classList.add("open")};window.authCloseModal=function(){document.getElementById("auth-modal").classList.remove("open")};document.addEventListener("keydown",function(e){if(e.key==="Escape")authCloseModal()});window.authToggleDropdown=function(){var d=document.getElementById("auth-dd");if(d)d.classList.toggle("open")};document.addEventListener("click",function(e){var w=document.getElementById("auth-nav");if(w&&!w.contains(e.target)){var d=document.getElementById("auth-dd");if(d)d.classList.remove("open")}});window.authLogout=function(){localStorage.removeItem("clab_token");_u=null;_t="";rAN()};function rAN(){var el=document.getElementById("auth-nav");if(!el)return;if(_u){var av=_u.avatar_url?"<img class=\'auth-avatar\' src=\'"+_u.avatar_url+"\' alt=\'\'  onclick=\'authToggleDropdown()\'>":" <button class=\'auth-avatar\' onclick=\'authToggleDropdown()\' style=\'background:var(--accent);color:var(--bg);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center\'>" +_u.name[0].toUpperCase()+"</button>";el.innerHTML="<div class=\'auth-user-wrap\'>"+av+"<div class=\'auth-dropdown\' id=\'auth-dd\'><div class=\'auth-dropdown-header\'><div class=\'auth-dropdown-name\'>"+_u.name+"</div><div class=\'auth-dropdown-email\'>"+_u.email+"</div></div><button class=\'auth-dropdown-item danger\' onclick=\'authLogout()\'>Logout</button></div></div>";}else{el.innerHTML="<button class=\'auth-login-btn\' onclick=\'authOpenModal()\'>Login</button>";}}async function fetchMe(){if(!_t){rAN();return;}try{var r=await fetch("/api/me",{headers:{"Authorization":"Bearer "+_t}});if(r.ok){_u=await r.json();}else{localStorage.removeItem("clab_token");_t="";_u=null;}}catch(e){_u=null;}rAN();}var p=new URLSearchParams(window.location.search);var tk=p.get("auth_token"),er=p.get("auth_error");if(tk){localStorage.setItem("clab_token",tk);_t=tk;window.history.replaceState({},"",window.location.pathname);}fetchMe();})();
+</script>
+<script>
+(function(){function o(){var h=location.hash.slice(1);if(!h)return;var e=document.getElementById(h);if(e&&e.tagName==='DETAILS'){e.open=true;e.scrollIntoView({behavior:'smooth',block:'center'});}}
+window.addEventListener('hashchange',o);window.addEventListener('load',o);})();
 </script>
 </body>
 </html>

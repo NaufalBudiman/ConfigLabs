@@ -1,7 +1,7 @@
 {
   "name": "ConfigLabs",
   "short_name": "ConfigLabs",
-  "description": "Free multi-vendor network config generator. H3C, Cisco IOS, IOS-XE, NX-OS.",
+  "description": "Free network config generator (H3C, Cisco) and WiFi heatmap planner.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0b0d10",

@@ -25,7 +25,7 @@ class SavedFile(db.Model):
     id           = db.Column(db.Integer, primary_key=True)
     user_id      = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     name         = db.Column(db.String(255), nullable=False)
-    file_type    = db.Column(db.String(50),  nullable=False)   # 'config' | 'topology'
+    file_type    = db.Column(db.String(50),  nullable=False)   # 'config'
     data         = db.Column(db.Text, nullable=False)           # JSON string
     vendor       = db.Column(db.String(50),  nullable=True)
     hostname     = db.Column(db.String(255), nullable=True)
