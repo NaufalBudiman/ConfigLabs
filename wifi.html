@@ -400,7 +400,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.9</span></div>
+    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.10</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -2877,6 +2877,29 @@ function trDetect(p) {
   out.forEach(s => { s.thick = s.th >= med * 1.6 && s.th > 2.5; s.len = s.b - s.a; });
   return { segs: out, W, H, px2m };
 }
+// keep only the parts of the detected walls that fall inside the Render areas (image px space)
+function trClip(res) {
+  const r = planRect(), kx = r.w / res.W, ky = r.h / res.H, dim = Math.max(res.W, res.H), mg = Math.max(4, 0.006 * dim);
+  const polys = wifi.areas.map(a => a.pts.map(p => ({ x: (p.x - r.x) / kx, y: (p.y - r.y) / ky })));
+  const dseg = (px, py, a, b) => { const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy || 1; let t = ((px - a.x) * dx + (py - a.y) * dy) / l2; t = Math.max(0, Math.min(1, t)); return Math.hypot(px - a.x - t * dx, py - a.y - t * dy); };
+  const inside = (x, y) => polys.some(pl => inPoly(pl, x, y) || pl.some((a, i) => dseg(x, y, a, pl[(i + 1) % pl.length]) <= mg));
+  const out = [];
+  for (const sg of res.segs) {
+    const pt = u => sg.o === 'h' ? inside(u, sg.c) : inside(sg.c, u);
+    let run = null; const runs = [];
+    for (let u = Math.floor(sg.a); u <= Math.ceil(sg.b); u++) {
+      const uu = Math.max(sg.a, Math.min(sg.b, u));
+      if (pt(uu)) { if (!run) run = [uu, uu]; else run[1] = uu; } else if (run) { runs.push(run); run = null; }
+    }
+    if (run) runs.push(run);
+    for (const rn of runs) {
+      if (rn[1] - rn[0] < 6) continue;
+      out.push(Object.assign({}, sg, { a: rn[0], b: rn[1], len: rn[1] - rn[0], gaps: sg.gaps.filter(g => g[0] >= rn[0] && g[1] <= rn[1]) }));
+    }
+  }
+  res.segs = out;
+  return polys;
+}
 function trToWorld(res, matMode, defMat) {
   const r = planRect(), kx = r.w / res.W, ky = r.h / res.H;
   const walls = [], doors = [];
@@ -2913,7 +2936,8 @@ async function openTrace() {
       <div class="dlg-field"><label>Default material</label><select id="tr-mat" style="width:100%;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text)">${matOpts}</select></div>
       <div class="dlg-field"><label>Thick walls</label><select id="tr-mm" style="width:100%;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text)"><option value="auto" selected>Concrete (auto)</option><option value="same">Same as default</option></select></div>
     </div>
-    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:4px"><input type="checkbox" id="tr-dbl" checked style="width:auto"> Merge double-line walls into one</label>
+    ${wifi.areas.length ? `<label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:4px"><input type="checkbox" id="tr-area" checked style="width:auto"> Only inside the ${wifi.areas.length} Render area${wifi.areas.length > 1 ? 's' : ''} (yellow outline)</label>` : ''}
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px"><input type="checkbox" id="tr-dbl" checked style="width:auto"> Merge double-line walls into one</label>
     <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px"><input type="checkbox" id="tr-mg" checked style="width:auto"> Ignore the image border / frame</label>
     <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px"><input type="checkbox" id="tr-door" checked style="width:auto"> Create doors from gaps in walls</label>
     ${hasW ? `<label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px"><input type="checkbox" id="tr-rep" style="width:auto"> Replace the ${hasW} existing wall${hasW > 1 ? 's' : ''} and doors (off = add to them)</label>` : ''}`;
@@ -2925,10 +2949,12 @@ async function openTrace() {
     if (!$('tr-prev')) return;
     $('tr-thr-v').textContent = $('tr-thr').value; $('tr-len-v').textContent = $('tr-len').value + '%';
     res = trDetect(params());
+    const useArea = $('tr-area') && $('tr-area').checked, polys = useArea ? trClip(res) : null;
     if (!$('tr-door').checked) res.segs.forEach(s => s.gaps = []);
     const cv = $('tr-prev'); cv.width = C.W; cv.height = C.H; const x = cv.getContext('2d');
     x.globalAlpha = 0.45; x.drawImage(C.src, 0, 0, C.W, C.H); x.globalAlpha = 1;
     x.lineCap = 'butt';
+    if (polys) { x.strokeStyle = '#ffd23f'; x.lineWidth = Math.max(2, C.W / 500); x.setLineDash([10, 6]); polys.forEach(pl => { x.beginPath(); pl.forEach((q, i) => i ? x.lineTo(q.x, q.y) : x.moveTo(q.x, q.y)); x.closePath(); x.stroke(); }); x.setLineDash([]); }
     const lw = Math.max(2, C.W / 380);
     for (const s of res.segs) {
       x.strokeStyle = '#ff3b3b'; x.lineWidth = s.thick ? lw * 2 : lw; x.beginPath();
@@ -2941,7 +2967,7 @@ async function openTrace() {
   };
   const sched = () => { clearTimeout(tmr); tmr = setTimeout(draw, 120); };
   ['tr-thr', 'tr-len'].forEach(i => $(i).addEventListener('input', sched));
-  ['tr-dbl', 'tr-mg', 'tr-door'].forEach(i => $(i).addEventListener('change', draw));
+  ['tr-dbl', 'tr-mg', 'tr-door', 'tr-area'].forEach(i => $(i) && $(i).addEventListener('change', draw));
   draw();
   const m = await pr;
   clearTimeout(tmr);
