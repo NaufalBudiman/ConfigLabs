@@ -186,6 +186,35 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
 /* SAVE MODAL */
 .savename-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);z-index:200;display:none;place-items:center;padding:20px}
 .savename-modal-overlay.open{display:grid}
+
+/* ---- Fase 0: UX upgrade ---- */
+.stepper{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:4px;background:color-mix(in srgb,var(--surface) 92%,transparent);border:1px solid var(--border);border-radius:99px;padding:4px;z-index:5;backdrop-filter:blur(6px)}
+.step{display:flex;align-items:center;gap:6px;padding:5px 11px;border-radius:99px;font-size:11px;color:var(--text-muted);cursor:pointer;border:1px solid transparent;font-family:var(--sans);background:none;white-space:nowrap}
+.step b{display:grid;place-items:center;width:16px;height:16px;border-radius:50%;background:var(--surface-2);font-size:9px;font-family:var(--mono);color:var(--text-dim)}
+.step:hover{color:var(--text)}
+.step.done b{background:var(--accent);color:var(--bg)}
+.step.done{color:var(--text-dim)}
+.step.current{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,var(--border));background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.step.current b{background:var(--accent-3);color:var(--bg)}
+.canvas-hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:color-mix(in srgb,var(--surface) 92%,transparent);border:1px solid var(--border);border-radius:10px;padding:7px 14px;font-size:12px;color:var(--text-dim);z-index:5;pointer-events:none;white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}
+.canvas-hint kbd{font-family:var(--mono);font-size:10px;background:var(--surface-2);border:1px solid var(--border);padding:1px 5px;border-radius:4px;color:var(--text)}
+.zoom-ctl{position:absolute;bottom:14px;right:14px;display:flex;align-items:center;gap:4px;background:color-mix(in srgb,var(--surface) 92%,transparent);border:1px solid var(--border);border-radius:10px;padding:4px;z-index:5}
+.zoom-ctl button{background:none;border:1px solid transparent;color:var(--text-dim);width:28px;height:26px;border-radius:7px;cursor:pointer;font-size:14px;font-family:var(--mono)}
+.zoom-ctl button:hover{background:var(--surface-hover);color:var(--text)}
+.zoom-ctl span{font-family:var(--mono);font-size:10px;color:var(--text-muted);min-width:38px;text-align:center}
+.float-pop{position:absolute;display:none;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:6px 8px;z-index:6;box-shadow:0 8px 24px rgba(0,0,0,.4);transform:translate(-50%,-100%);white-space:nowrap}
+.fp-title{font-size:11px;font-weight:600;color:var(--text);font-family:var(--mono);max-width:90px;overflow:hidden;text-overflow:ellipsis}
+.fp-btn{background:var(--bg);border:1px solid var(--border);color:var(--text-dim);border-radius:7px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:var(--sans)}
+.fp-btn:hover{color:var(--text);border-color:var(--border-strong)}
+.fp-btn.danger{color:var(--danger)}
+.fp-sw{width:18px;height:18px;border-radius:5px;border:2px solid transparent;cursor:pointer;padding:0}
+.fp-sw.active{border-color:var(--accent)}
+.fp-pop input[type=range]{width:80px;accent-color:var(--accent)}
+.fp-val{font-family:var(--mono);font-size:10px;color:var(--accent);min-width:38px}
+.tb-btn.off{opacity:.45}
+.layer-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-dim);padding:3px 0;cursor:pointer}
+.layer-row input{accent-color:var(--accent)}
+#floor-canvas{touch-action:none}
 </style>
 </head>
 <body data-theme="dark">
@@ -215,7 +244,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip"><span class="dot"></span><span>v5.0.0-beta</span></div>
+    <div class="chip"><span class="dot"></span><span>v5.1.0-beta</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -258,6 +287,18 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
   </div>
 </div>
 
+<!-- CALIBRATE MODAL -->
+<div class="modal-overlay" id="calib-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeCalib()">✕</button>
+    <h2>Real <em>distance</em></h2>
+    <p>The two points you clicked are <b id="calib-px">0</b> px apart on the drawing. How long is that in real life?</p>
+    <label style="display:block;font-size:11px;font-family:var(--mono);color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Distance (meters)</label>
+    <input type="number" id="calib-input" class="modal-input" value="5" min="0.1" step="0.1" onkeydown="if(event.key==='Enter')confirmCalib()">
+    <button onclick="confirmCalib()" class="btn-primary-modal">Apply Scale</button>
+  </div>
+</div>
+
 <!-- MAIN LAYOUT -->
 <div class="wifi-page">
 
@@ -277,6 +318,14 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
       <button class="tool-btn" data-tool="wall" onclick="setTool('wall')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="3" x2="21" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
         Draw Wall <span class="tool-kbd">W</span>
+      </button>
+      <button class="tool-btn" data-tool="rect" onclick="setTool('rect')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="1"/></svg>
+        Draw Room <span class="tool-kbd">R</span>
+      </button>
+      <button class="tool-btn" data-tool="calibrate" onclick="setTool('calibrate')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.3 8.7l-5.99-6a1 1 0 0 0-1.42 0L2.7 13.9a1 1 0 0 0 0 1.42l6 5.99a1 1 0 0 0 1.42 0L21.3 10.1a1 1 0 0 0 0-1.42z"/><path d="M7.5 10.5l2 2M10.5 7.5l2 2M13.5 4.5l2 2M4.5 13.5l2 2"/></svg>
+        Calibrate Scale <span class="tool-kbd">C</span>
       </button>
       <button class="tool-btn" data-tool="erase" onclick="setTool('erase')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H7L3 16l9.16-9.16a2 2 0 012.83 0L20 12a2 2 0 010 2.83L13.5 20"/></svg>
@@ -314,6 +363,15 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         Hide Heatmap
       </button>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-label">Layers</div>
+      <label class="layer-row"><input type="checkbox" checked onchange="setLayer('plan',this.checked)"> Floor plan</label>
+      <label class="layer-row"><input type="checkbox" checked onchange="setLayer('walls',this.checked)"> Walls</label>
+      <label class="layer-row"><input type="checkbox" checked onchange="setLayer('aps',this.checked)"> Access points</label>
+      <label style="font-size:11px;color:var(--text-muted);font-family:var(--mono);display:block;margin:8px 0 5px">PLAN OPACITY</label>
+      <input type="range" min="10" max="100" value="90" oninput="setPlanOpacity(this.value)" style="width:100%;accent-color:var(--accent)">
     </div>
 
     <div class="sb-section" style="margin-top:auto">
@@ -375,12 +433,34 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
       <div class="canvas-toolbar-group">
         <span class="tb-label">Scale:</span>
         <span id="scale-display" style="font-family:var(--mono);font-size:11px;color:var(--text-dim)">not set</span>
-        <button class="tb-btn" onclick="openScaleModal()">Set</button>
+        <button class="tb-btn" onclick="setTool('calibrate')" title="Click two points of known distance">Calibrate</button>
+        <button class="tb-btn" onclick="openScaleModal()" title="Type the plan width">Set</button>
+      </div>
+      <div class="tb-divider"></div>
+      <div class="canvas-toolbar-group">
+        <button class="tb-btn" id="btn-undo" onclick="undo()" title="Undo (Ctrl+Z)">↶</button>
+        <button class="tb-btn" id="btn-redo" onclick="redo()" title="Redo (Ctrl+Y)">↷</button>
+        <button class="tb-btn" id="btn-snap" onclick="toggleSnap()" title="Snap to wall ends and 45° angles (hold Shift to bypass)">Snap: ON</button>
       </div>
     </div>
 
     <div class="canvas-wrap" id="canvas-wrap">
       <canvas id="floor-canvas"></canvas>
+      <div class="stepper" id="stepper">
+        <button class="step" data-step="1" onclick="stepClick(1)"><b>1</b>Floor plan</button>
+        <button class="step" data-step="2" onclick="stepClick(2)"><b>2</b>Scale</button>
+        <button class="step" data-step="3" onclick="stepClick(3)"><b>3</b>Walls</button>
+        <button class="step" data-step="4" onclick="stepClick(4)"><b>4</b>Access points</button>
+        <button class="step" data-step="5" onclick="stepClick(5)"><b>5</b>Results</button>
+      </div>
+      <div class="canvas-hint" id="canvas-hint"></div>
+      <div class="zoom-ctl">
+        <button onclick="zoomBy(1/1.25)" title="Zoom out">−</button>
+        <span id="zoom-val">100%</span>
+        <button onclick="zoomBy(1.25)" title="Zoom in">+</button>
+        <button onclick="fitView()" title="Fit to screen (F)" style="width:auto;padding:0 8px;font-size:10px">Fit</button>
+      </div>
+      <div class="float-pop fp-pop" id="float-pop"></div>
       <div class="canvas-empty" id="canvas-empty">
         <div class="canvas-empty-icon">📡</div>
         <h3>WiFi Heatmap Planner</h3>
@@ -390,7 +470,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
           <button class="upload-btn-big" style="background:var(--surface-2);color:var(--text);border:1px solid var(--border-strong)" onclick="startBlankCanvas()">Blank Canvas</button>
         </div>
       </div>
-      <div class="legend" id="legend" style="display:none">
+      <div class="legend" id="legend"  style="display:none">
         <div class="legend-title">Signal Strength (RSSI)</div>
         <div class="legend-bar"></div>
         <div class="legend-labels">
@@ -532,7 +612,22 @@ const wifi = {
   dragging: null,    // {id, offX, offY}
   placingVendor: null,
   placingModel: null,
+  // --- Fase 0 additions ---
+  view: { z: 1, ox: 0, oy: 0, auto: true },
+  layers: { plan: true, walls: true, aps: true },
+  planOpacity: 0.9,
+  snap: true,
+  started: false,      // blank canvas or plan chosen
+  scaleSet: false,
+  chainStart: null,
+  rectStart: null,
+  calibA: null, calibB: null,
+  snapPt: null,
+  spaceDown: false,
+  panning: null,
 };
+const WORLD_W = 2000, WORLD_H = 1200;
+
 
 // ============================================================
 // INIT
@@ -543,6 +638,10 @@ window.addEventListener('load', () => {
   initCanvas();
   initAuth();
   document.addEventListener('keydown', onKey);
+  document.addEventListener('keyup', e => { if (e.code === 'Space') { wifi.spaceDown = false; refreshCursor(); } });
+  restoreAutosave();
+  setScaleDisplay();
+  scheduleRender();
 });
 
 function buildAPPalette() {
@@ -601,7 +700,7 @@ function buildMatList() {
 }
 
 // ============================================================
-// CANVAS
+// CANVAS (world = fixed 2000x1200 units; view = zoom + pan)
 // ============================================================
 let canvas, ctx;
 function initCanvas() {
@@ -609,22 +708,63 @@ function initCanvas() {
   ctx    = canvas.getContext('2d');
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
-  canvas.addEventListener('mousedown', onMouseDown);
-  canvas.addEventListener('mousemove', onMouseMove);
-  canvas.addEventListener('mouseup',   onMouseUp);
+  canvas.addEventListener('pointerdown', onPointerDown);
+  canvas.addEventListener('pointermove', onPointerMove);
+  canvas.addEventListener('pointerup',   onPointerUp);
+  canvas.addEventListener('pointercancel', onPointerUp);
   canvas.addEventListener('dblclick',  onDblClick);
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+  canvas.addEventListener('wheel', onWheel, { passive: false });
   canvas.addEventListener('dragover',  e => e.preventDefault());
   canvas.addEventListener('drop',      onCanvasDrop);
+  if (!wifi.pxPerMeter) wifi.pxPerMeter = WORLD_W / 40;
 }
 
 function resizeCanvas() {
   const wrap = document.getElementById('canvas-wrap');
   canvas.width  = wrap.clientWidth;
-  canvas.height = wrap.clientHeight - 0;
-  wifi.floorW   = canvas.width;
-  wifi.floorH   = canvas.height;
-  if (!wifi.pxPerMeter) wifi.pxPerMeter = canvas.width / 30;
+  canvas.height = wrap.clientHeight;
+  if (wifi.view.auto) fitView(true);
   scheduleRender();
+}
+
+function fitView(silent) {
+  const z = Math.min(canvas.width / WORLD_W, canvas.height / WORLD_H);
+  wifi.view.z  = z;
+  wifi.view.ox = (canvas.width  - WORLD_W * z) / 2;
+  wifi.view.oy = (canvas.height - WORLD_H * z) / 2;
+  if (!silent) wifi.view.auto = true;
+  scheduleRender();
+}
+
+function toWorld(sx, sy) {
+  const v = wifi.view;
+  return { x: (sx - v.ox) / v.z, y: (sy - v.oy) / v.z };
+}
+function screenPos(e) {
+  const r = canvas.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+function canvasPos(e) {
+  const s = screenPos(e);
+  return toWorld(s.x, s.y);
+}
+
+function zoomAt(factor, sx, sy) {
+  const v = wifi.view;
+  const nz = Math.max(0.1, Math.min(8, v.z * factor));
+  const wx = (sx - v.ox) / v.z, wy = (sy - v.oy) / v.z;
+  v.z = nz;
+  v.ox = sx - wx * nz;
+  v.oy = sy - wy * nz;
+  v.auto = false;
+  scheduleRender();
+}
+function zoomBy(f) { zoomAt(f, canvas.width / 2, canvas.height / 2); }
+function onWheel(e) {
+  e.preventDefault();
+  const s = screenPos(e);
+  zoomAt(e.deltaY < 0 ? 1.12 : 1 / 1.12, s.x, s.y);
 }
 
 let _renderTimer = null;
@@ -633,151 +773,194 @@ function scheduleRender() {
   _renderTimer = requestAnimationFrame(renderAll);
 }
 
+function planRect() {
+  // floor plan is drawn "contain"-fitted & centred in the world (keeps aspect ratio)
+  const img = wifi.floorPlan;
+  if (!img) return { x: 0, y: 0, w: WORLD_W, h: WORLD_H };
+  const k = Math.min(WORLD_W / img.width, WORLD_H / img.height);
+  const w = img.width * k, h = img.height * k;
+  return { x: (WORLD_W - w) / 2, y: (WORLD_H - h) / 2, w, h };
+}
+
 // ============================================================
 // RENDER PIPELINE
 // ============================================================
-let _hmDirty = true;
-let _hmCanvas = null;
-
-function markHMDirty() { _hmDirty = true; }
-
-function renderAll() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // 1. Floor plan background
-  if (wifi.floorPlan) {
-    ctx.globalAlpha = 0.9;
-    ctx.drawImage(wifi.floorPlan, 0, 0, canvas.width, canvas.height);
+function renderScene() {
+  ctx.fillStyle = '#0e1117';
+  ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+  if (wifi.floorPlan && wifi.layers.plan) {
+    const r = planRect();
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = wifi.planOpacity;
+    ctx.fillRect(r.x, r.y, r.w, r.h);
+    ctx.drawImage(wifi.floorPlan, r.x, r.y, r.w, r.h);
     ctx.globalAlpha = 1;
   } else {
-    ctx.fillStyle = '#0e1117';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
     drawGrid();
   }
+  if (wifi.hmVisible && wifi.aps.length > 0) renderHeatmap();
+  if (wifi.layers.walls) renderWalls();
+  if (wifi.layers.aps)   renderAPs();
+}
 
-  // 2. Heatmap
-  if (wifi.hmVisible && wifi.aps.length > 0) {
-    renderHeatmap();
-  }
+function renderAll() {
+  const v = wifi.view;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#07090c';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.setTransform(v.z, 0, 0, v.z, v.ox, v.oy);
+  renderScene();
+  renderDrafts();
+  ctx.strokeStyle = 'rgba(255,255,255,.12)';
+  ctx.lineWidth = 1 / v.z;
+  ctx.strokeRect(0, 0, WORLD_W, WORLD_H);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-  // 3. Walls
-  renderWalls();
-
-  // 4. Wall-being-drawn
-  if (wifi.wallStart && _mousePos) {
-    ctx.beginPath();
-    ctx.moveTo(wifi.wallStart.x, wifi.wallStart.y);
-    ctx.lineTo(_mousePos.x, _mousePos.y);
-    const mat = WALL_MATS.find(m => m.id === wifi.mat);
-    ctx.strokeStyle = mat ? mat.color : '#fff';
-    ctx.lineWidth   = 4;
-    ctx.setLineDash([6, 4]);
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }
-
-  // 5. APs
-  renderAPs();
-
-  // 6. Legend & stats
-  if (wifi.aps.length > 0) {
-    document.getElementById('legend').style.display = 'block';
-  }
-
+  if (wifi.aps.length > 0) document.getElementById('legend').style.display = 'block';
   updateStats();
+  updateUI();
+  scheduleAutosave();
 }
 
 function drawGrid() {
-  const step = Math.round(wifi.pxPerMeter);
-  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  const step = Math.max(8, Math.round(wifi.pxPerMeter));
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
   ctx.lineWidth = 1;
-  for (let x = 0; x < canvas.width; x += step) {
-    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke();
+  ctx.beginPath();
+  for (let x = 0; x <= WORLD_W; x += step) { ctx.moveTo(x, 0); ctx.lineTo(x, WORLD_H); }
+  for (let y = 0; y <= WORLD_H; y += step) { ctx.moveTo(0, y); ctx.lineTo(WORLD_W, y); }
+  ctx.stroke();
+}
+
+// in-progress drawing: wall chain, room rectangle, calibration line, snap marker
+function renderDrafts() {
+  const z = wifi.view.z;
+  const fs = 11 / z;
+  const m = _mousePos;
+  const sp = wifi.snapPt || m;
+  const label = (txt, x, y) => {
+    ctx.font = `600 ${fs}px JetBrains Mono, monospace`;
+    ctx.textAlign = 'left';
+    const w = ctx.measureText(txt).width + 8 / z;
+    ctx.fillStyle = 'rgba(0,0,0,.75)';
+    ctx.fillRect(x + 8 / z, y - fs - 4 / z, w, fs + 8 / z);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(txt, x + 12 / z, y);
+  };
+  const meters = (px) => (px / wifi.pxPerMeter).toFixed(2) + ' m';
+
+  if (wifi.wallStart && sp) {
+    const mat = WALL_MATS.find(mm => mm.id === wifi.mat);
+    ctx.beginPath();
+    ctx.moveTo(wifi.wallStart.x, wifi.wallStart.y);
+    ctx.lineTo(sp.x, sp.y);
+    ctx.strokeStyle = mat ? mat.color : '#fff';
+    ctx.lineWidth = 4 / z;
+    ctx.setLineDash([8 / z, 5 / z]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    label(meters(Math.hypot(sp.x - wifi.wallStart.x, sp.y - wifi.wallStart.y)), sp.x, sp.y - 10 / z);
   }
-  for (let y = 0; y < canvas.height; y += step) {
-    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke();
+  if (wifi.rectStart && sp) {
+    const a = wifi.rectStart;
+    ctx.strokeStyle = '#7cf4c7';
+    ctx.lineWidth = 3 / z;
+    ctx.setLineDash([8 / z, 5 / z]);
+    ctx.strokeRect(a.x, a.y, sp.x - a.x, sp.y - a.y);
+    ctx.setLineDash([]);
+    label(`${meters(Math.abs(sp.x - a.x))} × ${meters(Math.abs(sp.y - a.y))}`, sp.x, sp.y - 10 / z);
+  }
+  if (wifi.calibA) {
+    const b = wifi.calibB || sp;
+    ctx.strokeStyle = '#ffb86b';
+    ctx.lineWidth = 2 / z;
+    ctx.setLineDash([6 / z, 4 / z]);
+    ctx.beginPath(); ctx.moveTo(wifi.calibA.x, wifi.calibA.y); if (b) ctx.lineTo(b.x, b.y); ctx.stroke();
+    ctx.setLineDash([]);
+    for (const p of [wifi.calibA, wifi.calibB]) if (p) { ctx.beginPath(); ctx.arc(p.x, p.y, 5 / z, 0, Math.PI * 2); ctx.fillStyle = '#ffb86b'; ctx.fill(); }
+    if (b) label(Math.round(Math.hypot(b.x - wifi.calibA.x, b.y - wifi.calibA.y)) + ' px', b.x, b.y - 10 / z);
+  }
+  // snap marker
+  if (['wall', 'rect', 'calibrate'].includes(wifi.tool) && wifi.snapPt) {
+    const p = wifi.snapPt;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, (p.snap === 'end' ? 7 : 4) / z, 0, Math.PI * 2);
+    ctx.strokeStyle = p.snap === 'end' ? '#7cf4c7' : 'rgba(255,255,255,.7)';
+    ctx.lineWidth = 2 / z;
+    ctx.stroke();
   }
 }
 
 // ============================================================
-// HEATMAP — pixel-by-pixel RSSI calculation
+// HEATMAP — coarse grid, cached, drawn smoothed (floor plan stays visible underneath)
 // ============================================================
+let _hmCanvas = null, _hmSig = '', _statSig = '';
+
+function sceneSig() {
+  return JSON.stringify([
+    wifi.aps.map(a => [a.x, a.y, a.txPower, a.band, a.model, a.vendor]),
+    wifi.walls.map(w => [w.x1, w.y1, w.x2, w.y2, w.attn]),
+    document.getElementById('heatmap-mode').value,
+    document.getElementById('global-band').value,
+    wifi.threshold, wifi.opacity, wifi.pxPerMeter,
+    wifi.dragging ? 1 : 0,
+  ]);
+}
+
 function renderHeatmap() {
+  const sig = sceneSig();
+  if (sig !== _hmSig || !_hmCanvas) {
+    _hmSig = sig;
+    buildHeatmap();
+  }
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(_hmCanvas, 0, 0, WORLD_W, WORLD_H);
+}
+
+function buildHeatmap() {
   const mode = document.getElementById('heatmap-mode').value;
   const band  = document.getElementById('global-band').value;
-  const freq  = FREQ_MHZ[band];
-  const noise = NOISE_FLOOR[band];
   const alpha = wifi.opacity;
   const threshold = wifi.threshold;
-
-  const W = canvas.width, H = canvas.height;
-  const STEP = 5; // px per calculation cell (performance)
-
-  const imgData = ctx.createImageData(W, H);
+  const STEP = wifi.dragging ? 16 : 8;
+  const cw = Math.ceil(WORLD_W / STEP), ch = Math.ceil(WORLD_H / STEP);
+  if (!_hmCanvas) _hmCanvas = document.createElement('canvas');
+  _hmCanvas.width = cw; _hmCanvas.height = ch;
+  const hctx = _hmCanvas.getContext('2d');
+  const imgData = hctx.createImageData(cw, ch);
   const d = imgData.data;
 
-  for (let py = 0; py < H; py += STEP) {
-    for (let px = 0; px < W; px += STEP) {
-      // Find best RSSI at this cell from all APs
+  const apInfo = wifi.aps.map(ap => {
+    const m = getAPModel(ap.vendor, ap.model);
+    if (!m) return null;
+    const b = ap.band || band;
+    return { ap, tx: (ap.txPower !== undefined ? ap.txPower : m.tx) + m.gain, freq: FREQ_MHZ[b] || FREQ_MHZ[band], noise: NOISE_FLOOR[b] || NOISE_FLOOR[band] };
+  }).filter(Boolean);
+
+  for (let cy = 0; cy < ch; cy++) {
+    for (let cx = 0; cx < cw; cx++) {
+      const px = cx * STEP + STEP / 2, py = cy * STEP + STEP / 2;
       let bestRSSI = -200, bestSNR = -200;
-
-      for (const ap of wifi.aps) {
-        const apModel = getAPModel(ap.vendor, ap.model);
-        if (!apModel) continue;
-
-        // Use AP-specific band if set, else global
-        const apBand  = ap.band || band;
-        const apFreq  = FREQ_MHZ[apBand] || freq;
-        const apNoise = NOISE_FLOOR[apBand] || noise;
-        const txPower = ap.txPower !== undefined ? ap.txPower : apModel.tx;
-        const gain    = apModel.gain;
-
-        // Distance in meters
-        const dx_m = (px - ap.x) / wifi.pxPerMeter;
-        const dy_m = (py - ap.y) / wifi.pxPerMeter;
+      for (const a of apInfo) {
+        const dx_m = (px - a.ap.x) / wifi.pxPerMeter;
+        const dy_m = (py - a.ap.y) / wifi.pxPerMeter;
         const d_m  = Math.sqrt(dx_m*dx_m + dy_m*dy_m);
-
-        // Wall attenuation via ray casting
-        let wallLoss = 0;
+        let rssi = a.tx - fspl(d_m, a.freq);
+        if (rssi < threshold) continue;               // walls only lower it further
         for (const wall of wifi.walls) {
-          if (segIntersects(ap.x, ap.y, px, py, wall.x1, wall.y1, wall.x2, wall.y2)) {
-            wallLoss += wall.attn;
-          }
+          if (segIntersects(a.ap.x, a.ap.y, px, py, wall.x1, wall.y1, wall.x2, wall.y2)) rssi -= wall.attn;
         }
-
-        const pl   = fspl(d_m, apFreq);
-        const rssi = txPower + gain - pl - wallLoss;
-        const snr  = rssi - apNoise;
-
-        if (rssi > bestRSSI) bestRSSI = rssi;
-        if (snr  > bestSNR)  bestSNR  = snr;
+        if (rssi > bestRSSI) { bestRSSI = rssi; bestSNR = rssi - a.noise; }
       }
-
       if (bestRSSI < threshold) continue;
-
-      let color;
-      if (mode === 'snr') {
-        color = snrToRGBA(bestSNR, alpha);
-      } else if (mode === 'coverage') {
-        color = coverageToRGBA(bestRSSI, alpha);
-      } else {
-        color = rssiToRGBA(bestRSSI, alpha);
-      }
-
-      // Fill STEP x STEP block
-      for (let dy = 0; dy < STEP && py+dy < H; dy++) {
-        for (let dx = 0; dx < STEP && px+dx < W; dx++) {
-          const i = ((py+dy)*W + (px+dx)) * 4;
-          d[i]   = color[0];
-          d[i+1] = color[1];
-          d[i+2] = color[2];
-          d[i+3] = color[3];
-        }
-      }
+      const color = mode === 'snr' ? snrToRGBA(bestSNR, alpha)
+                  : mode === 'coverage' ? coverageToRGBA(bestRSSI, alpha)
+                  : rssiToRGBA(bestRSSI, alpha);
+      const i = (cy * cw + cx) * 4;
+      d[i] = color[0]; d[i+1] = color[1]; d[i+2] = color[2]; d[i+3] = color[3];
     }
   }
-
-  ctx.putImageData(imgData, 0, 0);
+  hctx.putImageData(imgData, 0, 0);
 }
 
 function snrToRGBA(snr, alpha) {
@@ -800,6 +983,7 @@ function coverageToRGBA(rssi, alpha) {
 // RENDER WALLS
 // ============================================================
 function renderWalls() {
+  const z = wifi.view.z;
   for (const wall of wifi.walls) {
     const mat = WALL_MATS.find(m => m.id === wall.mat) || WALL_MATS[0];
     const isSel = wifi.sel?.kind === 'wall' && wifi.sel?.id === wall.id;
@@ -807,20 +991,21 @@ function renderWalls() {
     ctx.moveTo(wall.x1, wall.y1);
     ctx.lineTo(wall.x2, wall.y2);
     ctx.strokeStyle = isSel ? '#7cf4c7' : mat.color;
-    ctx.lineWidth   = isSel ? 5 : 3;
+    ctx.lineWidth   = isSel ? 5 : 3.5;
     ctx.lineCap     = 'round';
     ctx.setLineDash([]);
-    if (!isSel) ctx.globalAlpha = 0.8;
+    if (!isSel) ctx.globalAlpha = 0.9;
     ctx.stroke();
     ctx.globalAlpha = 1;
 
-    // Midpoint label (attn dB)
-    const mx = (wall.x1 + wall.x2) / 2;
-    const my = (wall.y1 + wall.y2) / 2;
-    ctx.fillStyle = isSel ? '#7cf4c7' : mat.color;
-    ctx.font = '9px JetBrains Mono, monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(mat.attn + 'dB', mx, my - 4);
+    if (z >= 0.5) {
+      const mx = (wall.x1 + wall.x2) / 2;
+      const my = (wall.y1 + wall.y2) / 2;
+      ctx.fillStyle = isSel ? '#7cf4c7' : mat.color;
+      ctx.font = '9px JetBrains Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(wall.attn + 'dB', mx, my - 5);
+    }
   }
 }
 
@@ -830,21 +1015,16 @@ function renderWalls() {
 function renderAPs() {
   for (const ap of wifi.aps) {
     const vendor  = VENDORS[ap.vendor];
-    const apModel = getAPModel(ap.vendor, ap.model);
     const isSel   = wifi.sel?.kind === 'ap' && wifi.sel?.id === ap.id;
     const color   = vendor?.color || '#7cf4c7';
-
     const r = 18;
 
-    // Glow on select
     if (isSel) {
       ctx.beginPath();
       ctx.arc(ap.x, ap.y, r + 6, 0, Math.PI*2);
       ctx.fillStyle = color + '30';
       ctx.fill();
     }
-
-    // Circle background
     ctx.beginPath();
     ctx.arc(ap.x, ap.y, r, 0, Math.PI*2);
     ctx.fillStyle = vendor?.bg || '#15191f';
@@ -853,15 +1033,12 @@ function renderAPs() {
     ctx.lineWidth   = isSel ? 2.5 : 1.5;
     ctx.stroke();
 
-    // WiFi icon inside
     ctx.strokeStyle = color;
     ctx.lineWidth   = 1.5;
     ctx.lineCap     = 'round';
-    // Simplified wifi arcs
-    const waves = [{r:5},{r:9},{r:13}];
-    for (const w of waves) {
+    for (const rr of [5, 9, 13]) {
       ctx.beginPath();
-      ctx.arc(ap.x, ap.y + 4, w.r, Math.PI*1.2, Math.PI*1.8);
+      ctx.arc(ap.x, ap.y + 4, rr, Math.PI*1.2, Math.PI*1.8);
       ctx.stroke();
     }
     ctx.beginPath();
@@ -869,13 +1046,11 @@ function renderAPs() {
     ctx.fillStyle = color;
     ctx.fill();
 
-    // AP name label below
     ctx.fillStyle = color;
     ctx.font = 'bold 10px JetBrains Mono, monospace';
     ctx.textAlign = 'center';
     ctx.fillText(ap.name, ap.x, ap.y + r + 13);
 
-    // Band badge
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     const bw = 26, bh = 12;
     ctx.beginPath();
@@ -888,32 +1063,120 @@ function renderAPs() {
 }
 
 // ============================================================
-// MOUSE EVENTS
+// HISTORY (undo / redo)
+// ============================================================
+const _undo = [], _redo = [];
+function snapshot() {
+  return JSON.stringify({ aps: wifi.aps, walls: wifi.walls, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet });
+}
+function pushHistory(snap) {
+  _undo.push(snap || snapshot());
+  if (_undo.length > 100) _undo.shift();
+  _redo.length = 0;
+}
+let _lastEditT = 0;
+function pushHistoryDebounced() {
+  const now = Date.now();
+  if (now - _lastEditT > 900) pushHistory();
+  _lastEditT = now;
+}
+function restoreSnapshot(str) {
+  const o = JSON.parse(str);
+  wifi.aps = o.aps; wifi.walls = o.walls; wifi.pxPerMeter = o.ppm; wifi.scaleSet = o.scaleSet;
+  if (wifi.sel && !(wifi.sel.kind === 'ap' ? wifi.aps : wifi.walls).some(x => x.id === wifi.sel.id)) wifi.sel = null;
+  setScaleDisplay();
+  renderPropsPanel();
+  scheduleRender();
+}
+function undo() {
+  if (!_undo.length) { toast('Nothing to undo', 'error'); return; }
+  _redo.push(snapshot());
+  restoreSnapshot(_undo.pop());
+}
+function redo() {
+  if (!_redo.length) { toast('Nothing to redo', 'error'); return; }
+  _undo.push(snapshot());
+  restoreSnapshot(_redo.pop());
+}
+
+// ============================================================
+// SNAPPING
+// ============================================================
+function snapPoint(x, y, from, free) {
+  if (!wifi.snap || free) return { x, y };
+  const R = 10 / wifi.view.z;
+  let best = null, bd = R;
+  for (const w of wifi.walls) {
+    for (const [px, py] of [[w.x1, w.y1], [w.x2, w.y2]]) {
+      const dd = Math.hypot(px - x, py - y);
+      if (dd < bd) { bd = dd; best = { x: px, y: py, snap: 'end' }; }
+    }
+  }
+  if (best) return best;
+  if (from) {
+    const ang = Math.atan2(y - from.y, x - from.x);
+    const step = Math.PI / 4;
+    const k = Math.round(ang / step);
+    if (Math.abs(ang - k * step) < 0.14) {
+      const len = Math.hypot(x - from.x, y - from.y);
+      return { x: from.x + Math.cos(k * step) * len, y: from.y + Math.sin(k * step) * len, snap: 'angle' };
+    }
+  }
+  return { x, y };
+}
+
+function toggleSnap() {
+  wifi.snap = !wifi.snap;
+  const b = document.getElementById('btn-snap');
+  b.textContent = 'Snap: ' + (wifi.snap ? 'ON' : 'OFF');
+  b.classList.toggle('off', !wifi.snap);
+}
+
+// ============================================================
+// POINTER EVENTS
 // ============================================================
 let _mousePos = null;
+let _dragSnap = null, _dragMoved = false;
 
-function onMouseDown(e) {
-  const {x, y} = canvasPos(e);
+function refreshCursor() {
+  if (!canvas) return;
+  if (wifi.panning) { canvas.style.cursor = 'grabbing'; return; }
+  if (wifi.spaceDown) { canvas.style.cursor = 'grab'; return; }
+  const t = wifi.tool;
+  canvas.style.cursor = (t === 'place' || t === 'wall' || t === 'rect' || t === 'calibrate') ? 'crosshair' : t === 'erase' ? 'cell' : 'default';
+}
+
+function onPointerDown(e) {
+  canvas.setPointerCapture?.(e.pointerId);
+  const s = screenPos(e);
+  const w = toWorld(s.x, s.y);
+  const {x, y} = w;
+
+  // pan: middle button, Space+drag
+  if (e.button === 1 || (e.button === 0 && wifi.spaceDown)) {
+    wifi.panning = { sx: s.x, sy: s.y, ox: wifi.view.ox, oy: wifi.view.oy };
+    wifi.view.auto = false;
+    refreshCursor();
+    e.preventDefault();
+    return;
+  }
+  // right click = cancel / finish current drawing
+  if (e.button === 2) { finishDraft(); return; }
+  if (e.button !== 0) return;
 
   if (wifi.tool === 'select') {
-    // Check APs
     const ap = wifi.aps.find(a => Math.hypot(a.x-x, a.y-y) < 22);
     if (ap) {
       wifi.sel = {kind:'ap', id:ap.id};
       wifi.dragging = {id:ap.id, offX:x-ap.x, offY:y-ap.y};
+      _dragSnap = snapshot(); _dragMoved = false;
       renderPropsPanel();
       scheduleRender();
       return;
     }
-    // Check walls
     const wall = findWallNear(x, y);
-    if (wall) {
-      wifi.sel = {kind:'wall', id:wall.id};
-      renderPropsPanel();
-      scheduleRender();
-      return;
-    }
-    wifi.sel = null;
+    if (wall) { wifi.sel = {kind:'wall', id:wall.id}; }
+    else { wifi.sel = null; }
     renderPropsPanel();
     scheduleRender();
   }
@@ -921,99 +1184,139 @@ function onMouseDown(e) {
     placeAP(x, y);
   }
   else if (wifi.tool === 'wall') {
+    const p = snapPoint(x, y, wifi.wallStart, e.shiftKey);
     if (!wifi.wallStart) {
-      wifi.wallStart = {x, y};
+      wifi.wallStart = {x: p.x, y: p.y};
+      wifi.chainStart = {x: p.x, y: p.y};
     } else {
-      // Finish wall
-      wifi.counters.wall++;
-      const mat = WALL_MATS.find(m => m.id === wifi.mat);
-      wifi.walls.push({
-        id: 'w' + wifi.counters.wall,
-        x1: wifi.wallStart.x, y1: wifi.wallStart.y,
-        x2: x, y2: y,
-        mat: wifi.mat,
-        attn: mat ? mat.attn : 3
-      });
-      wifi.wallStart = null;
-      scheduleRender();
+      if (Math.hypot(p.x - wifi.wallStart.x, p.y - wifi.wallStart.y) < 4 / wifi.view.z) return;
+      pushHistory();
+      addWall(wifi.wallStart, p);
+      if (Math.hypot(p.x - wifi.chainStart.x, p.y - wifi.chainStart.y) < 2) {
+        wifi.wallStart = null; wifi.chainStart = null;       // closed a loop → done
+      } else {
+        wifi.wallStart = {x: p.x, y: p.y};                   // keep chaining
+      }
     }
+    scheduleRender();
+  }
+  else if (wifi.tool === 'rect') {
+    const p = snapPoint(x, y, null, e.shiftKey);
+    if (!wifi.rectStart) { wifi.rectStart = {x: p.x, y: p.y}; }
+    else {
+      const a = wifi.rectStart;
+      if (Math.abs(p.x - a.x) < 4 / wifi.view.z || Math.abs(p.y - a.y) < 4 / wifi.view.z) return;
+      pushHistory();
+      const c = [{x:a.x,y:a.y},{x:p.x,y:a.y},{x:p.x,y:p.y},{x:a.x,y:p.y}];
+      for (let i = 0; i < 4; i++) addWall(c[i], c[(i+1)%4]);
+      wifi.rectStart = null;
+      toast('Room added — 4 walls');
+    }
+    scheduleRender();
+  }
+  else if (wifi.tool === 'calibrate') {
+    const p = snapPoint(x, y, wifi.calibA, e.shiftKey);
+    if (!wifi.calibA) { wifi.calibA = {x: p.x, y: p.y}; }
+    else {
+      if (Math.hypot(p.x - wifi.calibA.x, p.y - wifi.calibA.y) < 8 / wifi.view.z) return;
+      wifi.calibB = {x: p.x, y: p.y};
+      openCalib();
+    }
+    scheduleRender();
   }
   else if (wifi.tool === 'erase') {
-    // Erase AP
     const apIdx = wifi.aps.findIndex(a => Math.hypot(a.x-x, a.y-y) < 22);
-    if (apIdx >= 0) { wifi.aps.splice(apIdx, 1); scheduleRender(); return; }
-    // Erase wall
+    if (apIdx >= 0) { pushHistory(); wifi.aps.splice(apIdx, 1); scheduleRender(); return; }
     const wall = findWallNear(x, y);
-    if (wall) { wifi.walls = wifi.walls.filter(w => w.id !== wall.id); scheduleRender(); }
+    if (wall) { pushHistory(); wifi.walls = wifi.walls.filter(ww => ww.id !== wall.id); scheduleRender(); }
   }
 }
 
-function onMouseMove(e) {
-  const {x, y} = canvasPos(e);
-  _mousePos = {x, y};
+function addWall(a, b) {
+  wifi.counters.wall++;
+  const mat = WALL_MATS.find(m => m.id === wifi.mat);
+  wifi.walls.push({
+    id: 'w' + wifi.counters.wall,
+    x1: a.x, y1: a.y, x2: b.x, y2: b.y,
+    mat: wifi.mat,
+    attn: mat ? mat.attn : 3
+  });
+}
+
+function onPointerMove(e) {
+  const s = screenPos(e);
+  if (wifi.panning) {
+    wifi.view.ox = wifi.panning.ox + (s.x - wifi.panning.sx);
+    wifi.view.oy = wifi.panning.oy + (s.y - wifi.panning.sy);
+    scheduleRender();
+    return;
+  }
+  const w = toWorld(s.x, s.y);
+  _mousePos = w;
 
   if (wifi.dragging) {
     const ap = wifi.aps.find(a => a.id === wifi.dragging.id);
     if (ap) {
-      ap.x = x - wifi.dragging.offX;
-      ap.y = y - wifi.dragging.offY;
+      ap.x = w.x - wifi.dragging.offX;
+      ap.y = w.y - wifi.dragging.offY;
+      _dragMoved = true;
       scheduleRender();
     }
     return;
   }
 
-  if (wifi.wallStart || (wifi.tool === 'wall' && !wifi.wallStart)) {
+  if (['wall', 'rect', 'calibrate'].includes(wifi.tool)) {
+    const from = wifi.tool === 'wall' ? wifi.wallStart : wifi.tool === 'calibrate' ? wifi.calibA : null;
+    wifi.snapPt = snapPoint(w.x, w.y, from, e.shiftKey);
     scheduleRender();
-  }
+  } else if (wifi.snapPt) { wifi.snapPt = null; }
 
-  // Cursor style
-  let cur = 'default';
-  if (wifi.tool === 'place') cur = 'crosshair';
-  else if (wifi.tool === 'wall') cur = wifi.wallStart ? 'crosshair' : 'crosshair';
-  else if (wifi.tool === 'erase') cur = 'cell';
-  else {
-    const ap = wifi.aps.find(a => Math.hypot(a.x-x, a.y-y) < 22);
-    if (ap) cur = 'grab';
-  }
-  canvas.style.cursor = cur;
+  if (wifi.tool === 'select' && !wifi.spaceDown) {
+    const ap = wifi.aps.find(a => Math.hypot(a.x-w.x, a.y-w.y) < 22);
+    canvas.style.cursor = ap ? 'grab' : findWallNear(w.x, w.y) ? 'pointer' : 'default';
+  } else refreshCursor();
 }
 
-function onMouseUp(e) {
+function onPointerUp(e) {
+  if (wifi.panning) { wifi.panning = null; refreshCursor(); return; }
   if (wifi.dragging) {
-    wifi.dragging = null;
+    if (_dragMoved && _dragSnap) pushHistory(_dragSnap);
+    wifi.dragging = null; _dragSnap = null;
     scheduleRender();
   }
 }
 
 function onDblClick(e) {
-  if (wifi.tool === 'wall' && wifi.wallStart) {
-    wifi.wallStart = null;
-    scheduleRender();
-  }
+  if (wifi.tool === 'wall') finishDraft();
+}
+
+function finishDraft() {
+  wifi.wallStart = null; wifi.chainStart = null;
+  wifi.rectStart = null;
+  wifi.calibA = null; wifi.calibB = null;
+  scheduleRender();
 }
 
 function onCanvasDrop(e) {
   e.preventDefault();
   const {x, y} = canvasPos(e);
-  if (wifi.placingVendor && wifi.placingModel) {
-    placeAP(x, y);
-  }
-}
-
-function canvasPos(e) {
-  const r = canvas.getBoundingClientRect();
-  return { x: e.clientX - r.left, y: e.clientY - r.top };
+  if (wifi.placingVendor && wifi.placingModel) placeAP(x, y);
 }
 
 // ============================================================
 // PLACE AP
 // ============================================================
+function hideEmpty() {
+  wifi.started = true;
+  document.getElementById('canvas-empty').style.display = 'none';
+}
+
 function placeAP(x, y) {
   if (!wifi.placingVendor) {
-    // Default to first model
     wifi.placingVendor = 'h3c';
     wifi.placingModel  = 'wa6320';
   }
+  pushHistory();
   const vendor  = VENDORS[wifi.placingVendor];
   const apModel = vendor.models.find(m => m.id === wifi.placingModel);
   wifi.counters.ap++;
@@ -1035,16 +1338,29 @@ function placeAP(x, y) {
 
   wifi.aps.push(ap);
   wifi.sel = {kind:'ap', id:ap.id};
-  document.getElementById('canvas-empty').style.display = 'none';
+  hideEmpty();
   renderPropsPanel();
   scheduleRender();
-  toast(`Placed ${vendor.name} ${apModel.name}`);
+}
+
+function duplicateSelected() {
+  if (!wifi.sel || wifi.sel.kind !== 'ap') return;
+  const src = wifi.aps.find(a => a.id === wifi.sel.id);
+  if (!src) return;
+  pushHistory();
+  wifi.counters.ap++;
+  const vendor = VENDORS[src.vendor];
+  const cp = Object.assign({}, src, { id: 'ap' + wifi.counters.ap, name: vendor.name + '-' + wifi.counters.ap, x: src.x + 40, y: src.y + 40 });
+  wifi.aps.push(cp);
+  wifi.sel = {kind:'ap', id:cp.id};
+  renderPropsPanel();
+  scheduleRender();
 }
 
 // ============================================================
 // WALL FINDER
 // ============================================================
-function findWallNear(x, y, thresh=8) {
+function findWallNear(x, y, thresh=8/wifi.view.z) {
   for (const wall of wifi.walls) {
     // Distance from point to segment
     const dx = wall.x2-wall.x1, dy = wall.y2-wall.y1;
@@ -1165,12 +1481,13 @@ function renderPropsPanel() {
 
 function updateAP(id, key, val) {
   const ap = wifi.aps.find(a => a.id === id);
-  if (ap) { ap[key] = val; scheduleRender(); }
+  if (ap) { pushHistoryDebounced(); ap[key] = val; scheduleRender(); }
 }
 
 function updateWall(id, key, val) {
   const wall = wifi.walls.find(w => w.id === id);
   if (wall) {
+    pushHistory();
     wall[key] = val;
     if (key === 'mat') {
       const mat = WALL_MATS.find(m => m.id === val);
@@ -1178,6 +1495,13 @@ function updateWall(id, key, val) {
     }
     scheduleRender();
   }
+}
+
+function setWallMat(id, mat) {
+  updateWall(id, 'mat', mat);
+  wifi.mat = mat;
+  document.querySelectorAll('.mat-btn').forEach(b => b.classList.toggle('active', b.dataset.mat === mat));
+  renderPropsPanel();
 }
 
 function setAPChannel(id, ch) {
@@ -1188,6 +1512,7 @@ function setAPChannel(id, ch) {
 
 function deleteSelected() {
   if (!wifi.sel) return;
+  pushHistory();
   if (wifi.sel.kind === 'ap') wifi.aps = wifi.aps.filter(a => a.id !== wifi.sel.id);
   if (wifi.sel.kind === 'wall') wifi.walls = wifi.walls.filter(w => w.id !== wifi.sel.id);
   wifi.sel = null;
@@ -1196,22 +1521,154 @@ function deleteSelected() {
 }
 
 // ============================================================
+// LAYERS
+// ============================================================
+function setLayer(k, v) { wifi.layers[k] = v; scheduleRender(); }
+function setPlanOpacity(v) { wifi.planOpacity = parseInt(v) / 100; scheduleRender(); }
+
+// ============================================================
 // TOOL SWITCHING
 // ============================================================
 function setTool(tool) {
   wifi.tool = tool;
-  wifi.wallStart = null;
+  finishDraft();
+  wifi.snapPt = null;
   document.querySelectorAll('.tool-btn[data-tool]').forEach(b =>
     b.classList.toggle('active', b.dataset.tool === tool));
-  canvas.style.cursor = tool === 'place' || tool === 'wall' ? 'crosshair' : tool === 'erase' ? 'cell' : 'default';
+  refreshCursor();
+  scheduleRender();
 }
 
 function onKey(e) {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
-  const map = { s:'select', a:'place', w:'wall', e:'erase' };
-  if (map[e.key.toLowerCase()]) setTool(map[e.key.toLowerCase()]);
-  if (e.key === 'Escape') { wifi.wallStart = null; wifi.sel = null; renderPropsPanel(); scheduleRender(); }
-  if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
+  const tg = e.target.tagName;
+  if (tg === 'INPUT' || tg === 'SELECT' || tg === 'TEXTAREA') return;
+  const k = e.key.toLowerCase();
+  if (e.ctrlKey || e.metaKey) {
+    if (k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
+    else if (k === 'y') { e.preventDefault(); redo(); }
+    else if (k === 'd') { e.preventDefault(); duplicateSelected(); }
+    return;
+  }
+  if (e.code === 'Space') { e.preventDefault(); if (!wifi.spaceDown) { wifi.spaceDown = true; refreshCursor(); } return; }
+  const map = { s:'select', a:'place', w:'wall', r:'rect', c:'calibrate', e:'erase' };
+  if (map[k]) { setTool(map[k]); return; }
+  if (k === 'f') { fitView(); return; }
+  if (e.key === 'Enter') { finishDraft(); return; }
+  if (e.key === 'Escape') { finishDraft(); wifi.sel = null; renderPropsPanel(); scheduleRender(); return; }
+  if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteSelected(); }
+}
+
+// ============================================================
+// FLOATING QUICK-EDIT (next to the selected AP / wall)
+// ============================================================
+let _popKey = null;
+function updatePopover() {
+  const pop = document.getElementById('float-pop');
+  if (!wifi.sel || wifi.tool !== 'select' || wifi.dragging) { pop.style.display = 'none'; _popKey = null; return; }
+  let obj, wx, wy;
+  if (wifi.sel.kind === 'ap') {
+    obj = wifi.aps.find(a => a.id === wifi.sel.id);
+    if (obj) { wx = obj.x; wy = obj.y - 32; }
+  } else {
+    obj = wifi.walls.find(w => w.id === wifi.sel.id);
+    if (obj) { wx = (obj.x1 + obj.x2) / 2; wy = (obj.y1 + obj.y2) / 2 - 12; }
+  }
+  if (!obj) { pop.style.display = 'none'; _popKey = null; return; }
+  const key = wifi.sel.kind + ':' + obj.id + ':' + (wifi.sel.kind === 'wall' ? obj.mat : '');
+  if (key !== _popKey) {
+    _popKey = key;
+    if (wifi.sel.kind === 'ap') {
+      pop.innerHTML = `<span class="fp-title">${obj.name}</span>
+        <input type="range" min="1" max="30" value="${obj.txPower}" title="TX power" oninput="updateAP('${obj.id}','txPower',+this.value);this.nextElementSibling.textContent=this.value+'dBm'" onchange="renderPropsPanel()">
+        <span class="fp-val">${obj.txPower}dBm</span>
+        <button class="fp-btn" title="Duplicate (Ctrl+D)" onclick="duplicateSelected()">⧉</button>
+        <button class="fp-btn danger" title="Delete (Del)" onclick="deleteSelected()">🗑</button>`;
+    } else {
+      pop.innerHTML = WALL_MATS.map(m => `<button class="fp-sw ${obj.mat===m.id?'active':''}" style="background:${m.color}" title="${m.name} (${m.attn}dB)" onclick="setWallMat('${obj.id}','${m.id}')"></button>`).join('')
+        + `<button class="fp-btn danger" title="Delete (Del)" onclick="deleteSelected()">🗑</button>`;
+    }
+  }
+  const v = wifi.view;
+  let sx = wx * v.z + v.ox, sy = wy * v.z + v.oy;
+  sx = Math.max(110, Math.min(canvas.width - 110, sx));
+  sy = Math.max(48, Math.min(canvas.height - 10, sy));
+  pop.style.left = sx + 'px';
+  pop.style.top = sy + 'px';
+  pop.style.display = 'flex';
+}
+
+// ============================================================
+// STEPPER + HINTS + MISC UI
+// ============================================================
+function updateUI() {
+  document.getElementById('zoom-val').textContent = Math.round(wifi.view.z * 100) + '%';
+  document.getElementById('btn-undo').classList.toggle('off', !_undo.length);
+  document.getElementById('btn-redo').classList.toggle('off', !_redo.length);
+
+  const done = [
+    !!(wifi.floorPlan || wifi.started),
+    wifi.scaleSet,
+    wifi.walls.length > 0,
+    wifi.aps.length > 0,
+    wifi.aps.length > 0 && wifi.hmVisible,
+  ];
+  const cur = done.findIndex(d => !d);
+  document.querySelectorAll('#stepper .step').forEach((el, i) => {
+    el.classList.toggle('done', done[i]);
+    el.classList.toggle('current', i === cur);
+  });
+
+  const H = {
+    select:    'Click an AP or wall to edit it · drag APs to move · <kbd>Space</kbd>+drag or middle-mouse to pan · scroll to zoom',
+    place:     'Click on the plan to drop an AP · pick another model in the left panel · <kbd>Esc</kbd> to stop',
+    wall:      wifi.wallStart ? 'Click the next point · <kbd>Dbl-click</kbd> / <kbd>Enter</kbd> / right-click to finish · hold <kbd>Shift</kbd> for free angle'
+                              : 'Click to start a wall — it keeps chaining. Pick the material on the left first',
+    rect:      wifi.rectStart ? 'Click the opposite corner to finish the room' : 'Click one corner of the room, then the opposite corner',
+    calibrate: wifi.calibA ? 'Click the second point' : 'Click two points on the plan whose real distance you know (e.g. a door width, a long wall)',
+    erase:     'Click an AP or wall to delete it',
+  };
+  document.getElementById('canvas-hint').innerHTML = H[wifi.tool] || '';
+  updatePopover();
+}
+
+function stepClick(n) {
+  if (n === 1) document.getElementById('floor-upload').click();
+  else if (n === 2) setTool('calibrate');
+  else if (n === 3) setTool('wall');
+  else if (n === 4) setTool('place');
+  else if (n === 5) { if (!wifi.hmVisible) toggleHeatmap(); setTool('select'); if (!wifi.aps.length) toast('Place at least one AP to see results', 'error'); }
+}
+
+// ============================================================
+// AUTOSAVE (this browser only)
+// ============================================================
+let _autoTimer = null;
+function scheduleAutosave() {
+  clearTimeout(_autoTimer);
+  _autoTimer = setTimeout(() => {
+    try {
+      if (!wifi.aps.length && !wifi.walls.length && !wifi.scaleSet) return;
+      localStorage.setItem('clab_wifi_autosave', JSON.stringify({
+        aps: wifi.aps, walls: wifi.walls, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet,
+        counters: wifi.counters, band: document.getElementById('global-band').value,
+        hadPlan: !!wifi.floorPlan, t: Date.now(),
+      }));
+    } catch (e) {}
+  }, 1200);
+}
+function restoreAutosave() {
+  try {
+    const raw = localStorage.getItem('clab_wifi_autosave');
+    if (!raw) return;
+    const o = JSON.parse(raw);
+    if (!o || (!(o.aps||[]).length && !(o.walls||[]).length)) return;
+    wifi.aps = o.aps || []; wifi.walls = o.walls || [];
+    wifi.pxPerMeter = o.ppm || wifi.pxPerMeter; wifi.scaleSet = !!o.scaleSet;
+    wifi.counters = o.counters || wifi.counters;
+    if (o.band) document.getElementById('global-band').value = o.band;
+    hideEmpty();
+    toast(o.hadPlan ? 'Restored your last session — re-upload the floor plan image to continue' : 'Restored your last session (Clear All to reset)');
+  } catch (e) {}
 }
 
 // ============================================================
@@ -1225,29 +1682,36 @@ function loadFloorPlan(input) {
   img.onload = () => {
     createImageBitmap(img).then(bmp => {
       wifi.floorPlan = bmp;
-      document.getElementById('canvas-empty').style.display = 'none';
+      hideEmpty();
+      fitView();
       scheduleRender();
-      openScaleModal();
-      toast('Floor plan loaded — set the real-world scale');
+      toast('Floor plan loaded — now calibrate the scale');
+      setTool('calibrate');
     });
   };
   img.src = url;
+  input.value = '';
 }
 
 function startBlankCanvas() {
-  document.getElementById('canvas-empty').style.display = 'none';
+  hideEmpty();
   scheduleRender();
-  toast('Blank canvas ready — place APs or draw walls');
+  toast('Blank canvas ready — draw walls or place APs');
 }
 
 // ============================================================
 // SCALE
 // ============================================================
+function setScaleDisplay() {
+  const el = document.getElementById('scale-display');
+  if (!el) return;
+  el.textContent = wifi.scaleSet ? `1 m = ${wifi.pxPerMeter.toFixed(1)} px` : 'not set';
+}
+
 function openScaleModal() {
-  document.getElementById('scale-input').value = Math.round(canvas.width / (wifi.pxPerMeter || (canvas.width/30)));
-  document.getElementById('scale-current').textContent = wifi.pxPerMeter
-    ? `${Math.round(canvas.width / wifi.pxPerMeter)}m wide`
-    : 'not set';
+  const r = planRect();
+  document.getElementById('scale-input').value = Math.round(r.w / wifi.pxPerMeter);
+  document.getElementById('scale-current').textContent = wifi.scaleSet ? `${Math.round(r.w / wifi.pxPerMeter)}m wide` : 'not set';
   document.getElementById('scale-modal').classList.add('open');
 }
 
@@ -1258,12 +1722,38 @@ function closeScaleModal() {
 function confirmScale() {
   const meters = parseFloat(document.getElementById('scale-input').value);
   if (!meters || meters <= 0) return;
-  wifi.pxPerMeter = canvas.width / meters;
-  document.getElementById('scale-display').textContent = `${meters}m × ${Math.round(canvas.height/wifi.pxPerMeter)}m`;
-  document.getElementById('scale-current').textContent = `${meters}m wide`;
+  pushHistory();
+  wifi.pxPerMeter = planRect().w / meters;
+  wifi.scaleSet = true;
+  setScaleDisplay();
   closeScaleModal();
   scheduleRender();
-  toast(`Scale set: 1m = ${Math.round(wifi.pxPerMeter)}px`);
+  toast(`Scale set: 1m = ${wifi.pxPerMeter.toFixed(1)}px`);
+}
+
+function openCalib() {
+  const px = Math.hypot(wifi.calibB.x - wifi.calibA.x, wifi.calibB.y - wifi.calibA.y);
+  document.getElementById('calib-px').textContent = Math.round(px);
+  document.getElementById('calib-modal').classList.add('open');
+  setTimeout(() => document.getElementById('calib-input').select(), 50);
+}
+function closeCalib() {
+  document.getElementById('calib-modal').classList.remove('open');
+  wifi.calibA = null; wifi.calibB = null;
+  scheduleRender();
+}
+function confirmCalib() {
+  const m = parseFloat(document.getElementById('calib-input').value);
+  if (!m || m <= 0 || !wifi.calibA || !wifi.calibB) return;
+  const px = Math.hypot(wifi.calibB.x - wifi.calibA.x, wifi.calibB.y - wifi.calibA.y);
+  pushHistory();
+  wifi.pxPerMeter = px / m;
+  wifi.scaleSet = true;
+  setScaleDisplay();
+  document.getElementById('calib-modal').classList.remove('open');
+  wifi.calibA = null; wifi.calibB = null;
+  toast(`Scale set: 1m = ${wifi.pxPerMeter.toFixed(1)}px`);
+  setTool('wall');
 }
 
 // ============================================================
@@ -1307,14 +1797,16 @@ function updateStats() {
     return;
   }
 
-  // Sample grid for coverage stats
-  const SAMPLE = 20;
+  const _sig = sceneSig();
+  if (_sig === _statSig && document.getElementById('stat-cov').textContent !== '—') return;
+  _statSig = _sig;
+  const SAMPLE = 25;
   let total=0, covered=0, excellent=0, dead=0;
   const band  = document.getElementById('global-band').value;
   const freq  = FREQ_MHZ[band];
 
-  for (let py=0; py<canvas.height; py+=SAMPLE) {
-    for (let px=0; px<canvas.width; px+=SAMPLE) {
+  for (let py=0; py<WORLD_H; py+=SAMPLE) {
+    for (let px=0; px<WORLD_W; px+=SAMPLE) {
       total++;
       let bestRSSI = -200;
       for (const ap of wifi.aps) {
@@ -1354,16 +1846,20 @@ function getAPModel(vid, mid) {
 // EXPORT PNG
 // ============================================================
 function exportPNG() {
-  // Composite: floor + heatmap + walls + APs on offscreen canvas
-  const offscreen = document.createElement('canvas');
-  offscreen.width  = canvas.width;
-  offscreen.height = canvas.height;
-  const octx = offscreen.getContext('2d');
-  octx.drawImage(canvas, 0, 0);
-
+  const r = wifi.floorPlan ? planRect() : { x: 0, y: 0, w: WORLD_W, h: WORLD_H };
+  const off = document.createElement('canvas');
+  off.width = Math.round(r.w); off.height = Math.round(r.h);
+  const octx = off.getContext('2d');
+  const savedCtx = ctx, savedSel = wifi.sel;
+  ctx = octx;
+  wifi.sel = null;
+  try {
+    octx.translate(-r.x, -r.y);
+    renderScene();
+  } finally { ctx = savedCtx; wifi.sel = savedSel; }
   const link = document.createElement('a');
   link.download = 'wifi-heatmap.png';
-  link.href = offscreen.toDataURL('image/png');
+  link.href = off.toDataURL('image/png');
   link.click();
   toast('✅ Exported as PNG');
 }
@@ -1413,7 +1909,9 @@ async function confirmSavePlan() {
 // ============================================================
 function clearAll() {
   if (!confirm('Clear all APs and walls?')) return;
+  pushHistory();
   wifi.aps = []; wifi.walls = []; wifi.sel = null;
+  try { localStorage.removeItem('clab_wifi_autosave'); } catch (e) {}
   renderPropsPanel(); scheduleRender();
   toast('Canvas cleared');
 }
@@ -1493,7 +1991,7 @@ function renderAuthUser(user) {
 
 window.authOpenModal  = () => document.getElementById('auth-modal').classList.add('open');
 window.authCloseModal = () => document.getElementById('auth-modal').classList.remove('open');
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { authCloseModal(); closeScaleModal(); closeSavePlan(); }});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { authCloseModal(); closeScaleModal(); closeSavePlan(); if (document.getElementById('calib-modal').classList.contains('open')) closeCalib(); }});
 </script>
 </body>
 </html>
