@@ -402,7 +402,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.11</span></div>
+    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.12</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -483,7 +483,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
   <div class="left-panel" id="left-panel">
     <div class="lp-sec">
       <button class="lp-head" onclick="toggleSec(this)">Wall material <i>▾</i></button>
-      <div class="lp-body"><div id="mat-list"></div></div>
+      <div class="lp-body"><div id="mat-list"></div><button class="btn-secondary-modal" style="width:100%;margin-top:8px;padding:7px;font-size:12px" onclick="openMatLib()" title="Edit wall types, thickness and loss per band">✎ Edit wall library</button></div>
     </div>
     <div class="lp-sec">
       <button class="lp-head" onclick="toggleSec(this)">Doors <i>▾</i></button>
@@ -870,11 +870,12 @@ function buildAPPalette() {
 
 function buildMatList() {
   const el = document.getElementById('mat-list');
+  el.innerHTML = '';
   for (const mat of WALL_MATS) {
     const btn = document.createElement('button');
     btn.className = 'mat-btn' + (mat.id === wifi.mat ? ' active' : '');
     btn.dataset.mat = mat.id;
-    btn.innerHTML = `<div class="mat-swatch" style="background:${mat.color};border:1px solid rgba(255,255,255,.2)"></div><span>${mat.name}</span><span class="mat-attn">${mat.attn}dB</span>`;
+    btn.innerHTML = `<div class="mat-swatch" style="background:${mat.color};border:1px solid rgba(255,255,255,.2)"></div><span>${esc(mat.name)}</span><span class="mat-attn" title="2.4 / 5 / 6 GHz">${mat.b['2.4']}/${mat.b['5']}/${mat.b['6']}</span>`;
     btn.addEventListener('click', () => {
       wifi.mat = mat.id;
       document.querySelectorAll('.mat-btn').forEach(b => b.classList.toggle('active', b.dataset.mat === mat.id));
@@ -1275,7 +1276,8 @@ function sceneSig() {
   return JSON.stringify([
     wifi.aps.map(a => [a.x, a.y, a.height, a.model, a.vendor, a.mode, a.rad]),
     wifi.cal, wifi.covTarget, wifi.clientH,
-    wifi.walls.map(w => [w.x1, w.y1, w.x2, w.y2, w.attn]),
+    wifi.walls.map(w => [w.x1, w.y1, w.x2, w.y2, w.attn, w.mat]),
+    WALL_MATS.map(m => [m.id, m.b]),
     wifi.doors.map(d => [d.wall, d.t, d.w, d.attn]),
     wifi.areas.map(a => a.pts.map(p => [p.x, p.y])),
     wifi.floorPlan ? wifi.floorPlan.width + 'x' + wifi.floorPlan.height : 0,
@@ -1288,7 +1290,25 @@ function sceneSig() {
 
 // ---- propagation model: free space up to 5 m, then indoor path-loss exponent ----
 const PL_N   = { '2.4': 3.0, '5': 3.4, '6': 3.7 };     // path-loss exponent beyond the breakpoint
-const WALL_K = { '2.4': 0.8, '5': 1.0, '6': 1.2 };     // obstacle attenuation scale vs. the 5 GHz value shown in the UI
+const WALL_K = { '2.4': 0.8, '5': 1.0, '6': 1.2 };     // default obstacle attenuation scale vs. the 5 GHz value
+// editable wall library: every material has its own loss per band (b) and a thickness in cm
+const WALL_THICK = { drywall: 10, wood: 5, glass: 1, brick: 12, concrete: 20, metal: 2, elevator: 20 };
+function matNorm(m) {
+  const a5 = (m.b && m.b['5'] != null) ? +m.b['5'] : +m.attn || 0;
+  m.b = { '2.4': m.b && m.b['2.4'] != null ? +m.b['2.4'] : Math.round(a5 * WALL_K['2.4'] * 10) / 10, '5': a5, '6': m.b && m.b['6'] != null ? +m.b['6'] : Math.round(a5 * WALL_K['6'] * 10) / 10 };
+  m.attn = a5; if (m.thick == null) m.thick = WALL_THICK[m.id] || 10;
+  return m;
+}
+WALL_MATS.forEach(matNorm);
+const WALL_DEFAULT = JSON.parse(JSON.stringify(WALL_MATS));
+function matBand(m, band) { return m.b ? m.b[band] : m.attn * WALL_K[band]; }
+function wallLoss(w, band) { const m = WALL_MATS.find(q => q.id === w.mat); return m ? matBand(m, band) : w.attn * WALL_K[band]; }
+function loadMats(proj) {
+  const src = (proj && Array.isArray(proj.mats) && proj.mats.length) ? proj.mats : WALL_DEFAULT;
+  WALL_MATS.length = 0;
+  JSON.parse(JSON.stringify(src)).forEach(m => WALL_MATS.push(matNorm(m)));
+  if (!WALL_MATS.some(m => m.id === wifi.mat)) wifi.mat = WALL_MATS[0].id;
+}
 const ENV_K  = { open: 0.85, office: 1.0, dense: 1.2 };
 function pathLoss(d_m, band) {
   const d = Math.max(d_m, 0.1);
@@ -1355,7 +1375,7 @@ function prepHeat(ov) {
         const h = (d.w * wifi.pxPerMeter / 2) / L;
         return { a: d.t - h, b: d.t + h, attn: d.attn };
       });
-      return { x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2, attn: w.attn, doors: ds.length ? ds : null };
+      return { x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2, attn: wallLoss(w, band) / WALL_K[band], doors: ds.length ? ds : null };
     }),
     aps: ents,
     _rs: new Float32Array(ents.length),
@@ -2089,16 +2109,16 @@ function renderPropsPanel() {
     el.innerHTML = `
       <div class="props-header" style="border-left:3px solid ${mat?.color||'#fff'}">
         <button class="props-close" onclick="closeProps()">✕</button><div class="props-title">Wall Segment</div>
-        <div class="props-sub">${mat?.name||'Unknown'} · ${mat?.attn}dB (5 GHz)</div>
+        <div class="props-sub">${esc(mat?.name||'Unknown')}${mat ? ' · ' + mat.thick + ' cm' : ''}</div>
       </div>
       <div class="pf">
         <label>Material</label>
-        <div class="mat-pick">${WALL_MATS.map(m=>`<button class="${wall.mat===m.id?'active':''}" style="background:${m.color}" title="${m.name} (${m.attn}dB)" onclick="setWallMat('${wall.id}','${m.id}')"></button>`).join('')}</div>
+        <div class="mat-pick">${WALL_MATS.map(m=>`<button class="${wall.mat===m.id?'active':''}" style="background:${m.color}" title="${esc(m.name)} (${m.b['2.4']}/${m.b['5']}/${m.b['6']} dB)" onclick="setWallMat('${wall.id}','${m.id}')"></button>`).join('')}</div>
       </div>
       <div class="pf">
         <label>Attenuation</label>
-        <div style="font-family:var(--mono);font-size:20px;font-weight:600;color:var(--danger)">${wall.attn}dB</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Signal loss through this material</div>
+        <div style="font-family:var(--mono);font-size:15px;font-weight:600;color:var(--danger)">${['2.4','5','6'].map(b => `<span style="margin-right:10px">${b}G ${wallLoss(wall, b)}</span>`).join('')}dB</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Signal loss per band · <a href="#" onclick="event.preventDefault();openMatLib()" style="color:var(--accent)">edit library</a></div>
       </div>
       <div class="pf">
         <label>Length</label>
@@ -2775,6 +2795,42 @@ function plcFillBands() {
 document.addEventListener('change', e => { if (e.target && e.target.id === 'pl-model') plcFillBands(); });
 new MutationObserver(() => { if (document.getElementById('pl-band') && !document.getElementById('pl-band').options.length) plcFillBands(); }).observe(document.body, { childList: true, subtree: true });
 
+// ---- editable wall library ----
+function matRowHTML(m) {
+  const n = (v, k) => `<input type="number" step="0.5" min="0" max="80" data-k="${k}" value="${v}" style="width:62px;padding:6px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text)">`;
+  return `<tr data-id="${esc(m.id || '')}"><td><input type="color" data-k="color" value="${/^#[0-9a-f]{6}$/i.test(m.color) ? m.color : '#909090'}" style="width:34px;height:28px;padding:0;border:none;background:none"></td>
+    <td><input data-k="name" value="${esc(m.name)}" style="width:130px;padding:6px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text)"></td>
+    <td>${n(m.thick, 'thick')}</td><td>${n(m.b['2.4'], 'b24')}</td><td>${n(m.b['5'], 'b5')}</td><td>${n(m.b['6'], 'b6')}</td>
+    <td><button onclick="this.closest('tr').remove()" title="Delete" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:15px">✕</button></td></tr>`;
+}
+async function openMatLib() {
+  if (!curProj) return;
+  const html = `<div style="font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:10px">Define the wall types of this project: thickness and signal loss (dB) per band. Changes apply to every wall using that type and to the heatmap. Deleting a type moves its walls to the first type in the list.</div>
+    <div style="max-height:46vh;overflow:auto"><table class="cal-tbl" id="ml-tbl"><tr><th></th><th>Name</th><th>cm</th><th>2.4G</th><th>5G</th><th>6G</th><th></th></tr>${WALL_MATS.map(matRowHTML).join('')}</table></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn-secondary-modal" style="flex:1;padding:7px" onclick="document.getElementById('ml-tbl').insertAdjacentHTML('beforeend', matRowHTML(matNorm({ id: '', name: 'New material', color: '#9aa7b8', attn: 6, thick: 10 })))">+ Add material</button>
+      <button class="btn-secondary-modal" style="flex:1;padding:7px" onclick="document.querySelectorAll('#ml-tbl tr[data-id]').forEach(r => r.remove());document.getElementById('ml-tbl').insertAdjacentHTML('beforeend', WALL_DEFAULT.map(matRowHTML).join(''))">Reset to defaults</button></div>`;
+  const m = await dialog({ title: 'Wall <em>library</em>', html, ok: 'Save library', wide: true });
+  if (!m) return;
+  const rows = [...m.querySelectorAll('#ml-tbl tr[data-id]')];
+  if (!rows.length) { toast('Keep at least one material', 'error'); return; }
+  const used = new Set(), out = [];
+  for (const r of rows) {
+    const g = k => r.querySelector(`[data-k="${k}"]`).value;
+    const name = g('name').trim() || 'Material';
+    const num = (k, d) => { const v = parseFloat(g(k)); return isNaN(v) ? d : Math.max(0, Math.min(80, v)); };
+    let id = r.dataset.id || ('m' + Date.now().toString(36) + out.length);
+    while (used.has(id)) id += 'x'; used.add(id);
+    out.push(matNorm({ id, name, color: g('color'), thick: num('thick', 10), b: { '2.4': num('b24', 5), '5': num('b5', 6), '6': num('b6', 7) } }));
+  }
+  pushHistory();
+  WALL_MATS.length = 0; out.forEach(o => WALL_MATS.push(o));
+  for (const w of wifi.walls) { let q = WALL_MATS.find(x => x.id === w.mat); if (!q) { q = WALL_MATS[0]; w.mat = q.id; } w.attn = q.attn; }
+  if (!WALL_MATS.some(x => x.id === wifi.mat)) wifi.mat = WALL_MATS[0].id;
+  buildMatList(); renderPropsPanel(); scheduleRender(); scheduleAutosave();
+  toast('Wall library saved');
+}
+
 // ============================================================
 // AUTO-TRACE WALLS (v5.9): detect walls + door gaps from the imported floor plan image
 // ============================================================
@@ -3307,12 +3363,12 @@ async function saveCurrent() {
   if (!curProj || !curFloor) return;
   const f = curFloorObj(); if (!f) return;
   const data = captureFloor();
-  const sig = JSON.stringify(data) + (wifi.floorPlan ? 'P' : '');
+  const sig = JSON.stringify(data) + JSON.stringify(WALL_MATS) + (wifi.floorPlan ? 'P' : '');
   if (sig === _lastSaved) { _dirty = false; setSaveState(_savedAt ? 'Saved ✓ ' + _savedAt : 'Saved in this browser'); return; }
   try {
     setSaveState('Saving…');
     f.data = data; f.hasPlan = !!wifi.floorPlan;
-    curProj.updated = Date.now();
+    curProj.updated = Date.now(); curProj.mats = JSON.parse(JSON.stringify(WALL_MATS));
     await dbPut('projects', curProj);
     _lastSaved = sig; _dirty = false;
     _savedAt = new Date().toTimeString().slice(0, 5);
@@ -3361,6 +3417,7 @@ async function _route() {
   try { proj = await dbGet('projects', h.p); } catch (e) { proj = null; }
   if (!proj) { toast('Project not found in this browser', 'error'); curProj = null; history.replaceState(null, '', '#'); await showHome(); return; }
   curProj = proj;
+  loadMats(proj); buildMatList();
   document.getElementById('proj-home').style.display = 'none';
   document.getElementById('editor-page').style.display = 'flex';
   const fid = (h.f && proj.floors.some(f => f.id === h.f)) ? h.f : proj.floors[0].id;
