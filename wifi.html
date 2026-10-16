@@ -328,6 +328,21 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
 .busy-box{display:flex;flex-direction:column;align-items:center;gap:14px;padding:10px 0}
 .busy-spin{width:30px;height:30px;border:3px solid var(--border-strong);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---- v5.6 ---- */
+.topbar{flex-wrap:wrap;overflow:visible;row-gap:4px}
+.modal.wide{max-width:600px}
+.rc-row{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
+.rc-row>b{flex:0 0 150px;font-size:12px;color:var(--text-dim);font-weight:500;padding-top:2px}
+.rc-opts{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px}
+.rc-opts label{display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+.rad-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px}
+.rad-box .rb-h{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-bottom:6px}
+.rad-box .rb-h b{color:var(--accent)}
+.rad-box select{width:100%;margin-top:6px}
+.cal-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.cal-tbl th,.cal-tbl td{border:1px solid var(--border);padding:5px 6px;text-align:center}
+.cal-tbl input{width:64px;padding:4px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);text-align:center}
 </style>
 </head>
 <body data-theme="dark">
@@ -357,7 +372,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip"><span class="dot"></span><span>v5.5.0-beta</span></div>
+    <div class="chip"><span class="dot"></span><span>v5.6.0-beta</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -453,10 +468,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
     <div class="lp-sec">
       <button class="lp-head" onclick="toggleSec(this)">Access points <i>▾</i></button>
       <div class="lp-body">
-        <div class="lp-row">
-          <label>NEW AP TX POWER <span class="lp-val" id="global-tx-val">20dBm</span></label>
-          <input type="range" min="1" max="30" value="20" id="global-tx" oninput="document.getElementById('global-tx-val').textContent=this.value+'dBm'">
-        </div>
+        <div class="lp-row" style="font-size:11px;color:var(--text-muted);line-height:1.5">Pick a model, click the plan. Power and channel are set <b>per radio</b> (2.4 / 5 / 6 GHz) in the AP properties.</div>
         <div id="ap-palette"></div>
       </div>
     </div>
@@ -472,8 +484,16 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
           </select>
         </div>
         <div class="lp-row">
-          <label>THRESHOLD <span class="lp-val" id="threshold-val">-75</span></label>
-          <input type="range" min="-100" max="-50" value="-75" id="threshold-range" oninput="updateThreshold(this.value)">
+          <label>LOWEST LEVEL SHOWN <span class="lp-val" id="threshold-val">-90dBm</span></label>
+          <input type="range" min="-100" max="-60" value="-90" id="threshold-range" oninput="updateThreshold(this.value)">
+        </div>
+        <div class="lp-row">
+          <label>COVERAGE TARGET <span class="lp-val" id="cov-val">-65dBm</span></label>
+          <input type="range" min="-80" max="-50" value="-65" oninput="wifi.covTarget=+this.value;document.getElementById('cov-val').textContent=this.value+'dBm';scheduleRender()">
+        </div>
+        <div class="lp-row">
+          <label>CLIENT HEIGHT <span class="lp-val" id="ch-val">1.0 m</span></label>
+          <input type="range" min="0.3" max="2" step="0.1" value="1" oninput="wifi.clientH=+this.value;document.getElementById('ch-val').textContent=(+this.value).toFixed(1)+' m';scheduleRender()">
         </div>
         <div class="lp-row">
           <label>HEATMAP OPACITY <span class="lp-val" id="opacity-val">75%</span></label>
@@ -545,6 +565,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
         <option value="rssi">Signal (RSSI)</option>
         <option value="snr">SNR</option>
         <option value="coverage">Coverage zones</option>
+        <option value="sinr">SINR (co-channel)</option>
+        <option value="weak">Weak-field</option>
       </select>
       <button class="tt" id="btn-toggle-hm" onclick="toggleHeatmap()" title="Show / hide heatmap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span class="lbl">Heatmap</span></button>
       <button class="tt primary" id="btn-precise" onclick="startPrecise()" title="Re-render the heatmap at high resolution">Precise render</button>
@@ -559,6 +581,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
           <button onclick="fileAct('report')">Export report (.docx)</button>
           <button onclick="fileAct('csv')">Export AP list (.csv)</button>
           <button onclick="fileAct('export')">Export project file (backup)</button>
+          <button onclick="fileAct('calib')">Calibrate with field measurements…</button>
           <button onclick="fileAct('clearacc')">Clear acceptance points</button>
           <button onclick="fileAct('cleararea')">Clear render area</button>
           <button onclick="fileAct('save')">Save floor to account (beta)</button>
@@ -586,12 +609,10 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
         <button onclick="fitView()" title="Fit to screen (F)" style="width:auto;padding:0 8px;font-size:10px">Fit</button>
       </div>
       <div class="legend" id="legend" style="display:none">
-        <div class="legend-title">Signal Strength (RSSI)</div>
-        <div class="legend-bar"></div>
-        <div class="legend-labels">
-          <span>Poor<br>-90dBm</span>
-          <span style="text-align:center">Fair<br>-70dBm</span>
-          <span style="text-align:right">Excellent<br>-50dBm</span>
+        <div class="legend-title" id="legend-title">Signal Strength (RSSI)</div>
+        <div class="legend-bar" id="legend-bar" style="background:linear-gradient(to right,#ff2800,#ff9600,#ffe100,#46dc3c,#00d7d7,#2846ff)"></div>
+        <div class="legend-labels" id="legend-labels">
+          <span>-90</span><span>-80</span><span>-70</span><span>-60</span><span>-50</span><span>-40 dBm</span>
         </div>
       </div>
     </div>
@@ -623,11 +644,14 @@ const VENDORS = {
     name: 'H3C', color: '#7cf4c7', bg: '#16221a',
     models: [
       { id:'wa6320', name:'WA6320',     wifi:6, bands:['2.4','5'],     tx:20, gain:3.0, range_m:30, indoor:true,  desc:'Wi-Fi 6 2x2 Indoor' },
-      { id:'wa6636', name:'WA6636',     wifi:6, bands:['2.4','5'],     tx:23, gain:4.0, range_m:40, indoor:true,  desc:'Wi-Fi 6 4x4 Tri-Radio', radios:['5','5','2.4'] },
+      { id:'wa6636', name:'WA6636',     wifi:6, bands:['2.4','5'],     tx:23, gain:4.0, range_m:40, indoor:true,  desc:'Wi-Fi 6 4x4 Tri-Radio', modes:[{id:'t55',name:'5G + 5G + 2.4G',radios:['5','5','2.4']}] },
       { id:'wa7338', name:'WA7338-HI',  wifi:7, bands:['2.4','5','6'], tx:23, gain:5.0, range_m:45, indoor:true,  desc:'Wi-Fi 7 Tri-Band' },
-      { id:'wa7638', name:'WA7638',     wifi:7, bands:['2.4','5'],     tx:26, gain:4.0, range_m:45, indoor:true,  desc:'Wi-Fi 7 Tri-Radio (2x5G + 2.4G)', radios:['5','5','2.4'] },
-      { id:'wa7330i',name:'WA7330i',    wifi:7, bands:['2.4','5'],     tx:23, gain:4.0, range_m:40, indoor:true,  desc:'Wi-Fi 7 Dual-Band Indoor' },
-      { id:'wa7220', name:'WA7220-HI',  wifi:7, bands:['2.4','5'],     tx:23, gain:4.0, range_m:35, indoor:true,  desc:'Wi-Fi 7 Dual-Band Hospitality' },
+      { id:'wa7638', name:'WA7638',     wifi:7, bands:['2.4','5','6'], tx:26, gain:5.0, txb:{'2.4':26,'5':26,'6':26}, gainb:{'2.4':3.0,'5':5.0,'6':5.0}, range_m:45, indoor:true,  desc:'Wi-Fi 7 Tri-Radio 12 streams (datasheet)',
+        modes:[{id:'t55',name:'5G + 5G + 2.4G (default)',radios:['5','5','2.4']},{id:'t65',name:'6G + 5G + 2.4G',radios:['6','5','2.4']}] },
+      { id:'wa7330i',name:'WA7330i',    wifi:7, bands:['2.4','5','6'], tx:23, gain:4.1, txb:{'2.4':23,'5':23,'6':23}, gainb:{'2.4':2.8,'5':4.1,'6':4.7}, range_m:40, indoor:true,  desc:'Wi-Fi 7 Tri-Radio 6 streams (datasheet)',
+        modes:[{id:'t55',name:'5G + 5G + 2.4G (default)',radios:['5','5','2.4']},{id:'t65',name:'6G + 5G + 2.4G',radios:['6','5','2.4']}] },
+      { id:'wa7220', name:'WA7220-HI',  wifi:7, bands:['2.4','5','6'], tx:23, gain:3.2, txb:{'2.4':23,'5':23,'6':23}, gainb:{'2.4':1.9,'5':3.2,'6':3.1}, range_m:35, indoor:true,  desc:'Wi-Fi 7 Dual-Radio 4 streams (datasheet)',
+        modes:[{id:'d52',name:'5G + 2.4G (default)',radios:['5','2.4']},{id:'d62',name:'6G + 2.4G',radios:['6','2.4']}] },
       { id:'wa5620', name:'WA5620E',    wifi:5, bands:['2.4','5'],     tx:26, gain:7.0, range_m:100,indoor:false, desc:'Wi-Fi 5 Outdoor 4x4' },
     ]
   },
@@ -719,7 +743,7 @@ const wifi = {
   wallStart: null,   // {x,y} when drawing wall
   counters: { ap:0, wall:0 },
   hmVisible: true,
-  threshold: -75,
+  threshold: -90, covTarget: -65, clientH: 1.0, cal: null,
   opacity: 0.75,
   dragging: null,    // {id, offX, offY}
   placingVendor: null,
@@ -924,6 +948,15 @@ function renderScene() {
   if (wifi.layers.aps)   renderAPs();
 }
 
+function updateLegend() {
+  const md = document.getElementById('heatmap-mode').value;
+  const T = document.getElementById('legend-title'), B = document.getElementById('legend-bar'), L = document.getElementById('legend-labels');
+  const grad = 'linear-gradient(to right,#ff2800,#ff9600,#ffe100,#46dc3c,#00d7d7,#2846ff)';
+  if (md === 'sinr') { T.textContent = 'SINR (co-channel)'; B.style.background = grad; L.innerHTML = '<span>0</span><span>10</span><span>20</span><span>30</span><span>35+ dB</span>'; }
+  else if (md === 'weak') { T.textContent = 'Weak-field'; B.style.background = '#eb2828'; L.innerHTML = `<span>below ${wifi.covTarget} dBm</span>`; }
+  else if (md === 'snr' || md === 'coverage') { T.textContent = md === 'snr' ? 'SNR' : 'Coverage zones'; B.style.background = 'linear-gradient(to right,#dc1e1e,#ff6e00,#ffc800,#50dc3c,#00e678)'; L.innerHTML = '<span>poor</span><span>good</span>'; }
+  else { T.textContent = 'Signal Strength (RSSI, ' + document.getElementById('global-band').value + ' GHz)'; B.style.background = grad; L.innerHTML = '<span>-90</span><span>-80</span><span>-70</span><span>-60</span><span>-50</span><span>-40 dBm</span>'; }
+}
 function renderAll() {
   const v = wifi.view;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -938,6 +971,7 @@ function renderAll() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
 
   if (wifi.aps.length > 0) document.getElementById('legend').style.display = 'block';
+  updateLegend();
   updateStats();
   updateUI();
   scheduleAutosave();
@@ -1198,7 +1232,8 @@ let _hmCanvas = null, _hmSig = '', _statSig = '';
 
 function sceneSig() {
   return JSON.stringify([
-    wifi.aps.map(a => [a.x, a.y, a.txPower, a.band, a.model, a.vendor]),
+    wifi.aps.map(a => [a.x, a.y, a.height, a.model, a.vendor, a.mode, a.rad]),
+    wifi.cal, wifi.covTarget, wifi.clientH,
     wifi.walls.map(w => [w.x1, w.y1, w.x2, w.y2, w.attn]),
     wifi.doors.map(d => [d.wall, d.t, d.w, d.attn]),
     wifi.areas.map(a => a.pts.map(p => [p.x, p.y])),
@@ -1212,12 +1247,17 @@ function sceneSig() {
 
 // ---- propagation model: free space up to 5 m, then indoor path-loss exponent ----
 const PL_N   = { '2.4': 3.0, '5': 3.4, '6': 3.7 };     // path-loss exponent beyond the breakpoint
-const WALL_K = { '2.4': 0.8, '5': 1.0, '6': 1.2 };     // wall attenuation scale vs. the 5 GHz value shown in the UI
+const WALL_K = { '2.4': 0.8, '5': 1.0, '6': 1.2 };     // obstacle attenuation scale vs. the 5 GHz value shown in the UI
 const ENV_K  = { open: 0.85, office: 1.0, dense: 1.2 };
 function pathLoss(d_m, band) {
   const d = Math.max(d_m, 0.1);
   if (d <= 5) return fspl(d, FREQ_MHZ[band]);
   return fspl(5, FREQ_MHZ[band]) + 10 * PL_N[band] * ENV_K[wifi.env] * Math.log10(d / 5);
+}
+// field calibration: measured - predicted = a + b * 10log10(d/5)
+function calAdj(d, band) {
+  const c = wifi.cal && wifi.cal[band];
+  return c ? c.a + c.b * 10 * Math.log10(Math.max(d, 5) / 5) : 0;
 }
 
 function segU(ax, ay, bx, by, cx, cy, dx, dy) {
@@ -1251,12 +1291,21 @@ function inRegion(rg, x, y) {
 }
 
 function prepHeat(ov) {
-  const band = ov ? ov.band : document.getElementById('global-band').value;
+  const band = (ov && ov.band) || document.getElementById('global-band').value;
+  const mode = (ov && ov.mode) || document.getElementById('heatmap-mode').value;
+  const ents = [];
+  wifi.aps.forEach((ap, i) => {
+    const m = getAPModel(ap.vendor, ap.model); if (!m) return;
+    apRadios(ap, m).forEach(r => {
+      if (r.band !== band) return;
+      ents.push({ x: ap.x, y: ap.y, dz: (ap.height || 2.5) - wifi.clientH, eirp: r.tx + mGain(m, band), band, ch: r.ch, ap: i, noise: NOISE_FLOOR[band] });
+    });
+  });
   return {
-    band,
-    mode: ov ? 'h3c' : document.getElementById('heatmap-mode').value,
-    alpha: ov ? ov.alpha : wifi.opacity,
-    threshold: ov ? ov.threshold : wifi.threshold,
+    band, mode,
+    alpha: (ov && ov.alpha != null) ? ov.alpha : wifi.opacity,
+    threshold: (ov && ov.threshold != null) ? ov.threshold : wifi.threshold,
+    weak: wifi.covTarget,
     ppm: wifi.pxPerMeter,
     region: heatRegion(),
     walls: wifi.walls.map(w => {
@@ -1267,26 +1316,30 @@ function prepHeat(ov) {
       });
       return { x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2, attn: w.attn, doors: ds.length ? ds : null };
     }),
-    aps: wifi.aps.map(ap => {
-      const m = getAPModel(ap.vendor, ap.model);
-      if (!m) return null;
-      if (ov) {
-        if (!m.bands.includes(band)) return null;
-        return { x: ap.x, y: ap.y, eirp: (ap.txPower !== undefined ? ap.txPower : m.tx) + m.gain, band, noise: NOISE_FLOOR[band] };
-      }
-      const b = ap.band || band;
-      return { x: ap.x, y: ap.y, eirp: (ap.txPower !== undefined ? ap.txPower : m.tx) + m.gain, band: b, noise: NOISE_FLOOR[b] };
-    }).filter(Boolean),
+    aps: ents,
+    _rs: new Float32Array(ents.length),
   };
 }
 
-let _bR = -200, _bS = -200;
+let _bR = -200, _bS = -200, _bQ = -200, _bD = 0;
+function chOverlap(band, c1, c2) {
+  if (c1 === c2) return 1;
+  if (band === '2.4' && Math.abs(c1 - c2) <= 4) return 0.3;
+  return 0;
+}
 function cellRSSI(hc, px, py) {
-  _bR = -200; _bS = -200;
-  for (const a of hc.aps) {
-    const d = Math.hypot(px - a.x, py - a.y) / hc.ppm;
-    let r = a.eirp - pathLoss(d, a.band);
-    if (r < hc.threshold) continue;                   // walls only lower it further
+  _bR = -200; _bS = -200; _bQ = -200; _bD = 0;
+  const sinr = hc.mode === 'sinr';
+  const lim = sinr ? -105 : hc.mode === 'weak' ? hc.weak : hc.threshold;
+  const A = hc.aps, rs = hc._rs;
+  let best = -200, bi = -1, bd = 0;
+  for (let i = 0; i < A.length; i++) {
+    const a = A[i];
+    rs[i] = -200;
+    const d2 = Math.hypot(px - a.x, py - a.y) / hc.ppm;
+    const d = Math.sqrt(d2 * d2 + a.dz * a.dz);
+    let r = a.eirp - pathLoss(d, a.band) + calAdj(d, a.band);
+    if (r < lim) continue;                              // obstacles only lower it further
     const k = WALL_K[a.band];
     for (const w of hc.walls) {
       const u = segU(a.x, a.y, px, py, w.x1, w.y1, w.x2, w.y2);
@@ -1295,8 +1348,27 @@ function cellRSSI(hc, px, py) {
       if (w.doors) for (const dd of w.doors) { if (u >= dd.a && u <= dd.b) { loss = dd.attn; break; } }
       r -= loss * k;
     }
-    if (r > _bR) { _bR = r; _bS = r - a.noise; }
+    rs[i] = r;
+    if (r > best) { best = r; bi = i; bd = d; }
   }
+  _bR = best; _bD = bd;
+  if (bi >= 0) {
+    _bS = best - A[bi].noise;
+    if (sinr) {
+      let I = 0;
+      for (let j = 0; j < A.length; j++) {
+        if (j === bi || rs[j] < -150) continue;
+        const w = chOverlap(A[bi].band, A[bi].ch, A[j].ch);
+        if (w > 0) I += w * Math.pow(10, rs[j] / 10);
+      }
+      _bQ = best - 10 * Math.log10(I + Math.pow(10, A[bi].noise / 10));
+    }
+  }
+}
+function skipCell(hc) {
+  if (hc.mode === 'weak') return _bR >= hc.weak;
+  if (hc.mode === 'sinr') return _bR < -105;
+  return _bR < hc.threshold;
 }
 
 const H3C_STOPS = [[-90, [255, 40, 0]], [-80, [255, 150, 0]], [-70, [255, 225, 0]], [-60, [70, 220, 60]], [-50, [0, 215, 215]], [-40, [40, 70, 255]]];
@@ -1311,9 +1383,12 @@ function h3cRGB(r) {
 }
 function h3cToRGBA(r, alpha) { const c = h3cRGB(r); return [c[0], c[1], c[2], Math.round(alpha * 255)]; }
 function paintCell(hc, d, i) {
-  const c = hc.mode === 'h3c' ? h3cToRGBA(_bR, hc.alpha) : hc.mode === 'snr' ? snrToRGBA(_bS, hc.alpha)
+  const c = hc.mode === 'rssi' || hc.mode === 'h3c' ? h3cToRGBA(_bR, hc.alpha)
+          : hc.mode === 'sinr' ? h3cToRGBA(-90 + Math.max(0, Math.min(35, _bQ)) / 35 * 50, hc.alpha)
+          : hc.mode === 'weak' ? [235, 40, 40, Math.round(Math.max(hc.alpha, 0.45) * 255)]
+          : hc.mode === 'snr' ? snrToRGBA(_bS, hc.alpha)
           : hc.mode === 'coverage' ? coverageToRGBA(_bR, hc.alpha)
-          : rssiToRGBA(_bR, hc.alpha);
+          : h3cToRGBA(_bR, hc.alpha);
   d[i] = c[0]; d[i+1] = c[1]; d[i+2] = c[2]; d[i+3] = c[3];
 }
 
@@ -1349,7 +1424,7 @@ function heatCanvas(STEP, target, ov) {
       const px = cx * STEP + STEP / 2, py = cy * STEP + STEP / 2;
       if (!inRegion(rg, px, py)) continue;
       cellRSSI(hc, px, py);
-      if (_bR < hc.threshold) continue;
+      if (skipCell(hc)) continue;
       paintCell(hc, img.data, (cy * cw + cx) * 4);
     }
   }
@@ -1386,7 +1461,7 @@ function startPrecise() {
         const px = x * STEP + STEP / 2, py = row * STEP + STEP / 2;
         if (!inRegion(rg, px, py)) continue;
         cellRSSI(hc, px, py);
-        if (_bR < hc.threshold) continue;
+        if (skipCell(hc)) continue;
         paintCell(hc, img.data, (row * cw + x) * 4);
       }
       row++;
@@ -1514,16 +1589,6 @@ function renderAPs() {
     ctx.fillStyle = '#ffffff';
     ctx.fillText(ap.name, ap.x, ap.y + r + 16.5);
 
-    if (_repScale === 1) {
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    const bw = 26, bh = 12;
-    ctx.beginPath();
-    ctx.roundRect(ap.x - bw/2, ap.y - r - bh - 2, bw, bh, 3);
-    ctx.fill();
-    ctx.fillStyle = color;
-    ctx.font = '8px JetBrains Mono, monospace';
-    ctx.fillText((ap.band || document.getElementById('global-band').value) + 'G', ap.x, ap.y - r - bh/2 + 3);
-    }
     ctx.restore();
   }
 }
@@ -1533,7 +1598,7 @@ function renderAPs() {
 // ============================================================
 const _undo = [], _redo = [];
 function snapshot() {
-  return JSON.stringify({ aps: wifi.aps, walls: wifi.walls, doors: wifi.doors, areas: wifi.areas, acc: wifi.accPts, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet });
+  return JSON.stringify({ cal: wifi.cal, aps: wifi.aps, walls: wifi.walls, doors: wifi.doors, areas: wifi.areas, acc: wifi.accPts, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet });
 }
 function selObj() {
   if (!wifi.sel) return null;
@@ -1554,7 +1619,7 @@ function pushHistoryDebounced() {
 }
 function restoreSnapshot(str) {
   const o = JSON.parse(str);
-  wifi.aps = o.aps; wifi.walls = o.walls; wifi.doors = o.doors || []; wifi.areas = o.areas || []; wifi.accPts = o.acc || [];
+  wifi.aps = o.aps; wifi.walls = o.walls; wifi.doors = o.doors || []; wifi.areas = o.areas || []; wifi.accPts = o.acc || []; wifi.cal = o.cal || null; wifi.aps.forEach((a, i) => normAP(a, i));
   wifi.pxPerMeter = o.ppm; wifi.scaleSet = o.scaleSet;
   if (wifi.sel && !selObj()) wifi.sel = null;
   setScaleDisplay();
@@ -1874,24 +1939,16 @@ function placeAP(x, y) {
   }
   pushHistory();
   const vendor  = VENDORS[wifi.placingVendor];
-  const apModel = vendor.models.find(m => m.id === wifi.placingModel);
   wifi.counters.ap++;
-
-  const band = document.getElementById('global-band').value;
-  const txPower = parseInt(document.getElementById('global-tx').value);
-
   const ap = {
     id:      'ap' + wifi.counters.ap,
     vendor:  wifi.placingVendor,
     model:   wifi.placingModel,
     name:    vendor.name + '-' + wifi.counters.ap,
     x, y,
-    band:    apModel.bands.includes(band) ? band : apModel.bands[apModel.bands.length-1],
-    channel: band === '2.4' ? 1 : band === '5' ? 36 : 1,
-    txPower: txPower,
     height:  2.5,
   };
-
+  normAP(ap, wifi.aps.length);
   wifi.aps.push(ap);
   wifi.sel = {kind:'ap', id:ap.id};
   hideEmpty();
@@ -1906,7 +1963,7 @@ function duplicateSelected() {
   pushHistory();
   wifi.counters.ap++;
   const vendor = VENDORS[src.vendor];
-  const cp = Object.assign({}, src, { id: 'ap' + wifi.counters.ap, name: vendor.name + '-' + wifi.counters.ap, x: src.x + 40, y: src.y + 40 });
+  const cp = Object.assign({}, src, { id: 'ap' + wifi.counters.ap, name: vendor.name + '-' + wifi.counters.ap, x: src.x + 40, y: src.y + 40, rad: JSON.parse(JSON.stringify(src.rad)) });
   wifi.aps.push(cp);
   wifi.sel = {kind:'ap', id:cp.id};
   renderPropsPanel();
@@ -1946,24 +2003,20 @@ function renderPropsPanel() {
     const apModel = getAPModel(ap.vendor, ap.model);
     if (!vendor || !apModel) return;
 
-    // Build channel options based on band
-    const channels24 = [1,2,3,4,5,6,7,8,9,10,11];
-    const channels5  = [36,40,44,48,52,56,60,64,100,104,108,112,116,120,124,128,132,136,140,144,149,153,157,161,165];
-    const channels6  = [1,5,9,13,17,21,25,29,33,37,41,45,49,53,57,61,65,69,73,77,81,85,89,93];
-    const chList = ap.band === '2.4' ? channels24 : ap.band === '6' ? channels6 : channels5;
-
-    // Detect channel conflicts
-    const conflictChs = wifi.aps
-      .filter(a => a.id !== ap.id && a.band === ap.band)
-      .map(a => a.channel);
-
-    const chButtons = chList.map(ch => {
-      const isActive   = ap.channel === ch;
-      const isConflict = conflictChs.includes(ch) && !isActive;
-      return `<button class="ch-btn ${isActive?'active':''} ${isConflict?'conflict':''}" onclick="setAPChannel('${ap.id}',${ch})">${ch}</button>`;
-    }).join('');
-
+    const m = apModel, lay = apLayout(ap, m), rads = apRadios(ap, m), ml = modeList(m);
     const wfColors = {5:'#a8b5ff',6:'#7cf4c7',7:'#ffb86b'};
+    const radHTML = rads.map(r => {
+      const used = new Set();
+      wifi.aps.forEach(a => { if (a.id === ap.id) return; const mm = getAPModel(a.vendor, a.model); if (!mm) return; apRadios(a, mm).forEach(x => { if (x.band === r.band) used.add(x.ch); }); });
+      const opts = CH_OPTS[r.band].map(c => `<option value="${c}" ${c === r.ch ? 'selected' : ''}>${c}${used.has(c) ? '  ⚠ used by another AP' : ''}</option>`).join('');
+      const mx = mTx(m, r.band), g = mGain(m, r.band);
+      return `<div class="rad-box">
+        <div class="rb-h"><span>Radio ${r.i + 1} · <b>${r.band} GHz</b></span></div><div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">max ${mx} dBm · antenna gain ${g} dBi</div>
+        <div class="pf-row"><input type="range" min="1" max="${mx}" value="${r.tx}" oninput="setRadio('${ap.id}',${r.i},'tx',+this.value);this.nextElementSibling.textContent=this.value+' dBm'"><span class="pf-val">${r.tx} dBm</span></div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">EIRP <span style="color:var(--accent)" id="eirp-${r.i}">${(r.tx + g).toFixed(1)} dBm</span></div>
+        <select onchange="setRadio('${ap.id}',${r.i},'ch',+this.value)">${opts}</select>
+      </div>`;
+    }).join('');
     el.innerHTML = `
       <div class="props-header" style="border-left:3px solid ${vendor.color}">
         <button class="props-close" onclick="closeProps()">✕</button><div class="props-title">${ap.name}</div>
@@ -1973,21 +2026,9 @@ function renderPropsPanel() {
         <label>Hostname / Label</label>
         <input value="${ap.name}" oninput="updateAP('${ap.id}','name',this.value)">
       </div>
-      <div class="pf">
-        <label>Band</label>
-        <select onchange="updateAP('${ap.id}','band',this.value);renderPropsPanel();scheduleRender()">
-          ${apModel.bands.map(b => `<option value="${b}" ${ap.band===b?'selected':''}>${b} GHz</option>`).join('')}
-        </select>
-      </div>
-      <div class="pf">
-        <label>TX Power</label>
-        <div class="pf-row">
-          <input type="range" min="1" max="30" value="${ap.txPower}" oninput="updateAP('${ap.id}','txPower',+this.value);this.nextSibling.textContent=this.value+'dBm';scheduleRender()">
-          <span class="pf-val">${ap.txPower}dBm</span>
-        </div>
-      </div>
-      <div class="pf">
-        <label>Antenna gain: <span style="color:var(--accent)">${apModel.gain}dBi</span> &nbsp;|&nbsp; EIRP: <span style="color:var(--accent)">${ap.txPower+apModel.gain}dBm</span></label>
+      ${ml.length > 1 ? `<div class="pf"><label>Radio mode</label><select onchange="setAPMode('${ap.id}',this.value)">${ml.map(x => `<option value="${x.id}" ${x.id === ap.mode ? 'selected' : ''}>${x.name}</option>`).join('')}</select></div>` : ''}
+      <div class="pf"><label>Radios — TX power and channel</label>${radHTML}
+        <button class="btn-secondary-modal" style="width:100%;margin-top:4px;font-size:11px" onclick="applyPowerAll('${ap.id}')">Copy these powers to all APs of this model</button>
       </div>
       <div class="pf">
         <label>Mount height (m)</label>
@@ -1995,14 +2036,6 @@ function renderPropsPanel() {
           <input type="range" min="1" max="10" step="0.5" value="${ap.height||2.5}" oninput="updateAP('${ap.id}','height',+this.value);this.nextSibling.textContent=this.value+'m'">
           <span class="pf-val">${ap.height||2.5}m</span>
         </div>
-      </div>
-      <div class="pf">
-        <label>Channel &nbsp;<span style="font-weight:400;color:var(--text-muted)">(red = used by other AP)</span></label>
-        <div class="channel-grid">${chButtons}</div>
-      </div>
-      <div class="pf">
-        <label>Effective range</label>
-        <div style="font-family:var(--mono);font-size:12px;color:var(--accent)">~${apModel.range_m}m${apModel.indoor?'':' outdoor'}</div>
       </div>
       <button class="delete-btn" onclick="deleteSelected()">Delete AP</button>`;
   }
@@ -2089,6 +2122,33 @@ function setWallMat(id, mat) {
   renderPropsPanel();
 }
 
+function setRadio(id, i, key, val) {
+  const ap = wifi.aps.find(a => a.id === id); if (!ap) return;
+  pushHistoryDebounced();
+  ap.rad[i][key] = val;
+  if (key === 'tx') { const m = getAPModel(ap.vendor, ap.model); const e = document.getElementById('eirp-' + i); if (e) e.textContent = (val + mGain(m, apLayout(ap, m)[i])).toFixed(1) + ' dBm'; }
+  else renderPropsPanel();
+  scheduleRender();
+}
+function setAPMode(id, mode) {
+  const ap = wifi.aps.find(a => a.id === id); if (!ap) return;
+  pushHistory(); ap.mode = mode; ap.rad = null;
+  normAP(ap, wifi.aps.indexOf(ap));
+  renderPropsPanel(); scheduleRender();
+}
+function applyPowerAll(id) {
+  const src = wifi.aps.find(a => a.id === id); if (!src) return;
+  pushHistory();
+  let n = 0;
+  wifi.aps.forEach(a => {
+    if (a.id === id || a.vendor !== src.vendor || a.model !== src.model) return;
+    a.mode = src.mode; a.rad.length = src.rad.length;
+    src.rad.forEach((r, i) => { a.rad[i] = Object.assign({}, a.rad[i] || r, { tx: r.tx }); });
+    n++;
+  });
+  toast(n ? `Power copied to ${n} AP${n > 1 ? 's' : ''}` : 'No other AP of this model');
+  scheduleRender();
+}
 function setAPChannel(id, ch) {
   updateAP(id, 'channel', ch);
   renderPropsPanel();
@@ -2268,7 +2328,7 @@ function confirmCalib() {
 // TOOLBAR CONTROLS
 // ============================================================
 function updateGlobalBand(band) {
-  wifi.band = band;
+  wifi.band = band; _precCanvas = null;
   // Update legend label
   scheduleRender();
 }
@@ -2295,8 +2355,9 @@ function toggleHeatmap() {
 // ============================================================
 // STATS
 // ============================================================
-function computeCoverage() {
-  const hc = prepHeat();
+function computeCoverage(band) {
+  const hc = prepHeat({ band: band || document.getElementById('global-band').value, mode: 'rssi', threshold: -120 });
+  if (!hc.aps.length) return null;
   const rg = hc.region;
   const S = 25;
   let total = 0, cov = 0, exc = 0;
@@ -2305,7 +2366,7 @@ function computeCoverage() {
       if (!inRegion(rg, px, py)) continue;
       total++;
       cellRSSI(hc, px, py);
-      if (_bR >= hc.threshold) { cov++; if (_bR > -60) exc++; }
+      if (_bR >= wifi.covTarget) { cov++; if (_bR > -60) exc++; }
     }
   }
   return total ? { total, cov, exc, dead: total - cov } : null;
@@ -2340,6 +2401,46 @@ function updateStats() {
 function getAPModel(vid, mid) {
   return VENDORS[vid]?.models.find(m => m.id === mid);
 }
+// ---- per-radio model helpers ----
+const mTx   = (m, b) => (m.txb && m.txb[b] != null) ? m.txb[b] : m.tx;
+const mGain = (m, b) => (m.gainb && m.gainb[b] != null) ? m.gainb[b] : m.gain;
+function modeList(m) {
+  if (m.modes) return m.modes;
+  const r = ['5', '6', '2.4'].filter(b => m.bands.includes(b));
+  return [{ id: 'std', name: r.map(b => b + 'G').join(' + '), radios: r }];
+}
+function apLayout(ap, m) { const ml = modeList(m); return (ml.find(x => x.id === ap.mode) || ml[0]).radios; }
+const CH_OPTS = {
+  '2.4': [1,2,3,4,5,6,7,8,9,10,11,12,13],
+  '5':   [36,40,44,48,52,56,60,64,100,104,108,112,116,120,124,128,132,136,140,144,149,153,157,161,165],
+  '6':   [1,5,9,13,17,21,25,29,33,37,41,45,49,53,57,61,65,69,73,77,81,85,89,93],
+};
+const defTx = (m, b) => Math.min(mTx(m, b), b === '2.4' ? 17 : 23);
+function defCh(b, idx, nth) {
+  if (b === '2.4') return [1, 6, 11][idx % 3];
+  if (b === '5')   return nth === 0 ? [36, 40, 44, 48, 52, 56, 60, 64][idx % 8] : [149, 153, 157, 161][idx % 4];
+  return [1, 5, 9, 13, 17, 21, 25, 29][idx % 8];
+}
+// make sure an AP has a valid mode and one {tx,ch} entry per radio (also upgrades older saved APs)
+function normAP(ap, idx) {
+  const m = getAPModel(ap.vendor, ap.model); if (!m) return ap;
+  const ml = modeList(m);
+  if (!ml.find(x => x.id === ap.mode)) ap.mode = ml[0].id;
+  const lay = apLayout(ap, m);
+  if (!Array.isArray(ap.rad) || ap.rad.length !== lay.length) {
+    const n5 = { v: 0 };
+    ap.rad = lay.map(b => {
+      const nth = b === '5' ? n5.v++ : 0;
+      let tx = defTx(m, b), ch = defCh(b, idx || 0, nth);
+      if (ap.band === b && nth === 0 && ap.txPower != null) { tx = Math.min(ap.txPower, mTx(m, b)); if (ap.channel) ch = ap.channel; }
+      return { tx, ch };
+    });
+  }
+  delete ap.band; delete ap.channel; delete ap.txPower;
+  if (!ap.height) ap.height = 2.5;
+  return ap;
+}
+function apRadios(ap, m) { const lay = apLayout(ap, m); return lay.map((b, i) => ({ band: b, tx: ap.rad[i].tx, ch: ap.rad[i].ch, i })); }
 
 // ============================================================
 // EXPORT PNG
@@ -2525,12 +2626,12 @@ const dbPut = (st, v, k) => dbReq(st, 'readwrite', s => k === undefined ? s.put(
 const dbDel = (st, k) => dbReq(st, 'readwrite', s => s.delete(k));
 
 // ---- generic dialog (replaces confirm/prompt) ----
-function dialog({ title, html = '', ok = 'OK', cancel = 'Cancel', danger = false, hideCancel = false }) {
+function dialog({ title, html = '', ok = 'OK', cancel = 'Cancel', danger = false, hideCancel = false, wide = false }) {
   return new Promise(res => {
     const ov = document.createElement('div');
     ov.className = 'modal-overlay open';
     ov.style.zIndex = 300;
-    ov.innerHTML = `<div class="modal"><button class="modal-close" data-x>✕</button><h2>${title}</h2>${html}
+    ov.innerHTML = `<div class="modal${wide ? ' wide' : ''}"><button class="modal-close" data-x>✕</button><h2>${title}</h2>${html}
       <div style="display:flex;gap:8px;margin-top:16px">${hideCancel ? '' : `<button class="btn-secondary-modal" data-c style="flex:1">${cancel}</button>`}<button class="btn-primary-modal ${danger ? 'danger' : ''}" data-ok style="flex:1">${ok}</button></div></div>`;
     const m = ov.firstChild;
     const close = v => { document.removeEventListener('keydown', kd, true); ov.remove(); res(v); };
@@ -2555,10 +2656,10 @@ async function askText(title, label, value) {
 }
 
 // ---- floor data <-> editor state ----
-function newFloorData() { return { aps: [], walls: [], doors: [], areas: [], acc: [], ppm: WORLD_W / 40, scaleSet: false, counters: { ap: 0, wall: 0 }, band: '5', env: 'office', started: false }; }
+function newFloorData() { return { cal: null, aps: [], walls: [], doors: [], areas: [], acc: [], ppm: WORLD_W / 40, scaleSet: false, counters: { ap: 0, wall: 0 }, band: '5', env: 'office', started: false }; }
 function captureFloor() {
   return {
-    aps: wifi.aps, walls: wifi.walls, doors: wifi.doors, areas: wifi.areas, acc: wifi.accPts, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet,
+    cal: wifi.cal, aps: wifi.aps, walls: wifi.walls, doors: wifi.doors, areas: wifi.areas, acc: wifi.accPts, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet,
     counters: wifi.counters, band: document.getElementById('global-band').value, env: wifi.env,
     started: wifi.started || !!wifi.floorPlan || wifi.aps.length > 0 || wifi.walls.length > 0,
   };
@@ -2566,6 +2667,8 @@ function captureFloor() {
 function applyFloor(data, bmp) {
   finishDraft();
   wifi.aps = JSON.parse(JSON.stringify(data.aps || []));
+  wifi.aps.forEach((a, i) => normAP(a, i));
+  wifi.cal = data.cal ? JSON.parse(JSON.stringify(data.cal)) : null;
   wifi.walls = JSON.parse(JSON.stringify(data.walls || []));
   wifi.doors = JSON.parse(JSON.stringify(data.doors || []));
   wifi.areas = JSON.parse(JSON.stringify(data.areas || []));
@@ -2888,13 +2991,14 @@ function csvCell(v) { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? 
 async function exportCSV() {
   if (!curProj) return;
   await flushSave();
-  const rows = [['Floor', 'AP name', 'Vendor', 'Model', 'Band (GHz)', 'Channel', 'TX power (dBm)', 'Mount height (m)', 'X (m)', 'Y (m)']];
+  const rows = [['Floor', 'AP name', 'Vendor', 'Model', 'Radio', 'Band (GHz)', 'Channel', 'TX power (dBm)', 'EIRP (dBm)', 'Mount height (m)', 'X (m)', 'Y (m)']];
   for (const f of curProj.floors) {
     const d = f.data || {};
-    for (const ap of (d.aps || [])) {
+    for (const ap0 of (d.aps || [])) {
+      const ap = JSON.parse(JSON.stringify(ap0)); normAP(ap, 0);
+      const m = getAPModel(ap.vendor, ap.model); if (!m) continue;
       const ppm = d.ppm || (WORLD_W / 40);
-      rows.push([f.name, ap.name, VENDORS[ap.vendor]?.name || ap.vendor, getAPModel(ap.vendor, ap.model)?.name || ap.model,
-                 ap.band, ap.channel, ap.txPower, ap.height || 2.5, (ap.x / ppm).toFixed(1), (ap.y / ppm).toFixed(1)]);
+      apRadios(ap, m).forEach(r => rows.push([f.name, ap.name, VENDORS[ap.vendor]?.name || ap.vendor, m.name, 'Radio' + (r.i + 1), r.band, r.ch, r.tx, (r.tx + mGain(m, r.band)).toFixed(1), ap.height || 2.5, (ap.x / ppm).toFixed(1), (ap.y / ppm).toFixed(1)]));
     }
   }
   if (rows.length === 1) { toast('No access points to export yet', 'error'); return; }
@@ -2928,8 +3032,134 @@ function ensureDocx() {
 }
 
 // ============================================================
-// REPORT (H3C-style survey design scheme, .docx) — walls / doors / obstacles are NOT drawn in the report
+// FIELD CALIBRATION — enter measured RSSI at the test points, the model is fitted to them
 // ============================================================
+const BAND_LIST = ['2.4', '5', '6'];
+function floorBands() {
+  const set = new Set();
+  wifi.aps.forEach(a => { const m = getAPModel(a.vendor, a.model); if (m) apRadios(a, m).forEach(r => set.add(r.band)); });
+  return BAND_LIST.filter(b => set.has(b));
+}
+function predictAt(band, x, y, withCal) {
+  const saved = wifi.cal;
+  if (!withCal) wifi.cal = null;
+  const hc = prepHeat({ band, mode: 'rssi', threshold: -120 });
+  let r = null, d = 0;
+  if (hc.aps.length) { cellRSSI(hc, x, y); if (_bR > -199) { r = _bR; d = _bD; } }
+  wifi.cal = saved;
+  return { r, d };
+}
+async function openCalibration() {
+  if (!wifi.accPts.length) { toast('Drop Test points on the plan first (tool "Test pt"), then enter the signal you measured there', 'error'); return; }
+  const bands = floorBands();
+  if (!bands.length) { toast('Place at least one AP first', 'error'); return; }
+  let html = `<div style="font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:10px">Enter the RSSI you measured on site (dBm, e.g. -62) at each test point. Leave blank if not measured. The planner fits the propagation model to your measurements, for each band separately. At least 3 points per band also fit the distance slope; fewer points only shift the level.</div>
+    <div style="overflow:auto;max-height:50vh"><table class="cal-tbl"><tr><th>#</th>${bands.map(b => `<th>${b} GHz predicted (no cal.)</th><th>${b} GHz measured</th>`).join('')}</tr>`;
+  wifi.accPts.forEach((t, i) => {
+    html += `<tr><td>${i + 1}</td>` + bands.map(b => {
+      const p = predictAt(b, t.x, t.y, false).r;
+      return `<td>${p == null ? '—' : Math.round(p) + ' dBm'}</td><td><input type="number" step="1" data-i="${i}" data-b="${b}" value="${t.meas && t.meas[b] != null ? t.meas[b] : ''}" placeholder="dBm"></td>`;
+    }).join('') + '</tr>';
+  });
+  html += `</table></div><div style="margin-top:10px;font-size:12px;color:var(--text-dim)">Current calibration: ${wifi.cal ? bands.filter(b => wifi.cal[b]).map(b => `${b} GHz: ${wifi.cal[b].a >= 0 ? '+' : ''}${wifi.cal[b].a} dB, slope ${wifi.cal[b].b >= 0 ? '+' : ''}${wifi.cal[b].b}`).join(' · ') || 'none' : 'none'} &nbsp; <a href="#" onclick="event.preventDefault();resetCalibration()" style="color:var(--danger)">Reset calibration</a></div>`;
+  const m = await dialog({ title: 'Calibrate <em>with field data</em>', html, ok: 'Apply calibration', wide: true });
+  if (!m) return;
+  pushHistory();
+  m.querySelectorAll('input[data-i]').forEach(inp => {
+    const t = wifi.accPts[+inp.dataset.i]; if (!t) return;
+    t.meas = t.meas || {};
+    const v = parseFloat(inp.value);
+    if (isNaN(v)) delete t.meas[inp.dataset.b]; else t.meas[inp.dataset.b] = v;
+  });
+  const next = Object.assign({}, wifi.cal || {});
+  const msgs = [];
+  bands.forEach(b => {
+    const rows = [];
+    wifi.accPts.forEach(t => {
+      if (!t.meas || t.meas[b] == null) return;
+      const p = predictAt(b, t.x, t.y, false);
+      if (p.r == null) return;
+      rows.push({ res: t.meas[b] - p.r, x: 10 * Math.log10(Math.max(p.d, 5) / 5) });
+    });
+    if (!rows.length) { delete next[b]; return; }
+    const n = rows.length, mr = rows.reduce((a, r) => a + r.res, 0) / n, mx = rows.reduce((a, r) => a + r.x, 0) / n;
+    let slope = 0;
+    const vx = rows.reduce((a, r) => a + (r.x - mx) * (r.x - mx), 0) / n;
+    if (n >= 3 && vx > 0.3) slope = rows.reduce((a, r) => a + (r.x - mx) * (r.res - mr), 0) / n / vx;
+    slope = Math.max(-1.5, Math.min(2.5, slope));
+    const a = mr - slope * mx;
+    const rms0 = Math.sqrt(rows.reduce((q, r) => q + r.res * r.res, 0) / n);
+    const rms1 = Math.sqrt(rows.reduce((q, r) => { const e = r.res - (a + slope * r.x); return q + e * e; }, 0) / n);
+    next[b] = { a: Math.round(a * 10) / 10, b: Math.round(slope * 100) / 100, n };
+    msgs.push(`${b} GHz: error ${rms0.toFixed(1)} → ${rms1.toFixed(1)} dB (${n} pts)`);
+  });
+  wifi.cal = Object.keys(next).length ? next : null;
+  _precCanvas = null; _statSig = '';
+  scheduleRender();
+  toast(msgs.length ? 'Calibrated — ' + msgs.join(' · ') : 'No measurements entered');
+}
+function resetCalibration() {
+  document.querySelector('.modal-overlay.open [data-x]')?.click();
+  pushHistory(); wifi.cal = null; _precCanvas = null; _statSig = '';
+  scheduleRender(); toast('Calibration reset');
+}
+
+// ============================================================
+// REPORT (H3C-style survey design scheme, .docx) — obstacles are NOT drawn or listed in the report
+// ============================================================
+const RACC = { original: { step: 3, sc: 1.6, max: 1900 }, high: { step: 5, sc: 1.4, max: 1500 }, middle: { step: 8, sc: 1.0, max: 1100 }, low: { step: 14, sc: 0.7, max: 800 } };
+
+const RT = {
+  en: {
+    hdr: 'ConfigLabs Digital Solution', cover1: 'WLAN Wireless Network', cover2: 'Engineering Survey Design Scheme', prep: 'Prepared with ConfigLabs WiFi Planner', cat: 'Catalogue',
+    acr: 'List of acronyms:', abbr: 'Abbreviation', full: 'Full spelling', desc: 'Description',
+    acrRows: [['WLAN', 'Wireless Local Area Network', 'Wireless local area network'], ['AP', 'Access Point', 'Wireless access point'], ['RSSI', 'Received Signal Strength Indicator', 'Received signal strength, in dBm'], ['SINR', 'Signal-to-Interference-plus-Noise Ratio', 'Signal quality versus interference and noise'], ['dBm', 'Decibel-milliwatt', 'Power level relative to 1 mW'], ['PoE', 'Power over Ethernet', 'AP powered through the network cable']],
+    s1: '1 Basic information', pname: 'Project name', unit: 'Engineering survey unit', area: 'Engineering survey area', time: 'Engineering survey time', dept: 'Engineering survey department', part: 'Participant', reason: 'The reason for the engineering survey',
+    reasonT: p => `In order to meet the requirements of comprehensive wireless network coverage at ${p}, an engineering survey is carried out for the wireless points and cabling to be built.`, notes: 'Notes: ',
+    s2: p => `2 Overview of wireless engineering survey of ${p}`, s21: '2.1 Wireless network coverage', s22: '2.2 Material checklist',
+    ovT: (nf, p, loc, n, bands) => `This survey covers ${nf} floor${nf === 1 ? '' : 's'} of ${p}${loc ? ' (' + loc + ')' : ''} with ${n} access point${n === 1 ? '' : 's'} in total. Coverage is predicted for ${bands} wherever the planned access points operate on those bands.`,
+    covNote: t => `Coverage = share of the area with a signal of ${t} dBm or better. Strong = better than -60 dBm.`,
+    floor: 'Floor', aps: 'APs', covCol: b => `Coverage ${b} GHz`, strongCol: b => `Strong ${b} GHz`,
+    wres: 'Wireless Engineering Survey Result (Wireless device statistics)', building: 'Building information', floorInfo: 'Floor information', deploy: 'Deployment plan', apModel: 'AP model', qty: 'Quantity', antM: 'Antenna model', feeder: 'Feeder model', ceiling: 'Ceiling mount', builtin: 'built-in',
+    total: 'Total (list of wireless devices)', devModel: 'Device model', remarks: 'Remarks', note: 'Note: During installation and deployment, there may be discrepancies with table data according to the actual situation!',
+    solList: 'List of solution wireless devices', planName: 'Plan name', apQty: 'AP quantity', antType: 'Antenna type', antQty: 'Antenna quantity', planAP: 'Plan AP total', planAnt: 'Plan antenna total',
+    s3: p => `3 ${p} Deployment plan`, s31: '3.1 Main scene introduction', s311: '3.1.1 Government and Enterprise Office', s32: '3.2 Device deployment plan',
+    scene: ['The office scene is the most common and relatively basic scene in wireless applications. Coverage should reach about -65 dBm or better. The structure and environment of the office area must be considered: for independent offices, meeting rooms, partitions and large open rooms, the signal must first meet the coverage requirement.', 'Second, the density of personnel and the particularity of the business applications must be considered. Areas with many terminals per unit area must be planned for high-density coverage, and the number of APs increased accordingly.', 'Business type: HD video, resource download, HTTP access, instant communication.'],
+    realMap: 'Real scene map', apMap: 'AP deployment point bitmap and device list', sim: b => `AP coverage ${b}G simulation diagram`, weak: b => `AP coverage ${b}G weak-field diagram`, sinr: b => `AP coverage ${b}G SINR diagram`, accMap: 'Acceptance point bitmap',
+    noPlan: 'No floor plan image was uploaded for this floor.', noAP: 'No access points were placed on this floor.', noBand: b => `No access point on this floor operates on ${b} GHz.`,
+    covArea: 'Coverage area', apName: 'AP name', loc: 'AP deployment location', pw: b => `${b}G transmit power`, radioNote: 'Radio1 / Radio2 / Radio3 show band and channel of each radio. Channels are planning suggestions and should be verified during the site survey.',
+    no: 'No.', location: 'Location', pred: b => `Predicted ${b}G`, meas: b => `Measured ${b}G`, noAcc: 'No acceptance points were defined. Use the Test pt tool in the planner to mark the spots to verify after installation.',
+    weakCap: t => `Red areas: predicted signal below ${t} dBm.`, sinrCap: 'SINR is computed against co-channel interference from other APs on the same band and channel.',
+    sAlgo: 'Algorithm', algo: (cal) => ['Signal strength is predicted per band (2.4 / 5 / 6 GHz) from the transmit power of every radio plus the antenna gain of that band (values from the access point datasheet).', 'Path loss follows free space up to 5 m, then a log-distance model with an indoor exponent per band (2.4 GHz: 3.0, 5 GHz: 3.4, 6 GHz: 3.7), adjusted for the selected environment. The distance is three-dimensional, using the AP mounting height and the client height.', 'Attenuation of obstacles on the direct path between the AP and the point is subtracted; higher bands are attenuated more strongly.', 'SINR = signal of the strongest radio divided by the sum of co-channel interference from other radios and the noise floor.', cal ? 'The model has been calibrated with on-site measurements for this project.' : 'The model has not been calibrated with on-site measurements; results should be verified during the site survey.'],
+    sConc: n => `${n} Conclusion`, conc: p => [`${p} has rich wireless scenarios and diversified terminal devices. Through this wireless network survey, the deployment has been designed to meet the users' needs for wireless networking.`, 'The coverage maps in this document are predictions from a simulation model; they depend on the accuracy of the floor plan scale and should be validated with an on-site survey and acceptance test at the acceptance points before final deployment.', 'We appreciate the cooperation and hard work of the leaders and maintenance staff of your organization during this survey.'],
+    floorWord: 'Floor',
+  },
+  id: {
+    hdr: 'ConfigLabs Digital Solution', cover1: 'Jaringan Nirkabel WLAN', cover2: 'Rancangan Survei Teknis', prep: 'Dibuat dengan ConfigLabs WiFi Planner', cat: 'Daftar Isi',
+    acr: 'Daftar singkatan:', abbr: 'Singkatan', full: 'Kepanjangan', desc: 'Keterangan',
+    acrRows: [['WLAN', 'Wireless Local Area Network', 'Jaringan area lokal nirkabel'], ['AP', 'Access Point', 'Titik akses nirkabel'], ['RSSI', 'Received Signal Strength Indicator', 'Kekuatan sinyal yang diterima, dalam dBm'], ['SINR', 'Signal-to-Interference-plus-Noise Ratio', 'Kualitas sinyal terhadap interferensi dan noise'], ['dBm', 'Decibel-milliwatt', 'Level daya relatif terhadap 1 mW'], ['PoE', 'Power over Ethernet', 'AP mendapat daya lewat kabel jaringan']],
+    s1: '1 Informasi dasar', pname: 'Nama proyek', unit: 'Unit survei teknis', area: 'Area survei teknis', time: 'Waktu survei teknis', dept: 'Departemen survei teknis', part: 'Peserta', reason: 'Alasan dilakukan survei',
+    reasonT: p => `Untuk memenuhi kebutuhan cakupan jaringan nirkabel yang menyeluruh di ${p}, dilakukan survei teknis terhadap titik nirkabel dan pengkabelan yang akan dibangun.`, notes: 'Catatan: ',
+    s2: p => `2 Ringkasan survei teknis nirkabel ${p}`, s21: '2.1 Cakupan jaringan nirkabel', s22: '2.2 Daftar material',
+    ovT: (nf, p, loc, n, bands) => `Survei ini mencakup ${nf} lantai ${p}${loc ? ' (' + loc + ')' : ''} dengan total ${n} access point. Cakupan diprediksi untuk ${bands} selama access point yang direncanakan beroperasi pada band tersebut.`,
+    covNote: t => `Cakupan = persentase area dengan sinyal ${t} dBm atau lebih baik. Kuat = lebih baik dari -60 dBm.`,
+    floor: 'Lantai', aps: 'AP', covCol: b => `Cakupan ${b} GHz`, strongCol: b => `Kuat ${b} GHz`,
+    wres: 'Hasil Survei Teknis Nirkabel (Statistik perangkat nirkabel)', building: 'Informasi gedung', floorInfo: 'Informasi lantai', deploy: 'Rencana penempatan', apModel: 'Model AP', qty: 'Jumlah', antM: 'Model antena', feeder: 'Model feeder', ceiling: 'Dipasang di plafon', builtin: 'internal',
+    total: 'Total (daftar perangkat nirkabel)', devModel: 'Model perangkat', remarks: 'Keterangan', note: 'Catatan: Saat instalasi dan penerapan, bisa terjadi perbedaan dengan data tabel sesuai kondisi sebenarnya!',
+    solList: 'Daftar perangkat nirkabel solusi', planName: 'Nama rencana', apQty: 'Jumlah AP', antType: 'Tipe antena', antQty: 'Jumlah antena', planAP: 'Total AP rencana', planAnt: 'Total antena rencana',
+    s3: p => `3 Rencana penerapan ${p}`, s31: '3.1 Pengantar skenario utama', s311: '3.1.1 Perkantoran Pemerintah dan Perusahaan', s32: '3.2 Rencana penempatan perangkat',
+    scene: ['Skenario perkantoran adalah skenario yang paling umum dan relatif mendasar dalam aplikasi nirkabel. Cakupan sebaiknya mencapai sekitar -65 dBm atau lebih baik. Struktur dan lingkungan area kantor harus diperhatikan: untuk ruang kerja terpisah, ruang rapat, partisi, dan ruang terbuka besar, sinyal harus lebih dulu memenuhi syarat cakupan.', 'Selain itu, kepadatan pengguna dan kekhususan aplikasi bisnis harus dipertimbangkan. Area dengan banyak perangkat per satuan luas harus direncanakan dengan cakupan kepadatan tinggi, dan jumlah AP ditambah sesuai kebutuhan.', 'Jenis bisnis: video HD, unduh data, akses HTTP, pesan instan.'],
+    realMap: 'Denah asli', apMap: 'Bitmap titik penempatan AP dan daftar perangkat', sim: b => `Diagram simulasi cakupan AP ${b}G`, weak: b => `Diagram weak-field cakupan AP ${b}G`, sinr: b => `Diagram SINR cakupan AP ${b}G`, accMap: 'Bitmap titik akseptansi',
+    noPlan: 'Tidak ada gambar denah yang diunggah untuk lantai ini.', noAP: 'Belum ada access point di lantai ini.', noBand: b => `Tidak ada access point di lantai ini yang beroperasi di ${b} GHz.`,
+    covArea: 'Area cakupan', apName: 'Nama AP', loc: 'Lokasi AP', pw: b => `Daya pancar ${b}G`, radioNote: 'Radio1 / Radio2 / Radio3 menunjukkan band dan channel tiap radio. Channel adalah saran perencanaan dan perlu diverifikasi saat survei lapangan.',
+    no: 'No.', location: 'Lokasi', pred: b => `Prediksi ${b}G`, meas: b => `Terukur ${b}G`, noAcc: 'Belum ada titik akseptansi. Gunakan tool Test pt di planner untuk menandai titik yang akan diuji setelah instalasi.',
+    weakCap: t => `Area merah: prediksi sinyal di bawah ${t} dBm.`, sinrCap: 'SINR dihitung terhadap interferensi co-channel dari AP lain pada band dan channel yang sama.',
+    sAlgo: 'Algoritma', algo: (cal) => ['Kekuatan sinyal diprediksi per band (2.4 / 5 / 6 GHz) dari daya pancar setiap radio ditambah gain antena pada band tersebut (nilai dari datasheet access point).', 'Redaman jalur mengikuti ruang bebas hingga 5 m, kemudian model log-distance dengan eksponen indoor per band (2.4 GHz: 3.0, 5 GHz: 3.4, 6 GHz: 3.7), disesuaikan dengan lingkungan yang dipilih. Jarak dihitung tiga dimensi, memakai tinggi pemasangan AP dan tinggi klien.', 'Redaman penghalang pada jalur langsung antara AP dan titik tersebut dikurangkan; band yang lebih tinggi diredam lebih kuat.', 'SINR = sinyal radio terkuat dibagi jumlah interferensi co-channel dari radio lain dan noise floor.', cal ? 'Model telah dikalibrasi dengan pengukuran lapangan untuk proyek ini.' : 'Model belum dikalibrasi dengan pengukuran lapangan; hasil perlu diverifikasi saat survei lapangan.'],
+    sConc: n => `${n} Kesimpulan`, conc: p => [`${p} memiliki skenario nirkabel yang beragam dan perangkat terminal yang bervariasi. Melalui survei jaringan nirkabel ini, penerapan dirancang untuk memenuhi kebutuhan pengguna akan jaringan nirkabel.`, 'Peta cakupan dalam dokumen ini adalah prediksi dari model simulasi; hasilnya bergantung pada akurasi skala denah dan perlu divalidasi dengan survei lapangan serta uji akseptansi pada titik akseptansi sebelum penerapan akhir.', 'Kami berterima kasih atas kerja sama dan kerja keras pimpinan serta staf pemeliharaan organisasi Anda selama survei ini.'],
+    floorWord: 'Lantai',
+  },
+};
+
 function canvasBytes(c) {
   const bin = atob(c.toDataURL('image/png').split(',')[1]);
   const bytes = new Uint8Array(bin.length);
@@ -2955,13 +3185,13 @@ function reportCrop() {
   return crop;
 }
 
-// kind: 'plan' (floor plan only) | 'aps' (+ APs) | 'heat' (+ heatmap for `band`) | 'acc' (+ APs + acceptance points)
-function reportImage(kind, band) {
+// kind: 'plan' | 'aps' | 'heat' (band + mode: rssi|weak|sinr) | 'acc'.  The heatmap uses the same engine and colours as the editor.
+function reportImage(kind, acc, band, mode) {
   const crop = reportCrop();
   const savedSel = wifi.sel, savedCtx = ctx;
   wifi.sel = null;
   _repScale = Math.max(1, Math.min(3.5, crop.w / 600));
-  const sc = Math.min(1.6, 1500 / crop.w);
+  const sc = Math.min(acc.sc, acc.max / crop.w);
   const off = document.createElement('canvas');
   off.width = Math.round(crop.w * sc); off.height = Math.round(crop.h * sc);
   const o = off.getContext('2d');
@@ -2971,7 +3201,7 @@ function reportImage(kind, band) {
     o.fillStyle = '#ffffff'; o.fillRect(0, 0, WORLD_W, WORLD_H);
     if (wifi.floorPlan) { const r = planRect(); o.drawImage(wifi.floorPlan, r.x, r.y, r.w, r.h); }
     if (kind === 'heat') {
-      const hc = heatCanvas(4, null, { band, alpha: 0.55, threshold: -90 });
+      const hc = heatCanvas(acc.step, null, { band, mode });
       o.imageSmoothingEnabled = true; o.drawImage(hc, 0, 0, WORLD_W, WORLD_H);
     }
     if (kind === 'acc') renderAcc();
@@ -2980,68 +3210,94 @@ function reportImage(kind, band) {
   return canvasBytes(off);
 }
 
-function reportLegend() {
+function reportLegend(kind) {
   const c = document.createElement('canvas'); c.width = 900; c.height = 70;
   const o = c.getContext('2d');
   o.fillStyle = '#fff'; o.fillRect(0, 0, 900, 70);
   const x0 = 40, x1 = 860;
-  for (let x = x0; x <= x1; x++) { const r = -90 + (x - x0) / (x1 - x0) * 60; const k = h3cRGB(r); o.fillStyle = `rgb(${k[0]},${k[1]},${k[2]})`; o.fillRect(x, 8, 1.2, 24); }
   o.fillStyle = '#222'; o.font = '16px Arial'; o.textAlign = 'center';
-  for (let v = -90; v <= -30; v += 10) { const x = x0 + (v + 90) / 60 * (x1 - x0); o.fillRect(x, 32, 1, 5); o.fillText(String(v), x, 56); }
+  if (kind === 'weak') { o.fillStyle = 'rgb(235,40,40)'; o.fillRect(330, 10, 240, 22); o.fillStyle = '#222'; o.fillText('< ' + wifi.covTarget + ' dBm', 450, 56); return canvasBytes(c); }
+  const lo = kind === 'sinr' ? 0 : wifi.threshold, hi = kind === 'sinr' ? 35 : -30;
+  for (let x = x0; x <= x1; x++) {
+    const f = (x - x0) / (x1 - x0);
+    const r = kind === 'sinr' ? -90 + f * 50 : -90 + f * 60;
+    const k = h3cRGB(r); o.fillStyle = `rgb(${k[0]},${k[1]},${k[2]})`; o.fillRect(x, 8, 1.3, 24);
+  }
+  o.fillStyle = '#222';
+  const ticks = kind === 'sinr' ? [0, 5, 10, 15, 20, 25, 30, 35] : [-90, -80, -70, -60, -50, -40, -30];
+  const a = kind === 'sinr' ? 0 : -90, b = kind === 'sinr' ? 35 : -30;
+  ticks.forEach(v => { const x = x0 + (v - a) / (b - a) * (x1 - x0); o.fillRect(x, 32, 1, 5); o.fillText(String(v) + (v === b ? (kind === 'sinr' ? ' dB' : ' dBm') : ''), x, 56); });
   return canvasBytes(c);
 }
 
-// which radio carries which band (Radio1/2/3) + suggested channels
-function radioPlan(ap, m, idx) {
-  const lay = m.radios || (m.bands.length >= 3 ? ['5', '6', '2.4'] : ['5', '2.4']);
-  const lo5 = [36, 40, 44, 48, 52, 56, 60, 64], hi5 = [149, 153, 157, 161], c24 = [1, 6, 11], c6 = [1, 5, 9, 13, 17, 21, 25, 29];
-  let n5 = 0;
-  return [0, 1, 2].map(i => {
-    const b = lay[i]; if (!b) return 'N/A';
-    if (b === '2.4') return (ap.band === '2.4' && ap.channel) ? ap.channel : c24[idx % 3];
-    if (b === '5') { const first = n5++ === 0; if (ap.band === '5' && first && ap.channel) return ap.channel; return first ? lo5[idx % 8] : hi5[idx % 4]; }
-    return (ap.band === '6' && ap.channel) ? ap.channel : c6[idx % 8];
-  });
-}
-
-async function collectFloor(f, curBand) {
+async function collectFloor(f, cfg) {
+  const acc = RACC[cfg.acc];
   const hasStuff = wifi.aps.length || wifi.floorPlan || wifi.walls.length;
-  const out = { name: f.name, hasPlan: !!wifi.floorPlan, scaleSet: wifi.scaleSet, nAP: wifi.aps.length, threshold: wifi.threshold, curBand, imgs: {}, heat: {}, acc: [], aps: [], models: {} };
-  out.cov = wifi.aps.length ? computeCoverage() : null;
+  const out = { name: f.name, hasPlan: !!wifi.floorPlan, nAP: wifi.aps.length, imgs: {}, sim: {}, weak: {}, sinr: {}, accRows: [], aps: [], models: {}, cov: {} };
+  const fb = floorBands();
+  out.bands = fb;
+  for (const b of cfg.bands) { const c = fb.includes(b) ? computeCoverage(b) : null; out.cov[b] = c; }
   if (hasStuff) {
     showBusy(`Rendering ${f.name} — floor plan…`); await tick();
-    out.imgs.plan = reportImage('plan');
-    out.imgs.aps = reportImage('aps');
-    out.imgs.acc = reportImage('acc');
-    for (const b of ['2.4', '5', '6']) {
-      const has = wifi.aps.some(a => getAPModel(a.vendor, a.model)?.bands.includes(b));
-      if (!has) { out.heat[b] = null; continue; }
-      showBusy(`Rendering ${f.name} — ${b} GHz…`); await tick();
-      out.heat[b] = reportImage('heat', b);
+    if (cfg.orig) out.imgs.plan = reportImage('plan', acc);
+    if (cfg.bitmap) { out.imgs.aps = reportImage('aps', acc); out.imgs.acc = reportImage('acc', acc); }
+    for (const b of cfg.bands) {
+      if (!fb.includes(b)) continue;
+      if (cfg.sim)  { showBusy(`Rendering ${f.name} — ${b} GHz simulation…`); await tick(); out.sim[b] = reportImage('heat', acc, b, 'rssi'); }
+      if (cfg.weak) { showBusy(`Rendering ${f.name} — ${b} GHz weak-field…`); await tick(); out.weak[b] = reportImage('heat', acc, b, 'weak'); }
+      if (cfg.sinr) { showBusy(`Rendering ${f.name} — ${b} GHz SINR…`); await tick(); out.sinr[b] = reportImage('heat', acc, b, 'sinr'); }
     }
   }
   const ppm = wifi.pxPerMeter;
   wifi.aps.forEach((a, i) => {
     const m = getAPModel(a.vendor, a.model); if (!m) return;
-    const r = radioPlan(a, m, i), tx = a.txPower !== undefined ? a.txPower : m.tx;
-    out.aps.push({ name: a.name, model: m.name, vendor: VENDORS[a.vendor]?.name || a.vendor, loc: wifi.scaleSet ? (a.x / ppm).toFixed(1) + ', ' + (a.y / ppm).toFixed(1) + ' m' : '—', p5: m.bands.includes('5') ? tx : 'N/A', p24: m.bands.includes('2.4') ? tx : 'N/A', r });
+    const rads = apRadios(a, m);
+    const pw = {};
+    cfg.bands.forEach(b => { const v = rads.filter(r => r.band === b).map(r => r.tx); pw[b] = v.length ? v.join('/') : 'N/A'; });
+    out.aps.push({ name: a.name, model: m.name, loc: wifi.scaleSet ? (a.x / ppm).toFixed(1) + ', ' + (a.y / ppm).toFixed(1) + ' m' : '—', pw, r: [0, 1, 2].map(k => rads[k] ? rads[k].band + 'G · ' + rads[k].ch : 'N/A') });
     out.models[m.name] = (out.models[m.name] || 0) + 1;
   });
   for (const [i, t] of wifi.accPts.entries()) {
-    const row = { n: i + 1, loc: wifi.scaleSet ? (t.x / ppm).toFixed(1) + ', ' + (t.y / ppm).toFixed(1) + ' m' : '—', rssi: {} };
-    for (const b of ['2.4', '5', '6']) {
-      const hc = prepHeat({ band: b, alpha: 1, threshold: -200 });
-      if (!hc.aps.length) { row.rssi[b] = 'N/A'; continue; }
-      cellRSSI(hc, t.x, t.y);
-      row.rssi[b] = _bR > -199 ? Math.round(_bR) + ' dBm' : '< -95 dBm';
+    const row = { n: i + 1, loc: wifi.scaleSet ? (t.x / ppm).toFixed(1) + ', ' + (t.y / ppm).toFixed(1) + ' m' : '—', pred: {}, meas: {} };
+    for (const b of cfg.bands) {
+      const p = fb.includes(b) ? predictAt(b, t.x, t.y, true).r : null;
+      row.pred[b] = p == null ? 'N/A' : Math.round(p) + ' dBm';
+      row.meas[b] = t.meas && t.meas[b] != null ? t.meas[b] + ' dBm' : '';
     }
-    out.acc.push(row);
+    out.accRows.push(row);
   }
   return out;
 }
 
+async function reportConfigDialog() {
+  let last = {};
+  try { last = JSON.parse(localStorage.getItem('clab_rep_cfg') || '{}'); } catch (e) {}
+  const ck = (k, d) => (last[k] !== undefined ? last[k] : d);
+  const chk = (n, lab, on) => `<label><input type="checkbox" data-k="${n}" ${on ? 'checked' : ''}> ${lab}</label>`;
+  const rad = (n, v, lab, on) => `<label><input type="radio" name="rc-${n}" value="${v}" ${on ? 'checked' : ''}> ${lab}</label>`;
+  const html = `
+    <div class="rc-row"><b>Image setting</b><div class="rc-opts">${chk('sim', 'Simulation diagram', ck('sim', true))}${chk('weak', 'Weak-field diagram', ck('weak', false))}${chk('sinr', 'SINR diagram', ck('sinr', false))}${chk('bitmap', 'Bitmap', ck('bitmap', true))}</div></div>
+    <div class="rc-row"><b>Frequency setting</b><div class="rc-opts">${chk('b24', '2.4 GHz', ck('b24', true))}${chk('b5', '5 GHz', ck('b5', true))}${chk('b6', '6 GHz', ck('b6', true))}</div></div>
+    <div class="rc-row"><b>Image accuracy</b><div class="rc-opts">${['original', 'high', 'middle', 'low'].map(v => rad('acc', v, v[0].toUpperCase() + v.slice(1), ck('acc', 'high') === v)).join('')}</div></div>
+    <div class="rc-row"><b>Algorithm chapter</b><div class="rc-opts">${rad('algo', '0', 'Does not contain', !ck('algo', false))}${rad('algo', '1', 'Contain', ck('algo', false))}</div></div>
+    <div class="rc-row"><b>Language setting</b><div class="rc-opts">${rad('lang', 'en', 'English', ck('lang', 'en') === 'en')}${rad('lang', 'id', 'Indonesia', ck('lang', 'en') === 'id')}</div></div>
+    <div class="rc-row"><b>Original image</b><div class="rc-opts">${rad('orig', '0', 'Does not contain', !ck('orig', true))}${rad('orig', '1', 'Contain', ck('orig', true))}</div></div>
+    <div style="font-size:11px;color:var(--text-muted);line-height:1.5">Image accuracy: Original = finest (slowest), Low = fastest. Weak-field marks areas below your coverage target (${wifi.covTarget} dBm). The simulation diagrams use exactly what you see in the editor.</div>`;
+  const m = await dialog({ title: 'Reports <em>config</em>', html, ok: 'Determine', wide: true });
+  if (!m) return null;
+  const g = k => m.querySelector(`[data-k="${k}"]`).checked;
+  const r = n => m.querySelector(`input[name="rc-${n}"]:checked`).value;
+  const cfg = { sim: g('sim'), weak: g('weak'), sinr: g('sinr'), bitmap: g('bitmap'), b24: g('b24'), b5: g('b5'), b6: g('b6'), acc: r('acc'), algo: r('algo') === '1', lang: r('lang'), orig: r('orig') === '1' };
+  try { localStorage.setItem('clab_rep_cfg', JSON.stringify(cfg)); } catch (e) {}
+  cfg.bands = BAND_LIST.filter(b => cfg['b' + b.replace('.', '')]);
+  if (!cfg.bands.length) { toast('Pick at least one frequency', 'error'); return reportConfigDialog(); }
+  return cfg;
+}
+
 async function exportReport() {
   if (!curProj) return;
+  const cfg = await reportConfigDialog();
+  if (!cfg) return;
   try {
     showBusy('Preparing report…');
     await ensureDocx();
@@ -3049,22 +3305,24 @@ async function exportReport() {
     const D = window.docx;
     const origFloor = curFloor;
     const stashU = _undo.slice(), stashR = _redo.slice();
-    const curBand = document.getElementById('global-band').value;
     const floors = [];
+    let anyCal = false;
     for (let i = 0; i < curProj.floors.length; i++) {
       const f = curProj.floors[i];
       showBusy(`Loading ${f.name} (${i + 1}/${curProj.floors.length})…`);
       await tick();
       await loadFloor(f.id);
       await tick();
-      floors.push(await collectFloor(f, curBand));
+      if (wifi.cal) anyCal = true;
+      floors.push(await collectFloor(f, cfg));
     }
+    const target = wifi.covTarget;
     showBusy('Writing document…');
     await tick();
     await loadFloor(origFloor);
     _undo.length = 0; _redo.length = 0; stashU.forEach(x => _undo.push(x)); stashR.forEach(x => _redo.push(x));
 
-    const doc = buildReportDoc(D, floors, reportLegend());
+    const doc = buildReportDoc(D, floors, cfg, { target, anyCal, lg: { rssi: reportLegend('rssi'), sinr: reportLegend('sinr'), weak: reportLegend('weak') } });
     const blob = await D.Packer.toBlob(doc);
     downloadBlob(blob, safeName(curProj.name) + '-WLAN-Survey-Design.docx');
     hideBusy();
@@ -3076,9 +3334,9 @@ async function exportReport() {
   }
 }
 
-function buildReportDoc(D, floors, legend) {
-  const P = curProj;
-  const W = 9026;                                   // A4 content width (DXA)
+function buildReportDoc(D, floors, cfg, X) {
+  const P = curProj, T = RT[cfg.lang] || RT.en;
+  const W = 9026;
   const NAVY = '16324F', BLUE = '2E6FB5';
   const bd = { style: D.BorderStyle.SINGLE, size: 4, color: '808080' };
   const borders = { top: bd, bottom: bd, left: bd, right: bd };
@@ -3097,13 +3355,12 @@ function buildReportDoc(D, floors, legend) {
     shading: o.fill ? { fill: o.fill, type: D.ShadingType.CLEAR, color: 'auto' } : undefined,
     children: [new D.Paragraph({ alignment: o.left ? D.AlignmentType.LEFT : D.AlignmentType.CENTER, children: [txt(t, { size: o.sz || 18, bold: !!o.bold })] })],
   });
-  const row = (cells) => new D.TableRow({ children: cells });
-  // H3C-style table: bold centred title row, bold header row, plain body
-  const gtable = (title, head, rows, widths, sz) => {
+  const row = c => new D.TableRow({ children: c });
+  const gtable = (title, headr, rows, widths, sz) => {
     const sum = widths.reduce((a, b) => a + b, 0);
     const rs = [];
     if (title) rs.push(row([cell(title, sum, { span: widths.length, bold: true, fill: 'F2F2F2', sz: sz || 18 })]));
-    rs.push(row(head.map((h, i) => cell(h, widths[i], { bold: true, fill: 'F2F2F2', sz: sz || 18 }))));
+    rs.push(row(headr.map((h, i) => cell(h, widths[i], { bold: true, fill: 'F2F2F2', sz: sz || 18 }))));
     rows.forEach(r => rs.push(row(r.map((c, i) => cell(c, widths[i], { sz: sz || 18 })))));
     return new D.Table({ width: { size: sum, type: D.WidthType.DXA }, columnWidths: widths, rows: rs });
   };
@@ -3115,128 +3372,126 @@ function buildReportDoc(D, floors, legend) {
   const today = new Date().toISOString().slice(0, 10);
   const totalAP = floors.reduce((n, f) => n + f.nAP, 0);
   const proj = P.name;
+  const bandsTxt = cfg.bands.map(b => b + ' GHz').join(', ');
+  const body = [];
 
-  const body = [];   // everything after the TOC
-
-  // ---- acronyms + 1 Basic information
-  body.push(new D.Paragraph({ spacing: { after: 160 }, children: [txt('List of acronyms:', { bold: true, size: 22 })] }));
-  body.push(gtable(null, ['Abbreviation', 'Full spelling', 'Description'], [
-    ['WLAN', 'Wireless Local Area Network', 'Wireless local area network'],
-    ['AP', 'Access Point', 'Wireless access point'],
-    ['RSSI', 'Received Signal Strength Indicator', 'Received signal strength, in dBm'],
-    ['SNR', 'Signal-to-Noise Ratio', 'Signal quality versus noise floor'],
-    ['dBm', 'Decibel-milliwatt', 'Power level relative to 1 mW'],
-    ['PoE', 'Power over Ethernet', 'AP powered through the network cable'],
-  ], [1800, 3600, 3626]));
-  body.push(head(1, '1 Basic information', true));
+  body.push(new D.Paragraph({ spacing: { after: 160 }, children: [txt(T.acr, { bold: true, size: 22 })] }));
+  body.push(gtable(null, [T.abbr, T.full, T.desc], T.acrRows, [1800, 3600, 3626]));
+  body.push(head(1, T.s1, true));
   body.push(new D.Table({
     width: { size: W, type: D.WidthType.DXA }, columnWidths: [2100, 2700, 2100, 2126],
     rows: [
-      row([cell('Project name', 2100, { bold: true }), cell(proj, 2700), cell('Engineering survey unit', 2100, { bold: true }), cell(P.client || '—', 2126)]),
-      row([cell('Engineering survey area', 2100, { bold: true }), cell(P.location || '—', 2700), cell('Engineering survey time', 2100, { bold: true }), cell(today, 2126)]),
-      row([cell('Engineering survey department', 2100, { bold: true }), cell('—', 2700), cell('Participant', 2100, { bold: true }), cell(P.engineer || '—', 2126)]),
-      row([cell('The reason for the engineering survey', 2100, { bold: true }), cell(`In order to meet the requirements of comprehensive wireless network coverage at ${proj}, an engineering survey is carried out for the wireless points and cabling to be built.`, 6926, { span: 3, left: true })]),
+      row([cell(T.pname, 2100, { bold: true }), cell(proj, 2700), cell(T.unit, 2100, { bold: true }), cell(P.client || '—', 2126)]),
+      row([cell(T.area, 2100, { bold: true }), cell(P.location || '—', 2700), cell(T.time, 2100, { bold: true }), cell(today, 2126)]),
+      row([cell(T.dept, 2100, { bold: true }), cell('—', 2700), cell(T.part, 2100, { bold: true }), cell(P.engineer || '—', 2126)]),
+      row([cell(T.reason, 2100, { bold: true }), cell(T.reasonT(proj), 6926, { span: 3, left: true })]),
     ],
   }));
-  if (P.notes) { body.push(para('')); body.push(para([txt('Notes: ', { bold: true }), txt(P.notes)])); }
+  if (P.notes) { body.push(para('')); body.push(para([txt(T.notes, { bold: true }), txt(P.notes)])); }
 
-  // ---- 2 Overview
-  body.push(head(1, `2 Overview of wireless engineering survey of ${proj}`, true));
-  body.push(head(2, '2.1 Wireless network coverage'));
-  body.push(para(`This survey covers ${floors.length} floor${floors.length === 1 ? '' : 's'} of ${proj}${P.location ? ' (' + P.location + ')' : ''} with ${totalAP} access point${totalAP === 1 ? '' : 's'} in total. Coverage is predicted for the 2.4 GHz, 5 GHz and 6 GHz bands wherever the planned access points support them.`));
-  body.push(gtable(null, ['Floor', 'APs', `Coverage (${floors[0] ? floors[0].curBand : '5'} GHz, ≥ threshold)`, 'Strong signal (≥ -60 dBm)'],
-    floors.map(f => [f.name, f.nAP, f.cov ? Math.round(f.cov.cov / f.cov.total * 100) + '%' : '—', f.cov ? Math.round(f.cov.exc / f.cov.total * 100) + '%' : '—']),
-    [2600, 1200, 2926, 2300]));
-  body.push(head(2, '2.2 Material checklist'));
+  body.push(head(1, T.s2(proj), true));
+  body.push(head(2, T.s21));
+  body.push(para(T.ovT(floors.length, proj, P.location, totalAP, bandsTxt)));
+  const cw = Math.floor((W - 2400 - 900) / (cfg.bands.length * 2));
+  body.push(gtable(null, [T.floor, T.aps, ...cfg.bands.flatMap(b => [T.covCol(b), T.strongCol(b)])],
+    floors.map(f => [f.name, f.nAP, ...cfg.bands.flatMap(b => { const c = f.cov[b]; return [c ? Math.round(c.cov / c.total * 100) + '%' : '—', c ? Math.round(c.exc / c.total * 100) + '%' : '—']; })]),
+    [2400, 900, ...cfg.bands.flatMap(() => [cw, cw])]));
+  body.push(para(T.covNote(X.target), { spacing: { before: 100 } }));
+  body.push(head(2, T.s22));
   const detail = [];
-  floors.forEach(f => Object.entries(f.models).forEach(([m, n]) => detail.push([proj, f.name, 'Ceiling mount', m, n, 'built-in', 0, '—', 0])));
-  body.push(gtable('Wireless Engineering Survey Result (Wireless device statistics)',
-    ['Building information', 'Floor information', 'Deployment plan', 'AP model', 'Quantity', 'Antenna model', 'Quantity', 'Feeder model', 'Quantity'],
+  floors.forEach(f => Object.entries(f.models).forEach(([m, n]) => detail.push([proj, f.name, T.ceiling, m, n, T.builtin, 0, '—', 0])));
+  body.push(gtable(T.wres, [T.building, T.floorInfo, T.deploy, T.apModel, T.qty, T.antM, T.qty, T.feeder, T.qty],
     detail.length ? detail : [['—', '—', '—', '—', 0, '—', 0, '—', 0]], [1200, 1100, 1100, 1100, 900, 1000, 900, 926, 800], 16));
   body.push(para(''));
   const tot = {};
   floors.forEach(f => Object.entries(f.models).forEach(([m, n]) => tot[m] = (tot[m] || 0) + n));
-  body.push(gtable('Total (list of wireless devices)', ['Device model', 'Quantity', 'Remarks'], Object.entries(tot).map(([m, n]) => [m, n, '']), [3600, 2400, 3026]));
-  body.push(para('Note: During installation and deployment, there may be discrepancies with table data according to the actual situation!', { spacing: { before: 100, after: 200 } }));
-  // list of solution devices with merged cells
+  body.push(gtable(T.total, [T.devModel, T.qty, T.remarks], Object.entries(tot).map(([m, n]) => [m, n, '']), [3600, 2400, 3026]));
+  body.push(para(T.note, { spacing: { before: 100, after: 200 } }));
   const sw = [1300, 1700, 1300, 1400, 1100, 1126, 1100];
-  const sh = ['Plan name', 'Device model', 'AP quantity', 'Antenna type', 'Antenna quantity', 'Plan AP total', 'Plan antenna total'];
-  const srows = [row([cell('List of solution wireless devices', W, { span: 7, bold: true, fill: 'F2F2F2' })]), row(sh.map((h, i) => cell(h, sw[i], { bold: true, fill: 'F2F2F2' })))];
+  const srows = [row([cell(T.solList, W, { span: 7, bold: true, fill: 'F2F2F2' })]), row([T.planName, T.devModel, T.apQty, T.antType, T.antQty, T.planAP, T.planAnt].map((h, i) => cell(h, sw[i], { bold: true, fill: 'F2F2F2' })))];
   floors.forEach(f => {
     const ents = Object.entries(f.models);
     if (!ents.length) { srows.push(row([cell(f.name, sw[0]), cell('—', sw[1]), cell('0', sw[2]), cell('—', sw[3]), cell('0', sw[4]), cell('0', sw[5]), cell('0', sw[6])])); return; }
     ents.forEach(([m, n], i) => {
       const cs = [];
       if (i === 0) cs.push(cell(f.name, sw[0], { rowSpan: ents.length }));
-      cs.push(cell(m, sw[1]), cell(n, sw[2]), cell('built-in', sw[3]), cell(0, sw[4]));
+      cs.push(cell(m, sw[1]), cell(n, sw[2]), cell(T.builtin, sw[3]), cell(0, sw[4]));
       if (i === 0) { cs.push(cell(f.nAP, sw[5], { rowSpan: ents.length })); cs.push(cell(0, sw[6], { rowSpan: ents.length })); }
       srows.push(row(cs));
     });
   });
   body.push(new D.Table({ width: { size: W, type: D.WidthType.DXA }, columnWidths: sw, rows: srows }));
 
-  // ---- 3 Deployment plan
-  body.push(head(1, `3 ${proj} Deployment plan`, true));
-  body.push(head(2, '3.1 Main scene introduction'));
-  body.push(head(3, '3.1.1 Government and Enterprise Office'));
-  body.push(para('The office scene is the most common and relatively basic scene in wireless applications. Coverage should reach about -65 dBm or better. The structure and environment of the office area must be considered: for independent offices, meeting rooms, partitions and large open rooms, the signal must first meet the coverage requirement.'));
-  body.push(para('Second, the density of personnel and the particularity of the business applications must be considered. Areas with many terminals per unit area must be planned for high-density coverage, and the number of APs increased accordingly.'));
-  body.push(para('Business type: HD video, resource download, HTTP access, instant communication.'));
-  body.push(head(2, '3.2 Device deployment plan', true));
+  body.push(head(1, T.s3(proj), true));
+  body.push(head(2, T.s31));
+  body.push(head(3, T.s311));
+  T.scene.forEach(p => body.push(para(p)));
+  body.push(head(2, T.s32, true));
 
   floors.forEach((f, idx) => {
     body.push(head(3, `3.2.${idx + 1} ${proj}-${f.name}`, idx > 0));
-    body.push(label('(1) Real scene map:'));
-    if (f.hasPlan && f.imgs.plan) body.push(picture(f.imgs.plan));
-    else body.push(para('No floor plan image was uploaded for this floor.'));
-
-    body.push(label('(2) AP deployment point bitmap and device list:', true));
-    if (f.imgs.aps) body.push(picture(f.imgs.aps, 600, 380));
-    if (f.aps.length) {
-      const cw = [900, 640, 900, 650, 1100, 800, 800, 1136, 1050, 1050];
-      body.push(gtable(null, ['Coverage area', 'Floor', 'AP model', 'AP name', 'AP deployment location', '5G transmit power', '2.4G transmit power', 'Radio1', 'Radio2', 'Radio3'].map(x => x),
-        f.aps.map((a, i) => [i === 0 ? f.name : '', i === 0 ? f.name : '', a.model, a.name, a.loc, a.p5, a.p24, a.r[0], a.r[1], a.r[2]]), cw, 15));
-      body.push(para('Radio1 / Radio2 / Radio3 follow the radio layout of each model (e.g. 5G low, 5G high, 2.4G). Channels are suggestions and should be verified during the site survey.', { spacing: { before: 100 } }));
-    } else body.push(para('No access points were placed on this floor.'));
-
-    [['2.4', '(3) AP coverage 2.4G simulation diagram:'], ['5', '(4) AP coverage 5G simulation diagram:'], ['6', '(5) AP coverage 6G simulation diagram:']].forEach(([b, lb]) => {
-      body.push(label(lb, true));
-      if (f.heat[b]) { body.push(picture(f.heat[b], 600, 500)); body.push(picture(legend, 480, 60)); }
-      else body.push(para(f.nAP ? `No access point on this floor supports ${b} GHz.` : 'No access points were placed on this floor.'));
+    let n = 0, first = true;
+    const lab = t => { const l = label(`(${++n}) ${t}:`, !first); first = false; return l; };
+    if (cfg.orig) {
+      body.push(lab(T.realMap));
+      if (f.hasPlan && f.imgs.plan) body.push(picture(f.imgs.plan)); else body.push(para(T.noPlan));
+    }
+    if (cfg.bitmap) {
+      body.push(lab(T.apMap));
+      if (f.imgs.aps) body.push(picture(f.imgs.aps, 600, 380));
+      if (f.aps.length) {
+        const nb = cfg.bands.length, pwW = 760;
+        const fixed = [880, 600, 900, 650, 1000], radW = Math.floor((W - fixed.reduce((a, b) => a + b, 0) - nb * pwW) / 3);
+        const widths = [...fixed, ...cfg.bands.map(() => pwW), radW, radW, radW];
+        body.push(gtable(null, [T.covArea, T.floor, T.apModel, T.apName, T.loc, ...cfg.bands.map(b => T.pw(b)), 'Radio1', 'Radio2', 'Radio3'],
+          f.aps.map((a, i) => [i === 0 ? f.name : '', i === 0 ? f.name : '', a.model, a.name, a.loc, ...cfg.bands.map(b => a.pw[b]), a.r[0], a.r[1], a.r[2]]), widths, 15));
+        body.push(para(T.radioNote, { spacing: { before: 100 } }));
+      } else body.push(para(T.noAP));
+    }
+    const diag = (store, titleFn, kind, cap) => cfg.bands.forEach(b => {
+      if (f.nAP && !f.bands.includes(b)) return;            // this floor has no radio on that band: skip the page
+      body.push(lab(titleFn(b)));
+      if (store[b]) { body.push(picture(store[b], 600, 500)); body.push(picture(X.lg[kind], 480, 60)); if (cap) body.push(para(cap, { alignment: D.AlignmentType.CENTER })); }
+      else body.push(para(T.noAP));
     });
-
-    body.push(label('(6) Acceptance point bitmap:', true));
-    if (f.imgs.acc) body.push(picture(f.imgs.acc, 600, 420));
-    if (f.acc.length) {
-      body.push(gtable(null, ['No.', 'Location', 'Predicted 2.4G', 'Predicted 5G', 'Predicted 6G'], f.acc.map(t => [t.n, t.loc, t.rssi['2.4'], t.rssi['5'], t.rssi['6']]), [800, 2200, 2000, 2000, 2026]));
-    } else body.push(para('No acceptance points were defined. Use the Test pt tool in the planner to mark the spots to verify after installation.'));
+    if (cfg.sim) diag(f.sim, T.sim, 'rssi');
+    if (cfg.weak) diag(f.weak, T.weak, 'weak', T.weakCap(X.target));
+    if (cfg.sinr) diag(f.sinr, T.sinr, 'sinr', T.sinrCap);
+    if (cfg.bitmap) {
+      body.push(lab(T.accMap));
+      if (f.imgs.acc) body.push(picture(f.imgs.acc, 600, 420));
+      if (f.accRows.length) {
+        const hasMeas = f.accRows.some(r => cfg.bands.some(b => r.meas[b]));
+        const cols = cfg.bands.flatMap(b => hasMeas ? [T.pred(b), T.meas(b)] : [T.pred(b)]);
+        const cwid = Math.floor((W - 800 - 1800) / cols.length);
+        body.push(gtable(null, [T.no, T.location, ...cols], f.accRows.map(r => [r.n, r.loc, ...cfg.bands.flatMap(b => hasMeas ? [r.pred[b], r.meas[b] || '—'] : [r.pred[b]])]), [800, 1800, ...cols.map(() => cwid)]));
+      } else body.push(para(T.noAcc));
+    }
   });
 
-  // ---- 4 Conclusion
-  body.push(head(1, '4 Conclusion', true));
-  body.push(para(`${proj} has rich wireless scenarios and diversified terminal devices. Through this wireless network survey, the deployment has been designed to meet the users' needs for wireless networking.`));
-  body.push(para('The coverage maps in this document are predictions from a simulation model; they depend on the accuracy of the floor plan scale and should be validated with an on-site survey and acceptance test at the acceptance points before final deployment.'));
-  body.push(para('We appreciate the cooperation and hard work of the leaders and maintenance staff of your organization during this survey.'));
+  let chap = 4;
+  if (cfg.algo) { body.push(head(1, `${chap} ${T.sAlgo}`, true)); T.algo(X.anyCal).forEach(p => body.push(para(p))); chap++; }
+  body.push(head(1, T.sConc(chap), true));
+  T.conc(proj).forEach(p => body.push(para(p)));
 
-  // ---- front matter
   const front = [];
-  front.push(new D.Paragraph({ spacing: { before: 1800, after: 300 }, alignment: D.AlignmentType.CENTER, children: [txt('WLAN Wireless Network', { size: 56, bold: true, color: NAVY })] }));
-  front.push(new D.Paragraph({ spacing: { after: 700 }, alignment: D.AlignmentType.CENTER, children: [txt('Engineering Survey Design Scheme', { size: 56, bold: true, color: NAVY })] }));
+  front.push(new D.Paragraph({ spacing: { before: 1800, after: 300 }, alignment: D.AlignmentType.CENTER, children: [txt(T.cover1, { size: 56, bold: true, color: NAVY })] }));
+  front.push(new D.Paragraph({ spacing: { after: 700 }, alignment: D.AlignmentType.CENTER, children: [txt(T.cover2, { size: 56, bold: true, color: NAVY })] }));
   front.push(new D.Paragraph({ spacing: { after: 1200 }, alignment: D.AlignmentType.CENTER, children: [txt(proj, { size: 44, bold: true, color: BLUE })] }));
   if (P.client || P.location) front.push(new D.Paragraph({ spacing: { after: 2200 }, alignment: D.AlignmentType.CENTER, children: [txt([P.client, P.location].filter(Boolean).join(' · '), { size: 26, color: '555555' })] }));
-  front.push(new D.Paragraph({ alignment: D.AlignmentType.CENTER, spacing: { after: 160 }, children: [txt('Prepared with ConfigLabs WiFi Planner', { size: 26, bold: true })] }));
+  front.push(new D.Paragraph({ alignment: D.AlignmentType.CENTER, spacing: { after: 160 }, children: [txt(T.prep, { size: 26, bold: true })] }));
   front.push(new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [txt(today, { size: 26, bold: true })] }));
-  front.push(new D.Paragraph({ pageBreakBefore: true, spacing: { after: 240 }, children: [txt('Catalogue', { size: 32, color: BLUE })] }));
+  front.push(new D.Paragraph({ pageBreakBefore: true, spacing: { after: 240 }, children: [txt(T.cat, { size: 32, color: BLUE })] }));
   toc.forEach(e => front.push(new D.Paragraph({ spacing: { after: 90 }, indent: { left: (e.lvl - 1) * 360 }, children: [txt(e.t, { size: e.lvl === 1 ? 21 : 19, bold: e.lvl === 1 })] })));
-  front.push(new D.Paragraph({ pageBreakBefore: true, spacing: { after: 0 }, children: [txt(`${proj} WLAN Wireless Network Engineering Survey Design Scheme`, { size: 26, bold: true, color: NAVY })] }));
+  front.push(new D.Paragraph({ pageBreakBefore: true, spacing: { after: 0 }, children: [txt(`${proj} — ${T.cover1} ${T.cover2}`, { size: 26, bold: true, color: NAVY })] }));
 
   const hdr = t => new D.Header({ children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [txt(t, { size: 18, color: '555555' })] })] });
   return new D.Document({
-    creator: 'ConfigLabs', title: proj + ' – WLAN Wireless Network Engineering Survey Design Scheme',
+    creator: 'ConfigLabs', title: proj + ' – ' + T.cover1 + ' ' + T.cover2,
     styles: { default: { document: { run: { font: 'Arial', size: 20 } } } },
     sections: [{
       properties: { titlePage: true, page: { size: { width: 11906, height: 16838 }, margin: { top: 1300, right: 1440, bottom: 1200, left: 1440 } } },
-      headers: { default: hdr('ConfigLabs Digital Solution'), first: new D.Header({ children: [new D.Paragraph({ children: [] })] }) },
+      headers: { default: hdr(T.hdr), first: new D.Header({ children: [new D.Paragraph({ children: [] })] }) },
       footers: { default: new D.Footer({ children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ children: [D.PageNumber.CURRENT], font: 'Arial', size: 18, color: '555555' })] })] }), first: new D.Footer({ children: [new D.Paragraph({ children: [] })] }) },
       children: [...front, ...body],
     }],
@@ -3256,6 +3511,7 @@ function fileAct(a) {
   else if (a === 'export') exportProject(curProj.id);
   else if (a === 'report') exportReport();
   else if (a === 'csv') exportCSV();
+  else if (a === 'calib') openCalibration();
   else if (a === 'clearacc') { if (wifi.accPts.length) { pushHistory(); wifi.accPts = []; scheduleRender(); toast('Acceptance points cleared'); } else toast('No acceptance points'); }
   else if (a === 'cleararea') { if (wifi.areas.length) { pushHistory(); wifi.areas = []; scheduleRender(); toast('Render area cleared'); } else toast('No render area set'); }
   else if (a === 'clear') clearAll();
