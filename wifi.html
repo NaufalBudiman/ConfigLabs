@@ -276,6 +276,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
 .filemenu{position:relative;flex-shrink:0}
 .filemenu-pop{position:absolute;right:0;top:calc(100% + 6px);min-width:190px;background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:5px;display:none;z-index:30;box-shadow:0 12px 32px rgba(0,0,0,.45)}
 .filemenu.open .filemenu-pop{display:block}
+.projbar .filemenu-pop{position:fixed;right:auto;top:auto;z-index:400}
+.save-state.dirty{color:#ffb454}
 .filemenu-pop button{display:block;width:100%;text-align:left;padding:8px 10px;background:none;border:none;color:var(--text);font-size:12px;border-radius:8px;cursor:pointer;font-family:var(--sans)}
 .filemenu-pop button:hover{background:var(--surface-hover)}
 .filemenu-pop button.danger{color:var(--danger)}
@@ -400,7 +402,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.10</span></div>
+    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.11</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -552,8 +554,16 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
       <button class="pb-add" onclick="addFloor()" title="Add floor">+</button>
       <div class="tgrow"></div>
       <span class="save-state" id="save-state"></span>
+      <div class="filemenu" id="savemenu" style="display:flex;gap:0">
+        <button class="tt" id="btn-save" onclick="saveNow()" title="Save now (Ctrl+S)" style="border-radius:8px 0 0 8px">💾 Save</button>
+        <button class="tt" onclick="toggleMenu(event,'savemenu')" title="More save options" style="border-radius:0 8px 8px 0;padding:0 7px;border-left:1px solid var(--border)">▾</button>
+        <div class="filemenu-pop">
+          <button onclick="saveNow()">Save to this browser</button>
+          <button onclick="document.getElementById('savemenu').classList.remove('open');exportProject(curProj.id)">Save as file (.cfglab)</button>
+        </div>
+      </div>
       <div class="filemenu" id="floormenu">
-        <button class="tt" onclick="toggleFloorMenu(event)">Floor ▾</button>
+        <button class="tt" onclick="toggleMenu(event,'floormenu')">Floor ▾</button>
         <div class="filemenu-pop">
           <button onclick="floorAct('rename')">Rename floor…</button>
           <button onclick="floorAct('dup')">Duplicate floor</button>
@@ -3284,9 +3294,11 @@ function applyFloor(data, bmp) {
 }
 
 // ---- saving ----
-function setSaveState(t) { const e = document.getElementById('save-state'); if (e) e.textContent = t; }
+let _dirty = false, _savedAt = '';
+function setSaveState(t, dirty) { const e = document.getElementById('save-state'); if (e) { e.textContent = t; e.classList.toggle('dirty', !!dirty); } }
 function scheduleAutosave() {
   if (!curProj) return;
+  _dirty = true; setSaveState('● Unsaved changes', true);
   clearTimeout(_saveTimer);
   _saveTimer = setTimeout(saveCurrent, 1200);
 }
@@ -3296,16 +3308,27 @@ async function saveCurrent() {
   const f = curFloorObj(); if (!f) return;
   const data = captureFloor();
   const sig = JSON.stringify(data) + (wifi.floorPlan ? 'P' : '');
-  if (sig === _lastSaved) return;
+  if (sig === _lastSaved) { _dirty = false; setSaveState(_savedAt ? 'Saved ✓ ' + _savedAt : 'Saved in this browser'); return; }
   try {
     setSaveState('Saving…');
     f.data = data; f.hasPlan = !!wifi.floorPlan;
     curProj.updated = Date.now();
     await dbPut('projects', curProj);
-    _lastSaved = sig;
-    setSaveState('Saved in this browser');
+    _lastSaved = sig; _dirty = false;
+    _savedAt = new Date().toTimeString().slice(0, 5);
+    setSaveState('Saved ✓ ' + _savedAt);
   } catch (e) { setSaveState('⚠ Not saved'); toast('Could not save to browser storage', 'error'); }
 }
+async function saveNow() {
+  document.querySelectorAll('.projbar .filemenu.open').forEach(x => x.classList.remove('open'));
+  if (!curProj) return;
+  await flushSave();
+  if (!_dirty) toast('Saved in this browser');
+}
+window.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); if (curProj) saveNow(); }
+}, true);
+window.addEventListener('beforeunload', e => { if (_dirty) { try { saveCurrent(); } catch (x) {} e.preventDefault(); e.returnValue = ''; } });
 async function savePlanBlob(file) {
   if (!curProj || !curFloor) return;
   try {
@@ -3496,8 +3519,19 @@ async function addFloor() {
   await dbPut('projects', curProj);
   nav('#p=' + curProj.id + '&f=' + f.id);
 }
-function toggleFloorMenu(e) { e.stopPropagation(); document.getElementById('floormenu').classList.toggle('open'); }
-document.addEventListener('click', e => { const fm = document.getElementById('floormenu'); if (fm && !fm.contains(e.target)) fm.classList.remove('open'); });
+function toggleMenu(e, id) {
+  e.stopPropagation();
+  const m = document.getElementById(id), was = m.classList.contains('open');
+  document.querySelectorAll('.projbar .filemenu.open').forEach(x => x.classList.remove('open'));
+  if (was) return;
+  const pop = m.querySelector('.filemenu-pop'), r = m.getBoundingClientRect();
+  m.classList.add('open');
+  const w = pop.offsetWidth || 190;
+  pop.style.top = (r.bottom + 6) + 'px';
+  pop.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.right - w)) + 'px';
+}
+function toggleFloorMenu(e) { toggleMenu(e, 'floormenu'); }
+document.addEventListener('click', e => { document.querySelectorAll('.projbar .filemenu.open').forEach(fm => { if (!fm.contains(e.target)) fm.classList.remove('open'); }); });
 async function floorAct(a) {
   document.getElementById('floormenu').classList.remove('open');
   const f = curFloorObj(); if (!f) return;
