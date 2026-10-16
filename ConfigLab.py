@@ -179,53 +179,115 @@ def normalize_vlan_list(vlans_str):
     return ",".join(result)
 
 
+def _pbr_ip(v, what, errs, cidr=False):
+    import ipaddress
+    try:
+        if cidr:
+            ipaddress.ip_interface(v)
+        else:
+            ipaddress.IPv4Address(v)
+        return True
+    except Exception:
+        errs.append(f"{what}: '{v}' is not a valid IPv4 {'address/CIDR' if cidr else 'address'}")
+        return False
+
 def gen_comware_pbr(pbr):
-    """Multi-ISP policy-based routing with NQA + Track failover (H3C Comware v7).
-    mode 'failover': every LAN prefers ISP1, then ISP2, then ISP3.
-    mode 'mutual'  : LAN n prefers ISP n (rotating); the other ISPs back it up in order."""
-    isps = [i for i in (pbr.get("isps") or []) if i.get("gateway")][:3]
-    lans = [l for l in (pbr.get("lans") or []) if l.get("network") and l.get("cidr")]
+    """Multi-ISP policy-based routing with NQA + Track failover (H3C Comware v7), up to 5 ISPs.
+    mode 'failover': every rule prefers ISP1, then ISP2 ...
+    mode 'mutual'  : rule n prefers ISP n (rotating); a rule may also pin its own 'primary' ISP (1..5)."""
+    MAXISP = 5
+    isps = [i for i in (pbr.get("isps") or []) if i.get("gateway")][:MAXISP]
+    rules = [l for l in (pbr.get("lans") or []) if l.get("network") or l.get("dst_network")]
     if not isps: return []
+    errs = []
+    nq = pbr.get("nqa") or {}
+    def num(v, d, lo, hi, what):
+        if v in (None, ""): return d
+        try:
+            n = int(v)
+            if lo <= n <= hi: return n
+        except Exception: pass
+        errs.append(f"{what}: must be a number between {lo} and {hi}")
+        return d
+    freq   = num(nq.get("frequency"), 3000, 1000, 604800000, "NQA frequency (ms)")
+    count  = num(nq.get("probe_count"), 0, 0, 15, "NQA probe count")
+    tmo    = num(nq.get("probe_timeout"), 0, 10, 3600000, "NQA probe timeout (ms)")
+    thr    = num(nq.get("threshold"), 3, 1, 100, "NQA failure threshold")
+    src    = (nq.get("source_ip") or "").strip()
+    if src: _pbr_ip(src, "NQA source IP", errs)
+    defaults = ['8.8.8.8', '1.1.1.1', '9.9.9.9', '208.67.222.222', '8.8.4.4']
+    for n, isp in enumerate(isps, 1):
+        _pbr_ip(isp["gateway"], f"ISP {n} gateway", errs)
+        if isp.get("probe_ip"): _pbr_ip(isp["probe_ip"], f"ISP {n} probe target", errs)
+        if isp.get("wan_ip"): _pbr_ip(isp["wan_ip"], f"ISP {n} WAN IP", errs, cidr=True)
+    for k, l in enumerate(rules, 1):
+        for key, lab in (("network", "source"), ("dst_network", "destination")):
+            if l.get(key):
+                if _pbr_ip(l[key], f"Rule {k} {lab} network", errs):
+                    try:
+                        if not (0 <= int(l.get("cidr" if key == "network" else "dst_cidr", 32)) <= 32): raise ValueError
+                    except Exception:
+                        errs.append(f"Rule {k} {lab} CIDR must be 0-32")
+        if l.get("dst_port"):
+            try:
+                if not (1 <= int(l["dst_port"]) <= 65535): raise ValueError
+            except Exception:
+                errs.append(f"Rule {k} destination port must be 1-65535")
+        if l.get("primary") not in (None, ""):
+            try:
+                if not (1 <= int(l["primary"]) <= len(isps)): raise ValueError
+            except Exception:
+                errs.append(f"Rule {k} primary ISP must be 1-{len(isps)}")
+    if errs:
+        raise ValueError("PBR input error - " + "; ".join(errs[:6]))
+
     out = ["# --- Multi-ISP PBR (NQA + Track) ---", "#"]
-    tr = {}
     for n, isp in enumerate(isps, 1):
         tag = "isp" + chr(64 + n)
-        tr[n] = n
         out += [f"nqa entry admin {tag}", " type icmp-echo",
-                f" destination ip {isp.get('probe_ip') or ['8.8.8.8','1.1.1.1','9.9.9.9'][n-1]}",
-                f" next-hop ip {isp['gateway']}", " frequency 3000",
-                " reaction 1 checked-element probe-fail threshold-type consecutive 3 action-type trigger-only",
+                f" destination ip {isp.get('probe_ip') or defaults[n-1]}",
+                f" next-hop ip {isp['gateway']}", f" frequency {freq}"]
+        if count: out.append(f" probe count {count}")
+        if tmo:   out.append(f" probe timeout {tmo}")
+        if src:   out.append(f" source ip {src}")
+        out += [f" reaction 1 checked-element probe-fail threshold-type consecutive {thr} action-type trigger-only",
                 f"nqa schedule admin {tag} start-time now lifetime forever",
                 f"track {n} nqa entry admin {tag} reaction 1", "#"]
-    # WAN interfaces + NAT
     for n, isp in enumerate(isps, 1):
         wi = isp.get("wan_interface")
         if not wi: continue
         out.append(f"interface {wi}")
         out.append(f" description {isp.get('name') or 'ISP-' + chr(64+n)}")
         if isp.get("wan_ip"):
-            try:
-                a, m = isp["wan_ip"].split("/")
-                out.append(f" ip address {a} {cidr_to_mask(m)}")
-            except Exception: pass
+            a, m = isp["wan_ip"].split("/")
+            out.append(f" ip address {a} {cidr_to_mask(m)}")
         if isp.get("nat", True): out.append(" nat outbound")
         out.append("#")
-    # Default routes (tracked, ISP1 best preference)
     for n, isp in enumerate(isps, 1):
         line = f"ip route-static 0.0.0.0 0 {isp['gateway']} track {n}"
         if n > 1: line += f" preference {50 + n * 10}"
         out.append(line)
     out.append("#")
-    # ACL + policy
-    if lans:
+    if rules:
         pname = pbr.get("policy_name") or "PBR-ISP"
         base = int(pbr.get("acl_base") or 3100)
         mutual = pbr.get("mode") == "mutual"
-        for k, l in enumerate(lans):
-            out += [f"acl advanced {base + k}", f" description {l.get('name') or 'LAN' + str(k+1)}",
-                    f" rule 5 permit ip source {l['network']} {cidr_to_wildcard(l['cidr'])}", "#"]
-        for k, l in enumerate(lans):
-            first = (k % len(isps)) if mutual else 0
+        for k, l in enumerate(rules):
+            rid = f" description {l.get('name') or 'RULE' + str(k+1)}"
+            proto = l.get("protocol") or "ip"
+            line = f" rule 5 permit {proto}"
+            if l.get("network"):
+                line += f" source {l['network']} {cidr_to_wildcard(l.get('cidr') or 32)}"
+            if l.get("dst_network"):
+                line += f" destination {l['dst_network']} {cidr_to_wildcard(l.get('dst_cidr') or 32)}"
+            if l.get("dst_port") and proto in ("tcp", "udp"):
+                line += f" destination-port eq {l['dst_port']}"
+            out += [f"acl advanced {base + k}", rid, line, "#"]
+        for k, l in enumerate(rules):
+            if l.get("primary") not in (None, ""):
+                first = int(l["primary"]) - 1
+            else:
+                first = (k % len(isps)) if mutual else 0
             order = [(first + j) % len(isps) + 1 for j in range(len(isps))]
             out.append(f"policy-based-route {pname} permit node {(k + 1) * 10}")
             out.append(f" if-match acl {base + k}")
@@ -233,7 +295,7 @@ def gen_comware_pbr(pbr):
                 out.append(f" apply next-hop {isps[n-1]['gateway']} track {n}")
             out.append("#")
         done = set()
-        for l in lans:
+        for l in rules:
             it = l.get("interface")
             if it and it not in done:
                 done.add(it)
@@ -1080,8 +1142,8 @@ TEMPLATES = {
     },
     "h3c_comware_multi_isp_pbr": {
         "vendor": "h3c", "os": "comware",
-        "name": "🌐 Multi-ISP PBR (3 ISP)",
-        "description": "Policy-based routing with NQA/Track failover across 3 ISPs",
+        "name": "🌐 Multi-ISP PBR (up to 5 ISP)",
+        "description": "Policy-based routing with NQA/Track failover across up to 5 ISPs",
         "data": {
             "system": {"hostname": "RT-EDGE-01"},
             "pbr": {
@@ -1089,7 +1151,7 @@ TEMPLATES = {
                 "isps": [
                     {"name": "ISP-A", "gateway": "100.0.0.1", "probe_ip": "8.8.8.8", "wan_interface": "GigabitEthernet0/1", "wan_ip": "100.0.0.2/30", "nat": True},
                     {"name": "ISP-B", "gateway": "200.0.0.1", "probe_ip": "1.1.1.1", "wan_interface": "GigabitEthernet0/2", "wan_ip": "200.0.0.2/30", "nat": True},
-                    {"name": "ISP-C", "gateway": "300.0.0.1", "probe_ip": "9.9.9.9", "wan_interface": "GigabitEthernet0/3", "wan_ip": "300.0.0.2/30", "nat": True}
+                    {"name": "ISP-C", "gateway": "150.0.0.1", "probe_ip": "9.9.9.9", "wan_interface": "GigabitEthernet0/3", "wan_ip": "150.0.0.2/30", "nat": True}
                 ],
                 "lans": [
                     {"name": "LAN-1", "network": "10.10.10.0", "cidr": "24", "interface": "GigabitEthernet0/0"},

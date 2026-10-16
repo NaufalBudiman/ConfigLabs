@@ -519,12 +519,23 @@ footer{margin-top:80px;padding:40px 0 30px;border-top:1px solid var(--border)}
             <div class="field"><label>Policy name</label><input id="pbr-name" placeholder="PBR-ISP"></div>
           </div>
           <div class="field"><label>ACL start number <span class="hint">one ACL per LAN</span></label><input id="pbr-acl" placeholder="3100"></div>
-          <label style="margin-top:8px">ISPs <span class="hint">max 3 · order = priority</span></label>
+          <label style="margin-top:8px">ISPs <span class="hint">max 5 · order = priority</span></label>
           <div class="repeater" id="rep-isps"></div>
           <button class="btn-add" onclick="addIsp()">＋ Add ISP</button>
-          <label style="margin-top:14px">LAN subnets <span class="hint">traffic to steer</span></label>
+          <label style="margin-top:14px">Match rules <span class="hint">traffic to steer · source / destination / protocol / port</span></label>
           <div class="repeater" id="rep-lans"></div>
-          <button class="btn-add" onclick="addLan()">＋ Add LAN</button>
+          <button class="btn-add" onclick="addLan()">＋ Add Rule</button>
+          <details style="margin-top:14px"><summary style="cursor:pointer;font-size:13px;color:var(--text-dim)">NQA probe settings (optional)</summary>
+            <div class="field-row" style="margin-top:8px">
+              <div class="field"><label>Frequency <span class="hint">ms</span></label><input id="nqa-freq" placeholder="3000"></div>
+              <div class="field"><label>Fail threshold <span class="hint">consecutive</span></label><input id="nqa-thr" placeholder="3"></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label>Probe count</label><input id="nqa-count" placeholder="default"></div>
+              <div class="field"><label>Probe timeout <span class="hint">ms</span></label><input id="nqa-tmo" placeholder="default"></div>
+            </div>
+            <div class="field"><label>Source IP <span class="hint">optional</span></label><input id="nqa-src" placeholder="e.g. 203.0.113.2"></div>
+          </details>
         </div>
 
       </div><!-- /panel-body -->
@@ -970,31 +981,41 @@ function addAclRow(btn) {
 
 
 function addIsp(data = {}) {
-  if (document.querySelectorAll('#rep-isps .repeater-item').length >= 3) { toast('Max 3 ISPs', true); return; }
+  if (document.querySelectorAll('#rep-isps .repeater-item').length >= 5) { toast('Max 5 ISPs', true); return; }
   const n = document.querySelectorAll('#rep-isps .repeater-item').length;
   const html = `<div class="field-row">
-    <div class="field"><label>Name</label><input class="p-name" value="${data.name||''}" placeholder="ISP-${'ABC'[n]}"></div>
+    <div class="field"><label>Name</label><input class="p-name" value="${data.name||''}" placeholder="ISP-${'ABCDE'[n]}"></div>
     <div class="field"><label>Gateway (next-hop)</label><input class="p-gw" value="${data.gateway||''}" placeholder="100.0.0.1"></div>
   </div>
   <div class="field-row">
-    <div class="field"><label>Probe target <span class="hint">ping via this ISP</span></label><input class="p-probe" value="${data.probe_ip||''}" placeholder="${['8.8.8.8','1.1.1.1','9.9.9.9'][n]}"></div>
+    <div class="field"><label>Probe target <span class="hint">ping via this ISP</span></label><input class="p-probe" value="${data.probe_ip||''}" placeholder="${['8.8.8.8','1.1.1.1','9.9.9.9','208.67.222.222','8.8.4.4'][n]}"></div>
     <div class="field"><label>WAN interface</label><input class="p-wan" value="${data.wan_interface||''}" placeholder="GigabitEthernet0/1"></div>
   </div>
   <div class="field-row">
     <div class="field"><label>WAN IP <span class="hint">CIDR, optional</span></label><input class="p-wanip" value="${data.wan_ip||''}" placeholder="100.0.0.2/30"></div>
     <div class="field"><label>NAT outbound</label><select class="p-nat"><option value="1" ${data.nat===false?'':'selected'}>Yes</option><option value="0" ${data.nat===false?'selected':''}>No</option></select></div>
   </div>`;
-  document.getElementById('rep-isps').appendChild(makeItem('ISP ' + 'ABC'[n], html));
+  document.getElementById('rep-isps').appendChild(makeItem('ISP ' + 'ABCDE'[n], html));
   updateBadges();
 }
 function addLan(data = {}) {
+  const sel = (v, arr) => arr.map(x => `<option value="${x}" ${String(v||'')===String(x)?'selected':''}>${x||'auto'}</option>`).join('');
   const html = `<div class="field-row-3">
     <div class="field"><label>Name</label><input class="l-name" value="${data.name||''}" placeholder="LAN-1"></div>
-    <div class="field"><label>Network</label><input class="l-net" value="${data.network||''}" placeholder="10.10.10.0"></div>
-    <div class="field"><label>CIDR</label><input class="l-cidr" value="${data.cidr||''}" placeholder="24"></div>
+    <div class="field"><label>Source network</label><input class="l-net" value="${data.network||''}" placeholder="10.10.10.0 (blank = any)"></div>
+    <div class="field"><label>CIDR <span class="hint">32 = host</span></label><input class="l-cidr" value="${data.cidr||''}" placeholder="24"></div>
   </div>
-  <div class="field"><label>Apply policy on interface <span class="hint">LAN-facing</span></label><input class="l-if" value="${data.interface||''}" placeholder="Vlan-interface10"></div>`;
-  document.getElementById('rep-lans').appendChild(makeItem('LAN', html));
+  <div class="field-row-3">
+    <div class="field"><label>Destination <span class="hint">optional</span></label><input class="l-dnet" value="${data.dst_network||''}" placeholder="1.2.3.0"></div>
+    <div class="field"><label>Dst CIDR</label><input class="l-dcidr" value="${data.dst_cidr||''}" placeholder="24"></div>
+    <div class="field"><label>Primary ISP</label><select class="l-primary">${sel(data.primary,['',1,2,3,4,5])}</select></div>
+  </div>
+  <div class="field-row-3">
+    <div class="field"><label>Protocol</label><select class="l-proto">${['ip','tcp','udp','icmp'].map(p=>`<option ${((data.protocol||'ip')===p)?'selected':''}>${p}</option>`).join('')}</select></div>
+    <div class="field"><label>Dst port <span class="hint">tcp/udp</span></label><input class="l-dport" value="${data.dst_port||''}" placeholder="443"></div>
+    <div class="field"><label>Apply on interface</label><input class="l-if" value="${data.interface||''}" placeholder="Vlan-interface10"></div>
+  </div>`;
+  document.getElementById('rep-lans').appendChild(makeItem('Rule', html));
 }
 function collectPbr() {
   const isps = [...document.querySelectorAll('#rep-isps .repeater-item')].map(el => ({
@@ -1008,10 +1029,18 @@ function collectPbr() {
     policy_name: document.getElementById('pbr-name').value.trim(),
     acl_base: document.getElementById('pbr-acl').value.trim(),
     isps,
+    nqa: {
+      frequency: document.getElementById('nqa-freq').value.trim(), threshold: document.getElementById('nqa-thr').value.trim(),
+      probe_count: document.getElementById('nqa-count').value.trim(), probe_timeout: document.getElementById('nqa-tmo').value.trim(),
+      source_ip: document.getElementById('nqa-src').value.trim()
+    },
     lans: [...document.querySelectorAll('#rep-lans .repeater-item')].map(el => ({
       name: el.querySelector('.l-name').value.trim(), network: el.querySelector('.l-net').value.trim(),
-      cidr: el.querySelector('.l-cidr').value.trim(), interface: el.querySelector('.l-if').value.trim()
-    })).filter(l => l.network && l.cidr)
+      cidr: el.querySelector('.l-cidr').value.trim(), dst_network: el.querySelector('.l-dnet').value.trim(),
+      dst_cidr: el.querySelector('.l-dcidr').value.trim(), primary: el.querySelector('.l-primary').value,
+      protocol: el.querySelector('.l-proto').value, dst_port: el.querySelector('.l-dport').value.trim(),
+      interface: el.querySelector('.l-if').value.trim()
+    })).filter(l => l.network || l.dst_network)
   };
 }
 function applyPbr(p) {
@@ -1020,6 +1049,10 @@ function applyPbr(p) {
   document.getElementById('pbr-acl').value  = p.acl_base || '';
   (p.isps || []).forEach(i => addIsp(i));
   (p.lans || []).forEach(l => addLan(l));
+  const q = p.nqa || {};
+  document.getElementById('nqa-freq').value = q.frequency || ''; document.getElementById('nqa-thr').value = q.threshold || '';
+  document.getElementById('nqa-count').value = q.probe_count || ''; document.getElementById('nqa-tmo').value = q.probe_timeout || '';
+  document.getElementById('nqa-src').value = q.source_ip || '';
 }
 function updatePbrTab() {
   const on = state.vendor === 'h3c' && state.os === 'comware';
@@ -1139,7 +1172,7 @@ function applyTemplate(data) {
 }
 
 function clearAll(silent) {
-  ['sys-hostname','sys-ntp','sys-tz','sys-banner','ospf-pid','ospf-rid','ospf-area','pbr-name','pbr-acl'].forEach(id => {
+  ['sys-hostname','sys-ntp','sys-tz','sys-banner','ospf-pid','ospf-rid','ospf-area','pbr-name','pbr-acl','nqa-freq','nqa-thr','nqa-count','nqa-tmo','nqa-src'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   ['rep-vlans','rep-svis','rep-intfs','rep-dhcp','rep-routes','rep-ospf-nets','rep-acls','rep-isps','rep-lans'].forEach(id => {
@@ -1180,7 +1213,7 @@ async function generate() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ vendor: state.vendor, os: state.os, data })
     });
-    if (!res.ok) throw new Error('API error');
+    if (!res.ok) { let m = 'API error'; try { m = (await res.json()).error || m; } catch(_) {} const er = new Error(m); er.api = true; throw er; }
     const result = await res.json();
     lastConfig = result.config;
     renderOutput(lastConfig);
@@ -1190,6 +1223,7 @@ async function generate() {
     saveHistory(lastConfig);
     toast('Config generated!');
   } catch(e) {
+    if (e && e.api) { setStatus(e.message, 'err'); toast(e.message, true); return; }
     setStatus('Server unreachable — please try again in a moment', 'err');
     toast('Cannot reach backend', true);
   }
