@@ -409,7 +409,7 @@ body.ro [data-tool]:not([data-tool=pan]),body.ro #btn-undo,body.ro #btn-redo,bod
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.15</span></div>
+    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.16</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -4081,6 +4081,10 @@ const RT = {
     sAlgo: 'Algorithm', algo: (cal) => ['Signal strength is predicted per band (2.4 / 5 / 6 GHz) from the transmit power of every radio plus the antenna gain of that band (values from the access point datasheet).', 'Path loss follows free space up to 5 m, then a log-distance model with an indoor exponent per band (2.4 GHz: 3.0, 5 GHz: 3.4, 6 GHz: 3.7), adjusted for the selected environment. The distance is three-dimensional, using the AP mounting height and the client height.', 'Attenuation of obstacles on the direct path between the AP and the point is subtracted; higher bands are attenuated more strongly.', 'SINR = signal of the strongest radio divided by the sum of co-channel interference from other radios and the noise floor.', cal ? 'The model has been calibrated with on-site measurements for this project.' : 'The model has not been calibrated with on-site measurements; results should be verified during the site survey.'],
     sConc: n => `${n} Conclusion`, conc: p => [`${p} has rich wireless scenarios and diversified terminal devices. Through this wireless network survey, the deployment has been designed to meet the users' needs for wireless networking.`, 'The coverage maps in this document are predictions from a simulation model; they depend on the accuracy of the floor plan scale and should be validated with an on-site survey and acceptance test at the acceptance points before final deployment.', 'We appreciate the cooperation and hard work of the leaders and maintenance staff of your organization during this survey.'],
     floorWord: 'Floor',
+    s23: '2.3 Bill of materials (BoM)', bomNo: 'No.', vendor: 'Vendor', bomDesc: 'Description', bomWhere: 'Quantity per floor', bomTotal: 'Total access points',
+    s24: '2.4 Floor plan obstacles and wall materials', obstT: 'The wall and door layout below was used by the prediction model. Signal loss is taken per band from the project wall library.',
+    material: 'Material', thick: 'Thickness (cm)', lossB: b => `Loss ${b}G (dB)`, wallsN: 'Walls', lenM: 'Total length (m)', doorsN: 'Doors', noScaleLen: 'Scale not set: lengths are not available.',
+    dsum: 'Design summary', areaM2: 'Coverage area (m²)', perAP: 'Area per AP (m²)', pageW: 'Page', ofW: 'of',
   },
   id: {
     hdr: 'ConfigLabs Digital Solution', cover1: 'Jaringan Nirkabel WLAN', cover2: 'Rancangan Survei Teknis', prep: 'Dibuat dengan ConfigLabs WiFi Planner', cat: 'Daftar Isi',
@@ -4105,6 +4109,10 @@ const RT = {
     sAlgo: 'Algoritma', algo: (cal) => ['Kekuatan sinyal diprediksi per band (2.4 / 5 / 6 GHz) dari daya pancar setiap radio ditambah gain antena pada band tersebut (nilai dari datasheet access point).', 'Redaman jalur mengikuti ruang bebas hingga 5 m, kemudian model log-distance dengan eksponen indoor per band (2.4 GHz: 3.0, 5 GHz: 3.4, 6 GHz: 3.7), disesuaikan dengan lingkungan yang dipilih. Jarak dihitung tiga dimensi, memakai tinggi pemasangan AP dan tinggi klien.', 'Redaman penghalang pada jalur langsung antara AP dan titik tersebut dikurangkan; band yang lebih tinggi diredam lebih kuat.', 'SINR = sinyal radio terkuat dibagi jumlah interferensi co-channel dari radio lain dan noise floor.', cal ? 'Model telah dikalibrasi dengan pengukuran lapangan untuk proyek ini.' : 'Model belum dikalibrasi dengan pengukuran lapangan; hasil perlu diverifikasi saat survei lapangan.'],
     sConc: n => `${n} Kesimpulan`, conc: p => [`${p} memiliki skenario nirkabel yang beragam dan perangkat terminal yang bervariasi. Melalui survei jaringan nirkabel ini, penerapan dirancang untuk memenuhi kebutuhan pengguna akan jaringan nirkabel.`, 'Peta cakupan dalam dokumen ini adalah prediksi dari model simulasi; hasilnya bergantung pada akurasi skala denah dan perlu divalidasi dengan survei lapangan serta uji akseptansi pada titik akseptansi sebelum penerapan akhir.', 'Kami berterima kasih atas kerja sama dan kerja keras pimpinan serta staf pemeliharaan organisasi Anda selama survei ini.'],
     floorWord: 'Lantai',
+    s23: '2.3 Daftar kebutuhan material (BoM)', bomNo: 'No.', vendor: 'Merek', bomDesc: 'Deskripsi', bomWhere: 'Jumlah per lantai', bomTotal: 'Total access point',
+    s24: '2.4 Hambatan denah dan material dinding', obstT: 'Tata letak dinding dan pintu berikut dipakai oleh model prediksi. Redaman sinyal diambil per band dari library dinding proyek.',
+    material: 'Material', thick: 'Tebal (cm)', lossB: b => `Redaman ${b}G (dB)`, wallsN: 'Dinding', lenM: 'Total panjang (m)', doorsN: 'Pintu', noScaleLen: 'Skala belum diatur: panjang tidak tersedia.',
+    dsum: 'Ringkasan desain', areaM2: 'Area cakupan (m²)', perAP: 'Area per AP (m²)', pageW: 'Halaman', ofW: 'dari',
   },
 };
 
@@ -4181,7 +4189,7 @@ function reportLegend(kind) {
 async function collectFloor(f, cfg) {
   const acc = RACC[cfg.acc];
   const hasStuff = wifi.aps.length || wifi.floorPlan || wifi.walls.length;
-  const out = { name: f.name, hasPlan: !!wifi.floorPlan, nAP: wifi.aps.length, imgs: {}, sim: {}, weak: {}, sinr: {}, accRows: [], aps: [], models: {}, cov: {} };
+  const out = { name: f.name, hasPlan: !!wifi.floorPlan, nAP: wifi.aps.length, imgs: {}, sim: {}, weak: {}, sinr: {}, accRows: [], aps: [], models: {}, cov: {}, info: {} };
   const fb = floorBands();
   out.bands = fb;
   for (const b of cfg.bands) { const c = fb.includes(b) ? computeCoverage(b) : null; out.cov[b] = c; }
@@ -4204,7 +4212,16 @@ async function collectFloor(f, cfg) {
     cfg.bands.forEach(b => { const v = rads.filter(r => r.band === b).map(r => r.tx); pw[b] = v.length ? v.join('/') : 'N/A'; });
     out.aps.push({ name: a.name, model: m.name, loc: wifi.scaleSet ? (a.x / ppm).toFixed(1) + ', ' + (a.y / ppm).toFixed(1) + ' m' : '—', pw, r: [0, 1, 2].map(k => rads[k] ? rads[k].band + 'G · ' + rads[k].ch : 'N/A') });
     out.models[m.name] = (out.models[m.name] || 0) + 1;
+    out.info[m.name] = { vendor: (VENDORS[a.vendor] && VENDORS[a.vendor].name) || a.vendor, desc: m.desc || '', wifi: m.wifi, bands: (m.bands || []).join(' / ') };
   });
+  // obstacles + area for the report
+  const wl = { n: wifi.walls.length, len: 0, doors: wifi.doors.length, by: {} };
+  for (const w of wifi.walls) { const L = Math.hypot(w.x2 - w.x1, w.y2 - w.y1) / ppm; wl.len += L; const k = w.mat || 'x'; (wl.by[k] = wl.by[k] || { n: 0, len: 0 }); wl.by[k].n++; wl.by[k].len += L; }
+  out.walls = wl; out.scaleSet = !!wifi.scaleSet;
+  let apx = 0;
+  if (wifi.areas.length) { for (const a of wifi.areas) { let s2 = 0; for (let i = 0, j = a.pts.length - 1; i < a.pts.length; j = i++) s2 += (a.pts[j].x * a.pts[i].y - a.pts[i].x * a.pts[j].y); apx += Math.abs(s2) / 2; } }
+  else { const cr = reportCrop(); apx = cr.w * cr.h; }
+  out.areaM2 = wifi.scaleSet && hasStuff ? apx / (ppm * ppm) : null;
   for (const [i, t] of wifi.accPts.entries()) {
     const row = { n: i + 1, loc: wifi.scaleSet ? (t.x / ppm).toFixed(1) + ', ' + (t.y / ppm).toFixed(1) + ' m' : '—', pred: {}, meas: {} };
     for (const b of cfg.bands) {
@@ -4229,13 +4246,14 @@ async function reportConfigDialog() {
     <div class="rc-row"><b>Image accuracy</b><div class="rc-opts">${['original', 'high', 'middle', 'low'].map(v => rad('acc', v, v[0].toUpperCase() + v.slice(1), ck('acc', 'high') === v)).join('')}</div></div>
     <div class="rc-row"><b>Algorithm chapter</b><div class="rc-opts">${rad('algo', '0', 'Does not contain', !ck('algo', false))}${rad('algo', '1', 'Contain', ck('algo', false))}</div></div>
     <div class="rc-row"><b>Language setting</b><div class="rc-opts">${rad('lang', 'en', 'English', ck('lang', 'en') === 'en')}${rad('lang', 'id', 'Indonesia', ck('lang', 'en') === 'id')}</div></div>
+    <div class="rc-row"><b>Extra sections</b><div class="rc-opts">${chk('bom', 'Bill of materials', ck('bom', true))}${chk('mats', 'Wall materials summary', ck('mats', true))}${chk('toc', 'Catalogue with page numbers', ck('toc', true))}</div></div>
     <div class="rc-row"><b>Original image</b><div class="rc-opts">${rad('orig', '0', 'Does not contain', !ck('orig', true))}${rad('orig', '1', 'Contain', ck('orig', true))}</div></div>
-    <div style="font-size:11px;color:var(--text-muted);line-height:1.5">Image accuracy: Original = finest (slowest), Low = fastest. Weak-field marks areas below your coverage target (${wifi.covTarget} dBm). The simulation diagrams use exactly what you see in the editor.</div>`;
+    <div style="font-size:11px;color:var(--text-muted);line-height:1.5">Catalogue page numbers: Word asks once to update fields when you open the file, answer Yes. Image accuracy: Original = finest (slowest), Low = fastest. Weak-field marks areas below your coverage target (${wifi.covTarget} dBm). The simulation diagrams use exactly what you see in the editor.</div>`;
   const m = await dialog({ title: 'Reports <em>config</em>', html, ok: 'Determine', wide: true });
   if (!m) return null;
   const g = k => m.querySelector(`[data-k="${k}"]`).checked;
   const r = n => m.querySelector(`input[name="rc-${n}"]:checked`).value;
-  const cfg = { sim: g('sim'), weak: g('weak'), sinr: g('sinr'), bitmap: g('bitmap'), b24: g('b24'), b5: g('b5'), b6: g('b6'), acc: r('acc'), algo: r('algo') === '1', lang: r('lang'), orig: r('orig') === '1' };
+  const cfg = { sim: g('sim'), weak: g('weak'), sinr: g('sinr'), bitmap: g('bitmap'), b24: g('b24'), b5: g('b5'), b6: g('b6'), acc: r('acc'), algo: r('algo') === '1', lang: r('lang'), orig: r('orig') === '1', bom: g('bom'), mats: g('mats'), toc: g('toc') };
   try { localStorage.setItem('clab_rep_cfg', JSON.stringify(cfg)); } catch (e) {}
   cfg.bands = BAND_LIST.filter(b => cfg['b' + b.replace('.', '')]);
   if (!cfg.bands.length) { toast('Pick at least one frequency', 'error'); return reportConfigDialog(); }
@@ -4270,7 +4288,7 @@ async function exportReport() {
     await loadFloor(origFloor);
     _undo.length = 0; _redo.length = 0; stashU.forEach(x => _undo.push(x)); stashR.forEach(x => _redo.push(x));
 
-    const doc = buildReportDoc(D, floors, cfg, { target, anyCal, lg: { rssi: reportLegend('rssi'), sinr: reportLegend('sinr'), weak: reportLegend('weak') } });
+    const doc = buildReportDoc(D, floors, cfg, { target, anyCal, mats: JSON.parse(JSON.stringify(WALL_MATS)), lg: { rssi: reportLegend('rssi'), sinr: reportLegend('sinr'), weak: reportLegend('weak') } });
     const blob = await D.Packer.toBlob(doc);
     downloadBlob(blob, safeName(curProj.name) + '-WLAN-Survey-Design.docx');
     hideBusy();
@@ -4345,6 +4363,10 @@ function buildReportDoc(D, floors, cfg, X) {
     floors.map(f => [f.name, f.nAP, ...cfg.bands.flatMap(b => { const c = f.cov[b]; return [c ? Math.round(c.cov / c.total * 100) + '%' : '—', c ? Math.round(c.exc / c.total * 100) + '%' : '—']; })]),
     [2400, 900, ...cfg.bands.flatMap(() => [cw, cw])]));
   body.push(para(T.covNote(X.target), { spacing: { before: 100 } }));
+  if (floors.some(f => f.areaM2 != null)) {
+    body.push(para(''));
+    body.push(gtable(T.dsum, [T.floor, T.aps, T.areaM2, T.perAP], floors.map(f => [f.name, f.nAP, f.areaM2 != null ? Math.round(f.areaM2) : '—', (f.areaM2 != null && f.nAP) ? Math.round(f.areaM2 / f.nAP) : '—']), [3000, 1500, 2300, 2226]));
+  }
   body.push(head(2, T.s22));
   const detail = [];
   floors.forEach(f => Object.entries(f.models).forEach(([m, n]) => detail.push([proj, f.name, T.ceiling, m, n, T.builtin, 0, '—', 0])));
@@ -4369,6 +4391,26 @@ function buildReportDoc(D, floors, cfg, X) {
     });
   });
   body.push(new D.Table({ width: { size: W, type: D.WidthType.DXA }, columnWidths: sw, rows: srows }));
+  if (cfg.bom && Object.keys(tot).length) {
+    body.push(head(2, T.s23, true));
+    const info = {}; floors.forEach(f => Object.assign(info, f.info));
+    const rows = Object.entries(tot).map(([m, n], i) => { const f0 = info[m] || {}; return [i + 1, f0.vendor || '', m, [f0.desc, f0.bands ? '(' + f0.bands + ' GHz)' : ''].filter(Boolean).join(' '), floors.filter(f => f.models[m]).map(f => `${f.name}: ${f.models[m]}`).join('; '), n]; });
+    rows.push(['', '', T.bomTotal, '', '', Object.values(tot).reduce((a, b) => a + b, 0)]);
+    body.push(gtable(null, [T.bomNo, T.vendor, T.devModel, T.bomDesc, T.bomWhere, T.qty], rows, [600, 1100, 1300, 2300, 2626, 1100]));
+  }
+  if (cfg.mats && floors.some(f => f.walls && f.walls.n)) {
+    body.push(head(2, T.s24, !cfg.bom));
+    body.push(para(T.obstT));
+    const anyScale = floors.some(f => f.scaleSet);
+    const agg = {};
+    floors.forEach(f => Object.entries(f.walls.by).forEach(([k, v]) => { agg[k] = agg[k] || { n: 0, len: 0 }; agg[k].n += v.n; agg[k].len += v.len; }));
+    const mrows = Object.entries(agg).map(([k, v]) => { const m = (X.mats || []).find(q => q.id === k); return [m ? m.name : k, m ? m.thick : '—', ...cfg.bands.map(b => m ? m.b[b] : '—'), v.n, anyScale ? v.len.toFixed(1) : '—']; });
+    const mw = Math.floor((W - 2200 - 1100 - 900 - 1500) / cfg.bands.length);
+    body.push(gtable(null, [T.material, T.thick, ...cfg.bands.map(b => T.lossB(b)), T.wallsN, T.lenM], mrows, [2200, 1100, ...cfg.bands.map(() => mw), 900, 1500 + (W - 2200 - 1100 - 900 - 1500 - mw * cfg.bands.length)], 17));
+    body.push(para(''));
+    body.push(gtable(null, [T.floor, T.wallsN, T.doorsN, T.lenM], floors.map(f => [f.name, f.walls.n, f.walls.doors, f.scaleSet ? f.walls.len.toFixed(1) : '—']), [3000, 1800, 1800, 2426]));
+    if (!anyScale) body.push(para(T.noScaleLen, { spacing: { before: 100 } }));
+  }
 
   body.push(head(1, T.s3(proj), true));
   body.push(head(2, T.s31));
@@ -4430,17 +4472,19 @@ function buildReportDoc(D, floors, cfg, X) {
   front.push(new D.Paragraph({ alignment: D.AlignmentType.CENTER, spacing: { after: 160 }, children: [txt(T.prep, { size: 26, bold: true })] }));
   front.push(new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [txt(today, { size: 26, bold: true })] }));
   front.push(new D.Paragraph({ pageBreakBefore: true, spacing: { after: 240 }, children: [txt(T.cat, { size: 32, color: BLUE })] }));
-  toc.forEach(e => front.push(new D.Paragraph({ spacing: { after: 90 }, indent: { left: (e.lvl - 1) * 360 }, children: [txt(e.t, { size: e.lvl === 1 ? 21 : 19, bold: e.lvl === 1 })] })));
+  if (cfg.toc && D.TableOfContents) front.push(new D.TableOfContents(T.cat, { hyperlink: true, headingStyleRange: '1-3' }));
+  else toc.forEach(e => front.push(new D.Paragraph({ spacing: { after: 90 }, indent: { left: (e.lvl - 1) * 360 }, children: [txt(e.t, { size: e.lvl === 1 ? 21 : 19, bold: e.lvl === 1 })] })));
   front.push(new D.Paragraph({ pageBreakBefore: true, spacing: { after: 0 }, children: [txt(`${proj} — ${T.cover1} ${T.cover2}`, { size: 26, bold: true, color: NAVY })] }));
 
   const hdr = t => new D.Header({ children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [txt(t, { size: 18, color: '555555' })] })] });
   return new D.Document({
     creator: 'ConfigLabs', title: proj + ' – ' + T.cover1 + ' ' + T.cover2,
+    features: cfg.toc ? { updateFields: true } : undefined,
     styles: { default: { document: { run: { font: 'Arial', size: 20 } } } },
     sections: [{
       properties: { titlePage: true, page: { size: { width: 11906, height: 16838 }, margin: { top: 1300, right: 1440, bottom: 1200, left: 1440 } } },
       headers: { default: hdr(T.hdr), first: new D.Header({ children: [new D.Paragraph({ children: [] })] }) },
-      footers: { default: new D.Footer({ children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ children: [D.PageNumber.CURRENT], font: 'Arial', size: 18, color: '555555' })] })] }), first: new D.Footer({ children: [new D.Paragraph({ children: [] })] }) },
+      footers: { default: new D.Footer({ children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ children: [T.pageW + ' ', D.PageNumber.CURRENT, ' ' + T.ofW + ' ', D.PageNumber.TOTAL_PAGES], font: 'Arial', size: 18, color: '555555' })] })] }), first: new D.Footer({ children: [new D.Paragraph({ children: [] })] }) },
       children: [...front, ...body],
     }],
   });
