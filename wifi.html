@@ -400,7 +400,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.8</span></div>
+    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.9</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -597,6 +597,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
         <option value="weak">Weak-field</option>
       </select>
       <button class="tt" id="btn-toggle-hm" onclick="toggleHeatmap()" title="Show / hide heatmap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span class="lbl">Heatmap</span></button>
+      <button class="tt" id="btn-trace" onclick="openTrace()" title="Auto-trace walls and doors from the floor plan image">🧱 Trace walls</button>
       <button class="tt" id="btn-autoplace" onclick="openPlacement()" title="Auto placement: suggest how many APs are needed and where to put them">📍 Auto place</button>
       <button class="tt" id="btn-optimize" onclick="openOptimize()" title="Auto optimize: suggest channels and TX power for all APs on this floor">✨ Optimize</button>
       <button class="tt primary" id="btn-precise" onclick="startPrecise()" title="Re-render the heatmap at high resolution">Precise render</button>
@@ -2763,6 +2764,200 @@ function plcFillBands() {
 }
 document.addEventListener('change', e => { if (e.target && e.target.id === 'pl-model') plcFillBands(); });
 new MutationObserver(() => { if (document.getElementById('pl-band') && !document.getElementById('pl-band').options.length) plcFillBands(); }).observe(document.body, { childList: true, subtree: true });
+
+// ============================================================
+// AUTO-TRACE WALLS (v5.9): detect walls + door gaps from the imported floor plan image
+// ============================================================
+const TR = { cache: null };
+function trPrep() {
+  const img = wifi.floorPlan;
+  const k = Math.min(1, 1500 / Math.max(img.width, img.height));
+  const W = Math.max(1, Math.round(img.width * k)), H = Math.max(1, Math.round(img.height * k));
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d', { willReadFrequently: true });
+  x.fillStyle = '#fff'; x.fillRect(0, 0, W, H); x.drawImage(img, 0, 0, W, H);
+  const d = x.getImageData(0, 0, W, H).data, g = new Uint8Array(W * H), hist = new Array(256).fill(0);
+  for (let i = 0; i < W * H; i++) { const v = (d[i * 4] * 0.3 + d[i * 4 + 1] * 0.59 + d[i * 4 + 2] * 0.11) | 0; g[i] = v; hist[v]++; }
+  // Otsu threshold as the default darkness cut-off
+  let tot = W * H, sum = 0; for (let i = 0; i < 256; i++) sum += i * hist[i];
+  let sb = 0, wb = 0, best = 0, thr = 100;
+  for (let t = 0; t < 256; t++) { wb += hist[t]; if (!wb) continue; const wf = tot - wb; if (!wf) break; sb += t * hist[t]; const mb = sb / wb, mf = (sum - sb) / wf, v = wb * wf * (mb - mf) * (mb - mf); if (v > best) { best = v; thr = t; } }
+  TR.cache = { W, H, g, otsu: Math.max(40, Math.min(200, thr)), src: img };
+  return TR.cache;
+}
+// returns { segs:[{o:'h'|'v', c, a, b, th, gaps:[[a,b]]}], W, H }
+function trDetect(p) {
+  const { W, H, g } = TR.cache, dim = Math.max(W, H);
+  const L = Math.max(8, Math.round(p.minLen / 100 * dim)), maxTh = Math.max(6, Math.round(0.035 * dim));
+  const dark = new Uint8Array(W * H); for (let i = 0; i < W * H; i++) dark[i] = g[i] <= p.thr ? 1 : 0;
+  const found = [];
+  const comps = (mask, w, h, horiz) => {
+    const seen = new Uint8Array(w * h), st = new Int32Array(w * h);
+    for (let s = 0; s < w * h; s++) {
+      if (!mask[s] || seen[s]) continue;
+      let sp = 0, mnx = w, mxx = 0, mny = h, mxy = 0, n = 0; st[sp++] = s; seen[s] = 1;
+      while (sp) {
+        const q = st[--sp], x = q % w, y = (q / w) | 0; n++;
+        if (x < mnx) mnx = x; if (x > mxx) mxx = x; if (y < mny) mny = y; if (y > mxy) mxy = y;
+        if (x > 0 && mask[q - 1] && !seen[q - 1]) { seen[q - 1] = 1; st[sp++] = q - 1; }
+        if (x < w - 1 && mask[q + 1] && !seen[q + 1]) { seen[q + 1] = 1; st[sp++] = q + 1; }
+        if (y > 0 && mask[q - w] && !seen[q - w]) { seen[q - w] = 1; st[sp++] = q - w; }
+        if (y < h - 1 && mask[q + w] && !seen[q + w]) { seen[q + w] = 1; st[sp++] = q + w; }
+      }
+      const len = horiz ? mxx - mnx + 1 : mxy - mny + 1, th = horiz ? mxy - mny + 1 : mxx - mnx + 1;
+      if (len < L || th > maxTh || th > len * 0.5 || n < len * th * 0.45) continue;
+      found.push(horiz ? { o: 'h', c: (mny + mxy + 1) / 2, a: mnx, b: mxx + 1, th } : { o: 'v', c: (mnx + mxx + 1) / 2, a: mny, b: mxy + 1, th });
+    }
+  };
+  // horizontal runs
+  const hm = new Uint8Array(W * H);
+  for (let y = 0; y < H; y++) { let x = 0; while (x < W) { if (!dark[y * W + x]) { x++; continue; } let e = x; while (e < W && dark[y * W + e]) e++; if (e - x >= L) for (let i = x; i < e; i++) hm[y * W + i] = 1; x = e; } }
+  comps(hm, W, H, true);
+  // vertical runs (processed in a transposed buffer)
+  const vm = new Uint8Array(W * H);   // stored transposed: index = x*H + y
+  for (let x = 0; x < W; x++) { let y = 0; while (y < H) { if (!dark[y * W + x]) { y++; continue; } let e = y; while (e < H && dark[e * W + x]) e++; if (e - y >= L) for (let i = y; i < e; i++) vm[x * H + i] = 1; y = e; } }
+  const before = found.length;
+  comps(vm, H, W, true);                      // in transposed space "horizontal" = vertical
+  for (let i = before; i < found.length; i++) found[i].o = 'v';
+  let segs = found;
+  // drop frame / margin lines
+  const mg = p.margin ? 0.012 * dim : -1;
+  if (mg > 0) segs = segs.filter(s => !(s.o === 'h' ? (s.c < mg || s.c > H - mg) : (s.c < mg || s.c > W - mg)));
+  // merge double-line walls (two parallel strokes close together)
+  const mergeD = Math.max(6, 0.012 * dim);
+  if (p.dbl) {
+    let ch = true, guard = 0;
+    while (ch && guard++ < 50) {
+      ch = false;
+      outer: for (let i = 0; i < segs.length; i++) for (let j = i + 1; j < segs.length; j++) {
+        const s = segs[i], t = segs[j]; if (s.o !== t.o) continue;
+        const dc = Math.abs(s.c - t.c); if (dc > mergeD || dc < 0) continue;
+        const ov = Math.min(s.b, t.b) - Math.max(s.a, t.a), mn = Math.min(s.b - s.a, t.b - t.a);
+        if (ov < mn * 0.6) continue;
+        const wgt = (s.b - s.a) + (t.b - t.a);
+        segs[i] = { o: s.o, c: (s.c * (s.b - s.a) + t.c * (t.b - t.a)) / wgt, a: Math.min(s.a, t.a), b: Math.max(s.b, t.b), th: dc + Math.max(s.th, t.th) };
+        segs.splice(j, 1); ch = true; break outer;
+      }
+    }
+  }
+  // chain collinear segments across small gaps -> doors
+  const px2m = wifi.scaleSet && wifi.pxPerMeter ? (planRect().w / W) / wifi.pxPerMeter : null;   // metres per image px
+  const gapMin = Math.max(4, px2m ? 0.45 / px2m : 0.008 * dim), gapMax = px2m ? 1.6 / px2m : 0.045 * dim;
+  const out = [];
+  for (const o of ['h', 'v']) {
+    const arr = segs.filter(s => s.o === o).sort((s, t) => s.c - t.c);
+    const groups = [];
+    for (const s of arr) { const gp = groups.find(q => Math.abs(q.c - s.c) <= Math.max(3, s.th)); if (gp) { gp.l.push(s); gp.c = (gp.c * (gp.l.length - 1) + s.c) / gp.l.length; } else groups.push({ c: s.c, l: [s] }); }
+    for (const gp of groups) {
+      gp.l.sort((s, t) => s.a - t.a);
+      let cur = null;
+      for (const s of gp.l) {
+        if (!cur) { cur = { o, c: s.c, a: s.a, b: s.b, th: s.th, gaps: [] }; continue; }
+        const gap = s.a - cur.b;
+        if (gap <= gapMin) { cur.b = Math.max(cur.b, s.b); cur.th = Math.max(cur.th, s.th); }
+        else if (gap <= gapMax) { cur.gaps.push([cur.b, s.a]); cur.b = s.b; cur.th = Math.max(cur.th, s.th); }
+        else { out.push(cur); cur = { o, c: s.c, a: s.a, b: s.b, th: s.th, gaps: [] }; }
+      }
+      if (cur) out.push(cur);
+    }
+  }
+  // close corners: extend wall ends onto perpendicular walls
+  const snap = Math.max(6, 0.012 * dim);
+  for (const s of out) {
+    for (const end of ['a', 'b']) {
+      const pos = s[end];
+      const t = out.find(q => q.o !== s.o && Math.abs(q.c - pos) <= snap && s.c >= q.a - snap && s.c <= q.b + snap);
+      if (t) {
+        if (end === 'a') s.a = t.c; else s.b = t.c;
+      }
+    }
+  }
+  // thickness class
+  const ths = out.map(s => s.th).sort((a, b) => a - b), med = ths.length ? ths[(ths.length / 2) | 0] : 1;
+  out.forEach(s => { s.thick = s.th >= med * 1.6 && s.th > 2.5; s.len = s.b - s.a; });
+  return { segs: out, W, H, px2m };
+}
+function trToWorld(res, matMode, defMat) {
+  const r = planRect(), kx = r.w / res.W, ky = r.h / res.H;
+  const walls = [], doors = [];
+  const thickMat = matMode === 'auto' ? 'concrete' : null;
+  let wc = wifi.counters.wall, dc = wifi.counters.door || 0;
+  for (const s of res.segs) {
+    const a = s.o === 'h' ? { x: r.x + s.a * kx, y: r.y + s.c * ky } : { x: r.x + s.c * kx, y: r.y + s.a * ky };
+    const b = s.o === 'h' ? { x: r.x + s.b * kx, y: r.y + s.c * ky } : { x: r.x + s.c * kx, y: r.y + s.b * ky };
+    const mid = (thickMat && s.thick) ? thickMat : defMat, mat = WALL_MATS.find(m => m.id === mid) || WALL_MATS[0];
+    const id = 'w' + (++wc);
+    walls.push({ id, x1: a.x, y1: a.y, x2: b.x, y2: b.y, mat: mat.id, attn: mat.attn });
+    const dt = DOOR_TYPES.find(t => t.id === wifi.doorType) || DOOR_TYPES[0];
+    for (const g of s.gaps) {
+      const t = ((g[0] + g[1]) / 2 - s.a) / (s.b - s.a);
+      const wm = res.px2m ? (g[1] - g[0]) * res.px2m : wifi.doorW;
+      doors.push({ id: 'd' + (++dc), wall: id, t: Math.max(0.02, Math.min(0.98, t)), w: Math.round(wm * 100) / 100, type: dt.id, attn: dt.attn });
+    }
+  }
+  return { walls, doors, wc, dc };
+}
+async function openTrace() {
+  if (!wifi.floorPlan) { toast('Load a floor plan image first', 'error'); return; }
+  showBusy('Reading the floor plan…'); await tick();
+  let C; try { C = trPrep(); } catch (e) { hideBusy(); toast('Cannot read the image: ' + e.message, 'error'); return; }
+  hideBusy();
+  const hasW = wifi.walls.length;
+  const matOpts = WALL_MATS.map(m => `<option value="${m.id}" ${m.id === 'drywall' ? 'selected' : ''}>${esc(m.name)} (${m.attn} dB)</option>`).join('');
+  const html = `<div style="font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:10px">Detects straight (horizontal / vertical) walls and door gaps from the floor plan. <span style="color:#ff5c5c">Red</span> = walls, <span style="color:#3ddc84">green</span> = doors. It is a first guess: tune the sliders, apply, then fix anything wrong by hand (Undo works).${wifi.scaleSet ? '' : ' <b>Set the scale first</b> for accurate door widths.'}</div>
+    <canvas id="tr-prev" style="width:100%;max-height:300px;object-fit:contain;background:#fff;border:1px solid var(--border);border-radius:9px"></canvas>
+    <div id="tr-stat" style="font-size:12px;margin:8px 0;color:var(--text-dim)"></div>
+    <div class="field-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="dlg-field"><label>Darkness cut-off <span id="tr-thr-v"></span></label><input id="tr-thr" type="range" min="40" max="220" value="${C.otsu}"></div>
+      <div class="dlg-field"><label>Minimum wall length <span id="tr-len-v"></span></label><input id="tr-len" type="range" min="1" max="12" step="0.5" value="3"></div>
+      <div class="dlg-field"><label>Default material</label><select id="tr-mat" style="width:100%;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text)">${matOpts}</select></div>
+      <div class="dlg-field"><label>Thick walls</label><select id="tr-mm" style="width:100%;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text)"><option value="auto" selected>Concrete (auto)</option><option value="same">Same as default</option></select></div>
+    </div>
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:4px"><input type="checkbox" id="tr-dbl" checked style="width:auto"> Merge double-line walls into one</label>
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px"><input type="checkbox" id="tr-mg" checked style="width:auto"> Ignore the image border / frame</label>
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px"><input type="checkbox" id="tr-door" checked style="width:auto"> Create doors from gaps in walls</label>
+    ${hasW ? `<label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px"><input type="checkbox" id="tr-rep" style="width:auto"> Replace the ${hasW} existing wall${hasW > 1 ? 's' : ''} and doors (off = add to them)</label>` : ''}`;
+  const pr = dialog({ title: 'Auto-trace <em>walls</em>', html, ok: 'Apply', wide: true });
+  const $ = id => document.getElementById(id);
+  let res = null, tmr = null;
+  const params = () => ({ thr: +$('tr-thr').value, minLen: +$('tr-len').value, dbl: $('tr-dbl').checked, margin: $('tr-mg').checked });
+  const draw = () => {
+    if (!$('tr-prev')) return;
+    $('tr-thr-v').textContent = $('tr-thr').value; $('tr-len-v').textContent = $('tr-len').value + '%';
+    res = trDetect(params());
+    if (!$('tr-door').checked) res.segs.forEach(s => s.gaps = []);
+    const cv = $('tr-prev'); cv.width = C.W; cv.height = C.H; const x = cv.getContext('2d');
+    x.globalAlpha = 0.45; x.drawImage(C.src, 0, 0, C.W, C.H); x.globalAlpha = 1;
+    x.lineCap = 'butt';
+    const lw = Math.max(2, C.W / 380);
+    for (const s of res.segs) {
+      x.strokeStyle = '#ff3b3b'; x.lineWidth = s.thick ? lw * 2 : lw; x.beginPath();
+      if (s.o === 'h') { x.moveTo(s.a, s.c); x.lineTo(s.b, s.c); } else { x.moveTo(s.c, s.a); x.lineTo(s.c, s.b); } x.stroke();
+      x.strokeStyle = '#1fd573'; x.lineWidth = lw * 2.2;
+      for (const g of s.gaps) { x.beginPath(); if (s.o === 'h') { x.moveTo(g[0], s.c); x.lineTo(g[1], s.c); } else { x.moveTo(s.c, g[0]); x.lineTo(s.c, g[1]); } x.stroke(); }
+    }
+    const nd = res.segs.reduce((n, s) => n + s.gaps.length, 0);
+    $('tr-stat').innerHTML = `<b>${res.segs.length}</b> walls · <b>${nd}</b> doors detected`;
+  };
+  const sched = () => { clearTimeout(tmr); tmr = setTimeout(draw, 120); };
+  ['tr-thr', 'tr-len'].forEach(i => $(i).addEventListener('input', sched));
+  ['tr-dbl', 'tr-mg', 'tr-door'].forEach(i => $(i).addEventListener('change', draw));
+  draw();
+  const m = await pr;
+  clearTimeout(tmr);
+  if (!m) return;
+  if (!res || !res.segs.length) { toast('No walls detected: lower the darkness cut-off or the minimum length', 'error'); return; }
+  const mm = m.querySelector('#tr-mm').value, dm = m.querySelector('#tr-mat').value, rep = m.querySelector('#tr-rep');
+  pushHistory();
+  if (rep && rep.checked) { wifi.walls = []; wifi.doors = []; }
+  const out = trToWorld(res, mm, dm);
+  wifi.walls.push(...out.walls); wifi.doors.push(...out.doors);
+  wifi.counters.wall = out.wc; wifi.counters.door = out.dc;
+  wifi.sel = null;
+  if (typeof renderPropsPanel === 'function') renderPropsPanel();
+  scheduleRender(); scheduleAutosave && scheduleAutosave();
+  toast(`${out.walls.length} walls and ${out.doors.length} doors added`);
+}
 
 // ============================================================
 // HELPERS
