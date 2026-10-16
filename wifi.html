@@ -402,7 +402,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.12</span></div>
+    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.13</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -1303,6 +1303,7 @@ WALL_MATS.forEach(matNorm);
 const WALL_DEFAULT = JSON.parse(JSON.stringify(WALL_MATS));
 function matBand(m, band) { return m.b ? m.b[band] : m.attn * WALL_K[band]; }
 function wallLoss(w, band) { const m = WALL_MATS.find(q => q.id === w.mat); return m ? matBand(m, band) : w.attn * WALL_K[band]; }
+function userMatLib() { try { const a = JSON.parse(localStorage.getItem('cl_matlib') || 'null'); return Array.isArray(a) && a.length ? a : null; } catch (e) { return null; } }
 function loadMats(proj) {
   const src = (proj && Array.isArray(proj.mats) && proj.mats.length) ? proj.mats : WALL_DEFAULT;
   WALL_MATS.length = 0;
@@ -2809,7 +2810,9 @@ async function openMatLib() {
     <div style="max-height:46vh;overflow:auto"><table class="cal-tbl" id="ml-tbl"><tr><th></th><th>Name</th><th>cm</th><th>2.4G</th><th>5G</th><th>6G</th><th></th></tr>${WALL_MATS.map(matRowHTML).join('')}</table></div>
     <div style="display:flex;gap:8px;margin-top:10px">
       <button class="btn-secondary-modal" style="flex:1;padding:7px" onclick="document.getElementById('ml-tbl').insertAdjacentHTML('beforeend', matRowHTML(matNorm({ id: '', name: 'New material', color: '#9aa7b8', attn: 6, thick: 10 })))">+ Add material</button>
-      <button class="btn-secondary-modal" style="flex:1;padding:7px" onclick="document.querySelectorAll('#ml-tbl tr[data-id]').forEach(r => r.remove());document.getElementById('ml-tbl').insertAdjacentHTML('beforeend', WALL_DEFAULT.map(matRowHTML).join(''))">Reset to defaults</button></div>`;
+      <button class="btn-secondary-modal" style="flex:1;padding:7px" onclick="document.querySelectorAll('#ml-tbl tr[data-id]').forEach(r => r.remove());document.getElementById('ml-tbl').insertAdjacentHTML('beforeend', WALL_DEFAULT.map(matRowHTML).join(''))">Reset to factory defaults</button></div>
+    ${userMatLib() ? `<button class="btn-secondary-modal" style="width:100%;padding:7px;margin-top:8px" onclick="document.querySelectorAll('#ml-tbl tr[data-id]').forEach(r => r.remove());document.getElementById('ml-tbl').insertAdjacentHTML('beforeend', userMatLib().map(q => matRowHTML(matNorm(q))).join(''))">Load my saved default library</button>` : ''}
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:10px"><input type="checkbox" id="ml-global" checked style="width:auto"> Also save as my default library for new projects (stored in this browser)</label>`;
   const m = await dialog({ title: 'Wall <em>library</em>', html, ok: 'Save library', wide: true });
   if (!m) return;
   const rows = [...m.querySelectorAll('#ml-tbl tr[data-id]')];
@@ -2823,6 +2826,7 @@ async function openMatLib() {
     while (used.has(id)) id += 'x'; used.add(id);
     out.push(matNorm({ id, name, color: g('color'), thick: num('thick', 10), b: { '2.4': num('b24', 5), '5': num('b5', 6), '6': num('b6', 7) } }));
   }
+  if (m.querySelector('#ml-global').checked) { try { localStorage.setItem('cl_matlib', JSON.stringify(out)); } catch (e) { toast('Could not save the default library in this browser', 'error'); } }
   pushHistory();
   WALL_MATS.length = 0; out.forEach(o => WALL_MATS.push(o));
   for (const w of wifi.walls) { let q = WALL_MATS.find(x => x.id === w.mat); if (!q) { q = WALL_MATS[0]; w.mat = q.id; } w.attn = q.attn; }
@@ -3509,6 +3513,7 @@ document.addEventListener('click', () => document.querySelectorAll('.pmenu.open'
 function makeProject(name, info) {
   const fid = uid('f');
   return { id: uid('p'), name, client: info.client || '', location: info.location || '', engineer: info.engineer || '', notes: info.notes || '',
+           mats: userMatLib() ? JSON.parse(JSON.stringify(userMatLib())) : undefined,
            created: Date.now(), updated: Date.now(), floors: [{ id: fid, name: 'Floor 1', hasPlan: false, data: newFloorData() }] };
 }
 function infoHTML(p) {
