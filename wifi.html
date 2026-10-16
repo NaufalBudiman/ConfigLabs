@@ -267,6 +267,53 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
 .filemenu-pop button.danger{color:var(--danger)}
 .canvas-hint{bottom:12px;font-size:11px;padding:5px 12px}
 .stats-note{margin-left:auto;font-size:10px;color:var(--text-muted);font-family:var(--mono)}
+
+/* ---- v5.3 projects ---- */
+.projbar{display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--bg-2);border-bottom:1px solid var(--border);flex-shrink:0;font-size:12px;overflow-x:auto;scrollbar-width:none}
+.projbar::-webkit-scrollbar{display:none}
+.pb-back{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px;font-family:var(--sans);padding:5px 8px;border-radius:7px;white-space:nowrap}
+.pb-back:hover{background:var(--surface-hover);color:var(--text)}
+.pb-sep{color:var(--text-muted)}
+.pb-name{background:none;border:none;color:var(--text);cursor:pointer;font-size:12px;font-weight:600;font-family:var(--sans);padding:5px 8px;border-radius:7px;white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.pb-name:hover{background:var(--surface-hover)}
+.floor-tabs{display:flex;gap:3px}
+.ftab{background:none;border:1px solid transparent;color:var(--text-dim);cursor:pointer;font-size:12px;font-family:var(--sans);padding:5px 12px;border-radius:7px;white-space:nowrap}
+.ftab:hover{background:var(--surface-hover);color:var(--text)}
+.ftab.active{background:color-mix(in srgb,var(--accent) 12%,var(--bg));color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,var(--border))}
+.pb-add{background:none;border:1px dashed var(--border-strong);color:var(--text-dim);cursor:pointer;width:26px;height:26px;border-radius:7px;font-size:15px;line-height:1}
+.pb-add:hover{color:var(--accent);border-color:var(--accent)}
+.save-state{font-family:var(--mono);font-size:10px;color:var(--text-muted);white-space:nowrap}
+.proj-home{flex:1;overflow-y:auto;background:var(--bg)}
+.ph-inner{max-width:1040px;margin:0 auto;padding:36px 24px 60px}
+.ph-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.ph-head h1{font-size:28px;font-weight:600;letter-spacing:-.5px}
+.ph-head h1 em{font-family:var(--serif);color:var(--accent);font-weight:400}
+.ph-head p{font-size:13px;color:var(--text-dim);margin-top:4px}
+.ph-actions{display:flex;gap:8px}
+.ph-note{font-size:12px;color:var(--text-muted);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:20px;line-height:1.6}
+.ph-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.pcard{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;cursor:pointer;transition:border-color .15s,transform .15s}
+.pcard:hover{border-color:var(--accent);transform:translateY(-2px)}
+.pcard h3{font-size:15px;font-weight:600;margin-bottom:4px;padding-right:28px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pcard .sub{font-size:12px;color:var(--text-dim);min-height:18px;margin-bottom:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pcard .meta{display:flex;gap:14px;font-family:var(--mono);font-size:11px;color:var(--text-muted)}
+.pcard .meta b{color:var(--text);font-weight:600}
+.pcard .dots{position:absolute;top:12px;right:12px;background:none;border:1px solid transparent;color:var(--text-dim);width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:16px}
+.pcard .dots:hover{background:var(--surface-hover);border-color:var(--border)}
+.pcard .pmenu{position:absolute;top:44px;right:12px;min-width:150px;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:4px;display:none;z-index:5;box-shadow:0 10px 28px rgba(0,0,0,.4)}
+.pcard .pmenu.open{display:block}
+.pcard .pmenu button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--text);padding:8px 10px;font-size:12px;border-radius:7px;cursor:pointer;font-family:var(--sans)}
+.pcard .pmenu button:hover{background:var(--surface-hover)}
+.pcard .pmenu button.danger{color:var(--danger)}
+.pcard.newcard{display:flex;align-items:center;justify-content:center;min-height:130px;border-style:dashed;color:var(--text-dim);font-size:13px;gap:8px}
+.ph-empty{text-align:center;padding:60px 20px;color:var(--text-muted);font-size:13px;line-height:1.7}
+.ph-empty .big{font-size:44px;opacity:.35;margin-bottom:8px}
+.btn-primary-modal.danger{background:var(--danger);color:#fff}
+.dlg-field{margin-bottom:12px}
+.dlg-field label{display:block;font-size:11px;font-family:var(--mono);color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.dlg-field input,.dlg-field textarea{width:100%;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:13px;font-family:var(--sans)}
+.dlg-field input:focus,.dlg-field textarea:focus{outline:none;border-color:var(--accent)}
+.dlg-field textarea{resize:vertical;min-height:60px}
 </style>
 </head>
 <body data-theme="dark">
@@ -296,7 +343,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip"><span class="dot"></span><span>v5.2.0-beta</span></div>
+    <div class="chip"><span class="dot"></span><span>v5.3.0-beta</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -351,8 +398,27 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
   </div>
 </div>
 
+<!-- PROJECT HOME -->
+<div class="proj-home" id="proj-home" style="display:none">
+  <div class="ph-inner">
+    <div class="ph-head">
+      <div>
+        <h1>WiFi <em>projects</em></h1>
+        <p>One project per site. Each project holds one or more floors.</p>
+      </div>
+      <div class="ph-actions">
+        <button class="tt" onclick="document.getElementById('proj-import').click()">Import</button>
+        <button class="tt primary" onclick="newProject()">+ New project</button>
+      </div>
+    </div>
+    <div class="ph-note">Projects are saved <b>in this browser</b> (private to you, no login needed). Clearing site data or switching browser/PC will not carry them over — use <b>Export</b> on a project to keep a backup file.</div>
+    <div class="ph-grid" id="ph-grid"></div>
+  </div>
+  <input type="file" id="proj-import" accept=".cfglab,.json" style="display:none" onchange="importProject(this)">
+</div>
+
 <!-- MAIN LAYOUT -->
-<div class="wifi-page">
+<div class="wifi-page" id="editor-page" style="display:none">
 
   <!-- LEFT PANEL -->
   <div class="left-panel" id="left-panel">
@@ -405,6 +471,24 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
 
   <!-- MAIN -->
   <div class="wifi-main">
+    <div class="projbar" id="projbar">
+      <button class="pb-back" onclick="goHome()">‹ Projects</button>
+      <span class="pb-sep">/</span>
+      <button class="pb-name" id="pb-name" onclick="editProjectInfo()" title="Project info"></button>
+      <span class="pb-sep">/</span>
+      <div class="floor-tabs" id="floor-tabs"></div>
+      <button class="pb-add" onclick="addFloor()" title="Add floor">+</button>
+      <div class="tgrow"></div>
+      <span class="save-state" id="save-state"></span>
+      <div class="filemenu" id="floormenu">
+        <button class="tt" onclick="toggleFloorMenu(event)">Floor ▾</button>
+        <div class="filemenu-pop">
+          <button onclick="floorAct('rename')">Rename floor…</button>
+          <button onclick="floorAct('dup')">Duplicate floor</button>
+          <button class="danger" onclick="floorAct('del')">Delete floor…</button>
+        </div>
+      </div>
+    </div>
     <div class="topbar">
       <button class="tt" onclick="toggleLeft()" title="Show / hide side panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="9" y1="4" x2="9" y2="20"/></svg></button>
       <div class="tsep"></div>
@@ -443,9 +527,10 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
         <div class="filemenu-pop">
           <button onclick="fileAct('upload')">Upload floor plan…</button>
           <button onclick="fileAct('scale')">Set scale by plan width…</button>
-          <button onclick="fileAct('png')">Export PNG</button>
-          <button onclick="fileAct('save')">Save plan (login)</button>
-          <button class="danger" onclick="fileAct('clear')">Clear all</button>
+          <button onclick="fileAct('png')">Export PNG (this floor)</button>
+          <button onclick="fileAct('export')">Export project file</button>
+          <button onclick="fileAct('save')">Save floor to account (beta)</button>
+          <button class="danger" onclick="fileAct('clear')">Clear this floor…</button>
         </div>
       </div>
     </div>
@@ -633,7 +718,10 @@ window.addEventListener('load', () => {
   initAuth();
   document.addEventListener('keydown', onKey);
   document.addEventListener('keyup', e => { if (e.code === 'Space') { wifi.spaceDown = false; refreshCursor(); } });
-  restoreAutosave();
+  window.addEventListener('hashchange', route);
+  window.addEventListener('visibilitychange', () => { if (document.hidden) flushSave(); });
+  window.addEventListener('pagehide', () => flushSave());
+  route();
   setScaleDisplay();
   scheduleRender();
 });
@@ -1635,6 +1723,7 @@ function setTool(tool) {
 }
 
 function onKey(e) {
+  if (!curProj) return;
   const tg = e.target.tagName;
   if (tg === 'INPUT' || tg === 'SELECT' || tg === 'TEXTAREA') return;
   const k = e.key.toLowerCase();
@@ -1682,38 +1771,6 @@ function updateUI() {
 }
 
 // ============================================================
-// AUTOSAVE (this browser only)
-// ============================================================
-let _autoTimer = null;
-function scheduleAutosave() {
-  clearTimeout(_autoTimer);
-  _autoTimer = setTimeout(() => {
-    try {
-      if (!wifi.aps.length && !wifi.walls.length && !wifi.scaleSet) return;
-      localStorage.setItem('clab_wifi_autosave', JSON.stringify({
-        aps: wifi.aps, walls: wifi.walls, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet,
-        counters: wifi.counters, band: document.getElementById('global-band').value,
-        hadPlan: !!wifi.floorPlan, t: Date.now(),
-      }));
-    } catch (e) {}
-  }, 1200);
-}
-function restoreAutosave() {
-  try {
-    const raw = localStorage.getItem('clab_wifi_autosave');
-    if (!raw) return;
-    const o = JSON.parse(raw);
-    if (!o || (!(o.aps||[]).length && !(o.walls||[]).length)) return;
-    wifi.aps = o.aps || []; wifi.walls = o.walls || [];
-    wifi.pxPerMeter = o.ppm || wifi.pxPerMeter; wifi.scaleSet = !!o.scaleSet;
-    wifi.counters = o.counters || wifi.counters;
-    if (o.band) document.getElementById('global-band').value = o.band;
-    hideEmpty();
-    toast(o.hadPlan ? 'Restored your last session — re-upload the floor plan image to continue' : 'Restored your last session (Clear All to reset)');
-  } catch (e) {}
-}
-
-// ============================================================
 // FLOOR PLAN
 // ============================================================
 function loadFloorPlan(input) {
@@ -1724,6 +1781,7 @@ function loadFloorPlan(input) {
   img.onload = () => {
     createImageBitmap(img).then(bmp => {
       wifi.floorPlan = bmp;
+      savePlanBlob(file);
       hideEmpty();
       fitView();
       scheduleRender();
@@ -1886,7 +1944,7 @@ function exportPNG() {
     renderScene();
   } finally { ctx = savedCtx; wifi.sel = savedSel; }
   const link = document.createElement('a');
-  link.download = 'wifi-heatmap.png';
+  link.download = (curProj ? safeName(curProj.name) + '-' + safeName(curFloorObj()?.name || 'floor') : 'wifi-heatmap') + '.png';
   link.href = off.toDataURL('image/png');
   link.click();
   toast('✅ Exported as PNG');
@@ -1935,13 +1993,13 @@ async function confirmSavePlan() {
 // ============================================================
 // CLEAR
 // ============================================================
-function clearAll() {
-  if (!confirm('Clear all APs and walls?')) return;
+async function clearAll() {
+  const ok = await dialog({ title: 'Clear this floor?', html: '<p>All walls and access points on this floor will be removed. The floor plan image and scale are kept. You can still undo with Ctrl+Z.</p>', ok: 'Clear', danger: true });
+  if (!ok) return;
   pushHistory();
   wifi.aps = []; wifi.walls = []; wifi.sel = null;
-  try { localStorage.removeItem('clab_wifi_autosave'); } catch (e) {}
   renderPropsPanel(); scheduleRender();
-  toast('Canvas cleared');
+  toast('Floor cleared');
 }
 
 // ============================================================
@@ -2017,6 +2075,375 @@ function renderAuthUser(user) {
   });
 }
 
+// ============================================================
+// PROJECTS  (stored in this browser: IndexedDB)
+// ============================================================
+let _db = null, curProj = null, curFloor = null, _lastSaved = '', _saveTimer = null, _routeP = Promise.resolve();
+
+function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function uid(p) { return p + Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3); }
+function safeName(n) { return String(n || 'project').replace(/[^\w\-]+/g, '_').slice(0, 40); }
+function curFloorObj() { return curProj?.floors.find(f => f.id === curFloor); }
+
+function idb() {
+  if (_db) return Promise.resolve(_db);
+  return new Promise((res, rej) => {
+    const rq = indexedDB.open('configlabs-wifi', 1);
+    rq.onupgradeneeded = () => {
+      rq.result.createObjectStore('projects', { keyPath: 'id' });
+      rq.result.createObjectStore('plans');
+    };
+    rq.onsuccess = () => { _db = rq.result; res(_db); };
+    rq.onerror = () => rej(rq.error);
+  });
+}
+async function dbReq(store, mode, fn) {
+  const db = await idb();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, mode);
+    const rq = fn(tx.objectStore(store));
+    tx.oncomplete = () => res(rq ? rq.result : undefined);
+    tx.onerror = () => rej(tx.error);
+  });
+}
+const dbAll = (st) => dbReq(st, 'readonly', s => s.getAll());
+const dbGet = (st, k) => dbReq(st, 'readonly', s => s.get(k));
+const dbPut = (st, v, k) => dbReq(st, 'readwrite', s => k === undefined ? s.put(v) : s.put(v, k));
+const dbDel = (st, k) => dbReq(st, 'readwrite', s => s.delete(k));
+
+// ---- generic dialog (replaces confirm/prompt) ----
+function dialog({ title, html = '', ok = 'OK', cancel = 'Cancel', danger = false, hideCancel = false }) {
+  return new Promise(res => {
+    const ov = document.createElement('div');
+    ov.className = 'modal-overlay open';
+    ov.style.zIndex = 300;
+    ov.innerHTML = `<div class="modal"><button class="modal-close" data-x>✕</button><h2>${title}</h2>${html}
+      <div style="display:flex;gap:8px;margin-top:16px">${hideCancel ? '' : `<button class="btn-secondary-modal" data-c style="flex:1">${cancel}</button>`}<button class="btn-primary-modal ${danger ? 'danger' : ''}" data-ok style="flex:1">${ok}</button></div></div>`;
+    const m = ov.firstChild;
+    const close = v => { document.removeEventListener('keydown', kd, true); ov.remove(); res(v); };
+    const kd = e => {
+      if (e.key === 'Escape') { e.stopPropagation(); close(null); }
+      else if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') { e.preventDefault(); close(m); }
+    };
+    ov.addEventListener('mousedown', e => { if (e.target === ov) close(null); });
+    m.querySelector('[data-x]').onclick = () => close(null);
+    const c = m.querySelector('[data-c]'); if (c) c.onclick = () => close(null);
+    m.querySelector('[data-ok]').onclick = () => close(m);
+    document.addEventListener('keydown', kd, true);
+    document.body.appendChild(ov);
+    const f = m.querySelector('input,textarea'); if (f) { f.focus(); f.select?.(); }
+  });
+}
+async function askText(title, label, value) {
+  const m = await dialog({ title, html: `<div class="dlg-field"><label>${label}</label><input id="dlg-t" value="${esc(value || '')}"></div>`, ok: 'Save' });
+  if (!m) return null;
+  const v = m.querySelector('#dlg-t').value.trim();
+  return v || null;
+}
+
+// ---- floor data <-> editor state ----
+function newFloorData() { return { aps: [], walls: [], ppm: WORLD_W / 40, scaleSet: false, counters: { ap: 0, wall: 0 }, band: '5', env: 'office', started: false }; }
+function captureFloor() {
+  return {
+    aps: wifi.aps, walls: wifi.walls, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet,
+    counters: wifi.counters, band: document.getElementById('global-band').value, env: wifi.env,
+    started: wifi.started || !!wifi.floorPlan || wifi.aps.length > 0 || wifi.walls.length > 0,
+  };
+}
+function applyFloor(data, bmp) {
+  finishDraft();
+  wifi.aps = JSON.parse(JSON.stringify(data.aps || []));
+  wifi.walls = JSON.parse(JSON.stringify(data.walls || []));
+  wifi.pxPerMeter = data.ppm || WORLD_W / 40;
+  wifi.scaleSet = !!data.scaleSet;
+  wifi.counters = data.counters || { ap: 0, wall: 0 };
+  wifi.floorPlan = bmp || null;
+  wifi.sel = null;
+  wifi.env = data.env || 'office';
+  document.getElementById('env-select').value = wifi.env;
+  document.getElementById('global-band').value = data.band || '5';
+  wifi.started = !!data.started;
+  document.getElementById('canvas-empty').style.display = wifi.started ? 'none' : '';
+  _undo.length = 0; _redo.length = 0;
+  _hmCanvas = null; _hmSig = ''; _statSig = ''; _precCanvas = null; _precSig = '';
+  setScaleDisplay();
+  renderPropsPanel();
+  wifi.view.auto = true;
+  scheduleRender();
+  requestAnimationFrame(() => { fitView(); });
+}
+
+// ---- saving ----
+function setSaveState(t) { const e = document.getElementById('save-state'); if (e) e.textContent = t; }
+function scheduleAutosave() {
+  if (!curProj) return;
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(saveCurrent, 1200);
+}
+function flushSave() { clearTimeout(_saveTimer); return saveCurrent(); }
+async function saveCurrent() {
+  if (!curProj || !curFloor) return;
+  const f = curFloorObj(); if (!f) return;
+  const data = captureFloor();
+  const sig = JSON.stringify(data) + (wifi.floorPlan ? 'P' : '');
+  if (sig === _lastSaved) return;
+  try {
+    setSaveState('Saving…');
+    f.data = data; f.hasPlan = !!wifi.floorPlan;
+    curProj.updated = Date.now();
+    await dbPut('projects', curProj);
+    _lastSaved = sig;
+    setSaveState('Saved in this browser');
+  } catch (e) { setSaveState('⚠ Not saved'); toast('Could not save to browser storage', 'error'); }
+}
+async function savePlanBlob(file) {
+  if (!curProj || !curFloor) return;
+  try {
+    await dbPut('plans', file, curProj.id + ':' + curFloor);
+    const f = curFloorObj(); if (f) f.hasPlan = true;
+    _lastSaved = '';
+    scheduleAutosave();
+  } catch (e) { toast('Floor plan image could not be stored', 'error'); }
+}
+
+// ---- routing:  #p=<project>&f=<floor> ----
+function parseHash() {
+  const h = new URLSearchParams(location.hash.replace(/^#/, ''));
+  return { p: h.get('p'), f: h.get('f') };
+}
+function nav(hash) {
+  if (location.hash === hash || (hash === '' && (location.hash === '' || location.hash === '#'))) { route(); return; }
+  location.hash = hash;
+}
+function route() { _routeP = _routeP.then(_route).catch(e => console.error(e)); }
+async function _route() {
+  const h = parseHash();
+  if (!h.p) { await showHome(); return; }
+  if (curProj && curProj.id === h.p) {
+    if (h.f && h.f !== curFloor && curProj.floors.some(f => f.id === h.f)) { await flushSave(); await loadFloor(h.f); }
+    return;
+  }
+  await flushSave();
+  let proj;
+  try { proj = await dbGet('projects', h.p); } catch (e) { proj = null; }
+  if (!proj) { toast('Project not found in this browser', 'error'); curProj = null; history.replaceState(null, '', '#'); await showHome(); return; }
+  curProj = proj;
+  document.getElementById('proj-home').style.display = 'none';
+  document.getElementById('editor-page').style.display = 'flex';
+  const fid = (h.f && proj.floors.some(f => f.id === h.f)) ? h.f : proj.floors[0].id;
+  await loadFloor(fid);
+}
+async function loadFloor(fid) {
+  curFloor = fid;
+  const f = curFloorObj();
+  let bmp = null;
+  if (f.hasPlan) {
+    try { const blob = await dbGet('plans', curProj.id + ':' + fid); if (blob) bmp = await createImageBitmap(blob); } catch (e) {}
+  }
+  applyFloor(f.data || newFloorData(), bmp);
+  _lastSaved = JSON.stringify(captureFloor()) + (bmp ? 'P' : '');
+  const want = '#p=' + curProj.id + '&f=' + fid;
+  if (location.hash !== want) history.replaceState(null, '', want);
+  setSaveState('Saved in this browser');
+  renderProjBar();
+}
+function renderProjBar() {
+  document.getElementById('pb-name').textContent = curProj.name;
+  document.getElementById('floor-tabs').innerHTML = curProj.floors.map(f =>
+    `<button class="ftab ${f.id === curFloor ? 'active' : ''}" onclick="nav('#p=${curProj.id}&f=${f.id}')" ondblclick="floorAct('rename')">${esc(f.name)}</button>`).join('');
+}
+
+// ---- home ----
+async function showHome() {
+  await flushSave();
+  curProj = null; curFloor = null; _lastSaved = '';
+  document.getElementById('editor-page').style.display = 'none';
+  document.getElementById('proj-home').style.display = 'block';
+  let list = [];
+  try { list = await dbAll('projects'); } catch (e) {
+    document.getElementById('ph-grid').innerHTML = '<div class="ph-empty">Browser storage is not available (private window?). Projects cannot be saved here.</div>';
+    return;
+  }
+  // one-time recovery of the older single-plan autosave
+  try {
+    const raw = localStorage.getItem('clab_wifi_autosave');
+    if (raw && !list.length) {
+      const o = JSON.parse(raw);
+      if ((o.aps || []).length || (o.walls || []).length) {
+        const p = makeProject('Recovered session', {});
+        p.floors[0].data = { aps: o.aps || [], walls: o.walls || [], ppm: o.ppm, scaleSet: !!o.scaleSet, counters: o.counters || { ap: 0, wall: 0 }, band: o.band || '5', env: 'office', started: true };
+        await dbPut('projects', p); list = [p];
+      }
+    }
+    if (raw) localStorage.removeItem('clab_wifi_autosave');
+  } catch (e) {}
+  renderHome(list);
+}
+function renderHome(list) {
+  list.sort((a, b) => b.updated - a.updated);
+  const grid = document.getElementById('ph-grid');
+  const cards = list.map(p => {
+    const aps = p.floors.reduce((n, f) => n + ((f.data && f.data.aps) ? f.data.aps.length : 0), 0);
+    const sub = [p.client, p.location].filter(Boolean).join(' · ');
+    return `<div class="pcard" onclick="nav('#p=${p.id}')">
+      <button class="dots" onclick="event.stopPropagation();toggleCardMenu('${p.id}')" title="More">⋯</button>
+      <div class="pmenu" id="pm-${p.id}">
+        <button onclick="event.stopPropagation();editProjectInfo('${p.id}')">Rename / info…</button>
+        <button onclick="event.stopPropagation();duplicateProject('${p.id}')">Duplicate</button>
+        <button onclick="event.stopPropagation();exportProject('${p.id}')">Export file</button>
+        <button class="danger" onclick="event.stopPropagation();deleteProject('${p.id}')">Delete…</button>
+      </div>
+      <h3>${esc(p.name)}</h3>
+      <div class="sub">${esc(sub) || '&nbsp;'}</div>
+      <div class="meta"><span><b>${p.floors.length}</b> floor${p.floors.length === 1 ? '' : 's'}</span><span><b>${aps}</b> AP</span><span>${new Date(p.updated).toLocaleDateString()}</span></div>
+    </div>`;
+  }).join('');
+  grid.innerHTML = cards + `<div class="pcard newcard" onclick="newProject()">+ New project</div>`;
+}
+function toggleCardMenu(id) {
+  document.querySelectorAll('.pmenu.open').forEach(m => { if (m.id !== 'pm-' + id) m.classList.remove('open'); });
+  document.getElementById('pm-' + id).classList.toggle('open');
+}
+document.addEventListener('click', () => document.querySelectorAll('.pmenu.open').forEach(m => m.classList.remove('open')));
+
+function makeProject(name, info) {
+  const fid = uid('f');
+  return { id: uid('p'), name, client: info.client || '', location: info.location || '', engineer: info.engineer || '', notes: info.notes || '',
+           created: Date.now(), updated: Date.now(), floors: [{ id: fid, name: 'Floor 1', hasPlan: false, data: newFloorData() }] };
+}
+function infoHTML(p) {
+  return `<div class="dlg-field"><label>Project name *</label><input id="pi-name" value="${esc(p.name)}" placeholder="e.g. Universitas Terbuka Palembang"></div>
+    <div class="dlg-field"><label>Client</label><input id="pi-client" value="${esc(p.client)}"></div>
+    <div class="dlg-field"><label>Location / site</label><input id="pi-loc" value="${esc(p.location)}"></div>
+    <div class="dlg-field"><label>Engineer</label><input id="pi-eng" value="${esc(p.engineer)}"></div>
+    <div class="dlg-field"><label>Notes</label><textarea id="pi-notes">${esc(p.notes)}</textarea></div>`;
+}
+function readInfo(m) {
+  return { name: m.querySelector('#pi-name').value.trim(), client: m.querySelector('#pi-client').value.trim(),
+           location: m.querySelector('#pi-loc').value.trim(), engineer: m.querySelector('#pi-eng').value.trim(), notes: m.querySelector('#pi-notes').value.trim() };
+}
+async function newProject() {
+  const m = await dialog({ title: 'New <em>project</em>', html: infoHTML({ name: '', client: '', location: '', engineer: '', notes: '' }), ok: 'Create project' });
+  if (!m) return;
+  const i = readInfo(m);
+  if (!i.name) { toast('Give the project a name', 'error'); return newProject(); }
+  const p = makeProject(i.name, i);
+  await dbPut('projects', p);
+  nav('#p=' + p.id);
+}
+async function editProjectInfo(id) {
+  const p = id ? await dbGet('projects', id) : curProj;
+  if (!p) return;
+  const m = await dialog({ title: 'Project <em>info</em>', html: infoHTML(p), ok: 'Save' });
+  if (!m) return;
+  const i = readInfo(m);
+  if (!i.name) { toast('Project name cannot be empty', 'error'); return; }
+  Object.assign(p, i, { updated: Date.now() });
+  await dbPut('projects', p);
+  if (curProj && curProj.id === p.id) { curProj = p; renderProjBar(); } else renderHome(await dbAll('projects'));
+}
+async function deleteProject(id) {
+  const p = await dbGet('projects', id);
+  const m = await dialog({ title: 'Delete project?', html: `<p><b>${esc(p.name)}</b> and all its floors will be deleted from this browser. This cannot be undone — export it first if you may need it.</p>`, ok: 'Delete project', danger: true });
+  if (!m) return;
+  for (const f of p.floors) { try { await dbDel('plans', p.id + ':' + f.id); } catch (e) {} }
+  await dbDel('projects', id);
+  renderHome(await dbAll('projects'));
+  toast('Project deleted');
+}
+async function duplicateProject(id) {
+  const p = await dbGet('projects', id);
+  const cp = JSON.parse(JSON.stringify(p));
+  cp.id = uid('p'); cp.name = p.name + ' (copy)'; cp.created = cp.updated = Date.now();
+  for (const f of cp.floors) {
+    const old = f.id; f.id = uid('f');
+    if (f.hasPlan) { const b = await dbGet('plans', p.id + ':' + old); if (b) await dbPut('plans', b, cp.id + ':' + f.id); }
+  }
+  await dbPut('projects', cp);
+  renderHome(await dbAll('projects'));
+  toast('Project duplicated');
+}
+function goHome() { nav(''); }
+
+// ---- floors ----
+async function addFloor() {
+  const name = await askText('New floor', 'Floor name', 'Floor ' + (curProj.floors.length + 1));
+  if (!name) return;
+  await flushSave();
+  const f = { id: uid('f'), name, hasPlan: false, data: newFloorData() };
+  curProj.floors.push(f);
+  curProj.updated = Date.now();
+  await dbPut('projects', curProj);
+  nav('#p=' + curProj.id + '&f=' + f.id);
+}
+function toggleFloorMenu(e) { e.stopPropagation(); document.getElementById('floormenu').classList.toggle('open'); }
+document.addEventListener('click', e => { const fm = document.getElementById('floormenu'); if (fm && !fm.contains(e.target)) fm.classList.remove('open'); });
+async function floorAct(a) {
+  document.getElementById('floormenu').classList.remove('open');
+  const f = curFloorObj(); if (!f) return;
+  if (a === 'rename') {
+    const n = await askText('Rename floor', 'Floor name', f.name);
+    if (!n) return;
+    f.name = n; curProj.updated = Date.now(); await dbPut('projects', curProj); renderProjBar();
+  } else if (a === 'dup') {
+    await flushSave();
+    const nf = { id: uid('f'), name: f.name + ' (copy)', hasPlan: f.hasPlan, data: JSON.parse(JSON.stringify(f.data)) };
+    if (f.hasPlan) { const b = await dbGet('plans', curProj.id + ':' + f.id); if (b) await dbPut('plans', b, curProj.id + ':' + nf.id); }
+    curProj.floors.splice(curProj.floors.indexOf(f) + 1, 0, nf);
+    curProj.updated = Date.now(); await dbPut('projects', curProj);
+    nav('#p=' + curProj.id + '&f=' + nf.id);
+  } else if (a === 'del') {
+    if (curProj.floors.length < 2) { toast('A project needs at least one floor', 'error'); return; }
+    const m = await dialog({ title: 'Delete floor?', html: `<p><b>${esc(f.name)}</b> (its plan, walls and APs) will be deleted.</p>`, ok: 'Delete floor', danger: true });
+    if (!m) return;
+    const idx = curProj.floors.indexOf(f);
+    curProj.floors.splice(idx, 1);
+    try { await dbDel('plans', curProj.id + ':' + f.id); } catch (e) {}
+    curProj.updated = Date.now(); await dbPut('projects', curProj);
+    curFloor = null; _lastSaved = '';
+    nav('#p=' + curProj.id + '&f=' + curProj.floors[Math.max(0, idx - 1)].id);
+  }
+}
+
+// ---- export / import (.cfglab file) ----
+function blobToDataURL(b) { return new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); }); }
+async function exportProject(id) {
+  if (curProj && curProj.id === id) await flushSave();
+  const p = await dbGet('projects', id);
+  const plans = {};
+  for (const f of p.floors) { if (f.hasPlan) { const b = await dbGet('plans', p.id + ':' + f.id); if (b) plans[f.id] = await blobToDataURL(b); } }
+  const out = JSON.stringify({ format: 'cfglab', v: 1, project: p, plans });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([out], { type: 'application/json' }));
+  a.download = safeName(p.name) + '.cfglab';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast('Project exported');
+}
+async function importProject(input) {
+  const file = input.files[0]; input.value = '';
+  if (!file) return;
+  try {
+    const o = JSON.parse(await file.text());
+    if (o.format !== 'cfglab' || !o.project || !Array.isArray(o.project.floors) || !o.project.floors.length) throw new Error('bad file');
+    const p = o.project;
+    const oldId = p.id;
+    p.id = uid('p'); p.updated = Date.now(); p.name = (p.name || 'Imported project');
+    for (const f of p.floors) {
+      const of = f.id; f.id = uid('f');
+      f.data = f.data || newFloorData();
+      if (o.plans && o.plans[of]) {
+        const blob = await (await fetch(o.plans[of])).blob();
+        await dbPut('plans', blob, p.id + ':' + f.id);
+        f.hasPlan = true;
+      } else f.hasPlan = false;
+    }
+    await dbPut('projects', p);
+    renderHome(await dbAll('projects'));
+    toast('Imported: ' + p.name);
+  } catch (e) { toast('That file is not a valid project file', 'error'); }
+}
+
 function toggleSec(btn) { btn.parentElement.classList.toggle('closed'); }
 function toggleLeft() { document.getElementById('left-panel').classList.toggle('collapsed'); }
 function closeProps() { wifi.sel = null; renderPropsPanel(); scheduleRender(); }
@@ -2027,6 +2454,7 @@ function fileAct(a) {
   else if (a === 'scale') openScaleModal();
   else if (a === 'png') exportPNG();
   else if (a === 'save') savePlan();
+  else if (a === 'export') exportProject(curProj.id);
   else if (a === 'clear') clearAll();
 }
 document.addEventListener('click', e => {
