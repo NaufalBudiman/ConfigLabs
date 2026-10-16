@@ -320,6 +320,8 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
   .nav-link{padding:7px 10px;font-size:13px}
   .hero-tag{border-radius:14px;text-align:center;line-height:1.5}
 }
+.desk-only{display:none;margin-top:8px;font-family:var(--mono);font-size:11px;color:var(--text-muted)}
+@media(max-width:767px){.desk-only{display:block}}
 </style>
 </head>
 <body data-theme="dark">
@@ -465,6 +467,7 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
         <li>Word report in English or Bahasa</li>
       </ul>
       <span class="feature-cta">Open WiFi Planner</span>
+      <span class="desk-only">Laptop / tablet only</span>
     </a>
 
     <!-- ABOUT - Opens GitHub -->

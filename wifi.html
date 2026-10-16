@@ -363,9 +363,20 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
   .nav-tab svg,.nav-right .chip,.beta-pill{display:none}
   .nav-tab{white-space:nowrap}
 }
+/* ---- v6.0 phone block ---- */
+.phone-block{display:none}
+@media(max-width:767px){
+  .phone-block{display:flex;position:fixed;inset:0;z-index:9999;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 24px;gap:14px}
+  .phone-block h2{font-family:var(--serif);font-size:28px;font-weight:400}
+  .phone-block p{color:var(--text-dim);font-size:14px;line-height:1.6;max-width:320px}
+  .phone-block .row{display:flex;gap:10px;margin-top:8px}
+  .phone-block a{padding:10px 18px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--bg)}
+  .phone-block a.alt{background:var(--surface);color:var(--text);border:1px solid var(--border-strong)}
+}
 </style>
 </head>
 <body data-theme="dark">
+<div class="phone-block"><div style="font-size:40px">📶</div><h2>WiFi Planner needs a bigger screen</h2><p>The planner is built for laptop or tablet. Please open this page on a larger screen to plan floors and place access points.</p><div class="row"><a href="/">Home</a><a class="alt" href="/builder.html">Config Builder</a></div></div>
 
 <!-- NAV -->
 <nav>
