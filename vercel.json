@@ -2,11 +2,23 @@
   "rewrites": [
     {
       "source": "/auth/:path*",
-      "destination": "https://configlabs-production.up.railway.app/auth/:path*"
+      "destination": "https://configlabs-api.onrender.com/auth/:path*"
     },
     {
       "source": "/api/:path*",
-      "destination": "https://configlabs-production.up.railway.app/api/:path*"
+      "destination": "https://configlabs-api.onrender.com/api/:path*"
+    },
+    {
+      "source": "/templates",
+      "destination": "https://configlabs-api.onrender.com/templates"
+    },
+    {
+      "source": "/generate",
+      "destination": "https://configlabs-api.onrender.com/generate"
+    },
+    {
+      "source": "/vendors",
+      "destination": "https://configlabs-api.onrender.com/vendors"
     }
   ]
 }

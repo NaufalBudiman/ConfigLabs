@@ -30,9 +30,14 @@ app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
 # ── Database ────────────────────────────────────────────────
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
-    'DATABASE_URL', 'sqlite:///configlabs.db'
-)
+_db_url = os.environ.get('DATABASE_URL', 'sqlite:///configlabs.db')
+if _db_url.startswith('postgres://'):
+    _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+if _db_url.startswith('postgresql://'):
+    _db_url = _db_url.replace('postgresql://', 'postgresql+psycopg2://', 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
+# Neon scales to zero -> reconnect cleanly after idle
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True, 'pool_recycle': 280}
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SESSION_SECRET', 'dev-secret-change-me')
 
@@ -1193,6 +1198,15 @@ def root():
         "vendors": list(VENDORS.keys()),
         "docs": "https://configlabs.online"
     })
+
+@app.route("/api/health", methods=["GET"])
+def api_health():
+    try:
+        db.session.execute(db.text("SELECT 1"))
+        db_ok = True
+    except Exception:
+        db_ok = False
+    return jsonify({"status": "ok", "db": db_ok, "version": APP_VERSION}), 200
 
 @app.route("/vendors", methods=["GET"])
 def vendors():
