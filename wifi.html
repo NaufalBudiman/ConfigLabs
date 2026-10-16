@@ -357,7 +357,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip"><span class="dot"></span><span>v5.4.1-beta</span></div>
+    <div class="chip"><span class="dot"></span><span>v5.5.0-beta</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -523,6 +523,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
       <button class="tt" data-tool="door" onclick="setTool('door')" title="Place door on a wall (D)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3"/><path d="M13 20h9"/><path d="M10 12v.01"/><path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"/></svg><span class="lbl">Door</span></button>
       <button class="tt" data-tool="place" onclick="setTool('place')" title="Place AP (A)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg><span class="lbl">AP</span></button>
       <button class="tt" data-tool="area" onclick="setTool('area')" title="Render area (G): the heatmap and statistics are computed only inside it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l7-3 9 4-2 11-9 3-5-8z" stroke-dasharray="3 3"/></svg><span class="lbl">Area</span></button>
+      <button class="tt" data-tool="acc" onclick="setTool('acc')" title="Acceptance point (P): mark the spots to test after installation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span class="lbl">Test pt</span></button>
       <button class="tt" data-tool="erase" onclick="setTool('erase')" title="Erase (E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H7L3 16l9.16-9.16a2 2 0 012.83 0L20 12a2 2 0 010 2.83L13.5 20"/></svg><span class="lbl">Erase</span></button>
       <button class="tt" data-tool="calibrate" onclick="setTool('calibrate')" title="Calibrate scale (C)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.3 8.7l-5.99-6a1 1 0 0 0-1.42 0L2.7 13.9a1 1 0 0 0 0 1.42l6 5.99a1 1 0 0 0 1.42 0L21.3 10.1a1 1 0 0 0 0-1.42z"/><path d="M7.5 10.5l2 2M10.5 7.5l2 2M13.5 4.5l2 2M4.5 13.5l2 2"/></svg><span class="lbl">Scale</span></button>
       <div class="tsep"></div>
@@ -558,6 +559,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
           <button onclick="fileAct('report')">Export report (.docx)</button>
           <button onclick="fileAct('csv')">Export AP list (.csv)</button>
           <button onclick="fileAct('export')">Export project file (backup)</button>
+          <button onclick="fileAct('clearacc')">Clear acceptance points</button>
           <button onclick="fileAct('cleararea')">Clear render area</button>
           <button onclick="fileAct('save')">Save floor to account (beta)</button>
           <button class="danger" onclick="fileAct('clear')">Clear this floor…</button>
@@ -621,8 +623,11 @@ const VENDORS = {
     name: 'H3C', color: '#7cf4c7', bg: '#16221a',
     models: [
       { id:'wa6320', name:'WA6320',     wifi:6, bands:['2.4','5'],     tx:20, gain:3.0, range_m:30, indoor:true,  desc:'Wi-Fi 6 2x2 Indoor' },
-      { id:'wa6636', name:'WA6636',     wifi:6, bands:['2.4','5'],     tx:23, gain:4.0, range_m:40, indoor:true,  desc:'Wi-Fi 6 4x4 Tri-Radio' },
+      { id:'wa6636', name:'WA6636',     wifi:6, bands:['2.4','5'],     tx:23, gain:4.0, range_m:40, indoor:true,  desc:'Wi-Fi 6 4x4 Tri-Radio', radios:['5','5','2.4'] },
       { id:'wa7338', name:'WA7338-HI',  wifi:7, bands:['2.4','5','6'], tx:23, gain:5.0, range_m:45, indoor:true,  desc:'Wi-Fi 7 Tri-Band' },
+      { id:'wa7638', name:'WA7638',     wifi:7, bands:['2.4','5'],     tx:26, gain:4.0, range_m:45, indoor:true,  desc:'Wi-Fi 7 Tri-Radio (2x5G + 2.4G)', radios:['5','5','2.4'] },
+      { id:'wa7330i',name:'WA7330i',    wifi:7, bands:['2.4','5'],     tx:23, gain:4.0, range_m:40, indoor:true,  desc:'Wi-Fi 7 Dual-Band Indoor' },
+      { id:'wa7220', name:'WA7220-HI',  wifi:7, bands:['2.4','5'],     tx:23, gain:4.0, range_m:35, indoor:true,  desc:'Wi-Fi 7 Dual-Band Hospitality' },
       { id:'wa5620', name:'WA5620E',    wifi:5, bands:['2.4','5'],     tx:26, gain:7.0, range_m:100,indoor:false, desc:'Wi-Fi 5 Outdoor 4x4' },
     ]
   },
@@ -732,7 +737,7 @@ const wifi = {
   snapPt: null,
   ortho: false,
   env: 'office',
-  doors: [], areas: [], areaDraft: null, doorHover: null, doorType: 'wood', doorW: 0.9,
+  doors: [], areas: [], accPts: [], areaDraft: null, doorHover: null, doorType: 'wood', doorW: 0.9,
   spaceDown: false,
   panning: null,
 };
@@ -915,6 +920,7 @@ function renderScene() {
   if (wifi.hmVisible && wifi.aps.length > 0) renderHeatmap();
   if (wifi.layers.walls) { renderWalls(); renderDoors(); }
   renderAreas();
+  renderAcc();
   if (wifi.layers.aps)   renderAPs();
 }
 
@@ -1244,13 +1250,13 @@ function inRegion(rg, x, y) {
   return false;
 }
 
-function prepHeat() {
-  const band = document.getElementById('global-band').value;
+function prepHeat(ov) {
+  const band = ov ? ov.band : document.getElementById('global-band').value;
   return {
     band,
-    mode: document.getElementById('heatmap-mode').value,
-    alpha: wifi.opacity,
-    threshold: wifi.threshold,
+    mode: ov ? 'h3c' : document.getElementById('heatmap-mode').value,
+    alpha: ov ? ov.alpha : wifi.opacity,
+    threshold: ov ? ov.threshold : wifi.threshold,
     ppm: wifi.pxPerMeter,
     region: heatRegion(),
     walls: wifi.walls.map(w => {
@@ -1264,6 +1270,10 @@ function prepHeat() {
     aps: wifi.aps.map(ap => {
       const m = getAPModel(ap.vendor, ap.model);
       if (!m) return null;
+      if (ov) {
+        if (!m.bands.includes(band)) return null;
+        return { x: ap.x, y: ap.y, eirp: (ap.txPower !== undefined ? ap.txPower : m.tx) + m.gain, band, noise: NOISE_FLOOR[band] };
+      }
       const b = ap.band || band;
       return { x: ap.x, y: ap.y, eirp: (ap.txPower !== undefined ? ap.txPower : m.tx) + m.gain, band: b, noise: NOISE_FLOOR[b] };
     }).filter(Boolean),
@@ -1289,8 +1299,19 @@ function cellRSSI(hc, px, py) {
   }
 }
 
+const H3C_STOPS = [[-90, [255, 40, 0]], [-80, [255, 150, 0]], [-70, [255, 225, 0]], [-60, [70, 220, 60]], [-50, [0, 215, 215]], [-40, [40, 70, 255]]];
+function h3cRGB(r) {
+  if (r <= -90) return H3C_STOPS[0][1];
+  if (r >= -40) return H3C_STOPS[5][1];
+  for (let i = 0; i < 5; i++) {
+    const [a, ca] = H3C_STOPS[i], [b, cb] = H3C_STOPS[i + 1];
+    if (r <= b) { const t = (r - a) / (b - a); return ca.map((v, k) => Math.round(v + (cb[k] - v) * t)); }
+  }
+  return H3C_STOPS[5][1];
+}
+function h3cToRGBA(r, alpha) { const c = h3cRGB(r); return [c[0], c[1], c[2], Math.round(alpha * 255)]; }
 function paintCell(hc, d, i) {
-  const c = hc.mode === 'snr' ? snrToRGBA(_bS, hc.alpha)
+  const c = hc.mode === 'h3c' ? h3cToRGBA(_bR, hc.alpha) : hc.mode === 'snr' ? snrToRGBA(_bS, hc.alpha)
           : hc.mode === 'coverage' ? coverageToRGBA(_bR, hc.alpha)
           : rssiToRGBA(_bR, hc.alpha);
   d[i] = c[0]; d[i+1] = c[1]; d[i+2] = c[2]; d[i+3] = c[3];
@@ -1313,8 +1334,8 @@ function renderHeatmap() {
   ctx.drawImage(_hmCanvas, 0, 0, WORLD_W, WORLD_H);
 }
 
-function heatCanvas(STEP, target) {
-  const hc = prepHeat();
+function heatCanvas(STEP, target, ov) {
+  const hc = prepHeat(ov);
   const rg = hc.region;
   const cw = Math.ceil(WORLD_W / STEP), ch = Math.ceil(WORLD_H / STEP);
   const c = target || document.createElement('canvas');
@@ -1432,8 +1453,22 @@ function renderWalls() {
 // ============================================================
 // RENDER APs
 // ============================================================
+function renderAcc() {
+  wifi.accPts.forEach((t, i) => {
+    ctx.save(); ctx.translate(t.x, t.y); ctx.scale(_repScale, _repScale); ctx.translate(-t.x, -t.y);
+    ctx.beginPath(); ctx.arc(t.x, t.y, 11, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff8a00'; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+    ctx.fillStyle = '#111'; ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(i + 1), t.x, t.y + 0.5);
+    ctx.restore();
+  });
+}
+let _repScale = 1;
 function renderAPs() {
   for (const ap of wifi.aps) {
+    ctx.save();
+    if (_repScale !== 1) { ctx.translate(ap.x, ap.y); ctx.scale(_repScale, _repScale); ctx.translate(-ap.x, -ap.y); }
     const vendor  = VENDORS[ap.vendor];
     const isSel   = wifi.sel?.kind === 'ap' && wifi.sel?.id === ap.id;
     const color   = vendor?.color || '#7cf4c7';
@@ -1479,6 +1514,7 @@ function renderAPs() {
     ctx.fillStyle = '#ffffff';
     ctx.fillText(ap.name, ap.x, ap.y + r + 16.5);
 
+    if (_repScale === 1) {
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     const bw = 26, bh = 12;
     ctx.beginPath();
@@ -1487,6 +1523,8 @@ function renderAPs() {
     ctx.fillStyle = color;
     ctx.font = '8px JetBrains Mono, monospace';
     ctx.fillText((ap.band || document.getElementById('global-band').value) + 'G', ap.x, ap.y - r - bh/2 + 3);
+    }
+    ctx.restore();
   }
 }
 
@@ -1495,7 +1533,7 @@ function renderAPs() {
 // ============================================================
 const _undo = [], _redo = [];
 function snapshot() {
-  return JSON.stringify({ aps: wifi.aps, walls: wifi.walls, doors: wifi.doors, areas: wifi.areas, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet });
+  return JSON.stringify({ aps: wifi.aps, walls: wifi.walls, doors: wifi.doors, areas: wifi.areas, acc: wifi.accPts, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet });
 }
 function selObj() {
   if (!wifi.sel) return null;
@@ -1516,7 +1554,7 @@ function pushHistoryDebounced() {
 }
 function restoreSnapshot(str) {
   const o = JSON.parse(str);
-  wifi.aps = o.aps; wifi.walls = o.walls; wifi.doors = o.doors || []; wifi.areas = o.areas || [];
+  wifi.aps = o.aps; wifi.walls = o.walls; wifi.doors = o.doors || []; wifi.areas = o.areas || []; wifi.accPts = o.acc || [];
   wifi.pxPerMeter = o.ppm; wifi.scaleSet = o.scaleSet;
   if (wifi.sel && !selObj()) wifi.sel = null;
   setScaleDisplay();
@@ -1597,7 +1635,7 @@ function refreshCursor() {
   if (wifi.panning) { canvas.style.cursor = 'grabbing'; return; }
   if (wifi.spaceDown) { canvas.style.cursor = 'grab'; return; }
   const t = wifi.tool;
-  canvas.style.cursor = (t === 'place' || t === 'wall' || t === 'rect' || t === 'calibrate' || t === 'door' || t === 'area') ? 'crosshair' : t === 'erase' ? 'cell' : t === 'pan' ? 'grab' : 'default';
+  canvas.style.cursor = (t === 'place' || t === 'wall' || t === 'rect' || t === 'calibrate' || t === 'door' || t === 'area' || t === 'acc') ? 'crosshair' : t === 'erase' ? 'cell' : t === 'pan' ? 'grab' : 'default';
 }
 
 function onPointerDown(e) {
@@ -1659,6 +1697,12 @@ function onPointerDown(e) {
   else if (wifi.tool === 'area') {
     areaPoint(x, y, e.shiftKey);
   }
+  else if (wifi.tool === 'acc') {
+    pushHistory();
+    wifi.counters.acc = (wifi.counters.acc || 0) + 1;
+    wifi.accPts.push({ id: 't' + wifi.counters.acc, x, y });
+    scheduleRender();
+  }
   else if (wifi.tool === 'place') {
     placeAP(x, y);
   }
@@ -1694,6 +1738,8 @@ function onPointerDown(e) {
   else if (wifi.tool === 'erase') {
     const apIdx = wifi.aps.findIndex(a => Math.hypot(a.x-x, a.y-y) < 22);
     if (apIdx >= 0) { pushHistory(); wifi.aps.splice(apIdx, 1); scheduleRender(); return; }
+    const ti = wifi.accPts.findIndex(t => Math.hypot(t.x - x, t.y - y) < 16);
+    if (ti >= 0) { pushHistory(); wifi.accPts.splice(ti, 1); scheduleRender(); return; }
     const door = findDoorNear(x, y);
     if (door) { pushHistory(); wifi.doors = wifi.doors.filter(dd => dd.id !== door.id); scheduleRender(); return; }
     const wall = findWallNear(x, y);
@@ -2092,7 +2138,7 @@ function onKey(e) {
     return;
   }
   if (e.code === 'Space') { e.preventDefault(); if (!wifi.spaceDown) { wifi.spaceDown = true; refreshCursor(); } return; }
-  const map = { s:'select', a:'place', w:'wall', r:'rect', c:'calibrate', e:'erase', h:'pan', d:'door', g:'area' };
+  const map = { s:'select', a:'place', w:'wall', r:'rect', c:'calibrate', e:'erase', h:'pan', d:'door', g:'area', p:'acc' };
   if (k === 'o') { setOrtho(!wifi.ortho); return; }
   if (map[k]) { setTool(map[k]); return; }
   if (k === 'f') { fitView(); return; }
@@ -2126,6 +2172,7 @@ function updateUI() {
     erase:     'Click an AP, door, wall or render area to delete it',
     pan:       'Drag to move the view · scroll to zoom (Space+drag works in any tool)',
     door:      'Hover a wall and click to place a door · choose type and width in the side panel · drag a door along its wall with Select',
+    acc:       'Click to drop numbered acceptance (test) points · they appear in the report with the predicted signal · erase tool removes them',
     area:      wifi.areaDraft && wifi.areaDraft.length ? 'Click the next corner · click the first point, double-click or <kbd>Enter</kbd> to close' : 'Click the corners of the region to render. The heatmap and stats are computed only inside it',
   };
   document.getElementById('canvas-hint').innerHTML = H[wifi.tool] || '';
@@ -2508,10 +2555,10 @@ async function askText(title, label, value) {
 }
 
 // ---- floor data <-> editor state ----
-function newFloorData() { return { aps: [], walls: [], doors: [], areas: [], ppm: WORLD_W / 40, scaleSet: false, counters: { ap: 0, wall: 0 }, band: '5', env: 'office', started: false }; }
+function newFloorData() { return { aps: [], walls: [], doors: [], areas: [], acc: [], ppm: WORLD_W / 40, scaleSet: false, counters: { ap: 0, wall: 0 }, band: '5', env: 'office', started: false }; }
 function captureFloor() {
   return {
-    aps: wifi.aps, walls: wifi.walls, doors: wifi.doors, areas: wifi.areas, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet,
+    aps: wifi.aps, walls: wifi.walls, doors: wifi.doors, areas: wifi.areas, acc: wifi.accPts, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet,
     counters: wifi.counters, band: document.getElementById('global-band').value, env: wifi.env,
     started: wifi.started || !!wifi.floorPlan || wifi.aps.length > 0 || wifi.walls.length > 0,
   };
@@ -2522,6 +2569,7 @@ function applyFloor(data, bmp) {
   wifi.walls = JSON.parse(JSON.stringify(data.walls || []));
   wifi.doors = JSON.parse(JSON.stringify(data.doors || []));
   wifi.areas = JSON.parse(JSON.stringify(data.areas || []));
+  wifi.accPts = JSON.parse(JSON.stringify(data.acc || []));
   wifi.areaDraft = null;
   wifi.pxPerMeter = data.ppm || WORLD_W / 40;
   wifi.scaleSet = !!data.scaleSet;
@@ -2879,14 +2927,24 @@ function ensureDocx() {
   });
 }
 
-// render the current floor (precise heatmap) to a PNG, cropped to the interesting region
-function floorReportImage() {
+// ============================================================
+// REPORT (H3C-style survey design scheme, .docx) — walls / doors / obstacles are NOT drawn in the report
+// ============================================================
+function canvasBytes(c) {
+  const bin = atob(c.toDataURL('image/png').split(',')[1]);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return { bytes, w: c.width, h: c.height };
+}
+
+function reportCrop() {
   const rg = heatRegion();
   let crop = { x: rg.x0, y: rg.y0, w: rg.x1 - rg.x0, h: rg.y1 - rg.y0 };
   if (!wifi.floorPlan && !wifi.areas.length) {
     const xs = [], ys = [];
-    wifi.walls.forEach(w => { xs.push(w.x1, w.x2); ys.push(w.y1, w.y2); });
+    wifi.walls.forEach(w => { xs.push(w.x1, w.x2); ys.push(w.y1, w.y2); });     // only used to frame the picture
     wifi.aps.forEach(a => { xs.push(a.x); ys.push(a.y); });
+    wifi.accPts.forEach(a => { xs.push(a.x); ys.push(a.y); });
     if (xs.length) {
       const m = 90;
       const x0 = Math.max(0, Math.min(...xs) - m), y0 = Math.max(0, Math.min(...ys) - m);
@@ -2894,21 +2952,92 @@ function floorReportImage() {
     }
   }
   crop.w = Math.max(crop.w, 100); crop.h = Math.max(crop.h, 100);
-  const savedPrec = [_precCanvas, _precSig], savedVis = wifi.hmVisible, savedSel = wifi.sel, savedCtx = ctx;
-  wifi.hmVisible = true; wifi.sel = null;
-  _precCanvas = heatCanvas(5, null); _precSig = sceneSig();
-  const sc = Math.min(1.5, 1500 / crop.w);
+  return crop;
+}
+
+// kind: 'plan' (floor plan only) | 'aps' (+ APs) | 'heat' (+ heatmap for `band`) | 'acc' (+ APs + acceptance points)
+function reportImage(kind, band) {
+  const crop = reportCrop();
+  const savedSel = wifi.sel, savedCtx = ctx;
+  wifi.sel = null;
+  _repScale = Math.max(1, Math.min(3.5, crop.w / 600));
+  const sc = Math.min(1.6, 1500 / crop.w);
   const off = document.createElement('canvas');
   off.width = Math.round(crop.w * sc); off.height = Math.round(crop.h * sc);
-  const octx = off.getContext('2d');
-  ctx = octx;
-  try { octx.scale(sc, sc); octx.translate(-crop.x, -crop.y); renderScene(); }
-  finally { ctx = savedCtx; wifi.hmVisible = savedVis; wifi.sel = savedSel; _precCanvas = savedPrec[0]; _precSig = savedPrec[1]; }
-  const url = off.toDataURL('image/png');
-  const bin = atob(url.split(',')[1]);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return { bytes, w: off.width, h: off.height };
+  const o = off.getContext('2d');
+  ctx = o;
+  try {
+    o.scale(sc, sc); o.translate(-crop.x, -crop.y);
+    o.fillStyle = '#ffffff'; o.fillRect(0, 0, WORLD_W, WORLD_H);
+    if (wifi.floorPlan) { const r = planRect(); o.drawImage(wifi.floorPlan, r.x, r.y, r.w, r.h); }
+    if (kind === 'heat') {
+      const hc = heatCanvas(4, null, { band, alpha: 0.55, threshold: -90 });
+      o.imageSmoothingEnabled = true; o.drawImage(hc, 0, 0, WORLD_W, WORLD_H);
+    }
+    if (kind === 'acc') renderAcc();
+    if (kind !== 'plan') renderAPs();
+  } finally { ctx = savedCtx; wifi.sel = savedSel; _repScale = 1; }
+  return canvasBytes(off);
+}
+
+function reportLegend() {
+  const c = document.createElement('canvas'); c.width = 900; c.height = 70;
+  const o = c.getContext('2d');
+  o.fillStyle = '#fff'; o.fillRect(0, 0, 900, 70);
+  const x0 = 40, x1 = 860;
+  for (let x = x0; x <= x1; x++) { const r = -90 + (x - x0) / (x1 - x0) * 60; const k = h3cRGB(r); o.fillStyle = `rgb(${k[0]},${k[1]},${k[2]})`; o.fillRect(x, 8, 1.2, 24); }
+  o.fillStyle = '#222'; o.font = '16px Arial'; o.textAlign = 'center';
+  for (let v = -90; v <= -30; v += 10) { const x = x0 + (v + 90) / 60 * (x1 - x0); o.fillRect(x, 32, 1, 5); o.fillText(String(v), x, 56); }
+  return canvasBytes(c);
+}
+
+// which radio carries which band (Radio1/2/3) + suggested channels
+function radioPlan(ap, m, idx) {
+  const lay = m.radios || (m.bands.length >= 3 ? ['5', '6', '2.4'] : ['5', '2.4']);
+  const lo5 = [36, 40, 44, 48, 52, 56, 60, 64], hi5 = [149, 153, 157, 161], c24 = [1, 6, 11], c6 = [1, 5, 9, 13, 17, 21, 25, 29];
+  let n5 = 0;
+  return [0, 1, 2].map(i => {
+    const b = lay[i]; if (!b) return 'N/A';
+    if (b === '2.4') return (ap.band === '2.4' && ap.channel) ? ap.channel : c24[idx % 3];
+    if (b === '5') { const first = n5++ === 0; if (ap.band === '5' && first && ap.channel) return ap.channel; return first ? lo5[idx % 8] : hi5[idx % 4]; }
+    return (ap.band === '6' && ap.channel) ? ap.channel : c6[idx % 8];
+  });
+}
+
+async function collectFloor(f, curBand) {
+  const hasStuff = wifi.aps.length || wifi.floorPlan || wifi.walls.length;
+  const out = { name: f.name, hasPlan: !!wifi.floorPlan, scaleSet: wifi.scaleSet, nAP: wifi.aps.length, threshold: wifi.threshold, curBand, imgs: {}, heat: {}, acc: [], aps: [], models: {} };
+  out.cov = wifi.aps.length ? computeCoverage() : null;
+  if (hasStuff) {
+    showBusy(`Rendering ${f.name} — floor plan…`); await tick();
+    out.imgs.plan = reportImage('plan');
+    out.imgs.aps = reportImage('aps');
+    out.imgs.acc = reportImage('acc');
+    for (const b of ['2.4', '5', '6']) {
+      const has = wifi.aps.some(a => getAPModel(a.vendor, a.model)?.bands.includes(b));
+      if (!has) { out.heat[b] = null; continue; }
+      showBusy(`Rendering ${f.name} — ${b} GHz…`); await tick();
+      out.heat[b] = reportImage('heat', b);
+    }
+  }
+  const ppm = wifi.pxPerMeter;
+  wifi.aps.forEach((a, i) => {
+    const m = getAPModel(a.vendor, a.model); if (!m) return;
+    const r = radioPlan(a, m, i), tx = a.txPower !== undefined ? a.txPower : m.tx;
+    out.aps.push({ name: a.name, model: m.name, vendor: VENDORS[a.vendor]?.name || a.vendor, loc: wifi.scaleSet ? (a.x / ppm).toFixed(1) + ', ' + (a.y / ppm).toFixed(1) + ' m' : '—', p5: m.bands.includes('5') ? tx : 'N/A', p24: m.bands.includes('2.4') ? tx : 'N/A', r });
+    out.models[m.name] = (out.models[m.name] || 0) + 1;
+  });
+  for (const [i, t] of wifi.accPts.entries()) {
+    const row = { n: i + 1, loc: wifi.scaleSet ? (t.x / ppm).toFixed(1) + ', ' + (t.y / ppm).toFixed(1) + ' m' : '—', rssi: {} };
+    for (const b of ['2.4', '5', '6']) {
+      const hc = prepHeat({ band: b, alpha: 1, threshold: -200 });
+      if (!hc.aps.length) { row.rssi[b] = 'N/A'; continue; }
+      cellRSSI(hc, t.x, t.y);
+      row.rssi[b] = _bR > -199 ? Math.round(_bR) + ' dBm' : '< -95 dBm';
+    }
+    out.acc.push(row);
+  }
+  return out;
 }
 
 async function exportReport() {
@@ -2920,30 +3049,24 @@ async function exportReport() {
     const D = window.docx;
     const origFloor = curFloor;
     const stashU = _undo.slice(), stashR = _redo.slice();
+    const curBand = document.getElementById('global-band').value;
     const floors = [];
     for (let i = 0; i < curProj.floors.length; i++) {
       const f = curProj.floors[i];
-      showBusy(`Rendering ${f.name} (${i + 1}/${curProj.floors.length})…`);
+      showBusy(`Loading ${f.name} (${i + 1}/${curProj.floors.length})…`);
       await tick();
       await loadFloor(f.id);
       await tick();
-      const img = wifi.aps.length || wifi.walls.length || wifi.floorPlan ? floorReportImage() : null;
-      const cov = wifi.aps.length ? computeCoverage() : null;
-      floors.push({
-        name: f.name, img, cov,
-        band: document.getElementById('global-band').value, env: wifi.env, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet, threshold: wifi.threshold,
-        walls: wifi.walls.length, doors: wifi.doors.length,
-        aps: wifi.aps.map(a => ({ name: a.name, vendor: VENDORS[a.vendor]?.name || a.vendor, model: getAPModel(a.vendor, a.model)?.name || a.model, band: a.band, ch: a.channel, tx: a.txPower, h: a.height || 2.5, x: a.x / wifi.pxPerMeter, y: a.y / wifi.pxPerMeter })),
-      });
+      floors.push(await collectFloor(f, curBand));
     }
     showBusy('Writing document…');
     await tick();
     await loadFloor(origFloor);
     _undo.length = 0; _redo.length = 0; stashU.forEach(x => _undo.push(x)); stashR.forEach(x => _redo.push(x));
 
-    const doc = buildReportDoc(D, floors);
+    const doc = buildReportDoc(D, floors, reportLegend());
     const blob = await D.Packer.toBlob(doc);
-    downloadBlob(blob, safeName(curProj.name) + '-WiFi-Report.docx');
+    downloadBlob(blob, safeName(curProj.name) + '-WLAN-Survey-Design.docx');
     hideBusy();
     toast('Report downloaded');
   } catch (e) {
@@ -2953,107 +3076,169 @@ async function exportReport() {
   }
 }
 
-function buildReportDoc(D, floors) {
+function buildReportDoc(D, floors, legend) {
   const P = curProj;
-  const W = 9026;                       // A4 content width in DXA
-  const bd = { style: D.BorderStyle.SINGLE, size: 4, color: 'BFC5CE' };
+  const W = 9026;                                   // A4 content width (DXA)
+  const NAVY = '16324F', BLUE = '2E6FB5';
+  const bd = { style: D.BorderStyle.SINGLE, size: 4, color: '808080' };
   const borders = { top: bd, bottom: bd, left: bd, right: bd };
   const txt = (t, o = {}) => new D.TextRun({ text: String(t), font: 'Arial', size: 20, ...o });
-  const para = (t, o = {}) => new D.Paragraph({ spacing: { after: 120 }, ...o, children: Array.isArray(t) ? t : [txt(t)] });
-  const h1 = t => new D.Paragraph({ heading: D.HeadingLevel.HEADING_1, spacing: { before: 240, after: 160 }, children: [txt(t, { size: 32, bold: true, color: '16324F' })] });
-  const h2 = (t, brk) => new D.Paragraph({ heading: D.HeadingLevel.HEADING_2, pageBreakBefore: !!brk, spacing: { before: 200, after: 120 }, children: [txt(t, { size: 26, bold: true, color: '16324F' })] });
-  const cell = (t, w, o = {}) => new D.TableCell({
-    width: { size: w, type: D.WidthType.DXA }, borders,
-    margins: { top: 60, bottom: 60, left: 100, right: 100 },
-    shading: o.fill ? { fill: o.fill, type: D.ShadingType.CLEAR, color: 'auto' } : undefined,
-    children: [new D.Paragraph({ children: [txt(t, { size: 18, bold: !!o.bold, color: o.color })] })],
-  });
-  const table = (head, rows, widths) => {
-    const sum = widths.reduce((a, b) => a + b, 0);
-    return new D.Table({
-      width: { size: sum, type: D.WidthType.DXA }, columnWidths: widths,
-      rows: [
-        new D.TableRow({ tableHeader: true, children: head.map((h, i) => cell(h, widths[i], { fill: '16324F', bold: true, color: 'FFFFFF' })) }),
-        ...rows.map((r, ri) => new D.TableRow({ children: r.map((c, i) => cell(c, widths[i], { fill: ri % 2 ? 'F3F5F8' : undefined })) })),
-      ],
-    });
+  const para = (t, o = {}) => new D.Paragraph({ spacing: { after: 140, line: 320 }, ...o, children: Array.isArray(t) ? t : [txt(t)] });
+  const toc = [];
+  const head = (lvl, t, brk) => {
+    toc.push({ lvl, t });
+    const sz = lvl === 1 ? 32 : lvl === 2 ? 26 : 22;
+    return new D.Paragraph({ heading: [D.HeadingLevel.HEADING_1, D.HeadingLevel.HEADING_2, D.HeadingLevel.HEADING_3][lvl - 1], pageBreakBefore: !!brk, spacing: { before: 240, after: 160 }, children: [txt(t, { size: sz, bold: true, color: NAVY })] });
   };
-  const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
-  const kids = [];
+  const label = (t, brk) => new D.Paragraph({ pageBreakBefore: !!brk, spacing: { before: 120, after: 140 }, children: [txt(t, { size: 22, bold: true })] });
+  const cell = (t, w, o = {}) => new D.TableCell({
+    width: { size: w, type: D.WidthType.DXA }, borders, rowSpan: o.rowSpan, columnSpan: o.span, verticalAlign: D.VerticalAlign.CENTER,
+    margins: { top: 50, bottom: 50, left: 80, right: 80 },
+    shading: o.fill ? { fill: o.fill, type: D.ShadingType.CLEAR, color: 'auto' } : undefined,
+    children: [new D.Paragraph({ alignment: o.left ? D.AlignmentType.LEFT : D.AlignmentType.CENTER, children: [txt(t, { size: o.sz || 18, bold: !!o.bold })] })],
+  });
+  const row = (cells) => new D.TableRow({ children: cells });
+  // H3C-style table: bold centred title row, bold header row, plain body
+  const gtable = (title, head, rows, widths, sz) => {
+    const sum = widths.reduce((a, b) => a + b, 0);
+    const rs = [];
+    if (title) rs.push(row([cell(title, sum, { span: widths.length, bold: true, fill: 'F2F2F2', sz: sz || 18 })]));
+    rs.push(row(head.map((h, i) => cell(h, widths[i], { bold: true, fill: 'F2F2F2', sz: sz || 18 }))));
+    rows.forEach(r => rs.push(row(r.map((c, i) => cell(c, widths[i], { sz: sz || 18 })))));
+    return new D.Table({ width: { size: sum, type: D.WidthType.DXA }, columnWidths: widths, rows: rs });
+  };
+  const picture = (im, maxW = 600, maxH = 540) => {
+    let w = maxW, h = w * im.h / im.w;
+    if (h > maxH) { h = maxH; w = h * im.w / im.h; }
+    return new D.Paragraph({ alignment: D.AlignmentType.CENTER, spacing: { after: 120 }, children: [new D.ImageRun({ type: 'png', data: im.bytes, transformation: { width: Math.round(w), height: Math.round(h) } })] });
+  };
+  const today = new Date().toISOString().slice(0, 10);
+  const totalAP = floors.reduce((n, f) => n + f.nAP, 0);
+  const proj = P.name;
 
-  // ---- cover / info
-  kids.push(new D.Paragraph({ spacing: { before: 1400, after: 120 }, children: [txt('WLAN Wireless Network', { size: 52, bold: true, color: '16324F' })] }));
-  kids.push(new D.Paragraph({ spacing: { after: 400 }, children: [txt('Survey & Design Report', { size: 40, color: '3C7DC4' })] }));
-  kids.push(table(['Item', 'Detail'], [
-    ['Project', P.name], ['Client', P.client || '—'], ['Location', P.location || '—'],
-    ['Engineer', P.engineer || '—'], ['Date', today], ['Floors', String(P.floors.length)],
-  ], [2400, W - 2400]));
-  if (P.notes) { kids.push(para('')); kids.push(para([txt('Notes: ', { bold: true }), txt(P.notes)])); }
+  const body = [];   // everything after the TOC
 
-  // ---- summary
-  kids.push(h2('1. Summary', true));
-  kids.push(table(['Floor', 'APs', 'Walls', 'Doors', 'Coverage', 'Excellent', 'Dead zone'],
-    floors.map(f => [f.name, f.aps.length, f.walls, f.doors,
-      f.cov ? Math.round(f.cov.cov / f.cov.total * 100) + '%' : '—',
-      f.cov ? Math.round(f.cov.exc / f.cov.total * 100) + '%' : '—',
-      f.cov ? Math.round(f.cov.dead / f.cov.total * 100) + '%' : '—']),
-    [2426, 800, 900, 900, 1300, 1300, 1400]));
-  kids.push(para(''));
-  kids.push(para('Coverage = share of the rendered area with signal at or above the heatmap threshold. Excellent = better than -60 dBm.', { }));
+  // ---- acronyms + 1 Basic information
+  body.push(new D.Paragraph({ spacing: { after: 160 }, children: [txt('List of acronyms:', { bold: true, size: 22 })] }));
+  body.push(gtable(null, ['Abbreviation', 'Full spelling', 'Description'], [
+    ['WLAN', 'Wireless Local Area Network', 'Wireless local area network'],
+    ['AP', 'Access Point', 'Wireless access point'],
+    ['RSSI', 'Received Signal Strength Indicator', 'Received signal strength, in dBm'],
+    ['SNR', 'Signal-to-Noise Ratio', 'Signal quality versus noise floor'],
+    ['dBm', 'Decibel-milliwatt', 'Power level relative to 1 mW'],
+    ['PoE', 'Power over Ethernet', 'AP powered through the network cable'],
+  ], [1800, 3600, 3626]));
+  body.push(head(1, '1 Basic information', true));
+  body.push(new D.Table({
+    width: { size: W, type: D.WidthType.DXA }, columnWidths: [2100, 2700, 2100, 2126],
+    rows: [
+      row([cell('Project name', 2100, { bold: true }), cell(proj, 2700), cell('Engineering survey unit', 2100, { bold: true }), cell(P.client || '—', 2126)]),
+      row([cell('Engineering survey area', 2100, { bold: true }), cell(P.location || '—', 2700), cell('Engineering survey time', 2100, { bold: true }), cell(today, 2126)]),
+      row([cell('Engineering survey department', 2100, { bold: true }), cell('—', 2700), cell('Participant', 2100, { bold: true }), cell(P.engineer || '—', 2126)]),
+      row([cell('The reason for the engineering survey', 2100, { bold: true }), cell(`In order to meet the requirements of comprehensive wireless network coverage at ${proj}, an engineering survey is carried out for the wireless points and cabling to be built.`, 6926, { span: 3, left: true })]),
+    ],
+  }));
+  if (P.notes) { body.push(para('')); body.push(para([txt('Notes: ', { bold: true }), txt(P.notes)])); }
 
-  // ---- bill of materials
-  const bom = {};
-  floors.forEach(f => f.aps.forEach(a => { const k = a.vendor + ' ' + a.model; bom[k] = (bom[k] || 0) + 1; }));
-  kids.push(h2('2. Access point summary'));
-  const bomRows = Object.entries(bom).map(([k, n]) => [k, n]);
-  if (bomRows.length) { kids.push(table(['Access point model', 'Quantity'], bomRows, [W - 1600, 1600])); }
-  else kids.push(para('No access points were placed.'));
+  // ---- 2 Overview
+  body.push(head(1, `2 Overview of wireless engineering survey of ${proj}`, true));
+  body.push(head(2, '2.1 Wireless network coverage'));
+  body.push(para(`This survey covers ${floors.length} floor${floors.length === 1 ? '' : 's'} of ${proj}${P.location ? ' (' + P.location + ')' : ''} with ${totalAP} access point${totalAP === 1 ? '' : 's'} in total. Coverage is predicted for the 2.4 GHz, 5 GHz and 6 GHz bands wherever the planned access points support them.`));
+  body.push(gtable(null, ['Floor', 'APs', `Coverage (${floors[0] ? floors[0].curBand : '5'} GHz, ≥ threshold)`, 'Strong signal (≥ -60 dBm)'],
+    floors.map(f => [f.name, f.nAP, f.cov ? Math.round(f.cov.cov / f.cov.total * 100) + '%' : '—', f.cov ? Math.round(f.cov.exc / f.cov.total * 100) + '%' : '—']),
+    [2600, 1200, 2926, 2300]));
+  body.push(head(2, '2.2 Material checklist'));
+  const detail = [];
+  floors.forEach(f => Object.entries(f.models).forEach(([m, n]) => detail.push([proj, f.name, 'Ceiling mount', m, n, 'built-in', 0, '—', 0])));
+  body.push(gtable('Wireless Engineering Survey Result (Wireless device statistics)',
+    ['Building information', 'Floor information', 'Deployment plan', 'AP model', 'Quantity', 'Antenna model', 'Quantity', 'Feeder model', 'Quantity'],
+    detail.length ? detail : [['—', '—', '—', '—', 0, '—', 0, '—', 0]], [1200, 1100, 1100, 1100, 900, 1000, 900, 926, 800], 16));
+  body.push(para(''));
+  const tot = {};
+  floors.forEach(f => Object.entries(f.models).forEach(([m, n]) => tot[m] = (tot[m] || 0) + n));
+  body.push(gtable('Total (list of wireless devices)', ['Device model', 'Quantity', 'Remarks'], Object.entries(tot).map(([m, n]) => [m, n, '']), [3600, 2400, 3026]));
+  body.push(para('Note: During installation and deployment, there may be discrepancies with table data according to the actual situation!', { spacing: { before: 100, after: 200 } }));
+  // list of solution devices with merged cells
+  const sw = [1300, 1700, 1300, 1400, 1100, 1126, 1100];
+  const sh = ['Plan name', 'Device model', 'AP quantity', 'Antenna type', 'Antenna quantity', 'Plan AP total', 'Plan antenna total'];
+  const srows = [row([cell('List of solution wireless devices', W, { span: 7, bold: true, fill: 'F2F2F2' })]), row(sh.map((h, i) => cell(h, sw[i], { bold: true, fill: 'F2F2F2' })))];
+  floors.forEach(f => {
+    const ents = Object.entries(f.models);
+    if (!ents.length) { srows.push(row([cell(f.name, sw[0]), cell('—', sw[1]), cell('0', sw[2]), cell('—', sw[3]), cell('0', sw[4]), cell('0', sw[5]), cell('0', sw[6])])); return; }
+    ents.forEach(([m, n], i) => {
+      const cs = [];
+      if (i === 0) cs.push(cell(f.name, sw[0], { rowSpan: ents.length }));
+      cs.push(cell(m, sw[1]), cell(n, sw[2]), cell('built-in', sw[3]), cell(0, sw[4]));
+      if (i === 0) { cs.push(cell(f.nAP, sw[5], { rowSpan: ents.length })); cs.push(cell(0, sw[6], { rowSpan: ents.length })); }
+      srows.push(row(cs));
+    });
+  });
+  body.push(new D.Table({ width: { size: W, type: D.WidthType.DXA }, columnWidths: sw, rows: srows }));
 
-  // ---- per floor
+  // ---- 3 Deployment plan
+  body.push(head(1, `3 ${proj} Deployment plan`, true));
+  body.push(head(2, '3.1 Main scene introduction'));
+  body.push(head(3, '3.1.1 Government and Enterprise Office'));
+  body.push(para('The office scene is the most common and relatively basic scene in wireless applications. Coverage should reach about -65 dBm or better. The structure and environment of the office area must be considered: for independent offices, meeting rooms, partitions and large open rooms, the signal must first meet the coverage requirement.'));
+  body.push(para('Second, the density of personnel and the particularity of the business applications must be considered. Areas with many terminals per unit area must be planned for high-density coverage, and the number of APs increased accordingly.'));
+  body.push(para('Business type: HD video, resource download, HTTP access, instant communication.'));
+  body.push(head(2, '3.2 Device deployment plan', true));
+
   floors.forEach((f, idx) => {
-    kids.push(h2(`${3 + idx}. ${f.name}`, true));
-    kids.push(para(`Band ${f.band} GHz · environment: ${f.env} · threshold ${f.threshold} dBm · ${f.scaleSet ? 'scale calibrated' : 'scale NOT calibrated (distances are approximate)'}`));
-    if (f.img) {
-      const w = 600, h = Math.round(600 * f.img.h / f.img.w);
-      kids.push(new D.Paragraph({ alignment: D.AlignmentType.CENTER, spacing: { after: 120 }, children: [new D.ImageRun({ type: 'png', data: f.img.bytes, transformation: { width: w, height: Math.min(h, 520) } })] }));
-    }
-    // colour legend
-    const lv = [[-50, '≥ -50 dBm Excellent'], [-60, '≥ -60 Good'], [-67, '≥ -67 Fair'], [-75, '≥ -75 Weak'], [-82, '≥ -82 Poor'], [-95, '< -82 Very poor']];
-    const lw = Math.floor(W / lv.length);
-    kids.push(new D.Table({
-      width: { size: lw * lv.length, type: D.WidthType.DXA }, columnWidths: lv.map(() => lw),
-      rows: [new D.TableRow({ children: lv.map(([v, label]) => {
-        const c = rssiToRGBA(v, 1); const hex = [c[0], c[1], c[2]].map(n => n.toString(16).padStart(2, '0')).join('');
-        return cell(label, lw, { fill: hex, bold: true });
-      }) })],
-    }));
-    kids.push(para(''));
-    if (f.cov) kids.push(para(`Coverage ${Math.round(f.cov.cov / f.cov.total * 100)}% · excellent ${Math.round(f.cov.exc / f.cov.total * 100)}% · dead zone ${Math.round(f.cov.dead / f.cov.total * 100)}%`, {}));
+    body.push(head(3, `3.2.${idx + 1} ${proj}-${f.name}`, idx > 0));
+    body.push(label('(1) Real scene map:'));
+    if (f.hasPlan && f.imgs.plan) body.push(picture(f.imgs.plan));
+    else body.push(para('No floor plan image was uploaded for this floor.'));
+
+    body.push(label('(2) AP deployment point bitmap and device list:', true));
+    if (f.imgs.aps) body.push(picture(f.imgs.aps, 600, 380));
     if (f.aps.length) {
-      kids.push(table(['AP', 'Model', 'Band', 'Ch', 'TX dBm', 'Height m', 'X m', 'Y m'],
-        f.aps.map(a => [a.name, a.vendor + ' ' + a.model, a.band + ' GHz', a.ch, a.tx, a.h, a.x.toFixed(1), a.y.toFixed(1)]),
-        [1300, 2326, 1000, 700, 900, 1000, 900, 900]));
-    }
+      const cw = [900, 640, 900, 650, 1100, 800, 800, 1136, 1050, 1050];
+      body.push(gtable(null, ['Coverage area', 'Floor', 'AP model', 'AP name', 'AP deployment location', '5G transmit power', '2.4G transmit power', 'Radio1', 'Radio2', 'Radio3'].map(x => x),
+        f.aps.map((a, i) => [i === 0 ? f.name : '', i === 0 ? f.name : '', a.model, a.name, a.loc, a.p5, a.p24, a.r[0], a.r[1], a.r[2]]), cw, 15));
+      body.push(para('Radio1 / Radio2 / Radio3 follow the radio layout of each model (e.g. 5G low, 5G high, 2.4G). Channels are suggestions and should be verified during the site survey.', { spacing: { before: 100 } }));
+    } else body.push(para('No access points were placed on this floor.'));
+
+    [['2.4', '(3) AP coverage 2.4G simulation diagram:'], ['5', '(4) AP coverage 5G simulation diagram:'], ['6', '(5) AP coverage 6G simulation diagram:']].forEach(([b, lb]) => {
+      body.push(label(lb, true));
+      if (f.heat[b]) { body.push(picture(f.heat[b], 600, 500)); body.push(picture(legend, 480, 60)); }
+      else body.push(para(f.nAP ? `No access point on this floor supports ${b} GHz.` : 'No access points were placed on this floor.'));
+    });
+
+    body.push(label('(6) Acceptance point bitmap:', true));
+    if (f.imgs.acc) body.push(picture(f.imgs.acc, 600, 420));
+    if (f.acc.length) {
+      body.push(gtable(null, ['No.', 'Location', 'Predicted 2.4G', 'Predicted 5G', 'Predicted 6G'], f.acc.map(t => [t.n, t.loc, t.rssi['2.4'], t.rssi['5'], t.rssi['6']]), [800, 2200, 2000, 2000, 2026]));
+    } else body.push(para('No acceptance points were defined. Use the Test pt tool in the planner to mark the spots to verify after installation.'));
   });
 
-  // ---- assumptions
-  kids.push(h2(`${3 + floors.length}. Method and assumptions`, true));
-  kids.push(para('The coverage prediction is a simulation, not an on-site measurement. Results depend on the accuracy of the floor plan scale, wall materials and the chosen environment, and should be validated with a site survey and acceptance test before final deployment.'));
-  kids.push(para([txt('Propagation model: ', { bold: true }), txt('free-space path loss up to 5 m, then an indoor path-loss exponent (2.4 GHz: 3.0, 5 GHz: 3.4, 6 GHz: 3.7, scaled by the environment: open 0.85, office 1.0, dense 1.2), minus the attenuation of every wall crossed by the direct ray.')]));
-  kids.push(table(['Material', '2.4 GHz', '5 GHz', '6 GHz'], [
-    ...WALL_MATS.map(m => [m.name, Math.round(m.attn * WALL_K['2.4'] * 10) / 10 + ' dB', m.attn + ' dB', Math.round(m.attn * WALL_K['6'] * 10) / 10 + ' dB']),
-    ...DOOR_TYPES.map(m => [m.name + ' (door)', Math.round(m.attn * WALL_K['2.4'] * 10) / 10 + ' dB', m.attn + ' dB', Math.round(m.attn * WALL_K['6'] * 10) / 10 + ' dB']),
-  ], [4026, 1666, 1666, 1668]));
-  kids.push(para(''));
-  kids.push(para('Generated with ConfigLabs WiFi Planner (configlabs.online) on ' + today + '.', {}));
+  // ---- 4 Conclusion
+  body.push(head(1, '4 Conclusion', true));
+  body.push(para(`${proj} has rich wireless scenarios and diversified terminal devices. Through this wireless network survey, the deployment has been designed to meet the users' needs for wireless networking.`));
+  body.push(para('The coverage maps in this document are predictions from a simulation model; they depend on the accuracy of the floor plan scale and should be validated with an on-site survey and acceptance test at the acceptance points before final deployment.'));
+  body.push(para('We appreciate the cooperation and hard work of the leaders and maintenance staff of your organization during this survey.'));
 
+  // ---- front matter
+  const front = [];
+  front.push(new D.Paragraph({ spacing: { before: 1800, after: 300 }, alignment: D.AlignmentType.CENTER, children: [txt('WLAN Wireless Network', { size: 56, bold: true, color: NAVY })] }));
+  front.push(new D.Paragraph({ spacing: { after: 700 }, alignment: D.AlignmentType.CENTER, children: [txt('Engineering Survey Design Scheme', { size: 56, bold: true, color: NAVY })] }));
+  front.push(new D.Paragraph({ spacing: { after: 1200 }, alignment: D.AlignmentType.CENTER, children: [txt(proj, { size: 44, bold: true, color: BLUE })] }));
+  if (P.client || P.location) front.push(new D.Paragraph({ spacing: { after: 2200 }, alignment: D.AlignmentType.CENTER, children: [txt([P.client, P.location].filter(Boolean).join(' · '), { size: 26, color: '555555' })] }));
+  front.push(new D.Paragraph({ alignment: D.AlignmentType.CENTER, spacing: { after: 160 }, children: [txt('Prepared with ConfigLabs WiFi Planner', { size: 26, bold: true })] }));
+  front.push(new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [txt(today, { size: 26, bold: true })] }));
+  front.push(new D.Paragraph({ pageBreakBefore: true, spacing: { after: 240 }, children: [txt('Catalogue', { size: 32, color: BLUE })] }));
+  toc.forEach(e => front.push(new D.Paragraph({ spacing: { after: 90 }, indent: { left: (e.lvl - 1) * 360 }, children: [txt(e.t, { size: e.lvl === 1 ? 21 : 19, bold: e.lvl === 1 })] })));
+  front.push(new D.Paragraph({ pageBreakBefore: true, spacing: { after: 0 }, children: [txt(`${proj} WLAN Wireless Network Engineering Survey Design Scheme`, { size: 26, bold: true, color: NAVY })] }));
+
+  const hdr = t => new D.Header({ children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [txt(t, { size: 18, color: '555555' })] })] });
   return new D.Document({
-    creator: 'ConfigLabs', title: P.name + ' – WLAN Survey & Design Report',
+    creator: 'ConfigLabs', title: proj + ' – WLAN Wireless Network Engineering Survey Design Scheme',
     styles: { default: { document: { run: { font: 'Arial', size: 20 } } } },
     sections: [{
-      properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1300, right: 1440, bottom: 1300, left: 1440 } } },
-      footers: { default: new D.Footer({ children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [txt(P.name + '  ·  Page ', { size: 16, color: '7A8494' }), new D.TextRun({ children: [D.PageNumber.CURRENT], font: 'Arial', size: 16, color: '7A8494' })] })] }) },
-      children: kids,
+      properties: { titlePage: true, page: { size: { width: 11906, height: 16838 }, margin: { top: 1300, right: 1440, bottom: 1200, left: 1440 } } },
+      headers: { default: hdr('ConfigLabs Digital Solution'), first: new D.Header({ children: [new D.Paragraph({ children: [] })] }) },
+      footers: { default: new D.Footer({ children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ children: [D.PageNumber.CURRENT], font: 'Arial', size: 18, color: '555555' })] })] }), first: new D.Footer({ children: [new D.Paragraph({ children: [] })] }) },
+      children: [...front, ...body],
     }],
   });
 }
@@ -3071,6 +3256,7 @@ function fileAct(a) {
   else if (a === 'export') exportProject(curProj.id);
   else if (a === 'report') exportReport();
   else if (a === 'csv') exportCSV();
+  else if (a === 'clearacc') { if (wifi.accPts.length) { pushHistory(); wifi.accPts = []; scheduleRender(); toast('Acceptance points cleared'); } else toast('No acceptance points'); }
   else if (a === 'cleararea') { if (wifi.areas.length) { pushHistory(); wifi.areas = []; scheduleRender(); toast('Render area cleared'); } else toast('No render area set'); }
   else if (a === 'clear') clearAll();
 }
