@@ -314,6 +314,20 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
 .dlg-field input,.dlg-field textarea{width:100%;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:13px;font-family:var(--sans)}
 .dlg-field input:focus,.dlg-field textarea:focus{outline:none;border-color:var(--accent)}
 .dlg-field textarea{resize:vertical;min-height:60px}
+
+/* ---- v5.4 fixes ---- */
+.left-panel{overflow-x:hidden;scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent;width:248px}
+.left-panel::-webkit-scrollbar{width:6px}
+.left-panel::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:3px}
+.lp-body{min-width:0}
+#mat-list,#door-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+#mat-list .mat-btn,#door-list .mat-btn{min-width:0;padding:6px 7px;gap:6px;overflow:hidden}
+#mat-list .mat-btn span:nth-child(2),#door-list .mat-btn span:nth-child(2){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+#mat-list .mat-attn,#door-list .mat-attn{flex-shrink:0;margin-left:0}
+.mat-btn{display:flex;align-items:center}
+.busy-box{display:flex;flex-direction:column;align-items:center;gap:14px;padding:10px 0}
+.busy-spin{width:30px;height:30px;border:3px solid var(--border-strong);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body data-theme="dark">
@@ -343,7 +357,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip"><span class="dot"></span><span>v5.3.0-beta</span></div>
+    <div class="chip"><span class="dot"></span><span>v5.4.0-beta</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -427,6 +441,16 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
       <div class="lp-body"><div id="mat-list"></div></div>
     </div>
     <div class="lp-sec">
+      <button class="lp-head" onclick="toggleSec(this)">Doors <i>▾</i></button>
+      <div class="lp-body">
+        <div id="door-list"></div>
+        <div class="lp-row" style="margin-top:10px">
+          <label>DOOR WIDTH <span class="lp-val" id="door-w-val">0.9 m</span></label>
+          <input type="range" min="0.6" max="3" step="0.1" value="0.9" oninput="setDoorW(this.value)">
+        </div>
+      </div>
+    </div>
+    <div class="lp-sec">
       <button class="lp-head" onclick="toggleSec(this)">Access points <i>▾</i></button>
       <div class="lp-body">
         <div class="lp-row">
@@ -493,9 +517,12 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
       <button class="tt" onclick="toggleLeft()" title="Show / hide side panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="9" y1="4" x2="9" y2="20"/></svg></button>
       <div class="tsep"></div>
       <button class="tt active" data-tool="select" onclick="setTool('select')" title="Select (S)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l7 19 2-8 8-2L3 3z"/></svg><span class="lbl">Select</span></button>
+      <button class="tt" data-tool="pan" onclick="setTool('pan')" title="Pan / drag the view (H). Space+drag also works"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg><span class="lbl">Pan</span></button>
       <button class="tt" data-tool="wall" onclick="setTool('wall')" title="Draw wall (W)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="20" y2="4"/><circle cx="4" cy="20" r="1.5"/><circle cx="20" cy="4" r="1.5"/></svg><span class="lbl">Wall</span></button>
       <button class="tt" data-tool="rect" onclick="setTool('rect')" title="Draw room (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="1"/></svg><span class="lbl">Room</span></button>
+      <button class="tt" data-tool="door" onclick="setTool('door')" title="Place door on a wall (D)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3"/><path d="M13 20h9"/><path d="M10 12v.01"/><path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"/></svg><span class="lbl">Door</span></button>
       <button class="tt" data-tool="place" onclick="setTool('place')" title="Place AP (A)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg><span class="lbl">AP</span></button>
+      <button class="tt" data-tool="area" onclick="setTool('area')" title="Render area (G): the heatmap and statistics are computed only inside it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l7-3 9 4-2 11-9 3-5-8z" stroke-dasharray="3 3"/></svg><span class="lbl">Area</span></button>
       <button class="tt" data-tool="erase" onclick="setTool('erase')" title="Erase (E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H7L3 16l9.16-9.16a2 2 0 012.83 0L20 12a2 2 0 010 2.83L13.5 20"/></svg><span class="lbl">Erase</span></button>
       <button class="tt" data-tool="calibrate" onclick="setTool('calibrate')" title="Calibrate scale (C)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.3 8.7l-5.99-6a1 1 0 0 0-1.42 0L2.7 13.9a1 1 0 0 0 0 1.42l6 5.99a1 1 0 0 0 1.42 0L21.3 10.1a1 1 0 0 0 0-1.42z"/><path d="M7.5 10.5l2 2M10.5 7.5l2 2M13.5 4.5l2 2M4.5 13.5l2 2"/></svg><span class="lbl">Scale</span></button>
       <div class="tsep"></div>
@@ -528,7 +555,10 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
           <button onclick="fileAct('upload')">Upload floor plan…</button>
           <button onclick="fileAct('scale')">Set scale by plan width…</button>
           <button onclick="fileAct('png')">Export PNG (this floor)</button>
-          <button onclick="fileAct('export')">Export project file</button>
+          <button onclick="fileAct('report')">Export report (.docx)</button>
+          <button onclick="fileAct('csv')">Export AP list (.csv)</button>
+          <button onclick="fileAct('export')">Export project file (backup)</button>
+          <button onclick="fileAct('cleararea')">Clear render area</button>
           <button onclick="fileAct('save')">Save floor to account (beta)</button>
           <button class="danger" onclick="fileAct('clear')">Clear this floor…</button>
         </div>
@@ -702,6 +732,7 @@ const wifi = {
   snapPt: null,
   ortho: false,
   env: 'office',
+  doors: [], areas: [], areaDraft: null, doorHover: null, doorType: 'wood', doorW: 0.9,
   spaceDown: false,
   panning: null,
 };
@@ -714,6 +745,7 @@ const WORLD_W = 2000, WORLD_H = 1200;
 window.addEventListener('load', () => {
   buildAPPalette();
   buildMatList();
+  buildDoorList();
   initCanvas();
   initAuth();
   document.addEventListener('keydown', onKey);
@@ -881,7 +913,8 @@ function renderScene() {
     drawGrid();
   }
   if (wifi.hmVisible && wifi.aps.length > 0) renderHeatmap();
-  if (wifi.layers.walls) renderWalls();
+  if (wifi.layers.walls) { renderWalls(); renderDoors(); }
+  renderAreas();
   if (wifi.layers.aps)   renderAPs();
 }
 
@@ -915,6 +948,174 @@ function drawGrid() {
 }
 
 // in-progress drawing: wall chain, room rectangle, calibration line, snap marker
+const DOOR_TYPES = [
+  { id:'wood',  name:'Wood door',   attn:3,  color:'#e0a458' },
+  { id:'glass', name:'Glass door',  attn:2,  color:'#8fd3f4' },
+  { id:'metal', name:'Metal / fire door', attn:12, color:'#8a97a8' },
+  { id:'open',  name:'Open doorway', attn:0, color:'#f2f2f2' },
+];
+function buildDoorList() {
+  const el = document.getElementById('door-list');
+  el.innerHTML = '';
+  for (const t of DOOR_TYPES) {
+    const b = document.createElement('button');
+    b.className = 'mat-btn' + (t.id === wifi.doorType ? ' active' : '');
+    b.dataset.door = t.id;
+    b.title = t.name + ' (' + t.attn + ' dB)';
+    b.innerHTML = `<div class="mat-swatch" style="background:${t.color};border:1px solid rgba(255,255,255,.25)"></div><span>${t.name.replace(' door','').replace('Open doorway','Open')}</span><span class="mat-attn">${t.attn}dB</span>`;
+    b.onclick = () => {
+      wifi.doorType = t.id;
+      el.querySelectorAll('.mat-btn').forEach(x => x.classList.toggle('active', x.dataset.door === t.id));
+      if (wifi.tool !== 'door') setTool('door');
+    };
+    el.appendChild(b);
+  }
+}
+function setDoorW(v) { wifi.doorW = parseFloat(v); document.getElementById('door-w-val').textContent = v + ' m'; }
+
+function wallLen(w) { return Math.hypot(w.x2 - w.x1, w.y2 - w.y1); }
+function projT(w, x, y) {
+  const dx = w.x2 - w.x1, dy = w.y2 - w.y1, l2 = dx * dx + dy * dy;
+  return l2 ? ((x - w.x1) * dx + (y - w.y1) * dy) / l2 : 0.5;
+}
+function clampDoorT(w, t, widthM) {
+  const L = wallLen(w) || 1;
+  const half = (widthM * wifi.pxPerMeter / 2) / L;
+  if (half * 2 >= 1) return 0.5;
+  return Math.max(half, Math.min(1 - half, t));
+}
+function nearestWallPoint(x, y) {
+  let best = null, bd = 18 / wifi.view.z;
+  for (const w of wifi.walls) {
+    const t = Math.max(0, Math.min(1, projT(w, x, y)));
+    const px = w.x1 + (w.x2 - w.x1) * t, py = w.y1 + (w.y2 - w.y1) * t;
+    const d = Math.hypot(px - x, py - y);
+    if (d < bd) { bd = d; best = { wall: w, t: clampDoorT(w, t, wifi.doorW) }; }
+  }
+  return best;
+}
+function doorGeom(d, w) {
+  const L = wallLen(w) || 1;
+  const ux = (w.x2 - w.x1) / L, uy = (w.y2 - w.y1) / L;
+  const half = d.w * wifi.pxPerMeter / 2;
+  const cx = w.x1 + (w.x2 - w.x1) * d.t, cy = w.y1 + (w.y2 - w.y1) * d.t;
+  return { ux, uy, half, cx, cy, ax: cx - ux * half, ay: cy - uy * half, bx: cx + ux * half, by: cy + uy * half };
+}
+function findDoorNear(x, y) {
+  for (const d of wifi.doors) {
+    const w = wifi.walls.find(q => q.id === d.wall); if (!w) continue;
+    const g = doorGeom(d, w);
+    const dx = g.bx - g.ax, dy = g.by - g.ay, l2 = dx * dx + dy * dy || 1;
+    const t = Math.max(0, Math.min(1, ((x - g.ax) * dx + (y - g.ay) * dy) / l2));
+    if (Math.hypot(g.ax + dx * t - x, g.ay + dy * t - y) < 9 / wifi.view.z) return d;
+  }
+  return null;
+}
+function drawDoor(d, w, alpha, selected) {
+  const g = doorGeom(d, w);
+  const dt = DOOR_TYPES.find(t => t.id === d.type) || DOOR_TYPES[0];
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.lineCap = 'butt';
+  ctx.beginPath(); ctx.moveTo(g.ax, g.ay); ctx.lineTo(g.bx, g.by);
+  ctx.strokeStyle = 'rgba(8,10,14,.9)'; ctx.lineWidth = 9; ctx.stroke();
+  ctx.strokeStyle = selected ? '#7cf4c7' : dt.color; ctx.lineWidth = 5.5; ctx.stroke();
+  // swing arc
+  const ang = Math.atan2(g.uy, g.ux);
+  ctx.beginPath(); ctx.arc(g.ax, g.ay, g.half * 2, ang, ang + Math.PI / 2);
+  ctx.strokeStyle = selected ? '#7cf4c7' : dt.color; ctx.lineWidth = 1.2; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(g.ax, g.ay); ctx.lineTo(g.ax - g.uy * -g.half * 2 * -1 * -1, g.ay + g.ux * g.half * 2);
+  ctx.lineWidth = 1.6; ctx.stroke();
+  ctx.restore();
+}
+function renderDoors() {
+  for (const d of wifi.doors) {
+    const w = wifi.walls.find(q => q.id === d.wall); if (!w) continue;
+    drawDoor(d, w, 1, wifi.sel?.kind === 'door' && wifi.sel.id === d.id);
+  }
+}
+
+// ---- render area (heatmap + stats are limited to it) ----
+function polyArea(pts) { let a = 0; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) a += (pts[j].x + pts[i].x) * (pts[j].y - pts[i].y); return Math.abs(a / 2); }
+function distToSeg(x, y, a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy;
+  const t = l2 ? Math.max(0, Math.min(1, ((x - a.x) * dx + (y - a.y) * dy) / l2)) : 0;
+  return Math.hypot(a.x + dx * t - x, a.y + dy * t - y);
+}
+function findAreaNear(x, y) {
+  for (const a of wifi.areas) {
+    for (let i = 0; i < a.pts.length; i++) {
+      if (distToSeg(x, y, a.pts[i], a.pts[(i + 1) % a.pts.length]) < 9 / wifi.view.z) return a;
+    }
+  }
+  return null;
+}
+function renderAreas() {
+  for (const a of wifi.areas) {
+    const sel = wifi.sel?.kind === 'area' && wifi.sel.id === a.id;
+    ctx.beginPath();
+    a.pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(124,244,199,0.05)'; ctx.fill();
+    ctx.setLineDash([10, 6]); ctx.lineWidth = sel ? 3.5 : 2.2;
+    ctx.strokeStyle = sel ? '#ffffff' : '#7cf4c7'; ctx.stroke(); ctx.setLineDash([]);
+  }
+}
+function commitArea() {
+  if (!wifi.areaDraft || wifi.areaDraft.length < 3) { wifi.areaDraft = null; scheduleRender(); return; }
+  pushHistory();
+  wifi.counters.area = (wifi.counters.area || 0) + 1;
+  const a = { id: 'a' + wifi.counters.area, pts: wifi.areaDraft };
+  wifi.areas.push(a);
+  wifi.areaDraft = null;
+  wifi.sel = { kind: 'area', id: a.id };
+  renderPropsPanel();
+  scheduleRender();
+  toast('Render area set — the heatmap is now computed only inside it');
+}
+function areaPoint(x, y, shift) {
+  const last = wifi.areaDraft && wifi.areaDraft.length ? wifi.areaDraft[wifi.areaDraft.length - 1] : null;
+  const p = snapPoint(x, y, last, shift);
+  if (!wifi.areaDraft) { wifi.areaDraft = [{ x: p.x, y: p.y }]; }
+  else {
+    const f = wifi.areaDraft[0];
+    if (wifi.areaDraft.length >= 3 && Math.hypot(p.x - f.x, p.y - f.y) < 14 / wifi.view.z) { commitArea(); return; }
+    if (Math.hypot(p.x - last.x, p.y - last.y) < 4 / wifi.view.z) return;
+    wifi.areaDraft.push({ x: p.x, y: p.y });
+  }
+  scheduleRender();
+}
+function placeDoor() {
+  const h = wifi.doorHover;
+  if (!h) { toast('Move the cursor over a wall to place a door', 'error'); return; }
+  pushHistory();
+  const dt = DOOR_TYPES.find(t => t.id === wifi.doorType) || DOOR_TYPES[0];
+  wifi.counters.door = (wifi.counters.door || 0) + 1;
+  const d = { id: 'd' + wifi.counters.door, wall: h.wall.id, t: h.t, w: wifi.doorW, type: dt.id, attn: dt.attn };
+  wifi.doors.push(d);
+  wifi.sel = { kind: 'door', id: d.id };
+  renderPropsPanel();
+  scheduleRender();
+}
+function removeWall(id) {
+  wifi.walls = wifi.walls.filter(w => w.id !== id);
+  wifi.doors = wifi.doors.filter(d => d.wall !== id);
+}
+function setDoorType(id, type) {
+  const d = wifi.doors.find(q => q.id === id); if (!d) return;
+  const dt = DOOR_TYPES.find(t => t.id === type);
+  pushHistory(); d.type = type; d.attn = dt.attn;
+  renderPropsPanel(); scheduleRender();
+}
+function setDoorWidth(id, v, labelEl) {
+  const d = wifi.doors.find(q => q.id === id); if (!d) return;
+  pushHistoryDebounced();
+  const w = wifi.walls.find(q => q.id === d.wall);
+  d.w = v; if (w) d.t = clampDoorT(w, d.t, v);
+  if (labelEl) labelEl.textContent = v.toFixed(1) + 'm';
+  scheduleRender();
+}
+
 function renderDrafts() {
   const z = wifi.view.z;
   const fs = 11 / z;
@@ -962,8 +1163,19 @@ function renderDrafts() {
     for (const p of [wifi.calibA, wifi.calibB]) if (p) { ctx.beginPath(); ctx.arc(p.x, p.y, 5 / z, 0, Math.PI * 2); ctx.fillStyle = '#ffb86b'; ctx.fill(); }
     if (b) label(Math.round(Math.hypot(b.x - wifi.calibA.x, b.y - wifi.calibA.y)) + ' px', b.x, b.y - 10 / z);
   }
+  if (wifi.tool === 'door' && wifi.doorHover) {
+    const h = wifi.doorHover;
+    drawDoor({ t: h.t, w: wifi.doorW, type: wifi.doorType }, h.wall, 0.75, false);
+  }
+  if (wifi.areaDraft && wifi.areaDraft.length) {
+    ctx.beginPath();
+    wifi.areaDraft.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+    if (sp) ctx.lineTo(sp.x, sp.y);
+    ctx.strokeStyle = '#7cf4c7'; ctx.lineWidth = 2.5 / z; ctx.setLineDash([8 / z, 5 / z]); ctx.stroke(); ctx.setLineDash([]);
+    wifi.areaDraft.forEach((p, i) => { ctx.beginPath(); ctx.arc(p.x, p.y, (i === 0 ? 6 : 3.5) / z, 0, Math.PI * 2); ctx.fillStyle = '#7cf4c7'; ctx.fill(); });
+  }
   // snap marker
-  if (['wall', 'rect', 'calibrate'].includes(wifi.tool) && wifi.snapPt) {
+  if (['wall', 'rect', 'calibrate', 'area'].includes(wifi.tool) && wifi.snapPt) {
     const p = wifi.snapPt;
     ctx.beginPath();
     ctx.arc(p.x, p.y, (p.snap === 'end' ? 7 : 4) / z, 0, Math.PI * 2);
@@ -982,6 +1194,9 @@ function sceneSig() {
   return JSON.stringify([
     wifi.aps.map(a => [a.x, a.y, a.txPower, a.band, a.model, a.vendor]),
     wifi.walls.map(w => [w.x1, w.y1, w.x2, w.y2, w.attn]),
+    wifi.doors.map(d => [d.wall, d.t, d.w, d.attn]),
+    wifi.areas.map(a => a.pts.map(p => [p.x, p.y])),
+    wifi.floorPlan ? wifi.floorPlan.width + 'x' + wifi.floorPlan.height : 0,
     document.getElementById('heatmap-mode').value,
     document.getElementById('global-band').value,
     wifi.threshold, wifi.opacity, wifi.pxPerMeter, wifi.env,
@@ -999,6 +1214,36 @@ function pathLoss(d_m, band) {
   return fspl(5, FREQ_MHZ[band]) + 10 * PL_N[band] * ENV_K[wifi.env] * Math.log10(d / 5);
 }
 
+function segU(ax, ay, bx, by, cx, cy, dx, dy) {
+  const den = (ax - bx) * (cy - dy) - (ay - by) * (cx - dx);
+  if (Math.abs(den) < 1e-10) return -1;
+  const t = ((ax - cx) * (cy - dy) - (ay - cy) * (cx - dx)) / den;
+  const u = -((ax - bx) * (ay - cy) - (ay - by) * (ax - cx)) / den;
+  return (t >= 0 && t <= 1 && u >= 0 && u <= 1) ? u : -1;
+}
+function inPoly(pts, x, y) {
+  let c = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    if (((pts[i].y > y) !== (pts[j].y > y)) && (x < (pts[j].x - pts[i].x) * (y - pts[i].y) / (pts[j].y - pts[i].y) + pts[i].x)) c = !c;
+  }
+  return c;
+}
+function heatRegion() {
+  if (wifi.areas.length) {
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const a of wifi.areas) for (const p of a.pts) { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); }
+    return { x0: Math.max(0, x0), y0: Math.max(0, y0), x1: Math.min(WORLD_W, x1), y1: Math.min(WORLD_H, y1), polys: wifi.areas.map(a => a.pts) };
+  }
+  if (wifi.floorPlan) { const r = planRect(); return { x0: r.x, y0: r.y, x1: r.x + r.w, y1: r.y + r.h, polys: null }; }
+  return { x0: 0, y0: 0, x1: WORLD_W, y1: WORLD_H, polys: null };
+}
+function inRegion(rg, x, y) {
+  if (x < rg.x0 || x > rg.x1 || y < rg.y0 || y > rg.y1) return false;
+  if (!rg.polys) return true;
+  for (const p of rg.polys) if (inPoly(p, x, y)) return true;
+  return false;
+}
+
 function prepHeat() {
   const band = document.getElementById('global-band').value;
   return {
@@ -1007,7 +1252,15 @@ function prepHeat() {
     alpha: wifi.opacity,
     threshold: wifi.threshold,
     ppm: wifi.pxPerMeter,
-    walls: wifi.walls.map(w => ({ x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2, attn: w.attn })),
+    region: heatRegion(),
+    walls: wifi.walls.map(w => {
+      const L = Math.hypot(w.x2 - w.x1, w.y2 - w.y1) || 1;
+      const ds = wifi.doors.filter(d => d.wall === w.id).map(d => {
+        const h = (d.w * wifi.pxPerMeter / 2) / L;
+        return { a: d.t - h, b: d.t + h, attn: d.attn };
+      });
+      return { x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2, attn: w.attn, doors: ds.length ? ds : null };
+    }),
     aps: wifi.aps.map(ap => {
       const m = getAPModel(ap.vendor, ap.model);
       if (!m) return null;
@@ -1026,7 +1279,11 @@ function cellRSSI(hc, px, py) {
     if (r < hc.threshold) continue;                   // walls only lower it further
     const k = WALL_K[a.band];
     for (const w of hc.walls) {
-      if (segIntersects(a.x, a.y, px, py, w.x1, w.y1, w.x2, w.y2)) r -= w.attn * k;
+      const u = segU(a.x, a.y, px, py, w.x1, w.y1, w.x2, w.y2);
+      if (u < 0) continue;
+      let loss = w.attn;
+      if (w.doors) for (const dd of w.doors) { if (u >= dd.a && u <= dd.b) { loss = dd.attn; break; } }
+      r -= loss * k;
     }
     if (r > _bR) { _bR = r; _bS = r - a.noise; }
   }
@@ -1056,22 +1313,31 @@ function renderHeatmap() {
   ctx.drawImage(_hmCanvas, 0, 0, WORLD_W, WORLD_H);
 }
 
-function buildHeatmap() {
+function heatCanvas(STEP, target) {
   const hc = prepHeat();
-  const STEP = wifi.dragging ? 16 : 8;
+  const rg = hc.region;
   const cw = Math.ceil(WORLD_W / STEP), ch = Math.ceil(WORLD_H / STEP);
-  if (!_hmCanvas) _hmCanvas = document.createElement('canvas');
-  _hmCanvas.width = cw; _hmCanvas.height = ch;
-  const hctx = _hmCanvas.getContext('2d');
+  const c = target || document.createElement('canvas');
+  c.width = cw; c.height = ch;
+  const hctx = c.getContext('2d');
   const img = hctx.createImageData(cw, ch);
-  for (let cy = 0; cy < ch; cy++) {
-    for (let cx = 0; cx < cw; cx++) {
-      cellRSSI(hc, cx * STEP + STEP / 2, cy * STEP + STEP / 2);
+  const cx0 = Math.max(0, Math.floor(rg.x0 / STEP)), cx1 = Math.min(cw - 1, Math.ceil(rg.x1 / STEP));
+  const cy0 = Math.max(0, Math.floor(rg.y0 / STEP)), cy1 = Math.min(ch - 1, Math.ceil(rg.y1 / STEP));
+  for (let cy = cy0; cy <= cy1; cy++) {
+    for (let cx = cx0; cx <= cx1; cx++) {
+      const px = cx * STEP + STEP / 2, py = cy * STEP + STEP / 2;
+      if (!inRegion(rg, px, py)) continue;
+      cellRSSI(hc, px, py);
       if (_bR < hc.threshold) continue;
       paintCell(hc, img.data, (cy * cw + cx) * 4);
     }
   }
   hctx.putImageData(img, 0, 0);
+  return c;
+}
+function buildHeatmap() {
+  if (!_hmCanvas) _hmCanvas = document.createElement('canvas');
+  heatCanvas(wifi.dragging ? 16 : 8, _hmCanvas);
 }
 
 // Precise render: finer grid, computed in small time slices so the page stays responsive
@@ -1080,6 +1346,7 @@ function startPrecise() {
   if (_precBusy) return;
   const sig = sceneSig();
   const hc = prepHeat();
+  const rg = hc.region;
   const STEP = 3;
   const cw = Math.ceil(WORLD_W / STEP), ch = Math.ceil(WORLD_H / STEP);
   const c = document.createElement('canvas');
@@ -1087,20 +1354,24 @@ function startPrecise() {
   const cx2 = c.getContext('2d');
   const img = cx2.createImageData(cw, ch);
   const btn = document.getElementById('btn-precise');
-  let row = 0;
+  const cx0 = Math.max(0, Math.floor(rg.x0 / STEP)), cx1 = Math.min(cw - 1, Math.ceil(rg.x1 / STEP));
+  const cy0 = Math.max(0, Math.floor(rg.y0 / STEP)), cy1 = Math.min(ch - 1, Math.ceil(rg.y1 / STEP));
+  let row = cy0;
   _precBusy = true;
   const slice = () => {
     const t0 = performance.now();
-    while (row < ch && performance.now() - t0 < 14) {
-      for (let x = 0; x < cw; x++) {
-        cellRSSI(hc, x * STEP + STEP / 2, row * STEP + STEP / 2);
+    while (row <= cy1 && performance.now() - t0 < 14) {
+      for (let x = cx0; x <= cx1; x++) {
+        const px = x * STEP + STEP / 2, py = row * STEP + STEP / 2;
+        if (!inRegion(rg, px, py)) continue;
+        cellRSSI(hc, px, py);
         if (_bR < hc.threshold) continue;
         paintCell(hc, img.data, (row * cw + x) * 4);
       }
       row++;
     }
-    btn.textContent = 'Rendering ' + Math.round(row / ch * 100) + '%';
-    if (row < ch) { requestAnimationFrame(slice); return; }
+    btn.textContent = 'Rendering ' + Math.round((row - cy0) / Math.max(1, cy1 - cy0 + 1) * 100) + '%';
+    if (row <= cy1) { requestAnimationFrame(slice); return; }
     cx2.putImageData(img, 0, 0);
     _precBusy = false;
     if (sceneSig() === sig) { _precCanvas = c; _precSig = sig; toast('Precise render done'); }
@@ -1195,10 +1466,18 @@ function renderAPs() {
     ctx.fillStyle = color;
     ctx.fill();
 
-    ctx.fillStyle = color;
-    ctx.font = 'bold 10px JetBrains Mono, monospace';
+    ctx.font = 'bold 11px JetBrains Mono, monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(ap.name, ap.x, ap.y + r + 13);
+    const tw = ctx.measureText(ap.name).width;
+    ctx.fillStyle = 'rgba(8,10,14,0.88)';
+    ctx.beginPath();
+    ctx.roundRect(ap.x - tw / 2 - 6, ap.y + r + 4, tw + 12, 17, 5);
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(ap.name, ap.x, ap.y + r + 16.5);
 
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     const bw = 26, bh = 12;
@@ -1216,7 +1495,13 @@ function renderAPs() {
 // ============================================================
 const _undo = [], _redo = [];
 function snapshot() {
-  return JSON.stringify({ aps: wifi.aps, walls: wifi.walls, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet });
+  return JSON.stringify({ aps: wifi.aps, walls: wifi.walls, doors: wifi.doors, areas: wifi.areas, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet });
+}
+function selObj() {
+  if (!wifi.sel) return null;
+  const k = wifi.sel.kind;
+  const arr = k === 'ap' ? wifi.aps : k === 'wall' ? wifi.walls : k === 'door' ? wifi.doors : wifi.areas;
+  return arr.find(x => x.id === wifi.sel.id) || null;
 }
 function pushHistory(snap) {
   _undo.push(snap || snapshot());
@@ -1231,8 +1516,9 @@ function pushHistoryDebounced() {
 }
 function restoreSnapshot(str) {
   const o = JSON.parse(str);
-  wifi.aps = o.aps; wifi.walls = o.walls; wifi.pxPerMeter = o.ppm; wifi.scaleSet = o.scaleSet;
-  if (wifi.sel && !(wifi.sel.kind === 'ap' ? wifi.aps : wifi.walls).some(x => x.id === wifi.sel.id)) wifi.sel = null;
+  wifi.aps = o.aps; wifi.walls = o.walls; wifi.doors = o.doors || []; wifi.areas = o.areas || [];
+  wifi.pxPerMeter = o.ppm; wifi.scaleSet = o.scaleSet;
+  if (wifi.sel && !selObj()) wifi.sel = null;
   setScaleDisplay();
   renderPropsPanel();
   scheduleRender();
@@ -1311,7 +1597,7 @@ function refreshCursor() {
   if (wifi.panning) { canvas.style.cursor = 'grabbing'; return; }
   if (wifi.spaceDown) { canvas.style.cursor = 'grab'; return; }
   const t = wifi.tool;
-  canvas.style.cursor = (t === 'place' || t === 'wall' || t === 'rect' || t === 'calibrate') ? 'crosshair' : t === 'erase' ? 'cell' : 'default';
+  canvas.style.cursor = (t === 'place' || t === 'wall' || t === 'rect' || t === 'calibrate' || t === 'door' || t === 'area') ? 'crosshair' : t === 'erase' ? 'cell' : t === 'pan' ? 'grab' : 'default';
 }
 
 function onPointerDown(e) {
@@ -1332,11 +1618,26 @@ function onPointerDown(e) {
   if (e.button === 2) { finishDraft(); return; }
   if (e.button !== 0) return;
 
+  if (wifi.tool === 'pan') {
+    wifi.panning = { sx: s.x, sy: s.y, ox: wifi.view.ox, oy: wifi.view.oy };
+    wifi.view.auto = false;
+    refreshCursor();
+    return;
+  }
   if (wifi.tool === 'select') {
     const ap = wifi.aps.find(a => Math.hypot(a.x-x, a.y-y) < 22);
     if (ap) {
       wifi.sel = {kind:'ap', id:ap.id};
-      wifi.dragging = {id:ap.id, offX:x-ap.x, offY:y-ap.y};
+      wifi.dragging = {kind:'ap', id:ap.id, offX:x-ap.x, offY:y-ap.y};
+      _dragSnap = snapshot(); _dragMoved = false;
+      renderPropsPanel();
+      scheduleRender();
+      return;
+    }
+    const door = findDoorNear(x, y);
+    if (door) {
+      wifi.sel = {kind:'door', id:door.id};
+      wifi.dragging = {kind:'door', id:door.id};
       _dragSnap = snapshot(); _dragMoved = false;
       renderPropsPanel();
       scheduleRender();
@@ -1344,9 +1645,19 @@ function onPointerDown(e) {
     }
     const wall = findWallNear(x, y);
     if (wall) { wifi.sel = {kind:'wall', id:wall.id}; }
-    else { wifi.sel = null; }
+    else {
+      const ar = findAreaNear(x, y);
+      wifi.sel = ar ? {kind:'area', id:ar.id} : null;
+    }
     renderPropsPanel();
     scheduleRender();
+  }
+  else if (wifi.tool === 'door') {
+    wifi.doorHover = nearestWallPoint(x, y);
+    placeDoor();
+  }
+  else if (wifi.tool === 'area') {
+    areaPoint(x, y, e.shiftKey);
   }
   else if (wifi.tool === 'place') {
     placeAP(x, y);
@@ -1383,8 +1694,12 @@ function onPointerDown(e) {
   else if (wifi.tool === 'erase') {
     const apIdx = wifi.aps.findIndex(a => Math.hypot(a.x-x, a.y-y) < 22);
     if (apIdx >= 0) { pushHistory(); wifi.aps.splice(apIdx, 1); scheduleRender(); return; }
+    const door = findDoorNear(x, y);
+    if (door) { pushHistory(); wifi.doors = wifi.doors.filter(dd => dd.id !== door.id); scheduleRender(); return; }
     const wall = findWallNear(x, y);
-    if (wall) { pushHistory(); wifi.walls = wifi.walls.filter(ww => ww.id !== wall.id); scheduleRender(); }
+    if (wall) { pushHistory(); removeWall(wall.id); scheduleRender(); return; }
+    const ar = findAreaNear(x, y);
+    if (ar) { pushHistory(); wifi.areas = wifi.areas.filter(aa => aa.id !== ar.id); scheduleRender(); }
   }
 }
 
@@ -1429,6 +1744,12 @@ function onPointerMove(e) {
   const w = toWorld(s.x, s.y);
   _mousePos = w;
 
+  if (wifi.dragging && wifi.dragging.kind === 'door') {
+    const d = wifi.doors.find(q => q.id === wifi.dragging.id);
+    const wl = d && wifi.walls.find(q => q.id === d.wall);
+    if (wl) { d.t = clampDoorT(wl, projT(wl, w.x, w.y), d.w); _dragMoved = true; scheduleRender(); }
+    return;
+  }
   if (wifi.dragging) {
     const ap = wifi.aps.find(a => a.id === wifi.dragging.id);
     if (ap) {
@@ -1440,8 +1761,11 @@ function onPointerMove(e) {
     return;
   }
 
-  if (['wall', 'rect', 'calibrate'].includes(wifi.tool)) {
-    const from = wifi.tool === 'wall' ? wifi.wallStart : wifi.tool === 'calibrate' ? wifi.calibA : null;
+  if (wifi.tool === 'door') { wifi.doorHover = nearestWallPoint(w.x, w.y); scheduleRender(); }
+  else if (wifi.doorHover) wifi.doorHover = null;
+  if (['wall', 'rect', 'calibrate', 'area'].includes(wifi.tool)) {
+    const from = wifi.tool === 'wall' ? wifi.wallStart : wifi.tool === 'calibrate' ? wifi.calibA
+               : wifi.tool === 'area' ? (wifi.areaDraft && wifi.areaDraft.length ? wifi.areaDraft[wifi.areaDraft.length - 1] : null) : null;
     wifi.snapPt = snapPoint(w.x, w.y, from, e.shiftKey);
     scheduleRender();
   } else if (wifi.snapPt) { wifi.snapPt = null; }
@@ -1471,13 +1795,15 @@ function onPointerUp(e) {
 }
 
 function onDblClick(e) {
-  if (wifi.tool === 'wall') finishDraft();
+  if (wifi.tool === 'area' && wifi.areaDraft && wifi.areaDraft.length >= 3) commitArea();
+  else if (wifi.tool === 'wall') finishDraft();
 }
 
 function finishDraft() {
   wifi.wallStart = null; wifi.chainStart = null;
   wifi.rectStart = null;
   wifi.calibA = null; wifi.calibB = null;
+  wifi.areaDraft = null; wifi.doorHover = null;
   scheduleRender();
 }
 
@@ -1660,6 +1986,36 @@ function renderPropsPanel() {
       </div>
       <button class="delete-btn" onclick="deleteSelected()">Delete Wall</button>`;
   }
+  else if (wifi.sel.kind === 'door') {
+    const d = wifi.doors.find(q => q.id === wifi.sel.id);
+    if (!d) return;
+    const dt = DOOR_TYPES.find(t => t.id === d.type) || DOOR_TYPES[0];
+    el.innerHTML = `
+      <div class="props-header" style="border-left:3px solid ${dt.color}">
+        <button class="props-close" onclick="closeProps()">✕</button><div class="props-title">Door</div>
+        <div class="props-sub">${dt.name} · ${d.attn}dB (replaces the wall loss here)</div>
+      </div>
+      <div class="pf"><label>Type</label>
+        <div class="mat-pick">${DOOR_TYPES.map(t => `<button class="${d.type===t.id?'active':''}" style="background:${t.color}" title="${t.name} (${t.attn}dB)" onclick="setDoorType('${d.id}','${t.id}')"></button>`).join('')}</div>
+      </div>
+      <div class="pf"><label>Width</label>
+        <div class="pf-row"><input type="range" min="0.6" max="3" step="0.1" value="${d.w}" oninput="setDoorWidth('${d.id}',+this.value,this.nextElementSibling)"><span class="pf-val">${d.w.toFixed(1)}m</span></div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px">Drag the door along its wall with the Select tool.</div>
+      </div>
+      <button class="delete-btn" onclick="deleteSelected()">Delete Door</button>`;
+  }
+  else if (wifi.sel.kind === 'area') {
+    const a = wifi.areas.find(q => q.id === wifi.sel.id);
+    if (!a) return;
+    const m2 = Math.round(polyArea(a.pts) / (wifi.pxPerMeter * wifi.pxPerMeter));
+    el.innerHTML = `
+      <div class="props-header" style="border-left:3px solid var(--accent)">
+        <button class="props-close" onclick="closeProps()">✕</button><div class="props-title">Render area</div>
+        <div class="props-sub">${a.pts.length} corners · ≈ ${m2} m²</div>
+      </div>
+      <div class="pf"><div style="font-size:12px;color:var(--text-dim);line-height:1.6">The heatmap and the coverage statistics are computed <b>only inside</b> this region. Delete it to render the whole floor plan again.</div></div>
+      <button class="delete-btn" onclick="deleteSelected()">Delete render area</button>`;
+  }
 }
 
 function updateAP(id, key, val) {
@@ -1697,7 +2053,9 @@ function deleteSelected() {
   if (!wifi.sel) return;
   pushHistory();
   if (wifi.sel.kind === 'ap') wifi.aps = wifi.aps.filter(a => a.id !== wifi.sel.id);
-  if (wifi.sel.kind === 'wall') wifi.walls = wifi.walls.filter(w => w.id !== wifi.sel.id);
+  if (wifi.sel.kind === 'wall') removeWall(wifi.sel.id);
+  if (wifi.sel.kind === 'door') wifi.doors = wifi.doors.filter(d => d.id !== wifi.sel.id);
+  if (wifi.sel.kind === 'area') wifi.areas = wifi.areas.filter(a => a.id !== wifi.sel.id);
   wifi.sel = null;
   renderPropsPanel();
   scheduleRender();
@@ -1734,11 +2092,11 @@ function onKey(e) {
     return;
   }
   if (e.code === 'Space') { e.preventDefault(); if (!wifi.spaceDown) { wifi.spaceDown = true; refreshCursor(); } return; }
-  const map = { s:'select', a:'place', w:'wall', r:'rect', c:'calibrate', e:'erase' };
+  const map = { s:'select', a:'place', w:'wall', r:'rect', c:'calibrate', e:'erase', h:'pan', d:'door', g:'area' };
   if (k === 'o') { setOrtho(!wifi.ortho); return; }
   if (map[k]) { setTool(map[k]); return; }
   if (k === 'f') { fitView(); return; }
-  if (e.key === 'Enter') { finishDraft(); return; }
+  if (e.key === 'Enter') { if (wifi.tool === 'area' && wifi.areaDraft && wifi.areaDraft.length >= 3) commitArea(); else finishDraft(); return; }
   if (e.key === 'Escape') { finishDraft(); wifi.sel = null; renderPropsPanel(); scheduleRender(); return; }
   if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteSelected(); }
 }
@@ -1765,7 +2123,10 @@ function updateUI() {
                               : 'Click (or drag) to draw a wall · <kbd>O</kbd> toggles Ortho (horizontal / vertical only)',
     rect:      wifi.rectStart ? 'Click the opposite corner' : 'Click one corner of the room, then the opposite corner',
     calibrate: wifi.calibA ? 'Click the second point' : 'Click two points with a known real distance (e.g. a door width)',
-    erase:     'Click an AP or wall to delete it',
+    erase:     'Click an AP, door, wall or render area to delete it',
+    pan:       'Drag to move the view · scroll to zoom (Space+drag works in any tool)',
+    door:      'Hover a wall and click to place a door · choose type and width in the side panel · drag a door along its wall with Select',
+    area:      wifi.areaDraft && wifi.areaDraft.length ? 'Click the next corner · click the first point, double-click or <kbd>Enter</kbd> to close' : 'Click the corners of the region to render. The heatmap and stats are computed only inside it',
   };
   document.getElementById('canvas-hint').innerHTML = H[wifi.tool] || '';
 }
@@ -1887,10 +2248,25 @@ function toggleHeatmap() {
 // ============================================================
 // STATS
 // ============================================================
+function computeCoverage() {
+  const hc = prepHeat();
+  const rg = hc.region;
+  const S = 25;
+  let total = 0, cov = 0, exc = 0;
+  for (let py = rg.y0 + S / 2; py < rg.y1; py += S) {
+    for (let px = rg.x0 + S / 2; px < rg.x1; px += S) {
+      if (!inRegion(rg, px, py)) continue;
+      total++;
+      cellRSSI(hc, px, py);
+      if (_bR >= hc.threshold) { cov++; if (_bR > -60) exc++; }
+    }
+  }
+  return total ? { total, cov, exc, dead: total - cov } : null;
+}
+
 function updateStats() {
   document.getElementById('stat-aps').textContent   = wifi.aps.length;
   document.getElementById('stat-walls').textContent = wifi.walls.length;
-
   if (!wifi.aps.length) {
     document.getElementById('stat-cov').textContent  = '—';
     document.getElementById('stat-exc').textContent  = '—';
@@ -1901,24 +2277,14 @@ function updateStats() {
   const sig = sceneSig();
   if (sig === _statSig) return;
   _statSig = sig;
-
-  const hc = prepHeat();
-  const SAMPLE = 25;
-  let total = 0, covered = 0, excellent = 0, dead = 0;
-  for (let py = 0; py < WORLD_H; py += SAMPLE) {
-    for (let px = 0; px < WORLD_W; px += SAMPLE) {
-      total++;
-      cellRSSI(hc, px, py);
-      if (_bR >= hc.threshold) { covered++; if (_bR > -60) excellent++; }
-      else dead++;
-    }
-  }
-  const covPct = Math.round(covered / total * 100);
+  const st = computeCoverage();
+  if (!st) return;
+  const covPct = Math.round(st.cov / st.total * 100);
   const covEl = document.getElementById('stat-cov');
   covEl.textContent = covPct + '%';
   covEl.className   = 'stat-val ' + (covPct > 80 ? 'stat-good' : covPct > 60 ? 'stat-warn' : 'stat-bad');
-  document.getElementById('stat-exc').textContent  = Math.round(excellent / total * 100) + '%';
-  document.getElementById('stat-dead').textContent = Math.round(dead / total * 100) + '%';
+  document.getElementById('stat-exc').textContent  = Math.round(st.exc / st.total * 100) + '%';
+  document.getElementById('stat-dead').textContent = Math.round(st.dead / st.total * 100) + '%';
 }
 
 // ============================================================
@@ -2142,10 +2508,10 @@ async function askText(title, label, value) {
 }
 
 // ---- floor data <-> editor state ----
-function newFloorData() { return { aps: [], walls: [], ppm: WORLD_W / 40, scaleSet: false, counters: { ap: 0, wall: 0 }, band: '5', env: 'office', started: false }; }
+function newFloorData() { return { aps: [], walls: [], doors: [], areas: [], ppm: WORLD_W / 40, scaleSet: false, counters: { ap: 0, wall: 0 }, band: '5', env: 'office', started: false }; }
 function captureFloor() {
   return {
-    aps: wifi.aps, walls: wifi.walls, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet,
+    aps: wifi.aps, walls: wifi.walls, doors: wifi.doors, areas: wifi.areas, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet,
     counters: wifi.counters, band: document.getElementById('global-band').value, env: wifi.env,
     started: wifi.started || !!wifi.floorPlan || wifi.aps.length > 0 || wifi.walls.length > 0,
   };
@@ -2154,6 +2520,9 @@ function applyFloor(data, bmp) {
   finishDraft();
   wifi.aps = JSON.parse(JSON.stringify(data.aps || []));
   wifi.walls = JSON.parse(JSON.stringify(data.walls || []));
+  wifi.doors = JSON.parse(JSON.stringify(data.doors || []));
+  wifi.areas = JSON.parse(JSON.stringify(data.areas || []));
+  wifi.areaDraft = null;
   wifi.pxPerMeter = data.ppm || WORLD_W / 40;
   wifi.scaleSet = !!data.scaleSet;
   wifi.counters = data.counters || { ap: 0, wall: 0 };
@@ -2444,6 +2813,241 @@ async function importProject(input) {
   } catch (e) { toast('That file is not a valid project file', 'error'); }
 }
 
+// ============================================================
+// DOWNLOADS: CSV + Word report
+// ============================================================
+function downloadBlob(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 8000);
+}
+function csvCell(v) { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+
+async function exportCSV() {
+  if (!curProj) return;
+  await flushSave();
+  const rows = [['Floor', 'AP name', 'Vendor', 'Model', 'Band (GHz)', 'Channel', 'TX power (dBm)', 'Mount height (m)', 'X (m)', 'Y (m)']];
+  for (const f of curProj.floors) {
+    const d = f.data || {};
+    for (const ap of (d.aps || [])) {
+      const ppm = d.ppm || (WORLD_W / 40);
+      rows.push([f.name, ap.name, VENDORS[ap.vendor]?.name || ap.vendor, getAPModel(ap.vendor, ap.model)?.name || ap.model,
+                 ap.band, ap.channel, ap.txPower, ap.height || 2.5, (ap.x / ppm).toFixed(1), (ap.y / ppm).toFixed(1)]);
+    }
+  }
+  if (rows.length === 1) { toast('No access points to export yet', 'error'); return; }
+  const csv = '﻿' + rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+  downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), safeName(curProj.name) + '-AP-list.csv');
+  toast('AP list exported');
+}
+
+function showBusy(msg) {
+  let ov = document.getElementById('busy-ov');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'busy-ov'; ov.className = 'modal-overlay open'; ov.style.zIndex = 400;
+    ov.innerHTML = '<div class="modal" style="max-width:340px"><div class="busy-box"><div class="busy-spin"></div><div id="busy-msg" style="font-size:13px;color:var(--text-dim);text-align:center"></div></div></div>';
+    document.body.appendChild(ov);
+  }
+  document.getElementById('busy-msg').textContent = msg;
+}
+function hideBusy() { document.getElementById('busy-ov')?.remove(); }
+const tick = () => new Promise(r => setTimeout(r, 40));
+
+function ensureDocx() {
+  if (window.docx) return Promise.resolve();
+  return new Promise((res, rej) => {
+    const sc = document.createElement('script');
+    sc.src = '/docx.iife.js';
+    sc.onload = () => window.docx ? res() : rej(new Error('docx missing'));
+    sc.onerror = () => rej(new Error('Could not load the report library'));
+    document.head.appendChild(sc);
+  });
+}
+
+// render the current floor (precise heatmap) to a PNG, cropped to the interesting region
+function floorReportImage() {
+  const rg = heatRegion();
+  let crop = { x: rg.x0, y: rg.y0, w: rg.x1 - rg.x0, h: rg.y1 - rg.y0 };
+  if (!wifi.floorPlan && !wifi.areas.length) {
+    const xs = [], ys = [];
+    wifi.walls.forEach(w => { xs.push(w.x1, w.x2); ys.push(w.y1, w.y2); });
+    wifi.aps.forEach(a => { xs.push(a.x); ys.push(a.y); });
+    if (xs.length) {
+      const m = 90;
+      const x0 = Math.max(0, Math.min(...xs) - m), y0 = Math.max(0, Math.min(...ys) - m);
+      crop = { x: x0, y: y0, w: Math.min(WORLD_W, Math.max(...xs) + m) - x0, h: Math.min(WORLD_H, Math.max(...ys) + m) - y0 };
+    }
+  }
+  crop.w = Math.max(crop.w, 100); crop.h = Math.max(crop.h, 100);
+  const savedPrec = [_precCanvas, _precSig], savedVis = wifi.hmVisible, savedSel = wifi.sel, savedCtx = ctx;
+  wifi.hmVisible = true; wifi.sel = null;
+  _precCanvas = heatCanvas(5, null); _precSig = sceneSig();
+  const sc = Math.min(1.5, 1500 / crop.w);
+  const off = document.createElement('canvas');
+  off.width = Math.round(crop.w * sc); off.height = Math.round(crop.h * sc);
+  const octx = off.getContext('2d');
+  ctx = octx;
+  try { octx.scale(sc, sc); octx.translate(-crop.x, -crop.y); renderScene(); }
+  finally { ctx = savedCtx; wifi.hmVisible = savedVis; wifi.sel = savedSel; _precCanvas = savedPrec[0]; _precSig = savedPrec[1]; }
+  const url = off.toDataURL('image/png');
+  const bin = atob(url.split(',')[1]);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return { bytes, w: off.width, h: off.height };
+}
+
+async function exportReport() {
+  if (!curProj) return;
+  try {
+    showBusy('Preparing report…');
+    await ensureDocx();
+    await flushSave();
+    const D = window.docx;
+    const origFloor = curFloor;
+    const stashU = _undo.slice(), stashR = _redo.slice();
+    const floors = [];
+    for (let i = 0; i < curProj.floors.length; i++) {
+      const f = curProj.floors[i];
+      showBusy(`Rendering ${f.name} (${i + 1}/${curProj.floors.length})…`);
+      await tick();
+      await loadFloor(f.id);
+      await tick();
+      const img = wifi.aps.length || wifi.walls.length || wifi.floorPlan ? floorReportImage() : null;
+      const cov = wifi.aps.length ? computeCoverage() : null;
+      floors.push({
+        name: f.name, img, cov,
+        band: document.getElementById('global-band').value, env: wifi.env, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet, threshold: wifi.threshold,
+        walls: wifi.walls.length, doors: wifi.doors.length,
+        aps: wifi.aps.map(a => ({ name: a.name, vendor: VENDORS[a.vendor]?.name || a.vendor, model: getAPModel(a.vendor, a.model)?.name || a.model, band: a.band, ch: a.channel, tx: a.txPower, h: a.height || 2.5, x: a.x / wifi.pxPerMeter, y: a.y / wifi.pxPerMeter })),
+      });
+    }
+    showBusy('Writing document…');
+    await tick();
+    await loadFloor(origFloor);
+    _undo.length = 0; _redo.length = 0; stashU.forEach(x => _undo.push(x)); stashR.forEach(x => _redo.push(x));
+
+    const doc = buildReportDoc(D, floors);
+    const blob = await D.Packer.toBlob(doc);
+    downloadBlob(blob, safeName(curProj.name) + '-WiFi-Report.docx');
+    hideBusy();
+    toast('Report downloaded');
+  } catch (e) {
+    console.error(e);
+    hideBusy();
+    toast('Report failed: ' + e.message, 'error');
+  }
+}
+
+function buildReportDoc(D, floors) {
+  const P = curProj;
+  const W = 9026;                       // A4 content width in DXA
+  const bd = { style: D.BorderStyle.SINGLE, size: 4, color: 'BFC5CE' };
+  const borders = { top: bd, bottom: bd, left: bd, right: bd };
+  const txt = (t, o = {}) => new D.TextRun({ text: String(t), font: 'Arial', size: 20, ...o });
+  const para = (t, o = {}) => new D.Paragraph({ spacing: { after: 120 }, ...o, children: Array.isArray(t) ? t : [txt(t)] });
+  const h1 = t => new D.Paragraph({ heading: D.HeadingLevel.HEADING_1, spacing: { before: 240, after: 160 }, children: [txt(t, { size: 32, bold: true, color: '16324F' })] });
+  const h2 = (t, brk) => new D.Paragraph({ heading: D.HeadingLevel.HEADING_2, pageBreakBefore: !!brk, spacing: { before: 200, after: 120 }, children: [txt(t, { size: 26, bold: true, color: '16324F' })] });
+  const cell = (t, w, o = {}) => new D.TableCell({
+    width: { size: w, type: D.WidthType.DXA }, borders,
+    margins: { top: 60, bottom: 60, left: 100, right: 100 },
+    shading: o.fill ? { fill: o.fill, type: D.ShadingType.CLEAR, color: 'auto' } : undefined,
+    children: [new D.Paragraph({ children: [txt(t, { size: 18, bold: !!o.bold, color: o.color })] })],
+  });
+  const table = (head, rows, widths) => {
+    const sum = widths.reduce((a, b) => a + b, 0);
+    return new D.Table({
+      width: { size: sum, type: D.WidthType.DXA }, columnWidths: widths,
+      rows: [
+        new D.TableRow({ tableHeader: true, children: head.map((h, i) => cell(h, widths[i], { fill: '16324F', bold: true, color: 'FFFFFF' })) }),
+        ...rows.map((r, ri) => new D.TableRow({ children: r.map((c, i) => cell(c, widths[i], { fill: ri % 2 ? 'F3F5F8' : undefined })) })),
+      ],
+    });
+  };
+  const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+  const kids = [];
+
+  // ---- cover / info
+  kids.push(new D.Paragraph({ spacing: { before: 1400, after: 120 }, children: [txt('WLAN Wireless Network', { size: 52, bold: true, color: '16324F' })] }));
+  kids.push(new D.Paragraph({ spacing: { after: 400 }, children: [txt('Survey & Design Report', { size: 40, color: '3C7DC4' })] }));
+  kids.push(table(['Item', 'Detail'], [
+    ['Project', P.name], ['Client', P.client || '—'], ['Location', P.location || '—'],
+    ['Engineer', P.engineer || '—'], ['Date', today], ['Floors', String(P.floors.length)],
+  ], [2400, W - 2400]));
+  if (P.notes) { kids.push(para('')); kids.push(para([txt('Notes: ', { bold: true }), txt(P.notes)])); }
+
+  // ---- summary
+  kids.push(h2('1. Summary', true));
+  kids.push(table(['Floor', 'APs', 'Walls', 'Doors', 'Coverage', 'Excellent', 'Dead zone'],
+    floors.map(f => [f.name, f.aps.length, f.walls, f.doors,
+      f.cov ? Math.round(f.cov.cov / f.cov.total * 100) + '%' : '—',
+      f.cov ? Math.round(f.cov.exc / f.cov.total * 100) + '%' : '—',
+      f.cov ? Math.round(f.cov.dead / f.cov.total * 100) + '%' : '—']),
+    [2426, 800, 900, 900, 1300, 1300, 1400]));
+  kids.push(para(''));
+  kids.push(para('Coverage = share of the rendered area with signal at or above the heatmap threshold. Excellent = better than -60 dBm.', { }));
+
+  // ---- bill of materials
+  const bom = {};
+  floors.forEach(f => f.aps.forEach(a => { const k = a.vendor + ' ' + a.model; bom[k] = (bom[k] || 0) + 1; }));
+  kids.push(h2('2. Access point summary'));
+  const bomRows = Object.entries(bom).map(([k, n]) => [k, n]);
+  if (bomRows.length) { kids.push(table(['Access point model', 'Quantity'], bomRows, [W - 1600, 1600])); }
+  else kids.push(para('No access points were placed.'));
+
+  // ---- per floor
+  floors.forEach((f, idx) => {
+    kids.push(h2(`${3 + idx}. ${f.name}`, true));
+    kids.push(para(`Band ${f.band} GHz · environment: ${f.env} · threshold ${f.threshold} dBm · ${f.scaleSet ? 'scale calibrated' : 'scale NOT calibrated (distances are approximate)'}`));
+    if (f.img) {
+      const w = 600, h = Math.round(600 * f.img.h / f.img.w);
+      kids.push(new D.Paragraph({ alignment: D.AlignmentType.CENTER, spacing: { after: 120 }, children: [new D.ImageRun({ type: 'png', data: f.img.bytes, transformation: { width: w, height: Math.min(h, 520) } })] }));
+    }
+    // colour legend
+    const lv = [[-50, '≥ -50 dBm Excellent'], [-60, '≥ -60 Good'], [-67, '≥ -67 Fair'], [-75, '≥ -75 Weak'], [-82, '≥ -82 Poor'], [-95, '< -82 Very poor']];
+    const lw = Math.floor(W / lv.length);
+    kids.push(new D.Table({
+      width: { size: lw * lv.length, type: D.WidthType.DXA }, columnWidths: lv.map(() => lw),
+      rows: [new D.TableRow({ children: lv.map(([v, label]) => {
+        const c = rssiToRGBA(v, 1); const hex = [c[0], c[1], c[2]].map(n => n.toString(16).padStart(2, '0')).join('');
+        return cell(label, lw, { fill: hex, bold: true });
+      }) })],
+    }));
+    kids.push(para(''));
+    if (f.cov) kids.push(para(`Coverage ${Math.round(f.cov.cov / f.cov.total * 100)}% · excellent ${Math.round(f.cov.exc / f.cov.total * 100)}% · dead zone ${Math.round(f.cov.dead / f.cov.total * 100)}%`, {}));
+    if (f.aps.length) {
+      kids.push(table(['AP', 'Model', 'Band', 'Ch', 'TX dBm', 'Height m', 'X m', 'Y m'],
+        f.aps.map(a => [a.name, a.vendor + ' ' + a.model, a.band + ' GHz', a.ch, a.tx, a.h, a.x.toFixed(1), a.y.toFixed(1)]),
+        [1300, 2326, 1000, 700, 900, 1000, 900, 900]));
+    }
+  });
+
+  // ---- assumptions
+  kids.push(h2(`${3 + floors.length}. Method and assumptions`, true));
+  kids.push(para('The coverage prediction is a simulation, not an on-site measurement. Results depend on the accuracy of the floor plan scale, wall materials and the chosen environment, and should be validated with a site survey and acceptance test before final deployment.'));
+  kids.push(para([txt('Propagation model: ', { bold: true }), txt('free-space path loss up to 5 m, then an indoor path-loss exponent (2.4 GHz: 3.0, 5 GHz: 3.4, 6 GHz: 3.7, scaled by the environment: open 0.85, office 1.0, dense 1.2), minus the attenuation of every wall crossed by the direct ray.')]));
+  kids.push(table(['Material', '2.4 GHz', '5 GHz', '6 GHz'], [
+    ...WALL_MATS.map(m => [m.name, Math.round(m.attn * WALL_K['2.4'] * 10) / 10 + ' dB', m.attn + ' dB', Math.round(m.attn * WALL_K['6'] * 10) / 10 + ' dB']),
+    ...DOOR_TYPES.map(m => [m.name + ' (door)', Math.round(m.attn * WALL_K['2.4'] * 10) / 10 + ' dB', m.attn + ' dB', Math.round(m.attn * WALL_K['6'] * 10) / 10 + ' dB']),
+  ], [4026, 1666, 1666, 1668]));
+  kids.push(para(''));
+  kids.push(para('Generated with ConfigLabs WiFi Planner (configlabs.online) on ' + today + '.', {}));
+
+  return new D.Document({
+    creator: 'ConfigLabs', title: P.name + ' – WLAN Survey & Design Report',
+    styles: { default: { document: { run: { font: 'Arial', size: 20 } } } },
+    sections: [{
+      properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1300, right: 1440, bottom: 1300, left: 1440 } } },
+      footers: { default: new D.Footer({ children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [txt(P.name + '  ·  Page ', { size: 16, color: '7A8494' }), new D.TextRun({ children: [D.PageNumber.CURRENT], font: 'Arial', size: 16, color: '7A8494' })] })] }) },
+      children: kids,
+    }],
+  });
+}
+
 function toggleSec(btn) { btn.parentElement.classList.toggle('closed'); }
 function toggleLeft() { document.getElementById('left-panel').classList.toggle('collapsed'); }
 function closeProps() { wifi.sel = null; renderPropsPanel(); scheduleRender(); }
@@ -2455,6 +3059,9 @@ function fileAct(a) {
   else if (a === 'png') exportPNG();
   else if (a === 'save') savePlan();
   else if (a === 'export') exportProject(curProj.id);
+  else if (a === 'report') exportReport();
+  else if (a === 'csv') exportCSV();
+  else if (a === 'cleararea') { if (wifi.areas.length) { pushHistory(); wifi.areas = []; scheduleRender(); toast('Render area cleared'); } else toast('No render area set'); }
   else if (a === 'clear') clearAll();
 }
 document.addEventListener('click', e => {
