@@ -178,6 +178,68 @@ def normalize_vlan_list(vlans_str):
     result = vlans_str.replace(",", " ").split()
     return ",".join(result)
 
+
+def gen_comware_pbr(pbr):
+    """Multi-ISP policy-based routing with NQA + Track failover (H3C Comware v7).
+    mode 'failover': every LAN prefers ISP1, then ISP2, then ISP3.
+    mode 'mutual'  : LAN n prefers ISP n (rotating); the other ISPs back it up in order."""
+    isps = [i for i in (pbr.get("isps") or []) if i.get("gateway")][:3]
+    lans = [l for l in (pbr.get("lans") or []) if l.get("network") and l.get("cidr")]
+    if not isps: return []
+    out = ["# --- Multi-ISP PBR (NQA + Track) ---", "#"]
+    tr = {}
+    for n, isp in enumerate(isps, 1):
+        tag = "isp" + chr(64 + n)
+        tr[n] = n
+        out += [f"nqa entry admin {tag}", " type icmp-echo",
+                f" destination ip {isp.get('probe_ip') or ['8.8.8.8','1.1.1.1','9.9.9.9'][n-1]}",
+                f" next-hop ip {isp['gateway']}", " frequency 3000",
+                " reaction 1 checked-element probe-fail threshold-type consecutive 3 action-type trigger-only",
+                f"nqa schedule admin {tag} start-time now lifetime forever",
+                f"track {n} nqa entry admin {tag} reaction 1", "#"]
+    # WAN interfaces + NAT
+    for n, isp in enumerate(isps, 1):
+        wi = isp.get("wan_interface")
+        if not wi: continue
+        out.append(f"interface {wi}")
+        out.append(f" description {isp.get('name') or 'ISP-' + chr(64+n)}")
+        if isp.get("wan_ip"):
+            try:
+                a, m = isp["wan_ip"].split("/")
+                out.append(f" ip address {a} {cidr_to_mask(m)}")
+            except Exception: pass
+        if isp.get("nat", True): out.append(" nat outbound")
+        out.append("#")
+    # Default routes (tracked, ISP1 best preference)
+    for n, isp in enumerate(isps, 1):
+        line = f"ip route-static 0.0.0.0 0 {isp['gateway']} track {n}"
+        if n > 1: line += f" preference {50 + n * 10}"
+        out.append(line)
+    out.append("#")
+    # ACL + policy
+    if lans:
+        pname = pbr.get("policy_name") or "PBR-ISP"
+        base = int(pbr.get("acl_base") or 3100)
+        mutual = pbr.get("mode") == "mutual"
+        for k, l in enumerate(lans):
+            out += [f"acl advanced {base + k}", f" description {l.get('name') or 'LAN' + str(k+1)}",
+                    f" rule 5 permit ip source {l['network']} {cidr_to_wildcard(l['cidr'])}", "#"]
+        for k, l in enumerate(lans):
+            first = (k % len(isps)) if mutual else 0
+            order = [(first + j) % len(isps) + 1 for j in range(len(isps))]
+            out.append(f"policy-based-route {pname} permit node {(k + 1) * 10}")
+            out.append(f" if-match acl {base + k}")
+            for n in order:
+                out.append(f" apply next-hop {isps[n-1]['gateway']} track {n}")
+            out.append("#")
+        done = set()
+        for l in lans:
+            it = l.get("interface")
+            if it and it not in done:
+                done.add(it)
+                out += [f"interface {it}", f" ip policy-based-route {pname}", "#"]
+    return out
+
 # ============================================================
 # H3C COMWARE v7 GENERATOR
 # ============================================================
@@ -325,6 +387,10 @@ def gen_h3c_comware(data):
                 line = f" rule {rid} {rule['action']} {proto} source {src} {wc}"
             config.append(" " + " ".join(line.split()).lstrip())
         config.append("#")
+
+    pbr = data.get("pbr")
+    if pbr and pbr.get("isps"):
+        config += gen_comware_pbr(pbr)
 
     config.append("return")
     return "\n".join(config)
@@ -1008,6 +1074,26 @@ TEMPLATES = {
                 "networks": [
                     {"network": "10.0.0.0", "cidr": "8"},
                     {"network": "192.168.1.0", "cidr": "24"}
+                ]
+            }
+        }
+    },
+    "h3c_comware_multi_isp_pbr": {
+        "vendor": "h3c", "os": "comware",
+        "name": "🌐 Multi-ISP PBR (3 ISP)",
+        "description": "Policy-based routing with NQA/Track failover across 3 ISPs",
+        "data": {
+            "system": {"hostname": "RT-EDGE-01"},
+            "pbr": {
+                "mode": "failover", "policy_name": "PBR-ISP", "acl_base": 3100,
+                "isps": [
+                    {"name": "ISP-A", "gateway": "100.0.0.1", "probe_ip": "8.8.8.8", "wan_interface": "GigabitEthernet0/1", "wan_ip": "100.0.0.2/30", "nat": True},
+                    {"name": "ISP-B", "gateway": "200.0.0.1", "probe_ip": "1.1.1.1", "wan_interface": "GigabitEthernet0/2", "wan_ip": "200.0.0.2/30", "nat": True},
+                    {"name": "ISP-C", "gateway": "300.0.0.1", "probe_ip": "9.9.9.9", "wan_interface": "GigabitEthernet0/3", "wan_ip": "300.0.0.2/30", "nat": True}
+                ],
+                "lans": [
+                    {"name": "LAN-1", "network": "10.10.10.0", "cidr": "24", "interface": "GigabitEthernet0/0"},
+                    {"name": "LAN-2", "network": "10.10.20.0", "cidr": "24", "interface": "GigabitEthernet0/4"}
                 ]
             }
         }

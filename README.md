@@ -2,7 +2,7 @@
 
 Free network tools for engineers — **https://configlabs.online**
 
-- **Config Builder** — generate H3C Comware and Cisco IOS / IOS-XE / NX-OS configs from a form (17 templates).
+- **Config Builder** — generate H3C Comware and Cisco IOS / IOS-XE / NX-OS configs from a form (18 templates).
 - **WiFi Planner** (beta) — floor-plan heatmaps (signal, SINR, coverage), field calibration and Word reports.
 
 ## Stack

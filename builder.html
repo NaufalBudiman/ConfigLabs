@@ -4,11 +4,11 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Config Builder — ConfigLabs</title>
-<meta name="description" content="Generate H3C Comware, Cisco IOS, IOS-XE and NX-OS configs from a simple form: VLANs, trunks, DHCP, OSPF and more. 17 templates, free, no login required."/>
+<meta name="description" content="Generate H3C Comware, Cisco IOS, IOS-XE and NX-OS configs from a simple form: VLANs, trunks, DHCP, OSPF and more. 18 templates, free, no login required."/>
 <meta name="keywords" content="H3C config generator, Cisco IOS config, NX-OS config, Comware CLI, VLAN generator, OSPF config, DHCP config"/>
 <meta name="author" content="ConfigLabs"/>
 <meta property="og:title" content="Config Builder — ConfigLabs"/>
-<meta property="og:description" content="Fill in a form, get a clean H3C or Cisco config. 17 templates, free, no login."/>
+<meta property="og:description" content="Fill in a form, get a clean H3C or Cisco config. 18 templates, free, no login."/>
 <meta property="og:type" content="website"/>
 <link rel="canonical" href="https://configlabs.online/builder.html"/>
 <meta property="og:url" content="https://configlabs.online/builder.html"/>
@@ -444,6 +444,7 @@ footer{margin-top:80px;padding:40px 0 30px;border-top:1px solid var(--border)}
         <button class="tab" data-tab="route">Routing <span class="badge" id="b-route">0</span></button>
         <button class="tab" data-tab="ospf">OSPF</button>
         <button class="tab" data-tab="acl">ACL <span class="badge" id="b-acl">0</span></button>
+        <button class="tab" data-tab="pbr" id="tab-pbr">ISP / PBR <span class="badge" id="b-pbr">0</span></button>
       </div>
 
       <div class="panel-body">
@@ -507,6 +508,23 @@ footer{margin-top:80px;padding:40px 0 30px;border-top:1px solid var(--border)}
         <div class="tab-panel" id="pane-acl">
           <div class="repeater" id="rep-acls"></div>
           <button class="btn-add" onclick="addAcl()">＋ Add ACL</button>
+        </div>
+
+
+        <!-- ==================== ISP / PBR (H3C Comware) ==================== -->
+        <div class="tab-panel" id="pane-pbr">
+          <div class="info-banner"><span class="icon">🌐</span><span>Multi-ISP failover with Policy-Based Routing + NQA/Track (H3C Comware, 2–3 ISPs). Add ISPs in priority order.</span></div>
+          <div class="field-row">
+            <div class="field"><label>Mode</label><select id="pbr-mode"><option value="failover">Failover: all LANs prefer ISP-A → B → C</option><option value="mutual">Mutual backup: each LAN has its own primary ISP</option></select></div>
+            <div class="field"><label>Policy name</label><input id="pbr-name" placeholder="PBR-ISP"></div>
+          </div>
+          <div class="field"><label>ACL start number <span class="hint">one ACL per LAN</span></label><input id="pbr-acl" placeholder="3100"></div>
+          <label style="margin-top:8px">ISPs <span class="hint">max 3 · order = priority</span></label>
+          <div class="repeater" id="rep-isps"></div>
+          <button class="btn-add" onclick="addIsp()">＋ Add ISP</button>
+          <label style="margin-top:14px">LAN subnets <span class="hint">traffic to steer</span></label>
+          <div class="repeater" id="rep-lans"></div>
+          <button class="btn-add" onclick="addLan()">＋ Add LAN</button>
         </div>
 
       </div><!-- /panel-body -->
@@ -746,6 +764,7 @@ function updateVendorLabel() {
 }
 
 function updateHints() {
+  updatePbrTab();
   document.getElementById('hint-hostname').textContent = state.vendor === 'h3c' ? 'sysname' : 'hostname';
   const extra = document.getElementById('svi-hint-extra');
   if (state.vendor === 'h3c') extra.textContent = 'H3C: link pool via "Apply Pool".';
@@ -949,8 +968,68 @@ function addAclRow(btn) {
   btn.previousElementSibling.appendChild(row);
 }
 
+
+function addIsp(data = {}) {
+  if (document.querySelectorAll('#rep-isps .repeater-item').length >= 3) { toast('Max 3 ISPs', true); return; }
+  const n = document.querySelectorAll('#rep-isps .repeater-item').length;
+  const html = `<div class="field-row">
+    <div class="field"><label>Name</label><input class="p-name" value="${data.name||''}" placeholder="ISP-${'ABC'[n]}"></div>
+    <div class="field"><label>Gateway (next-hop)</label><input class="p-gw" value="${data.gateway||''}" placeholder="100.0.0.1"></div>
+  </div>
+  <div class="field-row">
+    <div class="field"><label>Probe target <span class="hint">ping via this ISP</span></label><input class="p-probe" value="${data.probe_ip||''}" placeholder="${['8.8.8.8','1.1.1.1','9.9.9.9'][n]}"></div>
+    <div class="field"><label>WAN interface</label><input class="p-wan" value="${data.wan_interface||''}" placeholder="GigabitEthernet0/1"></div>
+  </div>
+  <div class="field-row">
+    <div class="field"><label>WAN IP <span class="hint">CIDR, optional</span></label><input class="p-wanip" value="${data.wan_ip||''}" placeholder="100.0.0.2/30"></div>
+    <div class="field"><label>NAT outbound</label><select class="p-nat"><option value="1" ${data.nat===false?'':'selected'}>Yes</option><option value="0" ${data.nat===false?'selected':''}>No</option></select></div>
+  </div>`;
+  document.getElementById('rep-isps').appendChild(makeItem('ISP ' + 'ABC'[n], html));
+  updateBadges();
+}
+function addLan(data = {}) {
+  const html = `<div class="field-row-3">
+    <div class="field"><label>Name</label><input class="l-name" value="${data.name||''}" placeholder="LAN-1"></div>
+    <div class="field"><label>Network</label><input class="l-net" value="${data.network||''}" placeholder="10.10.10.0"></div>
+    <div class="field"><label>CIDR</label><input class="l-cidr" value="${data.cidr||''}" placeholder="24"></div>
+  </div>
+  <div class="field"><label>Apply policy on interface <span class="hint">LAN-facing</span></label><input class="l-if" value="${data.interface||''}" placeholder="Vlan-interface10"></div>`;
+  document.getElementById('rep-lans').appendChild(makeItem('LAN', html));
+}
+function collectPbr() {
+  const isps = [...document.querySelectorAll('#rep-isps .repeater-item')].map(el => ({
+    name: el.querySelector('.p-name').value.trim(), gateway: el.querySelector('.p-gw').value.trim(),
+    probe_ip: el.querySelector('.p-probe').value.trim(), wan_interface: el.querySelector('.p-wan').value.trim(),
+    wan_ip: el.querySelector('.p-wanip').value.trim(), nat: el.querySelector('.p-nat').value === '1'
+  })).filter(i => i.gateway);
+  if (!isps.length) return undefined;
+  return {
+    mode: document.getElementById('pbr-mode').value,
+    policy_name: document.getElementById('pbr-name').value.trim(),
+    acl_base: document.getElementById('pbr-acl').value.trim(),
+    isps,
+    lans: [...document.querySelectorAll('#rep-lans .repeater-item')].map(el => ({
+      name: el.querySelector('.l-name').value.trim(), network: el.querySelector('.l-net').value.trim(),
+      cidr: el.querySelector('.l-cidr').value.trim(), interface: el.querySelector('.l-if').value.trim()
+    })).filter(l => l.network && l.cidr)
+  };
+}
+function applyPbr(p) {
+  document.getElementById('pbr-mode').value = p.mode || 'failover';
+  document.getElementById('pbr-name').value = p.policy_name || '';
+  document.getElementById('pbr-acl').value  = p.acl_base || '';
+  (p.isps || []).forEach(i => addIsp(i));
+  (p.lans || []).forEach(l => addLan(l));
+}
+function updatePbrTab() {
+  const on = state.vendor === 'h3c' && state.os === 'comware';
+  const t = document.getElementById('tab-pbr'); if (!t) return;
+  t.style.display = on ? '' : 'none';
+  if (!on && t.classList.contains('active')) document.querySelector('.tab[data-tab="system"]').click();
+}
+
 function updateBadges() {
-  const MAP = {vlan:'rep-vlans',svi:'rep-svis',intf:'rep-intfs',dhcp:'rep-dhcp',route:'rep-routes',acl:'rep-acls'};
+  const MAP = {vlan:'rep-vlans',svi:'rep-svis',intf:'rep-intfs',dhcp:'rep-dhcp',route:'rep-routes',acl:'rep-acls',pbr:'rep-isps'};
   for (const [k, v] of Object.entries(MAP)) {
     const el = document.getElementById('b-' + k);
     if (el) el.textContent = document.getElementById(v).children.length;
@@ -1029,7 +1108,8 @@ function collectData() {
         source: r.querySelector('.acl-src').value.trim(),
         wildcard: r.querySelector('.acl-wc').value.trim()
       })).filter(r => r.source)
-    })).filter(a => a.acl_number)
+    })).filter(a => a.acl_number),
+    pbr: (state.vendor === 'h3c' && state.os === 'comware') ? collectPbr() : undefined
   };
 }
 
@@ -1053,15 +1133,16 @@ function applyTemplate(data) {
     (data.ospf.networks || []).forEach(n => addOspfNet(n));
   }
   (data.acls || []).forEach(a => addAcl(a));
+  if (data.pbr) applyPbr(data.pbr);
   updateBadges();
   setTimeout(refreshSviDropdowns, 50);
 }
 
 function clearAll(silent) {
-  ['sys-hostname','sys-ntp','sys-tz','sys-banner','ospf-pid','ospf-rid','ospf-area'].forEach(id => {
+  ['sys-hostname','sys-ntp','sys-tz','sys-banner','ospf-pid','ospf-rid','ospf-area','pbr-name','pbr-acl'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
-  ['rep-vlans','rep-svis','rep-intfs','rep-dhcp','rep-routes','rep-ospf-nets','rep-acls'].forEach(id => {
+  ['rep-vlans','rep-svis','rep-intfs','rep-dhcp','rep-routes','rep-ospf-nets','rep-acls','rep-isps','rep-lans'].forEach(id => {
     document.getElementById(id).innerHTML = '';
   });
   updateBadges();
@@ -1090,7 +1171,7 @@ function loadExample() {
    ============================================================ */
 async function generate() {
   const data = collectData();
-  const hasData = data.system || (data.vlans||[]).length || (data.svis||[]).length || (data.interfaces||[]).length || (data.dhcp_pools||[]).length || (data.static_routes||[]).length || data.ospf || (data.acls||[]).length;
+  const hasData = data.system || (data.vlans||[]).length || (data.svis||[]).length || (data.interfaces||[]).length || (data.dhcp_pools||[]).length || (data.static_routes||[]).length || data.ospf || (data.acls||[]).length || data.pbr;
   if (!hasData) { toast('Add something first!', true); return; }
   setStatus('Generating...', '');
   try {
