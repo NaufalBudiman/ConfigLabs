@@ -400,7 +400,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.6</span></div>
+    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.7</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -597,6 +597,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
         <option value="weak">Weak-field</option>
       </select>
       <button class="tt" id="btn-toggle-hm" onclick="toggleHeatmap()" title="Show / hide heatmap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span class="lbl">Heatmap</span></button>
+      <button class="tt" id="btn-optimize" onclick="openOptimize()" title="Auto optimize: suggest channels and TX power for all APs on this floor">✨ Optimize</button>
       <button class="tt primary" id="btn-precise" onclick="startPrecise()" title="Re-render the heatmap at high resolution">Precise render</button>
       <div class="tsep"></div>
       <span class="chip-scale" id="scale-display">not set</span>
@@ -2421,6 +2422,201 @@ function updateStats() {
   covEl.className   = 'stat-val ' + (covPct > 80 ? 'stat-good' : covPct > 60 ? 'stat-warn' : 'stat-bad');
   document.getElementById('stat-exc').textContent  = Math.round(st.exc / st.total * 100) + '%';
   document.getElementById('stat-dead').textContent = Math.round(st.dead / st.total * 100) + '%';
+}
+
+// ============================================================
+// AUTO OPTIMIZE (v5.7): channel + TX power
+// ============================================================
+function _rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const OPT_CH = {
+  '2.4': [1, 6, 11],
+  '5': [36, 40, 44, 48, 149, 153, 157, 161],
+  '5dfs': [52, 56, 60, 64, 100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144],
+  '6': [1, 5, 9, 13, 17, 21, 25, 29, 33, 37, 41, 45, 49, 53, 57, 61, 65, 69, 73, 77, 81, 85, 89, 93],
+};
+const OPT_SINR_T = 25;          // SINR (dB) above which a covered cell is considered clean
+const OPT_PAIR_T = -82;         // two radios "hear" each other at or above this level (dBm)
+function optApName(ai) { return 'AP' + (ai + 1); }
+
+// signal matrices for one band: P[cell*N+k] = RSSI of radio k at the cell with 0 dBm TX (walls, calibration included)
+function optBuild(band) {
+  const hc = prepHeat({ band, mode: 'rssi', threshold: -120 });
+  const N = hc.aps.length; if (!N) return null;
+  const radios = [];
+  wifi.aps.forEach((ap, ai) => { const m = getAPModel(ap.vendor, ap.model); if (!m) return; apRadios(ap, m).forEach(r => { if (r.band === band) radios.push({ ai, ri: r.i, tx: r.tx, ch: r.ch, gain: mGain(m, band), cap: defTx(m, band) }); }); });
+  const rg = hc.region;
+  const area = Math.max(1, (rg.x1 - rg.x0) * (rg.y1 - rg.y0));
+  const target_cells = Math.max(1200, 3200 * Math.min(1, 15 / N));
+  const S = Math.max(25, Math.sqrt(area / target_cells));
+  const cells = [];
+  for (let py = rg.y0 + S / 2; py < rg.y1; py += S) for (let px = rg.x0 + S / 2; px < rg.x1; px += S) if (inRegion(rg, px, py)) cells.push(px, py);
+  const nc = cells.length / 2;
+  const P = new Float32Array(nc * N);
+  for (let c = 0; c < nc; c++) {
+    cellRSSI(hc, cells[2 * c], cells[2 * c + 1]);
+    for (let k = 0; k < N; k++) P[c * N + k] = hc._rs[k] > -199 ? hc._rs[k] - hc.aps[k].eirp : -999;
+  }
+  // radio-to-radio (at each AP position) for the "hear each other" count
+  const Q = new Float32Array(N * N);
+  for (let j = 0; j < N; j++) {
+    const a = hc.aps[j];
+    cellRSSI(hc, a.x, a.y);
+    for (let k = 0; k < N; k++) Q[j * N + k] = (k === j) ? -999 : (hc._rs[k] > -199 ? hc._rs[k] - hc.aps[k].eirp : -999);
+  }
+  return { band, N, nc, P, Q, radios, noise: NOISE_FLOOR[band], target: wifi.covTarget };
+}
+function optOvl(band, ch) {
+  const N = ch.length, o = new Float32Array(N * N);
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) o[i * N + j] = i === j ? 0 : chOverlap(band, ch[i], ch[j]);
+  return o;
+}
+// evaluate a plan: cost J (lower = better) plus readable metrics
+function optEval(M, tx, ch, full) {
+  const { N, nc, P, band, noise, target } = M;
+  const gain = M.radios.map(r => r.gain), ov = optOvl(band, ch);
+  const r = new Float32Array(N), pw = new Float32Array(N);
+  let J = 0, cov = 0, sinrSum = 0, sinrN = 0;
+  const W = full ? new Float64Array(N * N) : null;
+  for (let c = 0; c < nc; c++) {
+    let b = -1, r1 = -999, above = 0, r2 = -999;
+    for (let k = 0; k < N; k++) {
+      const p = P[c * N + k]; let v = -999;
+      if (p > -900) { v = p + tx[k] + gain[k]; pw[k] = Math.pow(10, v / 10); } else pw[k] = 0;
+      r[k] = v;
+      if (v >= target) above++;
+      if (v > r1) { r2 = r1; r1 = v; b = k; } else if (v > r2) r2 = v;
+    }
+    if (b < 0 || r1 < target) { J += 1 + Math.min(2, (target - Math.max(r1, -150)) / 10); if (full && b >= 0) { /* serving still counted below */ } }
+    else {
+      cov++;
+      let I = 0;
+      for (let k = 0; k < N; k++) { if (k === b) continue; const o = ov[b * N + k]; if (o > 0) I += o * pw[k]; }
+      const sinr = r1 - 10 * Math.log10(I + Math.pow(10, noise / 10));
+      sinrSum += sinr; sinrN++;
+      J += 0.5 * Math.max(0, Math.min(1, (OPT_SINR_T - sinr) / OPT_SINR_T)) + 0.08 * Math.min(3, Math.max(0, above - 2));
+    }
+    if (W && b >= 0) for (let k = 0; k < N; k++) if (k !== b && pw[k] > 0) W[b * N + k] += pw[k];
+  }
+  let ptx = 0; for (let k = 0; k < N; k++) ptx += tx[k];
+  J = J / nc + 0.0004 * ptx / N;
+  // radio pairs that hear each other on overlapping channels
+  let pairs = 0;
+  for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {
+    if (!(ov[i * N + j] > 0)) continue;
+    const a = M.Q[i * N + j] > -900 ? M.Q[i * N + j] + tx[j] + gain[j] : -999;
+    const b2 = M.Q[j * N + i] > -900 ? M.Q[j * N + i] + tx[i] + gain[i] : -999;
+    if (Math.max(a, b2) >= OPT_PAIR_T) pairs++;
+  }
+  return { J, cov: cov / nc, sinr: sinrN ? sinrSum / sinrN : null, pairs, W };
+}
+function optChannels(M, tx, ch0, allowDFS) {
+  const N = M.N, band = M.band;
+  let cand = band === '5' ? OPT_CH['5'].concat(allowDFS ? OPT_CH['5dfs'] : []) : OPT_CH[band];
+  const ev = optEval(M, tx, ch0, true), W = ev.W;
+  const S = new Float64Array(N * N);
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) if (i !== j) {
+    S[i * N + j] = W[i * N + j] + W[j * N + i];
+    if (M.radios[i].ai === M.radios[j].ai) S[i * N + j] += 1e-3;      // radios of the same AP must not share a channel
+  }
+  const cost = ch => { let s = 0; for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) { const w = S[i * N + j]; if (w > 0) s += w * chOverlap(band, ch[i], ch[j]); } return s; };
+  const rnd = _rng(1234);
+  let best = null, bestC = Infinity;
+  for (let rs = 0; rs < 8; rs++) {
+    let order = [...Array(N).keys()];
+    const deg = order.map(i => { let s = 0; for (let j = 0; j < N; j++) s += S[i * N + j]; return s; });
+    order.sort((a, b) => deg[b] - deg[a]);
+    if (rs > 0) for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+    const ch = new Array(N).fill(0), set = new Array(N).fill(false);
+    for (const i of order) {                                        // greedy
+      let bc = Infinity, bv = cand[0];
+      for (const v of cand) { let s = 0; for (let j = 0; j < N; j++) if (set[j]) s += S[i * N + j] * chOverlap(band, v, ch[j]); if (s < bc - 1e-18 || (Math.abs(s - bc) <= 1e-18 && v === ch0[i])) { bc = s; bv = v; } }
+      ch[i] = bv; set[i] = true;
+    }
+    for (let pass = 0; pass < 20; pass++) {                         // local search
+      let ch2 = false;
+      for (const i of order) {
+        let cur = 0; for (let j = 0; j < N; j++) cur += S[i * N + j] * chOverlap(band, ch[i], ch[j]);
+        for (const v of cand) { if (v === ch[i]) continue; let s = 0; for (let j = 0; j < N; j++) s += S[i * N + j] * chOverlap(band, v, ch[j]); if (s < cur - 1e-15) { cur = s; ch[i] = v; ch2 = true; } }
+      }
+      if (!ch2) break;
+    }
+    const c = cost(ch);
+    if (c < bestC - 1e-18) { bestC = c; best = ch.slice(); }
+  }
+  // keep the current plan if it is already (nearly) as good
+  if (cost(ch0) <= bestC * 1.02 + 1e-18) return ch0.slice();
+  return best;
+}
+function optPower(M, tx0, ch) {
+  const N = M.N, tx = tx0.slice();
+  const hi = M.radios.map(r => r.cap), lo = hi.map(h => Math.max(6, h - 10)), stp = N > 20 ? 2 : 1;
+  for (let k = 0; k < N; k++) tx[k] = hi[k];
+  let cur = optEval(M, tx, ch, false).J;
+  for (let sweep = 0; sweep < 4; sweep++) {
+    let moved = false;
+    for (let k = 0; k < N; k++) {
+      let bt = tx[k], bj = cur;
+      for (let t = hi[k]; t >= lo[k]; t -= stp) { if (t === tx[k]) continue; const old = tx[k]; tx[k] = t; const j = optEval(M, tx, ch, false).J; tx[k] = old; if (j < bj - 1e-6) { bj = j; bt = t; } }
+      if (bt !== tx[k]) { tx[k] = bt; cur = bj; moved = true; }
+    }
+    if (!moved) break;
+  }
+  return tx;
+}
+async function runOptimize(opt) {
+  const out = [];
+  for (const band of opt.bands) {
+    const M = optBuild(band); if (!M) continue;
+    await tick();
+    const tx0 = M.radios.map(r => r.tx), ch0 = M.radios.map(r => r.ch);
+    const before = optEval(M, tx0, ch0, false);
+    let tx = tx0.slice(), ch = ch0.slice();
+    if (opt.ch) ch = optChannels(M, tx, ch, opt.dfs);
+    await tick();
+    if (opt.pw) { tx = optPower(M, tx, ch); await tick(); if (opt.ch) ch = optChannels(M, tx, ch, opt.dfs); }
+    const after = optEval(M, tx, ch, false);
+    out.push({ band, M, before, after, tx0, ch0, tx, ch });
+  }
+  return out;
+}
+async function openOptimize() {
+  if (!wifi.aps.length) { toast('Place at least one AP first', 'error'); return; }
+  const bands = floorBands();
+  const html = `<div style="font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:12px">Suggests channels and TX power for the APs on this floor, using the same propagation model as the heatmap (walls, doors, calibration). Coverage target: <b>${wifi.covTarget} dBm</b>. You can review the result before applying, and undo it afterwards.</div>
+    <div class="dlg-field"><label>Optimize</label>
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text)"><input type="checkbox" id="op-ch" checked style="width:auto"> Channels</label>
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);margin-top:4px"><input type="checkbox" id="op-pw" checked style="width:auto"> TX power</label></div>
+    <div class="dlg-field"><label>Bands</label>${bands.map(b => `<label style="display:inline-flex;gap:6px;align-items:center;font-size:13px;margin-right:14px;text-transform:none;letter-spacing:0;color:var(--text)"><input type="checkbox" class="op-band" value="${b}" checked style="width:auto"> ${b} GHz</label>`).join('')}</div>
+    <div class="dlg-field"><label>5 GHz channels</label><label style="display:flex;gap:8px;align-items:center;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text)"><input type="checkbox" id="op-dfs" style="width:auto"> Allow DFS channels (52–144). Off = 36–48 and 149–161 only</label></div>
+    <div style="font-size:11px;color:var(--text-muted);line-height:1.5">Channels are planned for 20 MHz width. TX power stays within each model's datasheet limit and a balanced cap (2.4 GHz ≤ 17 dBm, 5/6 GHz ≤ 23 dBm).</div>`;
+  const m = await dialog({ title: 'Auto <em>optimize</em>', html, ok: 'Run' });
+  if (!m) return;
+  const opt = { ch: m.querySelector('#op-ch').checked, pw: m.querySelector('#op-pw').checked, dfs: m.querySelector('#op-dfs').checked, bands: [...m.querySelectorAll('.op-band:checked')].map(e => e.value) };
+  if (!opt.bands.length || (!opt.ch && !opt.pw)) { toast('Pick at least one band and one option', 'error'); return; }
+  showBusy('Optimizing…'); await tick();
+  let res;
+  try { res = await runOptimize(opt); } catch (e) { hideBusy(); console.error(e); toast('Optimize failed: ' + e.message, 'error'); return; }
+  hideBusy();
+  if (!res.length) { toast('Nothing to optimize', 'error'); return; }
+  const pct = v => Math.round(v * 100) + '%', f1 = v => v == null ? '—' : v.toFixed(1);
+  let h = `<table class="cal-tbl"><tr><th>Band</th><th>Coverage</th><th>Avg SINR (dB)</th><th>Co-channel pairs</th></tr>` + res.map(r => `<tr><td>${r.band} GHz</td><td>${pct(r.before.cov)} → <b>${pct(r.after.cov)}</b></td><td>${f1(r.before.sinr)} → <b>${f1(r.after.sinr)}</b></td><td>${r.before.pairs} → <b>${r.after.pairs}</b></td></tr>`).join('') + `</table>
+    <div style="margin:12px 0 6px;font-size:12px;color:var(--text-dim)">Changes</div><div style="max-height:34vh;overflow:auto"><table class="cal-tbl"><tr><th>AP</th><th>Radio</th><th>Channel</th><th>TX power</th></tr>`;
+  let changes = 0;
+  res.forEach(r => r.M.radios.forEach((rd, k) => {
+    const cc = r.ch0[k] !== r.ch[k], tc = r.tx0[k] !== r.tx[k];
+    if (!cc && !tc) return;
+    changes++;
+    h += `<tr><td>${optApName(rd.ai)}</td><td>${r.band} GHz</td><td>${cc ? r.ch0[k] + ' → <b>' + r.ch[k] + '</b>' : r.ch[k]}</td><td>${tc ? r.tx0[k] + ' → <b>' + r.tx[k] + '</b> dBm' : r.tx[k] + ' dBm'}</td></tr>`;
+  }));
+  h += `</table></div>`;
+  if (!changes) h = `<div style="font-size:13px;color:var(--text-dim)">The current settings are already close to optimal — nothing to change.</div>` + h;
+  const ok = await dialog({ title: 'Optimize <em>result</em>', html: h, ok: changes ? 'Apply changes' : 'Close', hideCancel: !changes, wide: true });
+  if (!ok || !changes) return;
+  pushHistory();
+  res.forEach(r => r.M.radios.forEach((rd, k) => { const rr = wifi.aps[rd.ai].rad[rd.ri]; rr.ch = r.ch[k]; rr.tx = r.tx[k]; }));
+  _precCanvas = null; _statSig = '';
+  renderPropsPanel(); scheduleRender(); scheduleAutosave();
+  toast('Applied — ' + changes + ' radio' + (changes > 1 ? 's' : '') + ' updated (Ctrl+Z to undo)');
 }
 
 // ============================================================
