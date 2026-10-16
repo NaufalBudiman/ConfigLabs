@@ -17,7 +17,7 @@
 from flask import Flask, request, jsonify, redirect, url_for, g
 from flask_cors import CORS
 from authlib.integrations.flask_client import OAuth
-from models import db, User, SavedFile
+from models import db, User, SavedFile, WifiProject, WifiPlan
 from datetime import datetime, timedelta
 from functools import wraps
 import jwt
@@ -1631,6 +1631,170 @@ def api_wifi_matlib_put():
         db.session.add(row)
     db.session.commit()
     return jsonify({'mats': mats, 'message': 'Saved'})
+
+# ── WiFi Planner: projects saved to the account + read-only share links ──
+_ID = re.compile(r'^[A-Za-z0-9_-]{3,40}$')
+MAX_PROJ_BYTES = 1_500_000
+MAX_PLAN_BYTES = 3_500_000
+
+def _proj_summary(row):
+    try:
+        d = json.loads(row.data)
+    except Exception:
+        d = {}
+    floors = d.get('floors') or []
+    aps = sum(len(((f.get('data') or {}).get('aps')) or []) for f in floors)
+    return {'id': row.id, 'name': row.name, 'client': d.get('client', ''), 'location': d.get('location', ''),
+            'floors': len(floors), 'aps': aps, 'updated_at': row.updated_at.isoformat(), 'shared': bool(row.share_token)}
+
+def _own_project(pid, uid):
+    row = WifiProject.query.get(pid)
+    if not row:
+        return None, (jsonify({'error': 'Not found'}), 404)
+    if row.user_id != uid:
+        return None, (jsonify({'error': 'Forbidden'}), 403)
+    return row, None
+
+@app.route('/api/wifi/projects', methods=['GET'])
+def api_wifi_projects():
+    uid = _wifi_user()
+    if not uid:
+        return jsonify({'error': 'Unauthorized'}), 401
+    rows = WifiProject.query.filter_by(user_id=uid).order_by(WifiProject.updated_at.desc()).all()
+    return jsonify([_proj_summary(r) for r in rows])
+
+@app.route('/api/wifi/projects/<pid>', methods=['GET'])
+def api_wifi_project_get(pid):
+    uid = _wifi_user()
+    if not uid:
+        return jsonify({'error': 'Unauthorized'}), 401
+    row, err = _own_project(pid, uid)
+    if err:
+        return err
+    return jsonify({'project': json.loads(row.data), 'updated_at': row.updated_at.isoformat(), 'share_token': row.share_token,
+                    'plans': [p.floor_id for p in WifiPlan.query.filter_by(project_id=pid).all()]})
+
+@app.route('/api/wifi/projects/<pid>', methods=['PUT'])
+def api_wifi_project_put(pid):
+    uid = _wifi_user()
+    if not uid:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if not _ID.match(pid):
+        return jsonify({'error': 'Bad id'}), 400
+    body = request.get_json(silent=True) or {}
+    proj = body.get('project')
+    if not isinstance(proj, dict) or not isinstance(proj.get('floors'), list) or not proj['floors']:
+        return jsonify({'error': 'Invalid project'}), 400
+    raw = json.dumps(proj)
+    if len(raw) > MAX_PROJ_BYTES:
+        return jsonify({'error': 'Project too large'}), 413
+    name = str(proj.get('name') or 'Untitled')[:255]
+    row = WifiProject.query.get(pid)
+    if row and row.user_id != uid:
+        return jsonify({'error': 'Forbidden'}), 403
+    if row:
+        base = body.get('base')
+        if base and base != row.updated_at.isoformat() and not body.get('force'):
+            return jsonify({'error': 'Newer version in your account', 'updated_at': row.updated_at.isoformat()}), 409
+        row.name, row.data, row.updated_at = name, raw, datetime.utcnow()
+    else:
+        if WifiProject.query.filter_by(user_id=uid).count() >= 200:
+            return jsonify({'error': 'Project limit reached'}), 400
+        row = WifiProject(id=pid, user_id=uid, name=name, data=raw)
+        db.session.add(row)
+    db.session.commit()
+    return jsonify({'updated_at': row.updated_at.isoformat(), 'share_token': row.share_token})
+
+@app.route('/api/wifi/projects/<pid>', methods=['DELETE'])
+def api_wifi_project_del(pid):
+    uid = _wifi_user()
+    if not uid:
+        return jsonify({'error': 'Unauthorized'}), 401
+    row, err = _own_project(pid, uid)
+    if err:
+        return err
+    WifiPlan.query.filter_by(project_id=pid).delete()
+    db.session.delete(row)
+    db.session.commit()
+    return jsonify({'message': 'Deleted'})
+
+@app.route('/api/wifi/projects/<pid>/plan/<fid>', methods=['PUT'])
+def api_wifi_plan_put(pid, fid):
+    uid = _wifi_user()
+    if not uid:
+        return jsonify({'error': 'Unauthorized'}), 401
+    row, err = _own_project(pid, uid)
+    if err:
+        return err
+    if not _ID.match(fid):
+        return jsonify({'error': 'Bad id'}), 400
+    data = (request.get_json(silent=True) or {}).get('data')
+    if not isinstance(data, str) or not data.startswith('data:image/') or len(data) > MAX_PLAN_BYTES:
+        return jsonify({'error': 'Invalid or too large image'}), 400
+    pl = WifiPlan.query.filter_by(project_id=pid, floor_id=fid).first()
+    if pl:
+        pl.data = data
+    else:
+        db.session.add(WifiPlan(project_id=pid, floor_id=fid, data=data))
+    db.session.commit()
+    return jsonify({'message': 'Saved'})
+
+@app.route('/api/wifi/projects/<pid>/plan/<fid>', methods=['GET'])
+def api_wifi_plan_get(pid, fid):
+    uid = _wifi_user()
+    if not uid:
+        return jsonify({'error': 'Unauthorized'}), 401
+    row, err = _own_project(pid, uid)
+    if err:
+        return err
+    pl = WifiPlan.query.filter_by(project_id=pid, floor_id=fid).first()
+    return jsonify({'data': pl.data if pl else None})
+
+@app.route('/api/wifi/projects/<pid>/plan/<fid>', methods=['DELETE'])
+def api_wifi_plan_del(pid, fid):
+    uid = _wifi_user()
+    if not uid:
+        return jsonify({'error': 'Unauthorized'}), 401
+    row, err = _own_project(pid, uid)
+    if err:
+        return err
+    WifiPlan.query.filter_by(project_id=pid, floor_id=fid).delete()
+    db.session.commit()
+    return jsonify({'message': 'Deleted'})
+
+@app.route('/api/wifi/projects/<pid>/share', methods=['POST', 'DELETE'])
+def api_wifi_share(pid):
+    uid = _wifi_user()
+    if not uid:
+        return jsonify({'error': 'Unauthorized'}), 401
+    row, err = _own_project(pid, uid)
+    if err:
+        return err
+    if request.method == 'POST':
+        if not row.share_token:
+            import secrets as _s
+            row.share_token = _s.token_urlsafe(18)
+    else:
+        row.share_token = None
+    db.session.commit()
+    return jsonify({'share_token': row.share_token})
+
+@app.route('/api/wifi/shared/<token>', methods=['GET'])
+def api_wifi_shared(token):
+    row = WifiProject.query.filter_by(share_token=token).first() if token else None
+    if not row:
+        return jsonify({'error': 'This link is not valid anymore'}), 404
+    proj = json.loads(row.data)
+    proj.pop('notes', None)   # internal notes are not part of the shared view
+    return jsonify({'project': proj, 'plans': [p.floor_id for p in WifiPlan.query.filter_by(project_id=row.id).all()], 'updated_at': row.updated_at.isoformat()})
+
+@app.route('/api/wifi/shared/<token>/plan/<fid>', methods=['GET'])
+def api_wifi_shared_plan(token, fid):
+    row = WifiProject.query.filter_by(share_token=token).first() if token else None
+    if not row:
+        return jsonify({'error': 'Not found'}), 404
+    pl = WifiPlan.query.filter_by(project_id=row.id, floor_id=fid).first()
+    return jsonify({'data': pl.data if pl else None})
 
 # ── Current user ─────────────────────────────────────────────
 

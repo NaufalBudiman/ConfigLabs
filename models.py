@@ -40,3 +40,24 @@ class SavedFile(db.Model):
         d = self.to_dict()
         d['data'] = json.loads(self.data)
         return d
+
+
+class WifiProject(db.Model):
+    """A WiFi Planner project saved to the user's account (floor plan images live in WifiPlan)."""
+    __tablename__ = 'wifi_projects'
+    id          = db.Column(db.String(40), primary_key=True)
+    user_id     = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    name        = db.Column(db.String(255), nullable=False)
+    data        = db.Column(db.Text, nullable=False)           # project JSON (floors, APs, walls...)
+    share_token = db.Column(db.String(64), unique=True, nullable=True, index=True)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at  = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class WifiPlan(db.Model):
+    __tablename__ = 'wifi_plans'
+    id         = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.String(40), db.ForeignKey('wifi_projects.id'), nullable=False, index=True)
+    floor_id   = db.Column(db.String(40), nullable=False)
+    data       = db.Column(db.Text, nullable=False)            # image as a data: URL
+    __table_args__ = (db.UniqueConstraint('project_id', 'floor_id', name='uq_wifi_plan'),)

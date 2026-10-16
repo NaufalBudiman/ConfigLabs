@@ -376,6 +376,10 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
   .phone-block a.alt{background:var(--surface);color:var(--text);border:1px solid var(--border-strong)}
 }
 #mat-list{grid-template-columns:1fr !important}
+.ro-banner,.ro-only{display:none}
+body.ro .ro-banner{display:inline-block;font-family:var(--mono);font-size:11px;color:var(--accent-3)}
+body.ro .ro-only{display:inline-block}
+body.ro [data-tool]:not([data-tool=pan]),body.ro #btn-undo,body.ro #btn-redo,body.ro #btn-trace,body.ro #btn-autoplace,body.ro #btn-optimize,body.ro .seg,body.ro #btn-snap,body.ro #left-panel,body.ro #savemenu,body.ro #floormenu,body.ro #filemenu,body.ro .pb-add,body.ro .save-state,body.ro #btn-precise,body.ro #wifi-props{display:none !important}
 #mat-list .mat-btn{display:flex;align-items:center;gap:8px;padding:7px 9px}
 #mat-list .mat-btn span:nth-child(2){flex:1;overflow:visible;text-overflow:clip;white-space:nowrap}
 #mat-list .mat-attn{font-size:10px;color:var(--text-muted);font-family:var(--mono);white-space:nowrap}
@@ -405,7 +409,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.14</span></div>
+    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.15</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -556,6 +560,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
       <div class="floor-tabs" id="floor-tabs"></div>
       <button class="pb-add" onclick="addFloor()" title="Add floor">+</button>
       <div class="tgrow"></div>
+      <span class="ro-banner" id="ro-banner">👁 Shared view · read-only</span><button class="tt ro-only" id="ro-copy" onclick="copyShared()">Save a copy</button>
       <span class="save-state" id="save-state"></span>
       <div class="filemenu" id="savemenu" style="display:flex;gap:0">
         <button class="tt" id="btn-save" onclick="saveNow()" title="Save now (Ctrl+S)" style="border-radius:8px 0 0 8px">💾 Save</button>
@@ -619,6 +624,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
       <div class="filemenu" id="filemenu">
         <button class="tt" onclick="toggleFileMenu(event)">File ▾</button>
         <div class="filemenu-pop">
+          <button onclick="fileAct('cloud')" id="fm-cloud">☁ Sync to my account</button>
+          <button onclick="fileAct('share')">🔗 Share link (read-only)…</button>
           <button onclick="fileAct('upload')">Upload floor plan…</button>
           <button onclick="fileAct('scale')">Set scale by plan width…</button>
           <button onclick="fileAct('png')">Export PNG (this floor)</button>
@@ -726,6 +733,10 @@ const VENDORS = {
     ]
   }
 };
+
+let RO = false, _roToken = null;
+let _cloudList = null, _cloudBadge = '', _cloudTimer = null, _cloudBusy = false, _cloudAgain = false, _cloudInternal = false, _conflictOpen = false;
+let _lastStateTxt = '', _lastStateDirty = false;
 
 // Wall material attenuation (dB) — based on Ekahau/RF engineering standards
 const WALL_MATS = [
@@ -2265,6 +2276,7 @@ function setPlanOpacity(v) { wifi.planOpacity = parseInt(v) / 100; scheduleRende
 // TOOL SWITCHING
 // ============================================================
 function setTool(tool) {
+  if (RO) tool = 'pan';
   wifi.tool = tool;
   finishDraft();
   wifi.snapPt = null;
@@ -2275,7 +2287,7 @@ function setTool(tool) {
 }
 
 function onKey(e) {
-  if (!curProj) return;
+  if (!curProj || RO) return;
   const tg = e.target.tagName;
   if (tg === 'INPUT' || tg === 'SELECT' || tg === 'TEXTAREA') return;
   const k = e.key.toLowerCase();
@@ -3313,7 +3325,8 @@ async function dbReq(store, mode, fn) {
 }
 const dbAll = (st) => dbReq(st, 'readonly', s => s.getAll());
 const dbGet = (st, k) => dbReq(st, 'readonly', s => s.get(k));
-const dbPut = (st, v, k) => dbReq(st, 'readwrite', s => k === undefined ? s.put(v) : s.put(v, k));
+const dbPutRaw = (st, v, k) => dbReq(st, 'readwrite', s => k === undefined ? s.put(v) : s.put(v, k));
+const dbPut = (st, v, k) => { const r = dbPutRaw(st, v, k); if (st === 'projects' && v && v.cloud) r.then(() => cloudQueue(v)).catch(() => {}); return r; };
 const dbDel = (st, k) => dbReq(st, 'readwrite', s => s.delete(k));
 
 // ---- generic dialog (replaces confirm/prompt) ----
@@ -3386,16 +3399,16 @@ function applyFloor(data, bmp) {
 
 // ---- saving ----
 let _dirty = false, _savedAt = '';
-function setSaveState(t, dirty) { const e = document.getElementById('save-state'); if (e) { e.textContent = t; e.classList.toggle('dirty', !!dirty); } }
+function setSaveState(t, dirty) { _lastStateTxt = t; _lastStateDirty = !!dirty; const e = document.getElementById('save-state'); if (e) { e.textContent = t + (_cloudBadge && !dirty && curProj && curProj.cloud ? ' · ' + _cloudBadge : ''); e.classList.toggle('dirty', !!dirty); } }
 function scheduleAutosave() {
-  if (!curProj) return;
+  if (!curProj || RO) return;
   _dirty = true; setSaveState('● Unsaved changes', true);
   clearTimeout(_saveTimer);
   _saveTimer = setTimeout(saveCurrent, 1200);
 }
 function flushSave() { clearTimeout(_saveTimer); return saveCurrent(); }
 async function saveCurrent() {
-  if (!curProj || !curFloor) return;
+  if (!curProj || !curFloor || RO) return;
   const f = curFloorObj(); if (!f) return;
   const data = captureFloor();
   const sig = JSON.stringify(data) + JSON.stringify(WALL_MATS) + (wifi.floorPlan ? 'P' : '');
@@ -3425,6 +3438,7 @@ async function savePlanBlob(file) {
   try {
     await dbPut('plans', file, curProj.id + ':' + curFloor);
     const f = curFloorObj(); if (f) f.hasPlan = true;
+    if (curProj.cloudPlans) delete curProj.cloudPlans[curFloor];
     _lastSaved = '';
     scheduleAutosave();
   } catch (e) { toast('Floor plan image could not be stored', 'error'); }
@@ -3433,7 +3447,7 @@ async function savePlanBlob(file) {
 // ---- routing:  #p=<project>&f=<floor> ----
 function parseHash() {
   const h = new URLSearchParams(location.hash.replace(/^#/, ''));
-  return { p: h.get('p'), f: h.get('f') };
+  return { p: h.get('p'), f: h.get('f'), s: h.get('s') };
 }
 function nav(hash) {
   if (location.hash === hash || (hash === '' && (location.hash === '' || location.hash === '#'))) { route(); return; }
@@ -3442,6 +3456,11 @@ function nav(hash) {
 function route() { _routeP = _routeP.then(_route).catch(e => console.error(e)); }
 async function _route() {
   const h = parseHash();
+  if (h.s) {
+    if (RO && _roToken === h.s && curProj) { if (h.f && h.f !== curFloor && curProj.floors.some(f => f.id === h.f)) await loadFloor(h.f); return; }
+    await openShared(h.s); return;
+  }
+  if (RO) { exitShared(); curProj = null; curFloor = null; }
   if (!h.p) { await showHome(); return; }
   if (curProj && curProj.id === h.p) {
     if (h.f && h.f !== curFloor && curProj.floors.some(f => f.id === h.f)) { await flushSave(); await loadFloor(h.f); }
@@ -3451,6 +3470,7 @@ async function _route() {
   let proj;
   try { proj = await dbGet('projects', h.p); } catch (e) { proj = null; }
   if (!proj) { toast('Project not found in this browser', 'error'); curProj = null; history.replaceState(null, '', '#'); await showHome(); return; }
+  proj = await cloudCheckNewer(proj);
   curProj = proj;
   loadMats(proj); buildMatList();
   document.getElementById('proj-home').style.display = 'none';
@@ -3471,23 +3491,24 @@ async function loadFloor(fid) {
   const f = curFloorObj();
   let bmp = null;
   if (f.hasPlan) {
-    try { const blob = await dbGet('plans', curProj.id + ':' + fid); if (blob) bmp = await createImageBitmap(blob); } catch (e) {}
+    try { const blob = RO ? await sharedPlanBlob(fid) : await dbGet('plans', curProj.id + ':' + fid); if (blob) bmp = await createImageBitmap(blob); } catch (e) {}
   }
   applyFloor(f.data || newFloorData(), bmp);
   _lastSaved = JSON.stringify(captureFloor()) + (bmp ? 'P' : '');
-  const want = '#p=' + curProj.id + '&f=' + fid;
+  const want = RO ? '#s=' + _roToken + '&f=' + fid : '#p=' + curProj.id + '&f=' + fid;
   if (location.hash !== want) history.replaceState(null, '', want);
-  setSaveState('Saved in this browser');
+  setSaveState(RO ? '' : 'Saved in this browser');
   renderProjBar();
 }
 function renderProjBar() {
   document.getElementById('pb-name').textContent = curProj.name;
   document.getElementById('floor-tabs').innerHTML = curProj.floors.map(f =>
-    `<button class="ftab ${f.id === curFloor ? 'active' : ''}" onclick="nav('#p=${curProj.id}&f=${f.id}')" ondblclick="floorAct('rename')">${esc(f.name)}</button>`).join('');
+    `<button class="ftab ${f.id === curFloor ? 'active' : ''}" onclick="nav('${RO ? '#s=' + _roToken : '#p=' + curProj.id}&f=${f.id}')" ondblclick="floorAct('rename')">${esc(f.name)}</button>`).join('');
 }
 
 // ---- home ----
 async function showHome() {
+  if (RO) { exitShared(); }
   await flushSave();
   curProj = null; curFloor = null; _lastSaved = '';
   document.getElementById('editor-page').style.display = 'none';
@@ -3511,6 +3532,7 @@ async function showHome() {
     if (raw) localStorage.removeItem('clab_wifi_autosave');
   } catch (e) {}
   renderHome(list);
+  cloudHomeRefresh();
 }
 function renderHome(list) {
   list.sort((a, b) => b.updated - a.updated);
@@ -3521,6 +3543,7 @@ function renderHome(list) {
     return `<div class="pcard" onclick="nav('#p=${p.id}')">
       <button class="dots" onclick="event.stopPropagation();toggleCardMenu('${p.id}')" title="More">⋯</button>
       <div class="pmenu" id="pm-${p.id}">
+        ${p.cloud ? `<button onclick="event.stopPropagation();cloudRemove('${p.id}')">☁ Remove from my account…</button>` : `<button onclick="event.stopPropagation();cloudEnable('${p.id}')">☁ Sync to my account</button>`}
         <button onclick="event.stopPropagation();editProjectInfo('${p.id}')">Rename / info…</button>
         <button onclick="event.stopPropagation();duplicateProject('${p.id}')">Duplicate</button>
         <button onclick="event.stopPropagation();projDownload('${p.id}','report')">⬇ Download report (.docx)</button>
@@ -3530,10 +3553,16 @@ function renderHome(list) {
       </div>
       <h3>${esc(p.name)}</h3>
       <div class="sub">${esc(sub) || '&nbsp;'}</div>
-      <div class="meta"><span><b>${p.floors.length}</b> floor${p.floors.length === 1 ? '' : 's'}</span><span><b>${aps}</b> AP</span><span>${new Date(p.updated).toLocaleDateString()}</span></div>
+      <div class="meta"><span><b>${p.floors.length}</b> floor${p.floors.length === 1 ? '' : 's'}</span><span><b>${aps}</b> AP</span><span>${new Date(p.updated).toLocaleDateString()}</span>${p.cloud ? '<span title="Synced to your account">☁</span>' : ''}</div>
     </div>`;
   }).join('');
-  grid.innerHTML = cards + `<div class="pcard newcard" onclick="newProject()">+ New project</div>`;
+  const localIds = new Set(list.map(p => p.id));
+  const cloudOnly = (_cloudList || []).filter(c => !localIds.has(c.id)).map(c => `<div class="pcard" onclick="openCloudProject('${c.id}')">
+      <h3>${esc(c.name)}</h3>
+      <div class="sub">${esc([c.client, c.location].filter(Boolean).join(' · ')) || '&nbsp;'}</div>
+      <div class="meta"><span><b>${c.floors}</b> floor${c.floors === 1 ? '' : 's'}</span><span><b>${c.aps}</b> AP</span><span>☁ In your account</span>${c.shared ? '<span title="Share link active">🔗</span>' : ''}</div>
+    </div>`).join('');
+  grid.innerHTML = cards + cloudOnly + `<div class="pcard newcard" onclick="newProject()">+ New project</div>`;
 }
 function toggleCardMenu(id) {
   document.querySelectorAll('.pmenu.open').forEach(m => { if (m.id !== 'pm-' + id) m.classList.remove('open'); });
@@ -3559,12 +3588,14 @@ function readInfo(m) {
            location: m.querySelector('#pi-loc').value.trim(), engineer: m.querySelector('#pi-eng').value.trim(), notes: m.querySelector('#pi-notes').value.trim() };
 }
 async function newProject() {
-  const m = await dialog({ title: 'New <em>project</em>', html: infoHTML({ name: '', client: '', location: '', engineer: '', notes: '' }), ok: 'Create project' });
+  const m = await dialog({ title: 'New <em>project</em>', html: infoHTML({ name: '', client: '', location: '', engineer: '', notes: '' }) + (cl_token() ? '<label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:4px"><input type="checkbox" id="pi-cloud" checked style="width:auto"> ☁ Sync this project to my account</label>' : ''), ok: 'Create project' });
   if (!m) return;
   const i = readInfo(m);
   if (!i.name) { toast('Give the project a name', 'error'); return newProject(); }
   const p = makeProject(i.name, i);
-  await dbPut('projects', p);
+  const wantCloud = !!(m.querySelector('#pi-cloud') && m.querySelector('#pi-cloud').checked);
+  await dbPutRaw('projects', p);
+  if (wantCloud) { await cloudEnable(p.id); }
   nav('#p=' + p.id);
 }
 async function editProjectInfo(id) {
@@ -3580,17 +3611,18 @@ async function editProjectInfo(id) {
 }
 async function deleteProject(id) {
   const p = await dbGet('projects', id);
-  const m = await dialog({ title: 'Delete project?', html: `<p><b>${esc(p.name)}</b> and all its floors will be deleted from this browser. This cannot be undone — export it first if you may need it.</p>`, ok: 'Delete project', danger: true });
+  const m = await dialog({ title: 'Delete project?', html: `<p><b>${esc(p.name)}</b> and all its floors will be deleted from this browser' + (p.cloud ? ' <b>and from your account</b> (its share link stops working)' : '') + '. This cannot be undone — export it first if you may need it.</p>`, ok: 'Delete project', danger: true });
   if (!m) return;
   for (const f of p.floors) { try { await dbDel('plans', p.id + ':' + f.id); } catch (e) {} }
   await dbDel('projects', id);
+  if (p.cloud && cl_token()) cfetch('/api/wifi/projects/' + id, { method: 'DELETE' });
   renderHome(await dbAll('projects'));
   toast('Project deleted');
 }
 async function duplicateProject(id) {
   const p = await dbGet('projects', id);
   const cp = JSON.parse(JSON.stringify(p));
-  cp.id = uid('p'); cp.name = p.name + ' (copy)'; cp.created = cp.updated = Date.now();
+  cp.id = uid('p'); cp.name = p.name + ' (copy)'; cp.created = cp.updated = Date.now(); delete cp.cloud; delete cp.cloudRev; delete cp.cloudPlans;
   for (const f of cp.floors) {
     const old = f.id; f.id = uid('f');
     if (f.hasPlan) { const b = await dbGet('plans', p.id + ':' + old); if (b) await dbPut('plans', b, cp.id + ':' + f.id); }
@@ -3600,6 +3632,205 @@ async function duplicateProject(id) {
   toast('Project duplicated');
 }
 function goHome() { nav(''); }
+
+// ============================================================
+// CLOUD SYNC + SHARE (v5.15): projects in the user's account, read-only share links
+// ============================================================
+async function cfetch(path, opts) {
+  opts = opts || {};
+  const h = Object.assign({}, opts.headers || {});
+  if (!opts.noAuth) h.Authorization = 'Bearer ' + cl_token();
+  if (opts.body && !h['Content-Type']) h['Content-Type'] = 'application/json';
+  try {
+    const r = await fetch(path, { method: opts.method || 'GET', headers: h, body: opts.body ? JSON.stringify(opts.body) : undefined });
+    let j = null; try { j = await r.json(); } catch (e) {}
+    return { ok: r.ok, status: r.status, json: j };
+  } catch (e) { return { ok: false, status: 0, json: null }; }
+}
+function cloudStrip(p) { const c = JSON.parse(JSON.stringify(p)); delete c.cloud; delete c.cloudRev; delete c.cloudPlans; return c; }
+function setCloud(s) {
+  _cloudBadge = s === 'ok' ? '☁ synced' : s === 'busy' ? '☁ syncing…' : s === 'login' ? '☁ log in again' : s === 'off' ? '' : '☁ sync failed';
+  setSaveState(_lastStateTxt, _lastStateDirty);
+}
+async function compressPlan(blob) {
+  try {
+    const bmp = await createImageBitmap(blob);
+    const k = Math.min(1, 1800 / Math.max(bmp.width, bmp.height));
+    if (k === 1 && blob.size < 900000 && /^image\/(png|jpeg)$/.test(blob.type)) return await blobToDataURL(blob);
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(bmp, 0, 0, c.width, c.height);
+    let q = 0.85, d = c.toDataURL('image/jpeg', q);
+    while (d.length > 3300000 && q > 0.4) { q -= 0.1; d = c.toDataURL('image/jpeg', q); }
+    return d;
+  } catch (e) { return await blobToDataURL(blob); }
+}
+function cloudQueue(p) {
+  if (RO || !p || !p.cloud || !cl_token() || _cloudInternal) return;
+  clearTimeout(_cloudTimer);
+  _cloudTimer = setTimeout(() => cloudSync(p.id), 2500);
+}
+async function cloudProjectObj(id) { return (curProj && curProj.id === id) ? curProj : await dbGet('projects', id); }
+async function cloudPush(p, force) {
+  const r = await cfetch('/api/wifi/projects/' + p.id, { method: 'PUT', body: { project: cloudStrip(p), base: force ? null : p.cloudRev, force: !!force } });
+  if (r.ok) { p.cloudRev = r.json.updated_at; return 'ok'; }
+  if (r.status === 409) return 'conflict';
+  if (r.status === 401) return 'login';
+  return 'fail';
+}
+async function cloudUploadPlans(p) {
+  p.cloudPlans = p.cloudPlans || {};
+  for (const f of p.floors) {
+    if (!f.hasPlan || p.cloudPlans[f.id]) continue;
+    const b = await dbGet('plans', p.id + ':' + f.id); if (!b) continue;
+    const d = await compressPlan(b);
+    const r = await cfetch('/api/wifi/projects/' + p.id + '/plan/' + f.id, { method: 'PUT', body: { data: d } });
+    if (!r.ok) return false;
+    p.cloudPlans[f.id] = 1;
+  }
+  return true;
+}
+async function cloudSync(id, force) {
+  if (_cloudBusy) { _cloudAgain = true; return; }
+  const p = await cloudProjectObj(id); if (!p || !p.cloud || !cl_token()) return;
+  _cloudBusy = true; setCloud('busy');
+  try {
+    let res = await cloudPush(p, force);
+    if (res === 'conflict') { _cloudBusy = false; await cloudConflict(p); return; }
+    if (res !== 'ok') { setCloud(res === 'login' ? 'login' : 'fail'); return; }
+    const okP = await cloudUploadPlans(p);
+    _cloudInternal = true; try { await dbPut('projects', p); } finally { _cloudInternal = false; }
+    setCloud(okP ? 'ok' : 'fail');
+  } catch (e) { console.error(e); setCloud('fail'); }
+  finally { _cloudBusy = false; if (_cloudAgain) { _cloudAgain = false; cloudQueue(p); } }
+}
+async function cloudConflict(p) {
+  if (_conflictOpen) return; _conflictOpen = true;
+  const m = await dialog({ title: 'Newer version <em>in your account</em>', html: `<p style="font-size:13px;line-height:1.6">This project was changed from another device or browser after you last synced.<br><b>Overwrite</b> replaces the account copy with what you have here. <b>Load cloud version</b> replaces what you have here with the account copy.</p>`, ok: 'Overwrite account copy', cancel: 'Load cloud version' });
+  _conflictOpen = false;
+  if (m) { await cloudSync(p.id, true); return; }
+  showBusy('Loading the cloud version…'); await tick();
+  const np = await cloudPull(p.id); hideBusy();
+  if (np) { curProj = null; curFloor = null; toast('Cloud version loaded'); route(); }
+}
+// download a project (and its plans) from the account into this browser
+async function cloudPull(id) {
+  const r = await cfetch('/api/wifi/projects/' + id);
+  if (!r.ok) { toast('Could not load the project from your account', 'error'); return null; }
+  const p = r.json.project; p.cloud = true; p.cloudRev = r.json.updated_at; p.cloudPlans = {};
+  for (const fid of (r.json.plans || [])) {
+    const pr = await cfetch('/api/wifi/projects/' + id + '/plan/' + fid);
+    if (pr.ok && pr.json.data) { try { await dbPut('plans', await (await fetch(pr.json.data)).blob(), id + ':' + fid); p.cloudPlans[fid] = 1; } catch (e) {} }
+  }
+  for (const f of p.floors) f.hasPlan = !!p.cloudPlans[f.id];
+  _cloudInternal = true; try { await dbPut('projects', p); } finally { _cloudInternal = false; }
+  return p;
+}
+async function cloudEnable(id) {
+  if (!cl_token()) { authOpenModal(); return; }
+  if (curProj && curProj.id === id) await flushSave();
+  const p = await cloudProjectObj(id); if (!p) return;
+  showBusy('Uploading to your account…'); await tick();
+  p.cloud = true; p.cloudRev = null; p.cloudPlans = {};
+  const res = await cloudPush(p, true);
+  let ok = res === 'ok' && await cloudUploadPlans(p);
+  _cloudInternal = true; try { await dbPut('projects', p); } finally { _cloudInternal = false; }
+  hideBusy();
+  if (ok) { toast('☁ Project synced to your account'); setCloud('ok'); } else { toast(res === 'login' ? 'Please log in again' : 'Upload failed, try again', 'error'); setCloud(res === 'login' ? 'login' : 'fail'); }
+  if (!curProj) renderHome(await dbAll('projects'));
+}
+async function cloudRemove(id) {
+  const p = await cloudProjectObj(id); if (!p) return;
+  const m = await dialog({ title: 'Remove from <em>account</em>?', html: `<p style="font-size:13px;line-height:1.6"><b>${esc(p.name)}</b> will be deleted from your account and its share link stops working. The copy in this browser is kept.</p>`, ok: 'Remove from account', danger: true });
+  if (!m) return;
+  await cfetch('/api/wifi/projects/' + id, { method: 'DELETE' });
+  p.cloud = false; delete p.cloudRev; delete p.cloudPlans;
+  _cloudInternal = true; try { await dbPut('projects', p); } finally { _cloudInternal = false; }
+  setCloud('off'); toast('Removed from your account');
+  if (!curProj) renderHome(await dbAll('projects'));
+}
+async function cloudCheckNewer(p) {
+  if (!p.cloud || !cl_token()) return p;
+  const r = await cfetch('/api/wifi/projects/' + p.id);
+  if (r.status === 404) { p.cloud = false; delete p.cloudRev; delete p.cloudPlans; _cloudInternal = true; try { await dbPut('projects', p); } finally { _cloudInternal = false; } return p; }
+  if (!r.ok || r.json.updated_at === p.cloudRev) return p;
+  const m = await dialog({ title: 'Newer version <em>in your account</em>', html: `<p style="font-size:13px;line-height:1.6">A newer version of <b>${esc(p.name)}</b> was saved from another device. Load it, or keep what you have in this browser?</p>`, ok: 'Load cloud version', cancel: 'Keep this browser\'s version' });
+  if (m) { showBusy('Loading…'); await tick(); const np = await cloudPull(p.id); hideBusy(); return np || p; }
+  p.cloudRev = r.json.updated_at;    // keep local; the next save overwrites the account copy
+  _cloudInternal = true; try { await dbPut('projects', p); } finally { _cloudInternal = false; }
+  return p;
+}
+async function cloudHomeRefresh() {
+  if (!cl_token()) { _cloudList = null; return; }
+  const r = await cfetch('/api/wifi/projects');
+  if (!r.ok) return;
+  _cloudList = r.json;
+  if (!curProj && !RO) renderHome(await dbAll('projects'));
+}
+async function openCloudProject(id) {
+  showBusy('Opening from your account…'); await tick();
+  const p = await cloudPull(id); hideBusy();
+  if (p) nav('#p=' + id);
+}
+// ---- read-only share links ----
+async function shareDialog() {
+  if (!curProj || RO) return;
+  if (!cl_token()) { authOpenModal(); return; }
+  if (!curProj.cloud) { toast('Sync this project to your account first (File ▸ Sync to my account)', 'error'); return; }
+  await flushSave();
+  showBusy('Preparing the share link…'); await tick();
+  const id = curProj.id;
+  let res = await cloudPush(curProj, true); const okP = res === 'ok' && await cloudUploadPlans(curProj);
+  _cloudInternal = true; try { await dbPut('projects', curProj); } finally { _cloudInternal = false; }
+  const r = res === 'ok' ? await cfetch('/api/wifi/projects/' + id + '/share', { method: 'POST' }) : { ok: false };
+  hideBusy();
+  if (!r.ok) { toast('Could not create the link, try again', 'error'); return; }
+  const url = location.origin + location.pathname + '#s=' + r.json.share_token;
+  const html = `<p style="font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:10px">Anyone with this link can <b>view</b> the heatmap (read-only, no login). The link always shows the latest synced version.${okP ? '' : ' <b>Some floor plan images did not upload.</b>'}</p>
+    <input id="sh-url" readonly value="${esc(url)}" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:var(--mono);font-size:11px" onfocus="this.select()">
+    <button class="btn-secondary-modal" style="margin-top:10px;width:100%;color:var(--danger)" onclick="stopSharing()">Stop sharing (disable this link)</button>`;
+  const m = await dialog({ title: 'Share <em>read-only link</em>', html, ok: 'Copy link', cancel: 'Close' });
+  if (m) { try { await navigator.clipboard.writeText(url); toast('Link copied'); } catch (e) { toast('Select the link and copy it manually', 'error'); } }
+}
+async function stopSharing() {
+  if (!curProj) return;
+  const r = await cfetch('/api/wifi/projects/' + curProj.id + '/share', { method: 'DELETE' });
+  document.querySelectorAll('.modal-overlay [data-c]').forEach(b => b.click());
+  toast(r.ok ? 'Sharing stopped, the link no longer works' : 'Could not stop sharing, try again', r.ok ? undefined : 'error');
+}
+function exitShared() { RO = false; _roToken = null; document.body.classList.remove('ro'); }
+async function openShared(token) {
+  await flushSave();
+  const r = await cfetch('/api/wifi/shared/' + encodeURIComponent(token), { noAuth: true });
+  if (!r.ok) { toast((r.json && r.json.error) || 'This link is not valid anymore', 'error'); history.replaceState(null, '', location.pathname); await showHome(); return; }
+  const p = r.json.project; p.hasPlansList = r.json.plans || [];
+  RO = true; _roToken = token; document.body.classList.add('ro');
+  curProj = p; curFloor = null; loadMats(p); buildMatList();
+  document.getElementById('proj-home').style.display = 'none';
+  document.getElementById('editor-page').style.display = 'flex';
+  setTool('pan');
+  const h = parseHash();
+  const fid = (h.f && p.floors.some(f => f.id === h.f)) ? h.f : p.floors[0].id;
+  await loadFloor(fid);
+}
+async function sharedPlanBlob(fid) {
+  const r = await cfetch('/api/wifi/shared/' + encodeURIComponent(_roToken) + '/plan/' + fid, { noAuth: true });
+  if (!r.ok || !r.json.data) return null;
+  return await (await fetch(r.json.data)).blob();
+}
+async function copyShared() {
+  if (!RO || !curProj) return;
+  showBusy('Copying to your projects…'); await tick();
+  const p = JSON.parse(JSON.stringify(curProj)); delete p.hasPlansList;
+  p.id = uid('p'); p.name += ' (copy)'; p.created = p.updated = Date.now(); delete p.cloud; delete p.cloudRev; delete p.cloudPlans;
+  for (const f of p.floors) {
+    const of = f.id; f.id = uid('f');
+    const b = f.hasPlan ? await sharedPlanBlob(of) : null;
+    if (b) { await dbPut('plans', b, p.id + ':' + f.id); f.hasPlan = true; } else f.hasPlan = false;
+  }
+  await dbPut('projects', p);
+  hideBusy(); toast('Saved to your projects');
+  exitShared(); history.replaceState(null, '', location.pathname); nav('#p=' + p.id);
+}
 
 // ---- floors ----
 async function addFloor() {
@@ -3675,7 +3906,7 @@ async function importProject(input) {
     if (o.format !== 'cfglab' || !o.project || !Array.isArray(o.project.floors) || !o.project.floors.length) throw new Error('bad file');
     const p = o.project;
     const oldId = p.id;
-    p.id = uid('p'); p.updated = Date.now(); p.name = (p.name || 'Imported project');
+    p.id = uid('p'); p.updated = Date.now(); p.name = (p.name || 'Imported project'); delete p.cloud; delete p.cloudRev; delete p.cloudPlans;
     for (const f of p.floors) {
       const of = f.id; f.id = uid('f');
       f.data = f.data || newFloorData();
@@ -4218,13 +4449,15 @@ function buildReportDoc(D, floors, cfg, X) {
 function toggleSec(btn) { btn.parentElement.classList.toggle('closed'); }
 function toggleLeft() { document.getElementById('left-panel').classList.toggle('collapsed'); }
 function closeProps() { wifi.sel = null; renderPropsPanel(); scheduleRender(); }
-function toggleFileMenu(e) { e.stopPropagation(); document.getElementById('filemenu').classList.toggle('open'); }
+function toggleFileMenu(e) { e.stopPropagation(); const fc = document.getElementById('fm-cloud'); if (fc && curProj) fc.textContent = curProj.cloud ? '☁ Remove from my account…' : '☁ Sync to my account'; document.getElementById('filemenu').classList.toggle('open'); }
 function fileAct(a) {
   document.getElementById('filemenu').classList.remove('open');
   if (a === 'upload') document.getElementById('floor-upload').click();
   else if (a === 'scale') openScaleModal();
   else if (a === 'png') exportPNG();
   else if (a === 'export') exportProject(curProj.id);
+  else if (a === 'cloud') { if (curProj.cloud) cloudRemove(curProj.id); else cloudEnable(curProj.id); }
+  else if (a === 'share') shareDialog();
   else if (a === 'report') exportReport();
   else if (a === 'csv') exportCSV();
   else if (a === 'calib') openCalibration();
