@@ -505,7 +505,8 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
       </div>
       <div class="changelog">
         <div class="cl-item"><span class="cl-version"><span data-cl-version>v6.0.0</span></span><div class="cl-content"><h4>Website v6</h4><p>Topology Builder retired to focus on the Config Builder and WiFi Planner · one version number across the site · refreshed content, mobile navigation and SEO</p></div></div>
-        <div class="cl-item"><span class="cl-version"><span data-cl-wifi="WiFi v">WiFi v5.13</span></span><div class="cl-content"><h4>WiFi Planner: Default Wall Library</h4><p>Save your wall library as the default for every new project (stored in this browser)</p></div></div>
+        <div class="cl-item"><span class="cl-version"><span data-cl-wifi="WiFi v">WiFi v5.14</span></span><div class="cl-content"><h4>WiFi Planner: Wall Library in Your Account</h4><p>Log in and your default wall library follows you to every device · returns you to the planner after login</p></div></div>
+        <div class="cl-item"><span class="cl-version">WiFi v5.13</span><div class="cl-content"><h4>WiFi Planner: Default Wall Library</h4><p>Save your wall library as the default for every new project (stored in this browser)</p></div></div>
         <div class="cl-item"><span class="cl-version">WiFi v5.12</span><div class="cl-content"><h4>WiFi Planner: Editable Wall Library</h4><p>Edit wall types, thickness and loss per band (2.4 / 5 / 6 GHz), add your own materials · saved per project · heatmap uses the per-band values</p></div></div>
         <div class="cl-item"><span class="cl-version">WiFi v5.11</span><div class="cl-content"><h4>WiFi Planner: Save Button</h4><p>Save button with Ctrl+S, unsaved-changes indicator, save-as-file option, and the Floor menu no longer gets clipped</p></div></div>
         <div class="cl-item"><span class="cl-version">WiFi v5.10</span><div class="cl-content"><h4>WiFi Planner: Trace Walls in Render Areas</h4><p>Auto-trace can now be limited to the Render areas you drew, so roofs and unwanted zones are ignored</p></div></div>
@@ -856,6 +857,7 @@ if(statusEl){
   if (incoming) {
     localStorage.setItem('clab_token', incoming);
     _token = incoming;
+    try { const nx = localStorage.getItem('cl_next'); if (nx && /^\/[a-z]+\.html$/.test(nx)) { localStorage.removeItem('cl_next'); window.location.replace(nx); } } catch (e) {}
     window.history.replaceState({}, '', window.location.pathname);
   }
   if (authErr) {

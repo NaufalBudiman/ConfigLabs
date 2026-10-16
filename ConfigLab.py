@@ -22,6 +22,8 @@ from datetime import datetime, timedelta
 from functools import wraps
 import jwt
 import os
+import json
+import re
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -1438,7 +1440,7 @@ def api_get_files():
         return jsonify({'error': 'Unauthorized'}), 401
 
     file_type = request.args.get('type')   # optional filter (only 'config' exists now)
-    query = SavedFile.query.filter_by(user_id=data['user_id']).filter(SavedFile.file_type != 'topology')  # legacy rows hidden
+    query = SavedFile.query.filter_by(user_id=data['user_id']).filter(SavedFile.file_type.notin_(['topology', 'wifi_matlib']))  # legacy / internal rows hidden
     if file_type:
         query = query.filter_by(file_type=file_type)
     files = query.order_by(SavedFile.updated_at.desc()).all()
@@ -1568,6 +1570,67 @@ def auth_google_callback():
     except Exception as e:
         print(f"[AUTH ERROR] Google callback: {e}")
         return redirect(f'/?auth_error=Login+failed')
+
+# ── WiFi Planner: per-account default wall library ───────────
+WIFI_MATLIB = 'wifi_matlib'
+_HEX = re.compile(r'^#[0-9a-fA-F]{6}$')
+
+def _clean_matlib(arr):
+    """Validate/normalise a wall library; returns a clean list or None."""
+    if not isinstance(arr, list) or not 1 <= len(arr) <= 40:
+        return None
+    out, seen = [], set()
+    for m in arr:
+        if not isinstance(m, dict):
+            return None
+        mid = str(m.get('id', ''))[:40]
+        if not mid or mid in seen:
+            return None
+        seen.add(mid)
+        b = m.get('b') or {}
+        try:
+            bb = {k: max(0.0, min(80.0, float(b[k]))) for k in ('2.4', '5', '6')}
+            thick = max(0.0, min(500.0, float(m.get('thick', 10))))
+        except (KeyError, TypeError, ValueError):
+            return None
+        color = m.get('color') if isinstance(m.get('color'), str) and _HEX.match(m.get('color')) else '#909090'
+        out.append({'id': mid, 'name': (str(m.get('name') or 'Material')[:60]), 'color': color, 'thick': thick, 'b': bb, 'attn': bb['5']})
+    return out
+
+def _wifi_user():
+    raw  = request.headers.get('Authorization', '')
+    data = decode_token(raw.replace('Bearer ', '').strip())
+    return data['user_id'] if data else None
+
+@app.route('/api/wifi/matlib', methods=['GET'])
+def api_wifi_matlib_get():
+    uid = _wifi_user()
+    if not uid:
+        return jsonify({'error': 'Unauthorized'}), 401
+    row = SavedFile.query.filter_by(user_id=uid, file_type=WIFI_MATLIB).first()
+    if not row:
+        return jsonify({'mats': None})
+    try:
+        return jsonify({'mats': json.loads(row.data), 'updated_at': row.updated_at.isoformat()})
+    except Exception:
+        return jsonify({'mats': None})
+
+@app.route('/api/wifi/matlib', methods=['PUT'])
+def api_wifi_matlib_put():
+    uid = _wifi_user()
+    if not uid:
+        return jsonify({'error': 'Unauthorized'}), 401
+    mats = _clean_matlib((request.get_json(silent=True) or {}).get('mats'))
+    if mats is None:
+        return jsonify({'error': 'Invalid wall library'}), 400
+    row = SavedFile.query.filter_by(user_id=uid, file_type=WIFI_MATLIB).first()
+    if row:
+        row.data = json.dumps(mats)
+    else:
+        row = SavedFile(user_id=uid, name='WiFi wall library', file_type=WIFI_MATLIB, data=json.dumps(mats))
+        db.session.add(row)
+    db.session.commit()
+    return jsonify({'mats': mats, 'message': 'Saved'})
 
 # ── Current user ─────────────────────────────────────────────
 
