@@ -3,7 +3,7 @@
 Free network tools for engineers — **https://configlabs.online**
 
 - **Config Builder** — generate H3C Comware and Cisco IOS / IOS-XE / NX-OS configs from a form (18 templates).
-- **WiFi Planner** (beta) — floor-plan heatmaps (signal, SINR, coverage), field calibration and Word reports.
+- **WiFi Planner** — floor-plan heatmaps (signal, SINR, coverage), field calibration and Word reports.
 
 ## Stack
 Static HTML/JS frontend + a small Flask API (`ConfigLab.py`) on Vercel, Neon PostgreSQL for optional Google-login saved configs.

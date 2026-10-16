@@ -401,7 +401,6 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
     </a>
     <a href="/wifi.html" class="nav-tab active">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>WiFi Planner
-      <span class="beta-pill">BETA</span>
     </a>
     <a href="/about.html" class="nav-tab">About</a>
   </div>
@@ -629,7 +628,6 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
           <button onclick="fileAct('calib')">Calibrate with field measurements…</button>
           <button onclick="fileAct('clearacc')">Clear acceptance points</button>
           <button onclick="fileAct('cleararea')">Clear render area</button>
-          <button onclick="fileAct('save')">Save floor to account (beta)</button>
           <button class="danger" onclick="fileAct('clear')">Clear this floor…</button>
         </div>
       </div>
@@ -4226,7 +4224,6 @@ function fileAct(a) {
   if (a === 'upload') document.getElementById('floor-upload').click();
   else if (a === 'scale') openScaleModal();
   else if (a === 'png') exportPNG();
-  else if (a === 'save') savePlan();
   else if (a === 'export') exportProject(curProj.id);
   else if (a === 'report') exportReport();
   else if (a === 'csv') exportCSV();
