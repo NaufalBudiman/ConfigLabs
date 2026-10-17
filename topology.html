@@ -307,10 +307,10 @@ function importFiles(files) {
 /* context menu */
 function hidePop() { $('pop').style.display = 'none'; }
 function showPop(id, btn) {
-  const p = $('pop'); p.innerHTML = `<button data-a="open">Open</button><button data-a="ren">Rename</button><button data-a="dup">Duplicate</button><button data-a="exp">Export file (.json)</button><button data-a="del" class="dng">Delete</button>`; p.dataset.id = id; p.style.display = 'block';
+  const p = $('pop'); p.innerHTML = `<button data-a="open">Open</button><button data-a="ren">Rename</button><button data-a="dup">Duplicate</button><button data-a="img">Export image / PDF…</button><button data-a="exp">Export file (.json)</button><button data-a="del" class="dng">Delete</button>`; p.dataset.id = id; p.style.display = 'block';
   const r = btn.getBoundingClientRect(); p.style.left = Math.min(innerWidth - 190, Math.max(8, r.right - 175)) + 'px'; p.style.top = Math.min(innerHeight - 190, r.bottom + 4) + 'px';
 }
-$('pop').addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (!b) return; const id = $('pop').dataset.id; hidePop(); ({ open: () => open(id), ren: () => renameDlg(id), dup: () => dup(id), exp: () => exportDoc(id), del: () => delDlg(id) })[b.dataset.a](); });
+$('pop').addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (!b) return; const id = $('pop').dataset.id; hidePop(); ({ open: () => open(id), ren: () => renameDlg(id), dup: () => dup(id), exp: () => exportDoc(id), img: () => { location.href = '/topology-editor.html?d=' + encodeURIComponent(id) + '&export=1'; }, del: () => delDlg(id) })[b.dataset.a](); });
 document.addEventListener('pointerdown', e => { if (!e.target.closest('#pop') && !e.target.closest('.dots')) hidePop(); });
 $('area').addEventListener('click', e => { const m = e.target.closest('[data-m]'); if (m) { e.stopPropagation(); showPop(m.dataset.m, m); return; } const c = e.target.closest('.dc[data-id]'); if (c) open(c.dataset.id); });
 addEventListener('scroll', hidePop, true);

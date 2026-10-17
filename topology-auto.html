@@ -224,8 +224,11 @@ table.bom td:last-child,table.bom th:last-child{text-align:right;font-family:var
       <div class="menu" id="exp"><button id="b-exp">⬇ Export</button>
         <div class="dd">
           <button data-x="png">PNG image<small>2x resolution, with title and legend</small></button>
+          <button data-x="jpeg">JPEG image<small>Small file for slides and chat</small></button>
+          <button data-x="webp">WebP image<small>Modern and small</small></button>
           <button data-x="svg">SVG vector<small>Editable in Visio, Illustrator, Inkscape</small></button>
-          <button data-x="print">Print / save as PDF<small>A4 landscape</small></button>
+          <button data-x="pdf">PDF file (A4 landscape)<small>Downloads directly</small></button>
+          <button data-x="print">Print<small>Browser print dialog</small></button>
           <button data-x="csv">Devices and links (.csv)<small>Port map as a spreadsheet</small></button>
         </div>
       </div>
@@ -880,7 +883,15 @@ function download(name, blob) { const a = document.createElement('a'); a.href = 
 function doExport(kind) {
   if (!S.T || !S.T.nAp) { toast('Nothing to export yet'); return; }
   if (kind === 'svg') { download(safeName() + '-topology.svg', new Blob([exportSVG()], { type: 'image/svg+xml' })); toast('SVG saved'); }
-  else if (kind === 'png') {
+  else if (kind === 'jpeg' || kind === 'webp' || kind === 'pdf') {
+    const svg = exportSVG(), bg = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#0b0d10', nm = safeName() + '-topology';
+    svgToCanvas(svg, 2, bg).then(async c => {
+      if (kind === 'jpeg') download(nm + '.jpg', await canvasBlob(c, 'image/jpeg', .92));
+      else if (kind === 'webp') { const b = await canvasBlob(c, 'image/webp', .92); if (b.type !== 'image/webp') { download(nm + '.png', await canvasBlob(c, 'image/png')); toast('WebP is not supported here, saved as PNG'); return; } download(nm + '.webp', b); }
+      else { const jb = await canvasBlob(c, 'image/jpeg', .92), jpeg = new Uint8Array(await jb.arrayBuffer()), land = c.width >= c.height, P = PAGES.a4; download(nm + '.pdf', new Blob([makePDF(jpeg, c.width, c.height, land ? P[1] : P[0], land ? P[0] : P[1], 28, nm)], { type: 'application/pdf' })); }
+      toast(kind.toUpperCase() + ' saved');
+    }).catch(() => toast('Export failed, try SVG'));
+  } else if (kind === 'png') {
     const svg = exportSVG(), m = /width="(\d+)" height="(\d+)"/.exec(svg), w = +m[1], h = +m[2], sc = Math.min(2, 8000 / Math.max(w, h)), img = new Image();
     img.onload = () => { const c = document.createElement('canvas'); c.width = Math.round(w * sc); c.height = Math.round(h * sc); const x = c.getContext('2d'); x.scale(sc, sc); x.drawImage(img, 0, 0, w, h); c.toBlob(b => { download(safeName() + '-topology.png', b); toast('PNG saved'); }, 'image/png'); };
     img.onerror = () => toast('PNG export failed, try SVG');
@@ -926,5 +937,6 @@ function toggleTheme() { setTheme(document.body.dataset.theme === 'dark' ? 'ligh
   selectProject(pick);
 })();
 </script>
+<script src="/topology-raster.js"></script>
 </body>
 </html>

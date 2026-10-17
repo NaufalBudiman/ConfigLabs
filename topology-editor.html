@@ -785,8 +785,10 @@ function syncName() { $('docname').value = S.doc.name; document.title = (S.doc.n
   $('docname').addEventListener('keydown', e => { if (e.key === 'Enter') { e.target.blur(); $('stage').focus(); } });
   checkRO(); updUndo();
   setTimeout(fit, 0);
+  if (qs.get('export')) { history.replaceState(null, '', '/topology-editor.html?d=' + S.doc.id); setTimeout(() => { if (typeof openExport === 'function') openExport(); }, 350); }
 })();
 </script>
+<script src="/topology-raster.js"></script>
 <script src="/topology-export.js"></script>
 </body>
 </html>

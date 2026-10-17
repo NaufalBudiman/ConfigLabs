@@ -118,7 +118,7 @@ def init_db_once():
         with_app_context_done = True
 
 APP_NAME = "ConfigLabs"
-APP_VERSION = "6.3.2"
+APP_VERSION = "6.3.3"
 
 # ==========================================================
 # VENDOR / OS REGISTRY
