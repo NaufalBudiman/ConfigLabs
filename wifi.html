@@ -445,6 +445,7 @@ select option:disabled{color:var(--text-muted)}
 
 /* ---- v5.24: auto placement ---- */
 .v3d{position:absolute;inset:0;z-index:30;background:#0e1116}.v3d canvas{display:block;width:100%;height:100%}.v3-bar{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:14px;padding:8px 14px;background:color-mix(in srgb,var(--surface) 92%,transparent);border:1px solid var(--border-strong);border-radius:12px;font-size:12px;color:var(--text);white-space:nowrap;max-width:94%;overflow-x:auto}.v3-bar label{display:flex;align-items:center;gap:6px;color:var(--text-dim)}.v3-bar input[type=number]{padding:4px 6px}.v3-hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);font-size:11px;color:#e6eaf0;background:rgba(0,0,0,.6);padding:4px 10px;border-radius:8px;pointer-events:none}
+.pdf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;max-height:44vh;overflow:auto}.pdf-th{position:relative;display:flex;flex-direction:column;gap:5px;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);cursor:pointer}.pdf-th input{position:absolute;top:10px;left:10px;width:auto}.pdf-th img{width:100%;height:120px;object-fit:contain;background:#fff;border-radius:6px}.pdf-th span{font-size:11px;color:var(--text-dim);text-align:center}.pdf-th:has(input:checked){outline:2px solid color-mix(in srgb,var(--accent) 60%,transparent)}
 .plc-float{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:25;display:flex;align-items:center;gap:12px;padding:11px 16px;background:color-mix(in srgb,var(--surface) 94%,transparent);border:1px solid var(--border-strong);border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.35);font-size:13px;color:var(--text);min-width:260px;max-width:92%;white-space:normal}
 .plc-sub{font-size:11.5px;color:var(--text-dim);margin-top:2px;font-weight:400}
 .plc-bar{width:max-content;min-width:420px;max-width:min(720px,92%)}.plc-bar button{flex:none;width:auto}
@@ -487,7 +488,7 @@ select option:disabled{color:var(--text-muted)}
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.28</span></div>
+    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.29</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -760,7 +761,7 @@ select option:disabled{color:var(--text-muted)}
         <h3>WiFi Heatmap Planner</h3>
         <p>Upload a floor plan image to get started, or start on a blank canvas.</p>
         <div style="display:flex;gap:8px;pointer-events:auto">
-          <button class="upload-btn-big" onclick="document.getElementById('floor-upload').click()">Upload Floor Plan</button>
+          <button class="upload-btn-big" onclick="document.getElementById('floor-upload').click()">Upload Floor Plan (image or PDF)</button>
           <button class="upload-btn-big" style="background:var(--surface-2);color:var(--text);border:1px solid var(--border-strong)" onclick="startBlankCanvas()">Blank Canvas</button>
         </div>
       </div>
@@ -797,7 +798,7 @@ select option:disabled{color:var(--text-muted)}
   </div>
 </div>
 
-<input type="file" id="floor-upload" accept="image/*" style="display:none" onchange="loadFloorPlan(this)">
+<input type="file" id="floor-upload" accept="image/*,application/pdf,.pdf" style="display:none" onchange="loadFloorPlan(this)">
 <div class="toast-container" id="toast-container"></div>
 <script>
 // ============================================================
@@ -2629,9 +2630,86 @@ function updateUI() {
 // ============================================================
 // FLOOR PLAN
 // ============================================================
+// ============================================================
+// PDF FLOOR PLAN IMPORT (v5.29): pick a page, render it to an image and use it as the floor plan
+// ============================================================
+const PDFJS_VER = '3.11.174', PDFJS_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_VER + '/';
+function loadPdfJs() {
+  if (window.pdfjsLib) return Promise.resolve();
+  return new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = PDFJS_BASE + 'pdf.min.js';
+    s.onload = () => { try { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_BASE + 'pdf.worker.min.js'; res(); } catch (e) { rej(e); } };
+    s.onerror = () => rej(new Error('Could not load the PDF library (check your internet connection)'));
+    document.head.appendChild(s);
+  });
+}
+async function importPdf(file) {
+  showBusy('Reading PDF…'); await tick();
+  let doc, thumbs = [];
+  try {
+    await loadPdfJs();
+    doc = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+    const nShow = Math.min(doc.numPages, 24);
+    for (let i = 1; i <= nShow; i++) {
+      const pg = await doc.getPage(i), v0 = pg.getViewport({ scale: 1 }), sc = 150 / Math.max(v0.width, v0.height), v = pg.getViewport({ scale: sc });
+      const c = document.createElement('canvas'); c.width = Math.ceil(v.width); c.height = Math.ceil(v.height);
+      const cx = c.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height);
+      await pg.render({ canvasContext: cx, viewport: v }).promise;
+      thumbs.push({ n: i, url: c.toDataURL('image/jpeg', 0.7), mmW: v0.width * 25.4 / 72, mmH: v0.height * 25.4 / 72 });
+    }
+  } catch (e) {
+    hideBusy();
+    toast(/password/i.test((e && (e.name + e.message)) || '') ? 'Password-protected PDFs are not supported' : 'Could not read this PDF: ' + (e && e.message || e), 'error');
+    return;
+  }
+  hideBusy();
+  const sel = (id, opts, v) => `<select id="${id}" style="width:100%;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text)">${opts.map(o => `<option value="${o[0]}" ${String(o[0]) === String(v) ? 'selected' : ''}>${o[1]}</option>`).join('')}</select>`;
+  const html = `<div style="font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:10px">${doc.numPages > 1 ? `This PDF has ${doc.numPages} pages. Pick the page that holds the floor plan.` : 'Check the page, then choose the quality.'}</div>
+    <div class="pdf-grid">${thumbs.map((t, i) => `<label class="pdf-th"><input type="radio" name="pdf-pg" value="${t.n}" ${i === 0 ? 'checked' : ''}><img src="${t.url}" alt="Page ${t.n}"><span>Page ${t.n} · ${Math.round(t.mmW)} × ${Math.round(t.mmH)} mm</span></label>`).join('')}</div>
+    ${doc.numPages > thumbs.length ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px">Previews show the first ${thumbs.length} pages. Enter another page number below if you need it. <input id="pdf-other" type="number" min="1" max="${doc.numPages}" placeholder="page" style="width:80px;padding:4px 6px"></div>` : ''}
+    <div class="field-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end;margin-top:12px">
+      <div class="dlg-field"><label>Quality</label>${sel('pdf-q', [[2400, 'Standard (2400 px)'], [3200, 'High (3200 px)'], [4000, 'Very high (4000 px)']], 3200)}</div>
+      <div class="dlg-field"><label>Drawing scale 1 :</label><input id="pdf-sc" type="number" min="1" step="1" placeholder="e.g. 100 (optional)"></div>
+    </div>
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:8px"><input type="checkbox" id="pdf-crop" checked style="width:auto"> Trim the white margins</label>
+    <div style="margin-top:8px;font-size:11px;color:var(--text-muted);line-height:1.5">If you know the drawing scale (the PDF is printed at its real paper size), the planner sets the scale for you. Check it afterwards with the Scale tool on a known distance, because PDFs are often resized when exported. Leave it empty to set the scale by hand.</div>`;
+  const m = await dialog({ title: 'Import <em>PDF</em> floor plan', html, ok: 'Use this page', wide: true });
+  if (!m) return;
+  const other = parseInt((m.querySelector('#pdf-other') || {}).value);
+  const pageNo = other >= 1 && other <= doc.numPages ? other : parseInt(m.querySelector('input[name="pdf-pg"]:checked').value);
+  const maxPx = parseInt(m.querySelector('#pdf-q').value) || 3200, ratio = parseFloat(m.querySelector('#pdf-sc').value), crop = m.querySelector('#pdf-crop').checked;
+  showBusy('Rendering page ' + pageNo + '…'); await tick();
+  try {
+    const pg = await doc.getPage(pageNo), v0 = pg.getViewport({ scale: 1 }), k = maxPx / Math.max(v0.width, v0.height), v = pg.getViewport({ scale: k });
+    const c = document.createElement('canvas'); c.width = Math.ceil(v.width); c.height = Math.ceil(v.height);
+    const cx = c.getContext('2d', { willReadFrequently: true }); cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height);
+    await pg.render({ canvasContext: cx, viewport: v }).promise;
+    let out = c;
+    if (crop) {
+      const d = cx.getImageData(0, 0, c.width, c.height).data; let x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
+      for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) { const i = (y * c.width + x) * 4; if (d[i] < 244 || d[i + 1] < 244 || d[i + 2] < 244) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } }
+      if (x1 > x0 && y1 > y0) {
+        const pad = Math.round(Math.max(c.width, c.height) * 0.01); x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(c.width - 1, x1 + pad); y1 = Math.min(c.height - 1, y1 + pad);
+        out = document.createElement('canvas'); out.width = x1 - x0 + 1; out.height = y1 - y0 + 1; out.getContext('2d').drawImage(c, x0, y0, out.width, out.height, 0, 0, out.width, out.height);
+      }
+    }
+    const blob = await new Promise(r => out.toBlob(r, 'image/png'));
+    if (!blob) throw new Error('could not create the image');
+    const bmp = await createImageBitmap(blob);
+    wifi.floorPlan = bmp; savePlanBlob(blob);
+    hideBusy(); hideEmpty(); fitView(); scheduleRender();
+    if (ratio >= 1) {
+      // real metres per rendered pixel: paper width (m) x scale / rendered px width of the whole page
+      const pxPerM = c.width / ((v0.width * 25.4 / 72) / 1000 * ratio), kw = Math.min(WORLD_W / bmp.width, WORLD_H / bmp.height);
+      wifi.pxPerMeter = pxPerM * kw; wifi.scaleSet = true; wifi.started = true; _precCanvas = null; _statSig = ''; scheduleRender(); scheduleAutosave();
+      toast(`PDF page ${pageNo} loaded, scale set from 1:${ratio}. Check it with the Scale tool`);
+    } else { toast(`PDF page ${pageNo} loaded. Now calibrate the scale`); setTool('calibrate'); }
+  } catch (e) { hideBusy(); toast('Could not render this page: ' + (e && e.message || e), 'error'); }
+}
 function loadFloorPlan(input) {
   const file = input.files[0];
   if (!file) return;
+  if (/pdf/i.test(file.type) || /\.pdf$/i.test(file.name)) { input.value = ''; importPdf(file); return; }
   const url = URL.createObjectURL(file);
   const img = new Image();
   img.onload = () => {
