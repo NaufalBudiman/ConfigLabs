@@ -411,7 +411,7 @@ body.ro [data-tool]:not([data-tool=pan]),body.ro #btn-undo,body.ro #btn-redo,bod
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.19</span></div>
+    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.20</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -620,6 +620,7 @@ body.ro [data-tool]:not([data-tool=pan]),body.ro #btn-undo,body.ro #btn-redo,bod
       </select>
       <button class="tt" id="btn-toggle-hm" onclick="toggleHeatmap()" title="Show / hide heatmap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span class="lbl">Heatmap</span></button>
       <button class="tt" id="btn-capacity" onclick="openCapacity()" title="Capacity planning: clients and traffic per area vs. the APs placed inside it">👥 Capacity</button>
+      <button class="tt" id="btn-power" onclick="openPower()" title="Power budget: total AP draw, PoE ports and switches needed, per floor and for the whole project">🔌 Power &amp; PoE</button>
       <button class="tt" id="btn-conflicts" onclick="openConflicts()" title="List the AP pairs that interfere with each other on the selected band">⚡ Conflicts</button>
       <button class="tt" id="btn-trace" onclick="openTrace()" title="Auto-trace walls and doors from the floor plan image">🧱 Trace walls</button>
       <button class="tt" id="btn-autoplace" onclick="openPlacement()" title="Auto placement: suggest how many APs are needed and where to put them">📍 Auto place</button>
@@ -3045,6 +3046,78 @@ async function openCapacity() {
   toast(bad.length ? `${bad.length} area${bad.length > 1 ? 's' : ''} need more APs` : 'Capacity saved');
 }
 
+// ============================================================
+// POWER & PoE (v5.20): total AP draw, PoE ports and switch suggestion, per floor and for the whole project
+// ============================================================
+const PWR_DEF = { buf: 20, sw: [{ ports: 24, w: 370 }, { ports: 48, w: 740 }] };
+function pwrCfg() {
+  const c = curProj && curProj.pwrCfg, d = PWR_DEF, n = (v, lo, hi, df) => { v = parseFloat(v); return isNaN(v) ? df : Math.max(lo, Math.min(hi, v)); };
+  return { buf: n(c && c.buf, 0, 200, d.buf), sw: d.sw.map((s, i) => ({ ports: s.ports, w: n(c && c.sw && c.sw[i] && c.sw[i].w, 1, 20000, s.w) })) };
+}
+// PoE class an AP needs, from its maximum draw (PD side): af ≤12.95 W, at ≤25.5 W, bt type 3 ≤51 W (60 W port), bt type 4 above (90 W port)
+function pwrClass(w) { return w <= 12.95 ? 'af' : w <= 25.5 ? 'at' : w <= 51 ? 'bt3' : 'bt4'; }
+const PWR_PORT = { af: 15.4, at: 30, bt3: 60, bt4: 90 };
+const PWR_NAME = { af: '802.3af', at: '802.3at (PoE+)', bt3: '802.3bt (PoE++, 60 W)', bt4: '802.3bt (PoE++, 90 W)' };
+// list = [{ name, aps: [{ model, w, poe }] }]   (aps without watt data are counted as "nodata")
+function pwrCalc(list, cfg) {
+  cfg = cfg || pwrCfg();
+  const rows = list.map(f => {
+    const r = { name: f.name, n: f.aps.length, nodata: 0, w: 0, ports: 0, cls: { af: 0, at: 0, bt3: 0, bt4: 0 }, resv: 0 };
+    f.aps.forEach(a => { if (!a.w) { r.nodata++; return; } r.w += a.w; r.ports++; const k = pwrClass(a.w); r.cls[k]++; r.resv += PWR_PORT[k]; });
+    r.wb = r.w * (1 + cfg.buf / 100);
+    r.sw = cfg.sw.map(s => ({ ports: s.ports, w: s.w, units: r.ports ? Math.max(Math.ceil(r.ports / s.ports), Math.ceil(r.wb / s.w)) : 0, by: r.ports && Math.ceil(r.wb / s.w) > Math.ceil(r.ports / s.ports) ? 'power' : 'ports' }));
+    r.best = r.ports ? r.sw.slice().sort((a, b) => a.units - b.units || a.ports - b.ports)[0] : null;
+    return r;
+  });
+  const tot = { n: 0, nodata: 0, w: 0, ports: 0, resv: 0, cls: { af: 0, at: 0, bt3: 0, bt4: 0 } };
+  rows.forEach(r => { tot.n += r.n; tot.nodata += r.nodata; tot.w += r.w; tot.ports += r.ports; tot.resv += r.resv; for (const k in r.cls) tot.cls[k] += r.cls[k]; });
+  tot.wb = tot.w * (1 + cfg.buf / 100);
+  tot.sw = cfg.sw.map((s, i) => ({ ports: s.ports, w: s.w, units: rows.reduce((a, r) => a + r.sw[i].units, 0) }));
+  tot.best = tot.ports ? tot.sw.slice().sort((a, b) => a.units - b.units || a.ports - b.ports)[0] : null;
+  const models = {};
+  list.forEach(f => f.aps.forEach(a => { const m = models[a.model] = models[a.model] || { model: a.model, n: 0, w: a.w || 0, poe: a.poe || '' }; m.n++; }));
+  return { rows, tot, models: Object.values(models), cfg };
+}
+function pwrAPs(aps) { return aps.map(a => { const m = getAPModel(a.vendor, a.model); return m ? { model: m.name, w: m.w || 0, poe: m.poe || '' } : null; }).filter(Boolean); }
+function pwrProjectList() {
+  const f0 = curFloorObj();
+  return (curProj ? curProj.floors : []).map(f => ({ name: f.name, aps: pwrAPs(f === f0 ? wifi.aps : ((f.data && f.data.aps) || [])) }));
+}
+const fmtW = v => (Math.round(v * 10) / 10).toString();
+function pwrClsText(c) { return ['af', 'at', 'bt3', 'bt4'].filter(k => c[k]).map(k => `${c[k]}× ${k === 'bt3' ? 'bt 60W' : k === 'bt4' ? 'bt 90W' : k}`).join(', ') || '—'; }
+function pwrRender(root) {
+  const buf = parseFloat(root.querySelector('#pw-buf').value), sw = [0, 1].map(i => parseFloat(root.querySelector('#pw-sw' + i).value));
+  const cfg = { buf: isNaN(buf) ? PWR_DEF.buf : Math.max(0, Math.min(200, buf)), sw: PWR_DEF.sw.map((s, i) => ({ ports: s.ports, w: sw[i] > 0 ? sw[i] : s.w })) };
+  const R = pwrCalc(pwrProjectList(), cfg), t = R.tot;
+  const best = r => r.best ? `${r.best.units} × ${r.best.ports}-port` + (r.sw ? ` <span style="color:var(--text-muted);font-size:10px">(${r.sw.find(s => s.ports === r.best.ports).by || 'ports'} limit)</span>` : '') : '—';
+  const fr = R.rows.map(r => `<tr><td>${esc(r.name)}</td><td>${r.n}${r.nodata ? ` <span style="color:var(--warn,#ffb86b)" title="No watt data for ${r.nodata} AP">⚠${r.nodata}</span>` : ''}</td><td>${fmtW(r.w)}</td><td>${fmtW(r.wb)}</td><td>${r.ports}</td><td style="font-size:11px">${pwrClsText(r.cls)}</td><td>${best(r)}</td></tr>`).join('');
+  const mr = R.models.map(m => `<tr><td>${esc(m.model)}</td><td>${m.n}</td><td>${m.w ? fmtW(m.w) : '<span style="color:var(--text-muted)">no data</span>'}</td><td>${m.w ? fmtW(m.w * m.n) : '—'}</td><td>${m.w ? pwrClass(m.w) === 'bt3' ? 'bt (60 W)' : pwrClass(m.w) === 'bt4' ? 'bt (90 W)' : pwrClass(m.w) : '—'}</td></tr>`).join('');
+  const warn = [];
+  if (t.nodata) warn.push(`<b>${t.nodata}</b> AP without watt data in the catalog, <b>not</b> counted. Add the watts in the AP catalog.`);
+  if (t.cls.bt3 + t.cls.bt4) warn.push(`<b>${t.cls.bt3 + t.cls.bt4}</b> AP need <b>802.3bt (PoE++)</b> ports${t.cls.bt4 ? ` (${t.cls.bt4} of them up to 90 W)` : ''}. Pick a switch that supports it.`);
+  if (t.resv > t.wb * 1.05) warn.push(`If the switch reserves power by PoE class (not by actual draw), the worst case is <b>${fmtW(t.resv)} W</b>.`);
+  root.querySelector('#pw-out').innerHTML = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">${[['APs', t.n], ['Total draw', fmtW(t.w) + ' W'], ['With ' + cfg.buf + '% buffer', fmtW(t.wb) + ' W'], ['PoE ports', t.ports]].map(([k, v]) => `<div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 10px"><div style="font-size:10px;color:var(--text-muted)">${k}</div><div style="font-size:16px;font-weight:600">${v}</div></div>`).join('')}</div>
+    <div style="max-height:22vh;overflow:auto"><table class="cal-tbl"><tr><th>Floor</th><th>APs</th><th>Draw (W)</th><th>+ buffer (W)</th><th>PoE ports</th><th>PoE class</th><th>Switches</th></tr>${fr}
+      <tr style="font-weight:600"><td>Project</td><td>${t.n}</td><td>${fmtW(t.w)}</td><td>${fmtW(t.wb)}</td><td>${t.ports}</td><td style="font-size:11px">${pwrClsText(t.cls)}</td><td>${t.best ? t.best.units + ' × ' + t.best.ports + '-port' : '—'}</td></tr></table></div>
+    <div style="max-height:18vh;overflow:auto;margin-top:8px"><table class="cal-tbl"><tr><th>Model</th><th>Qty</th><th>W each</th><th>Subtotal (W)</th><th>PoE class</th></tr>${mr || '<tr><td colspan="5" style="color:var(--text-muted)">No APs placed yet.</td></tr>'}</table></div>
+    ${warn.length ? `<div style="font-size:12px;line-height:1.6;margin-top:8px;color:var(--text-dim)">${warn.map(w => '• ' + w).join('<br>')}</div>` : ''}`;
+}
+async function openPower() {
+  if (!curProj) return;
+  const c = pwrCfg(), inp = (id, v, w) => `<input id="${id}" type="number" step="any" min="0" value="${v}" oninput="pwrRender(this.closest('.modal'))" style="width:${w}px;padding:5px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text)">`;
+  const html = `<div style="font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:10px">Total power the APs draw, the PoE ports you need and how many switches that takes. Watt values come from the AP catalog (H3C installation guides, maximum draw).</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Safety buffer ${inp('pw-buf', c.buf, 56)} % · PoE budget of a 24-port switch ${inp('pw-sw0', c.sw[0].w, 64)} W · of a 48-port switch ${inp('pw-sw1', c.sw[1].w, 64)} W</div>
+    <div id="pw-out"></div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.5">Switch budgets are typical PoE+ values, edit them to the switch you plan to use. One PoE port per AP. “Switches” is the smallest count per floor of a single switch type (ports or power, whichever runs out first). Floors are counted from what is saved for them, switch to a floor and it updates.</div>`;
+  const dp = dialog({ title: 'Power <em>&amp; PoE</em>', html, ok: RO ? 'Close' : 'Save assumptions', wide: true });
+  pwrRender([...document.querySelectorAll('.modal-overlay.open .modal')].pop());
+  const m = await dp;
+  if (!m || RO) return;
+  const buf = parseFloat(m.querySelector('#pw-buf').value), sw = [0, 1].map(i => parseFloat(m.querySelector('#pw-sw' + i).value));
+  curProj.pwrCfg = { buf: isNaN(buf) ? PWR_DEF.buf : Math.max(0, Math.min(200, buf)), sw: [{ w: sw[0] > 0 ? sw[0] : PWR_DEF.sw[0].w }, { w: sw[1] > 0 ? sw[1] : PWR_DEF.sw[1].w }] };
+  scheduleAutosave(); toast('Power assumptions saved');
+}
+
 // ---- editable wall library ----
 function matRowHTML(m) {
   const n = (v, k) => `<input type="number" step="0.5" min="0" max="80" data-k="${k}" value="${v}" style="width:62px;padding:6px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text)">`;
@@ -3771,7 +3844,7 @@ async function saveCurrent() {
   if (!curProj || !curFloor || RO) return;
   const f = curFloorObj(); if (!f) return;
   const data = captureFloor();
-  const sig = JSON.stringify(data) + JSON.stringify(WALL_MATS) + JSON.stringify(userApCat()) + JSON.stringify(curProj.capThr || null) + (wifi.floorPlan ? 'P' : '');
+  const sig = JSON.stringify(data) + JSON.stringify(WALL_MATS) + JSON.stringify(userApCat()) + JSON.stringify(curProj.capThr || null) + JSON.stringify(curProj.pwrCfg || null) + (wifi.floorPlan ? 'P' : '');
   if (sig === _lastSaved) { _dirty = false; setSaveState(_savedAt ? 'Saved ✓ ' + _savedAt : 'Saved in this browser'); return; }
   try {
     setSaveState('Saving…');
@@ -4443,6 +4516,7 @@ const RT = {
     interf: b => `AP coverage ${b}G interference diagram`, interfCap: 'Coloured areas have an SINR below 25 dB. The colour identifies the access point that causes the most co-channel interference there.',
     floorWord: 'Floor',
     s23: '2.3 Bill of materials (BoM)', bomNo: 'No.', vendor: 'Vendor', bomDesc: 'Description', bomWhere: 'Quantity per floor', bomTotal: 'Total access points',
+    s26: '2.6 Power and PoE', pwrT: 'Total power drawn by the access points, the PoE ports required and the number of PoE switches needed per floor. Power values are the maximum draw of each AP model; the buffer covers future growth.', pwrFloor: 'Floor', pwrAPs: 'APs', pwrDraw: 'Draw (W)', pwrBuf: 'With buffer (W)', pwrPorts: 'PoE ports', pwrCls: 'PoE class', pwrSw: 'Suggested switches', pwrProj: 'Project total', pwrModel: 'Model', pwrEach: 'W each', pwrSub: 'Subtotal (W)', pwrNoData: n => `${n} AP without power data are not included.`, pwrBt: n => `${n} AP require 802.3bt (PoE++) ports, so the switch must support it.`, pwrAss: (b, a, c) => `Assumptions: buffer ${b}%, PoE budget ${a} W for a 24-port switch and ${c} W for a 48-port switch, one PoE port per AP.`,
     s25: '2.5 Capacity planning', capT: 'Estimated client load per area compared with the capacity of the access points placed inside it. The figures are design assumptions, not guarantees.', capArea: 'Area', capClients: 'Active clients', capMbps: 'Traffic (Mbps)', capPlaced: 'APs inside', capNeed: 'APs needed', capStatus: 'Status', capOk: 'OK', capShort: n => `Short by ${n} AP`, capAssume: 'Assumptions: active clients = people × devices per person × active %. Usable throughput per AP: ',
     s24: '2.4 Floor plan obstacles and wall materials', obstT: 'The wall and door layout below was used by the prediction model. Signal loss is taken per band from the project wall library.',
     material: 'Material', thick: 'Thickness (cm)', lossB: b => `Loss ${b}G (dB)`, wallsN: 'Walls', lenM: 'Total length (m)', doorsN: 'Doors', noScaleLen: 'Scale not set: lengths are not available.',
@@ -4473,6 +4547,7 @@ const RT = {
     interf: b => `Diagram interferensi cakupan AP ${b}G`, interfCap: 'Area berwarna memiliki SINR di bawah 25 dB. Warna menunjukkan access point yang paling banyak menyebabkan interferensi co-channel di titik tersebut.',
     floorWord: 'Lantai',
     s23: '2.3 Daftar kebutuhan material (BoM)', bomNo: 'No.', vendor: 'Merek', bomDesc: 'Deskripsi', bomWhere: 'Jumlah per lantai', bomTotal: 'Total access point',
+    s26: '2.6 Daya dan PoE', pwrT: 'Total daya yang dipakai access point, jumlah port PoE yang dibutuhkan, dan jumlah switch PoE per lantai. Nilai daya adalah konsumsi maksimum tiap model AP; buffer untuk cadangan pengembangan.', pwrFloor: 'Lantai', pwrAPs: 'AP', pwrDraw: 'Daya (W)', pwrBuf: 'Dengan buffer (W)', pwrPorts: 'Port PoE', pwrCls: 'Kelas PoE', pwrSw: 'Saran switch', pwrProj: 'Total proyek', pwrModel: 'Model', pwrEach: 'W per unit', pwrSub: 'Subtotal (W)', pwrNoData: n => `${n} AP tidak punya data daya dan tidak dihitung.`, pwrBt: n => `${n} AP membutuhkan port 802.3bt (PoE++), switch harus mendukungnya.`, pwrAss: (b, a, c) => `Asumsi: buffer ${b}%, budget PoE ${a} W untuk switch 24-port dan ${c} W untuk switch 48-port, satu port PoE per AP.`,
     s25: '2.5 Perencanaan kapasitas', capT: 'Estimasi beban client per area dibandingkan dengan kapasitas access point yang dipasang di dalamnya. Angka ini asumsi desain, bukan jaminan.', capArea: 'Area', capClients: 'Client aktif', capMbps: 'Trafik (Mbps)', capPlaced: 'AP di dalam', capNeed: 'AP dibutuhkan', capStatus: 'Status', capOk: 'OK', capShort: n => `Kurang ${n} AP`, capAssume: 'Asumsi: client aktif = orang × perangkat per orang × % aktif. Throughput usable per AP: ',
     s24: '2.4 Hambatan denah dan material dinding', obstT: 'Tata letak dinding dan pintu berikut dipakai oleh model prediksi. Redaman sinyal diambil per band dari library dinding proyek.',
     material: 'Material', thick: 'Tebal (cm)', lossB: b => `Redaman ${b}G (dB)`, wallsN: 'Dinding', lenM: 'Total panjang (m)', doorsN: 'Pintu', noScaleLen: 'Skala belum diatur: panjang tidak tersedia.',
@@ -4600,6 +4675,7 @@ async function collectFloor(f, cfg) {
   else { const cr = reportCrop(); apx = cr.w * cr.h; }
   out.areaM2 = wifi.scaleSet && hasStuff ? apx / (ppm * ppm) : null;
   out.cap = capAll();
+  out.pwrAps = pwrAPs(wifi.aps);
   for (const [i, t] of wifi.accPts.entries()) {
     const row = { n: i + 1, loc: wifi.scaleSet ? (t.x / ppm).toFixed(1) + ', ' + (t.y / ppm).toFixed(1) + ' m' : '—', pred: {}, meas: {} };
     for (const b of cfg.bands) {
@@ -4624,14 +4700,14 @@ async function reportConfigDialog() {
     <div class="rc-row"><b>Image accuracy</b><div class="rc-opts">${['original', 'high', 'middle', 'low'].map(v => rad('acc', v, v[0].toUpperCase() + v.slice(1), ck('acc', 'high') === v)).join('')}</div></div>
     <div class="rc-row"><b>Algorithm chapter</b><div class="rc-opts">${rad('algo', '0', 'Does not contain', !ck('algo', false))}${rad('algo', '1', 'Contain', ck('algo', false))}</div></div>
     <div class="rc-row"><b>Language setting</b><div class="rc-opts">${rad('lang', 'en', 'English', ck('lang', 'en') === 'en')}${rad('lang', 'id', 'Indonesia', ck('lang', 'en') === 'id')}</div></div>
-    <div class="rc-row"><b>Extra sections</b><div class="rc-opts">${chk('bom', 'Bill of materials', ck('bom', true))}${chk('mats', 'Wall materials summary', ck('mats', true))}${chk('cap', 'Capacity planning', ck('cap', true))}${chk('toc', 'Catalogue with page numbers', ck('toc', true))}</div></div>
+    <div class="rc-row"><b>Extra sections</b><div class="rc-opts">${chk('bom', 'Bill of materials', ck('bom', true))}${chk('mats', 'Wall materials summary', ck('mats', true))}${chk('cap', 'Capacity planning', ck('cap', true))}${chk('pwr', 'Power &amp; PoE', ck('pwr', true))}${chk('toc', 'Catalogue with page numbers', ck('toc', true))}</div></div>
     <div class="rc-row"><b>Original image</b><div class="rc-opts">${rad('orig', '0', 'Does not contain', !ck('orig', true))}${rad('orig', '1', 'Contain', ck('orig', true))}</div></div>
     <div style="font-size:11px;color:var(--text-muted);line-height:1.5">Catalogue page numbers: Word asks once to update fields when you open the file, answer Yes. Image accuracy: Original = finest (slowest), Low = fastest. Weak-field marks areas below your coverage target (${wifi.covTarget} dBm). The simulation diagrams use exactly what you see in the editor.</div>`;
   const m = await dialog({ title: 'Reports <em>config</em>', html, ok: 'Determine', wide: true });
   if (!m) return null;
   const g = k => m.querySelector(`[data-k="${k}"]`).checked;
   const r = n => m.querySelector(`input[name="rc-${n}"]:checked`).value;
-  const cfg = { sim: g('sim'), weak: g('weak'), sinr: g('sinr'), interf: g('interf'), bitmap: g('bitmap'), b24: g('b24'), b5: g('b5'), b6: g('b6'), acc: r('acc'), algo: r('algo') === '1', lang: r('lang'), orig: r('orig') === '1', bom: g('bom'), mats: g('mats'), cap: g('cap'), toc: g('toc') };
+  const cfg = { sim: g('sim'), weak: g('weak'), sinr: g('sinr'), interf: g('interf'), bitmap: g('bitmap'), b24: g('b24'), b5: g('b5'), b6: g('b6'), acc: r('acc'), algo: r('algo') === '1', lang: r('lang'), orig: r('orig') === '1', bom: g('bom'), mats: g('mats'), cap: g('cap'), pwr: g('pwr'), toc: g('toc') };
   try { localStorage.setItem('clab_rep_cfg', JSON.stringify(cfg)); } catch (e) {}
   cfg.bands = BAND_LIST.filter(b => cfg['b' + b.replace('.', '')]);
   if (!cfg.bands.length) { toast('Pick at least one frequency', 'error'); return reportConfigDialog(); }
@@ -4798,6 +4874,22 @@ function buildReportDoc(D, floors, cfg, X) {
     body.push(gtable(null, [T.floor, T.capArea, T.capClients, T.capMbps, T.capPlaced, T.capNeed, T.capStatus], crow, [1300, 1900, 1100, 1100, 1000, 1000, 1626], 17));
     const th = capThr();
     body.push(para(T.capAssume + `Wi-Fi 5 ${th[5]}, Wi-Fi 6 ${th[6]}, Wi-Fi 7 ${th[7]} Mbps.`, { spacing: { before: 100 } }));
+  }
+
+  if (cfg.pwr && floors.some(f => f.pwrAps && f.pwrAps.length)) {
+    const PR = pwrCalc(floors.map(f => ({ name: f.name, aps: f.pwrAps || [] })));
+    body.push(head(2, T.s26, !(cfg.bom || (cfg.mats && floors.some(f => f.walls && f.walls.n)) || (cfg.cap && floors.some(f => f.cap && f.cap.length)))));
+    body.push(para(T.pwrT));
+    const bestT = r => r.best ? `${r.best.units} × ${r.best.ports}-port` : '—';
+    const prow = PR.rows.map(r => [r.name, r.n, fmtW(r.w), fmtW(r.wb), r.ports, pwrClsText(r.cls), bestT(r)]);
+    prow.push([T.pwrProj, PR.tot.n, fmtW(PR.tot.w), fmtW(PR.tot.wb), PR.tot.ports, pwrClsText(PR.tot.cls), bestT(PR.tot)]);
+    body.push(gtable(null, [T.pwrFloor, T.pwrAPs, T.pwrDraw, T.pwrBuf, T.pwrPorts, T.pwrCls, T.pwrSw], prow, [1300, 700, 1100, 1300, 1000, 2026, 1600], 17));
+    body.push(para(''));
+    body.push(gtable(null, [T.pwrModel, T.qty, T.pwrEach, T.pwrSub], PR.models.map(m => [m.model, m.n, m.w ? fmtW(m.w) : '—', m.w ? fmtW(m.w * m.n) : '—']), [3800, 1400, 1800, 2026], 17));
+    const notes = [T.pwrAss(PR.cfg.buf, PR.cfg.sw[0].w, PR.cfg.sw[1].w)];
+    if (PR.tot.nodata) notes.push(T.pwrNoData(PR.tot.nodata));
+    if (PR.tot.cls.bt3 + PR.tot.cls.bt4) notes.push(T.pwrBt(PR.tot.cls.bt3 + PR.tot.cls.bt4));
+    body.push(para(notes.join(' '), { spacing: { before: 100 } }));
   }
 
   body.push(head(1, T.s3(proj), true));
