@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Topology from WiFi Planner — ConfigLabs</title>
+<meta name="description" content="Generate a network topology from your WiFi Planner project: ISP, firewall, core, access switches per floor and every AP, with PoE budget, uplinks and a port map. Free, no login."/>
+<meta name="author" content="ConfigLabs"/>
+<meta property="og:title" content="Network Topology — ConfigLabs"/>
+<meta property="og:description" content="Turn a WiFi Planner project into a network topology with switches, uplinks and PoE budget."/>
+<meta property="og:type" content="website"/>
+<link rel="canonical" href="https://configlabs.online/topology-auto.html"/>
+<meta property="og:url" content="https://configlabs.online/topology-auto.html"/>
+<meta name="theme-color" content="#0b0d10"/>
+<link rel="icon" type="image/x-icon" href="/favicon.ico"/>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/>
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png"/>
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/>
+<link rel="manifest" href="/site.webmanifest"/>
+<meta property="og:image" content="https://configlabs.online/og-image.png"/>
+<script src="/site.js" defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===== Topology page ===== */
+:root{--bg:#0b0d10;--bg-2:#111418;--surface:#15191f;--surface-2:#1b2027;--surface-hover:#222831;--border:#232a34;--border-strong:#2e3744;--text:#e6e9ee;--text-dim:#9aa3af;--text-muted:#5b6472;--accent:#7cf4c7;--accent-2:#a8b5ff;--accent-3:#ffb86b;--danger:#ff6478;--success:#7cf4c7;--warning:#ffc857;--sans:'Geist',system-ui,sans-serif;--serif:'Instrument Serif',Georgia,serif;--mono:'JetBrains Mono',monospace;--ease:cubic-bezier(.22,1,.36,1)}
+[data-theme="light"]{--bg:#f8f6f1;--bg-2:#fff;--surface:#fff;--surface-2:#f1ede3;--surface-hover:#ebe6d8;--border:#e4dfd0;--border-strong:#d0c9b5;--text:#1a1a1a;--text-dim:#5a5a5a;--text-muted:#8a8a8a;--accent:#0f766e;--accent-2:#4f46e5;--accent-3:#ea580c;--danger:#e11d48;--warning:#b7791f}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{display:flex;flex-direction:column;overflow:hidden}
+nav{flex:none;z-index:60;padding:12px 24px;background:color-mix(in srgb,var(--bg) 80%,transparent);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:12px;font-weight:600;font-size:17px;letter-spacing:-.3px;text-decoration:none;color:var(--text)}
+.brand-logo{width:32px;height:32px;border-radius:8px;background:conic-gradient(from 180deg,var(--accent),var(--accent-2),var(--accent-3),var(--accent));display:grid;place-items:center;position:relative}
+.brand-logo::after{content:'';position:absolute;inset:2px;border-radius:6px;background:var(--bg)}
+.brand-logo svg{position:relative;z-index:1;width:18px;height:18px;color:var(--text)}
+.brand em{font-family:var(--serif);font-style:italic;color:var(--accent);font-weight:400}
+.nav-links{display:flex;gap:2px;flex-wrap:wrap}
+.nav-link{padding:8px 14px;color:var(--text-dim);text-decoration:none;font-size:13px;font-weight:500;border-radius:8px;transition:all .2s}
+.nav-link:hover{color:var(--text);background:var(--surface)}
+.nav-link.active{color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+.nav-actions{display:flex;gap:8px;align-items:center}
+.chip{font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:999px;border:1px solid var(--border-strong);color:var(--text-dim);display:inline-flex;align-items:center;gap:6px}
+.chip .dot{width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success)}
+.icon-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);width:36px;height:36px;border-radius:10px;cursor:pointer;display:grid;place-items:center;transition:all .2s var(--ease);font-size:15px}
+.icon-btn:hover{background:var(--surface-hover);color:var(--text);border-color:var(--border-strong)}
+#app{flex:1;min-height:0;display:grid;grid-template-columns:292px 1fr 324px;position:relative}
+.panel{background:var(--bg-2);border-right:1px solid var(--border);overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;z-index:5}
+#right.panel{border-right:none;border-left:1px solid var(--border)}
+.panel::-webkit-scrollbar{width:8px}.panel::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:8px}
+.sec{padding:16px 18px;border-bottom:1px solid var(--border)}
+.sec h4{font-size:10.5px;font-family:var(--mono);letter-spacing:1.2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.sec h4 small{font-size:10px;letter-spacing:0;text-transform:none;color:var(--text-muted);font-weight:400}
+.lbl{font-size:11.5px;color:var(--text-dim);margin-bottom:4px;display:block}
+select,input[type=text],input[type=number]{width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;transition:all .15s var(--ease)}
+select:focus,input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:1;min-width:0}
+.seg{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px}
+.seg button{flex:1;padding:6px 8px;border:none;background:none;color:var(--text-dim);font-size:12px;font-weight:500;border-radius:6px;cursor:pointer;font-family:var(--sans);transition:all .15s}
+.seg button.on{background:color-mix(in srgb,var(--accent) 16%,var(--surface));color:var(--accent);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 35%,transparent)}
+.tgl{display:flex;align-items:center;justify-content:space-between;padding:6px 0;font-size:12.5px;color:var(--text-dim);cursor:pointer;user-select:none}
+.tgl input{display:none}
+.tgl i{width:32px;height:18px;border-radius:99px;background:var(--border-strong);position:relative;transition:background .2s;flex:none}
+.tgl i::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .2s var(--ease)}
+.tgl input:checked+i{background:var(--accent)}
+.tgl input:checked+i::after{transform:translateX(14px)}
+.btn{padding:8px 12px;border-radius:9px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);font-size:12.5px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:all .15s;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn:hover{background:var(--surface-hover);border-color:var(--accent)}
+.btn.pri{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#0b0d10;border-color:transparent;font-weight:600}
+.btn.sm{padding:5px 9px;font-size:11.5px}
+.note{font-size:11px;color:var(--text-muted);line-height:1.55;margin-top:8px}
+.pill{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:99px;border:1px solid var(--border-strong);color:var(--text-dim);white-space:nowrap}
+.pill.ok{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
+.pill.warn{color:var(--warning);border-color:color-mix(in srgb,var(--warning) 45%,transparent)}
+.pill.bad{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,transparent)}
+.pcard{padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);cursor:pointer;margin-bottom:8px;transition:all .15s}
+.pcard:hover{border-color:var(--border-strong);background:var(--surface-hover)}
+.pcard.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
+.pcard b{font-size:13px;display:block;font-weight:600}
+.pcard span{font-size:11px;color:var(--text-muted);font-family:var(--mono)}
+.fl{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;font-size:12.5px;cursor:pointer;color:var(--text-dim)}
+.fl:hover{background:var(--surface)}
+.fl b{flex:1;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fl .pill{flex:none}
+.lg{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;font-size:11.5px;color:var(--text-dim)}
+.lg div{display:flex;align-items:center;gap:7px}
+.lg i{width:18px;height:0;border-top:3px solid;border-radius:2px;flex:none}
+.lg i.d{border-top-style:dashed}
+.lg s{width:10px;height:10px;border-radius:3px;flex:none;border:2px solid}
+#stage{position:relative;overflow:hidden;background:var(--bg);touch-action:none;min-width:0}
+#stage::before{content:'';position:absolute;inset:0;background-image:radial-gradient(var(--border) 1px,transparent 1px);background-size:24px 24px;opacity:.8;pointer-events:none}
+#stage.nogrid::before{display:none}
+#cv{position:absolute;inset:0;width:100%;height:100%;cursor:grab;display:block}
+#cv.pan{cursor:grabbing}
+.tools{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;gap:4px;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(14px);border:1px solid var(--border-strong);border-radius:12px;padding:5px;box-shadow:0 12px 30px rgba(0,0,0,.28);z-index:6;max-width:calc(100% - 20px);flex-wrap:wrap;justify-content:center}
+.tools button{background:none;border:none;color:var(--text-dim);min-width:34px;height:32px;padding:0 9px;border-radius:8px;cursor:pointer;font-size:12.5px;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:var(--sans);font-weight:500;transition:all .15s}
+.tools button:hover{background:var(--surface-hover);color:var(--text)}
+.tools button.on{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.tools .sep{width:1px;background:var(--border-strong);margin:5px 3px}
+.tools .zl{font-family:var(--mono);font-size:11px;color:var(--text-muted);min-width:44px;text-align:center;align-self:center}
+.menu{position:relative}
+.menu .dd{position:absolute;top:38px;right:0;min-width:210px;background:var(--surface);border:1px solid var(--border-strong);border-radius:11px;box-shadow:0 18px 40px rgba(0,0,0,.35);padding:5px;display:none;z-index:9}
+.menu.open .dd{display:block}
+.dd button{width:100%;justify-content:flex-start;height:auto;padding:8px 10px;text-align:left;white-space:nowrap}
+.dd small{display:block;font-size:10.5px;color:var(--text-muted);font-weight:400}
+#mini{position:absolute;right:14px;bottom:14px;width:210px;height:140px;background:color-mix(in srgb,var(--surface) 92%,transparent);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.28);z-index:6;cursor:pointer}
+#mini svg{width:100%;height:100%;display:block}
+#hint{position:absolute;left:14px;bottom:14px;font-size:11px;color:var(--text-muted);font-family:var(--mono);background:color-mix(in srgb,var(--surface) 85%,transparent);padding:6px 10px;border-radius:8px;border:1px solid var(--border);z-index:6;pointer-events:none}
+#empty{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:30px;z-index:4}
+#empty .box{max-width:430px}
+#empty h2{font-family:var(--serif);font-weight:400;font-size:34px;margin-bottom:8px}
+#empty h2 em{color:var(--accent)}
+#empty p{color:var(--text-dim);margin-bottom:16px}
+#tip{position:absolute;display:none;pointer-events:none;background:var(--surface);border:1px solid var(--border-strong);border-radius:9px;padding:7px 10px;font-size:11.5px;box-shadow:0 10px 24px rgba(0,0,0,.35);z-index:8;max-width:260px;line-height:1.45}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:12px}
+.kv dt{color:var(--text-muted)}
+.kv dd{color:var(--text);font-family:var(--mono);font-size:11.5px;text-align:right;word-break:break-word}
+.bar{height:8px;border-radius:99px;background:var(--border);overflow:hidden;margin:6px 0 3px}
+.bar i{display:block;height:100%;border-radius:99px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 11px}
+.stat b{display:block;font-size:19px;font-weight:600;letter-spacing:-.5px;font-family:var(--mono)}
+.stat span{font-size:10.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px}
+table.bom{width:100%;border-collapse:collapse;font-size:11.5px}
+table.bom td,table.bom th{padding:5px 4px;border-bottom:1px solid var(--border);text-align:left}
+table.bom th{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.7px;font-weight:600}
+table.bom td:last-child,table.bom th:last-child{text-align:right;font-family:var(--mono)}
+.warn-i{display:flex;gap:8px;font-size:12px;color:var(--text-dim);padding:7px 9px;border-radius:9px;background:color-mix(in srgb,var(--warning) 9%,var(--surface));border:1px solid color-mix(in srgb,var(--warning) 28%,transparent);margin-bottom:6px;line-height:1.45}
+.warn-i.info{background:var(--surface);border-color:var(--border)}
+.lnk{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;padding:5px 0;border-bottom:1px dashed var(--border);cursor:pointer;color:var(--text-dim)}
+.lnk:hover{color:var(--accent)}
+.lnk span:last-child{font-family:var(--mono);color:var(--text-muted)}
+#toast{position:fixed;bottom:22px;left:50%;transform:translate(-50%,90px);background:var(--surface);border:1px solid var(--border-strong);padding:10px 16px;border-radius:999px;font-size:12.5px;z-index:99;transition:transform .3s var(--ease);box-shadow:0 14px 34px rgba(0,0,0,.4)}
+#toast.show{transform:translate(-50%,0)}
+#printbox{display:none}
+.tools .mtog{display:none}
+@media (max-width:1100px){#app{grid-template-columns:1fr}.panel{position:absolute;top:0;bottom:0;width:min(330px,88vw);transform:translateX(-102%);transition:transform .3s var(--ease);box-shadow:0 0 40px rgba(0,0,0,.5)}#right.panel{right:0;transform:translateX(102%)}.panel.open{transform:none}.tools .mtog{display:inline-flex!important}#mini{display:none}nav{flex-wrap:wrap;padding:8px 14px}.nav-links{order:3;width:100%;flex-wrap:nowrap;overflow-x:auto;gap:0}.nav-link{padding:6px 10px;white-space:nowrap}.nav-link svg{display:none}}
+@media (max-width:700px){.tools{top:8px;padding:3px}.tools button{padding:0 7px;min-width:30px;font-size:12px}#b-grid,#b-regen,.tools .sep{display:none}#hint{display:none}.chip{display:none}}
+@media print{body{display:block;overflow:visible;background:#fff}nav,#app,#toast{display:none!important}#printbox{display:block}#printbox svg{width:100%;height:auto}@page{size:A4 landscape;margin:8mm}}
+</style>
+</head>
+<body data-theme="dark">
+<nav>
+  <a href="/" class="brand">
+    <div class="brand-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/>
+        <path d="M8.5 2h7"/><path d="M7 16h10"/>
+      </svg>
+    </div>
+    <div>Config<em>Labs</em></div>
+  </a>
+  <div class="nav-links">
+    <a href="/" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M3 12L12 3l9 9M5 10v10h14V10"/></svg>Home</a>
+    <a href="/builder.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>Builder</a>
+    <a href="/wifi.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>WiFi Planner </a>
+    <a href="/topology.html" class="nav-link active"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/></svg>Topology</a>
+    <a href="/about.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>About</a>
+  </div>
+  <div class="nav-actions">
+    <div class="chip"><span class="dot"></span><span>Planner view</span></div>
+    <button class="icon-btn" onclick="toggleTheme()" title="Theme" id="theme-btn">🌙</button>
+  </div>
+</nav>
+<div id="app">
+  <aside class="panel" id="left">
+    <div class="sec"><a class="btn sm" href="/topology.html" style="width:100%;margin-bottom:10px">← Free diagram editor</a>
+      <h4>Project <small id="pcount"></small></h4>
+      <div id="plist"></div>
+      <div class="note" id="pnote">Projects come from the WiFi Planner saved in this browser.</div>
+    </div>
+    <div class="sec">
+      <h4>Layout</h4>
+      <div class="seg" id="seg-layout"><button data-v="auto" class="on">Auto</button><button data-v="td">Top-down</button><button data-v="lr">Left-right</button></div>
+      <div style="height:10px"></div>
+      <label class="tgl">Internet / ISP<input type="checkbox" id="o-isp" checked><i></i></label>
+      <label class="tgl">Firewall<input type="checkbox" id="o-fw" checked><i></i></label>
+      <label class="tgl">Link labels<input type="checkbox" id="o-lbl" checked><i></i></label>
+      <label class="tgl">Show AP links<input type="checkbox" id="o-apl" checked><i></i></label>
+    </div>
+    <div class="sec">
+      <h4>Access switches <small>PoE budget (W)</small></h4>
+      <div class="row"><div><span class="lbl">24-port PoE+</span><input type="number" id="w-ge24" min="1" step="10"></div><div><span class="lbl">48-port PoE+</span><input type="number" id="w-ge48" min="1" step="10"></div></div>
+      <div style="height:8px"></div>
+      <div class="row"><div><span class="lbl">24-port mGig PoE++</span><input type="number" id="w-mg24" min="1" step="10"></div><div><span class="lbl">Safety buffer %</span><input type="number" id="o-buf" min="0" max="200" step="5"></div></div>
+      <div style="height:8px"></div>
+      <span class="lbl">Uplinks to core</span>
+      <select id="o-upl"><option value="auto">Auto (10G, LACP for multi-gig APs)</option><option value="lag">2 x 10G LACP on every switch</option><option value="one">1 x 10G on every switch</option></select>
+      <div class="note">Typical values, same idea as the Planner's Power &amp; PoE tool. Edit them to the switch you plan to use. Specific models are not hard-coded in this version.</div>
+    </div>
+    <div class="sec">
+      <h4>Floors <small id="fcount"></small></h4>
+      <div id="flist"></div>
+      <div class="row" style="margin-top:8px"><button class="btn sm" id="b-colall">Collapse all</button><button class="btn sm" id="b-expall">Expand all</button></div>
+    </div>
+    <div class="sec">
+      <h4>Legend</h4>
+      <div class="lg">
+        <div><i style="border-color:var(--text-dim)"></i>1G copper</div>
+        <div><i style="border-color:var(--accent-2)"></i>2.5G / 5G</div>
+        <div><i class="d" style="border-color:var(--accent)"></i>10G fiber / DAC</div>
+        <div><i style="border-color:var(--accent-3)"></i>10G copper</div>
+        <div><s style="border-color:var(--accent-2)"></s>ISP</div>
+        <div><s style="border-color:var(--danger)"></s>Firewall</div>
+        <div><s style="border-color:var(--accent-3)"></s>Core</div>
+        <div><s style="border-color:var(--accent)"></s>Access / AP</div>
+      </div>
+    </div>
+  </aside>
+
+  <main id="stage">
+    <svg id="cv" xmlns="http://www.w3.org/2000/svg"><g id="vp"></g></svg>
+    <div class="tools">
+      <button class="mtog" id="b-lt" title="Projects and settings">☰</button>
+      <button id="b-zo" title="Zoom out (-)">−</button><span class="zl" id="zl">100%</span><button id="b-zi" title="Zoom in (+)">+</button>
+      <button id="b-fit" title="Fit to screen (F)">⤢ Fit</button>
+      <div class="sep"></div>
+      <button id="b-grid" class="on" title="Toggle grid (G)">▦ Grid</button>
+      <button id="b-edit" title="Open this topology in the free diagram editor so you can change anything">✎ Edit as diagram</button>
+      <button id="b-regen" title="Rebuild from the Planner project">↻ Rebuild</button>
+      <div class="sep"></div>
+      <div class="menu" id="exp"><button id="b-exp">⬇ Export</button>
+        <div class="dd">
+          <button data-x="png">PNG image<small>2x resolution, with title and legend</small></button>
+          <button data-x="svg">SVG vector<small>Editable in Visio, Illustrator, Inkscape</small></button>
+          <button data-x="print">Print / save as PDF<small>A4 landscape</small></button>
+          <button data-x="csv">Devices and links (.csv)<small>Port map as a spreadsheet</small></button>
+        </div>
+      </div>
+      <button class="mtog" id="b-rt" title="Details">ⓘ</button>
+    </div>
+    <div id="hint">Drag to pan · scroll to zoom · click a device or link</div>
+    <div id="mini"><svg id="msv" xmlns="http://www.w3.org/2000/svg"></svg></div>
+    <div id="empty"><div class="box"><h2>Network <em>Topology</em></h2><p id="empty-t">Pick a WiFi Planner project on the left and the topology is built for you: ISP, firewall, core, access switches per floor and every AP.</p><a class="btn pri" href="/wifi.html">Open the WiFi Planner</a></div></div>
+    <div id="tip"></div>
+  </main>
+
+  <aside class="panel" id="right"><div id="insp"></div></aside>
+</div>
+<div id="printbox"></div>
+<div id="toast"></div>
+
+<script src="/ap-catalog.js"></script>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const fmtW = v => (Math.round(v * 10) / 10).toString();
+const num = (v, d) => { v = parseFloat(v); return isNaN(v) ? d : v; };
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2600); }
+
+/* ============================================================
+   STORAGE: projects live in the WiFi Planner's IndexedDB
+   ============================================================ */
+function idbOpen() {
+  return new Promise((res, rej) => {
+    const rq = indexedDB.open('configlabs-wifi', 1);
+    rq.onupgradeneeded = () => { const db = rq.result; if (!db.objectStoreNames.contains('projects')) db.createObjectStore('projects', { keyPath: 'id' }); if (!db.objectStoreNames.contains('plans')) db.createObjectStore('plans'); };
+    rq.onsuccess = () => res(rq.result);
+    rq.onerror = () => rej(rq.error);
+  });
+}
+async function loadProjects() {
+  try {
+    const db = await idbOpen();
+    return await new Promise((res, rej) => { const rq = db.transaction('projects', 'readonly').objectStore('projects').getAll(); rq.onsuccess = () => res(rq.result || []); rq.onerror = () => rej(rq.error); });
+  } catch (e) { return null; }
+}
+function lsGet(k, d) { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } }
+function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+const stKey = id => 'cl_topo_' + id;
+
+/* ============================================================
+   AP CATALOG (names, watts, PoE class, uplink)
+   ============================================================ */
+function apModel(vid, mid, proj) {
+  const V = (window.CL_AP || {})[vid], cat = proj && proj.apcat;
+  let m = V && V.models.find(x => x.id === mid);
+  if (m) {
+    m = Object.assign({}, m);
+    const o = cat && cat.ovr && cat.ovr[vid + '|' + mid];
+    if (o) { if (o.w != null) m.w = o.w || undefined; if (o.poe != null) m.poe = o.poe || undefined; }
+    return m;
+  }
+  if (cat && Array.isArray(cat.custom)) { const c = cat.custom.find(x => x.id === mid); if (c) return { id: c.id, name: c.name, wifi: c.wifi, w: c.w || undefined, poe: c.poe || undefined, up: '', custom: true }; }
+  return null;
+}
+// PoE class an AP needs from its max draw (same rule as the Planner's Power & PoE tool)
+function pwrClass(w) { return !w ? '' : w <= 12.95 ? 'af' : w <= 25.5 ? 'at' : w <= 51 ? 'bt3' : 'bt4'; }
+const CLS_TXT = { af: '802.3af', at: '802.3at (PoE+)', bt3: '802.3bt (60 W)', bt4: '802.3bt (90 W)', '': 'unknown' };
+// speed of the main (PoE-in) port, from strings like "2.5GE (PoE+ in) + GE (PoE out)"
+function upSpeed(up) {
+  if (!up) return 1;
+  const m = /(\d+(?:\.\d+)?)\s*GE/i.exec(String(up).split('+')[0]);
+  return m ? parseFloat(m[1]) : 1;
+}
+function apInfo(a, proj) {
+  const m = apModel(a.vendor, a.model, proj);
+  if (!m) return { name: a.model || 'Unknown AP', wifi: 0, w: 0, cls: '', speed: 1, up: '', nodata: true, vendor: a.vendor || '', unknown: true };
+  const w = m.w || 0;
+  return { name: m.name, wifi: m.wifi || 0, w, cls: pwrClass(w), speed: upSpeed(m.up), up: m.up || '', poe: m.poe || '', nodata: !w, vendor: a.vendor || '', est: !!m.est };
+}
+
+/* ============================================================
+   ACCESS SWITCH CLASSES (typical values, editable)
+   ============================================================ */
+const SWC = {
+  ge24: { label: 'Access PoE+ 24-port', short: '24-port PoE+', ports: 24, dl: 1, pfx: 'GE', poe: 'af / at', up: 4 },
+  ge48: { label: 'Access PoE+ 48-port', short: '48-port PoE+', ports: 48, dl: 1, pfx: 'GE', poe: 'af / at', up: 4 },
+  mg24: { label: 'Access mGig PoE++ 24-port', short: '24-port mGig PoE++', ports: 24, dl: 10, pfx: 'MGE', poe: 'af / at / bt', up: 4 }
+};
+const CORE_PORTS = 48;
+
+function defCfg(proj) {
+  const pc = proj && proj.pwrCfg, s = pc && pc.sw;
+  return { ge24: num(s && s[0] && s[0].w, 370), ge48: num(s && s[1] && s[1].w, 740), mg24: 740, buf: num(pc && pc.buf, 20), isp: true, fw: true, upl: 'auto', layout: 'auto', lbl: true, apl: true };
+}
+
+/* ============================================================
+   GENERATE: Planner project -> topology model
+   ============================================================ */
+function floorCode(name, i, used) {
+  let c = '', m = /(-?\d+)/.exec(name || '');
+  if (m) c = 'F' + m[1].replace('-', 'B'); else c = (String(name || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase()) || ('F' + (i + 1));
+  let u = c, k = 2; while (used.has(u)) u = c + '-' + (k++);
+  used.add(u); return u;
+}
+function splitEven(list, u) {
+  const out = [], base = Math.floor(list.length / u), rem = list.length % u; let p = 0;
+  for (let i = 0; i < u; i++) { const n = base + (i < rem ? 1 : 0); out.push(list.slice(p, p + n)); p += n; }
+  return out.filter(x => x.length);
+}
+function generate(proj, cfg, st) {
+  const T = { devices: [], links: [], floors: [], warn: [], byId: {}, lr: cfg.layout === 'lr' };
+  const buf = cfg.buf / 100, W = { ge24: cfg.ge24, ge48: cfg.ge48, mg24: cfg.mg24 };
+  const names = (st && st.names) || {};
+  const add = d => { d.name = names[d.id] || d.name; T.devices.push(d); T.byId[d.id] = d; return d; };
+  let lid = 0;
+  const link = o => { o.id = 'l' + (++lid); T.links.push(o); return o; };
+  const wsum = l => l.reduce((s, x) => s + x.info.w, 0);
+
+  const used = new Set(), perFloor = [];
+  (proj.floors || []).forEach((f, fi) => {
+    const aps = ((f.data && f.data.aps) || []).map((a, k) => ({ a, k, info: apInfo(a, proj) }));
+    const fl = { id: f.id, name: f.name || ('Floor ' + (fi + 1)), code: floorCode(f.name, fi, used), nAp: aps.length, swIds: [], w: 0 };
+    T.floors.push(fl); perFloor.push({ f, fl, aps });
+  });
+
+  const core = add({ id: 'core', type: 'core', name: 'CORE-01', model: 'Core / distribution L3 switch', portsTotal: CORE_PORTS, portsUsed: 0 });
+  let corePort = 0;
+  const nextCore = () => 'XGE1/0/' + (++corePort);
+
+  let nodata = 0, mgAps = 0, nUnk = 0;
+  perFloor.forEach(({ f, fl, aps }) => {
+    if (!aps.length) return;
+    const ppm = (f.data && f.data.ppm) || 1;
+    aps.sort((p, q) => (Math.round(p.a.x / ppm / 10) - Math.round(q.a.x / ppm / 10)) || (p.a.y - q.a.y));
+    const groups = { ge: [], mg: [] };
+    aps.forEach(x => { (x.info.speed > 1 || x.info.cls === 'bt3' || x.info.cls === 'bt4' ? groups.mg : groups.ge).push(x); if (x.info.nodata) nodata++; if (x.info.unknown) nUnk++; });
+    mgAps += groups.mg.length;
+    let seq = 0;
+    ['ge', 'mg'].forEach(g => {
+      const list = groups[g]; if (!list.length) return;
+      const opts = g === 'ge' ? ['ge24', 'ge48'] : ['mg24'], ws = wsum(list);
+      let best = null;
+      opts.forEach(k => { const c = SWC[k], u = Math.max(Math.ceil(list.length / c.ports), Math.ceil(ws * (1 + buf) / W[k])); if (!best || u < best.u || (u === best.u && c.ports < SWC[best.k].ports)) best = { k, u }; });
+      const c = SWC[best.k];
+      let parts = null;
+      for (let u = best.u; u <= list.length; u++) { const p = splitEven(list, u); if (p.every(q => q.length <= c.ports && wsum(q) * (1 + buf) <= W[best.k])) { parts = p; break; } }
+      if (!parts) { parts = splitEven(list, list.length); T.warn.push({ t: 'warn', m: `${fl.name}: an AP needs more PoE power than one ${c.short} switch budget (${fmtW(W[best.k])} W). Raise the budget or choose a bigger switch.` }); }
+      parts.forEach(part => {
+        seq++;
+        const sid = `sw:${f.id}:${seq}`, pw = wsum(part), nFast = part.filter(x => x.info.speed >= 5).length;
+        const lag = cfg.upl === 'lag' ? 2 : cfg.upl === 'one' ? 1 : (nFast >= 3 ? 2 : 1);
+        const sw = add({ id: sid, type: 'access', cls: best.k, name: `SW-${fl.code}-${g === 'mg' ? 'MG' : ''}${String(seq).padStart(2, '0')}`, model: c.label, floor: f.id, floorName: fl.name, ports: c.ports, portsUsed: part.length, poeBudget: W[best.k], poeUsed: pw, poeBuf: pw * (1 + buf), apIds: [], lag, upN: c.up });
+        fl.swIds.push(sid); fl.w += pw;
+        const lk = link({ a: 'core', b: sid, kind: 'uplink', speed: 10, lag, media: lag > 1 ? '2 x 10G LACP (fiber / DAC)' : '10G fiber / DAC', aPort: Array.from({ length: lag }, nextCore).join(' + '), bPort: Array.from({ length: lag }, (_, i) => 'XGE1/0/' + (c.ports + 1 + i)).join(' + ') });
+        core.portsUsed += lag;
+        part.forEach((x, i) => {
+          const did = `ap:${f.id}:${x.a.id || x.k}`, sp = Math.min(x.info.speed, c.dl);
+          const ap = add({ id: did, type: 'ap', name: x.a.name || (x.info.name + '-' + (x.k + 1)), model: x.info.name, floor: f.id, floorName: fl.name, info: x.info, sw: sid, loc: (f.data && f.data.scaleSet) ? { x: x.a.x / ppm, y: x.a.y / ppm } : null, ap: x.a });
+          sw.apIds.push(did);
+          link({ a: sid, b: did, kind: 'ap', speed: sp, lag: 1, media: sp > 1 ? 'Cat6A' : 'Cat6', aPort: c.pfx + '1/0/' + (i + 1), bPort: x.info.up ? x.info.up.split('(')[0].split('+')[0].trim() || 'Uplink' : 'Uplink', poe: x.info.w, poeCls: x.info.cls });
+        });
+      });
+    });
+  });
+
+  // upstream
+  let fw = null, isp = null;
+  if (cfg.fw) { fw = add({ id: 'fw', type: 'fw', name: 'FW-01', model: 'Next-generation firewall' }); link({ a: 'fw', b: 'core', kind: 'infra', speed: 10, lag: 1, media: '10G fiber / DAC', aPort: 'XGE0/1 (LAN)', bPort: nextCore() }); core.portsUsed++; }
+  if (cfg.isp) { isp = add({ id: 'isp', type: 'isp', name: 'Internet / ISP', model: 'WAN uplink' }); link({ a: 'isp', b: fw ? 'fw' : 'core', kind: 'infra', speed: 1, lag: 1, media: '1G Ethernet', aPort: 'Handoff', bPort: fw ? 'GE0/0 (WAN)' : nextCore() }); if (!fw) core.portsUsed++; }
+  T.fw = fw; T.isp = isp; T.core = core;
+
+  // notes
+  const nAp = T.devices.filter(d => d.type === 'ap').length;
+  T.nAp = nAp;
+  if (nodata) T.warn.push({ t: 'warn', m: `${nodata} AP ${nodata > 1 ? 'have' : 'has'} no watt data in the catalog, so ${nodata > 1 ? 'they are' : 'it is'} not counted in the PoE budget.${nUnk ? ' ' + nUnk + ' of them use a model the catalog does not know.' : ''}` });
+  if (mgAps) T.warn.push({ t: 'info', m: `${mgAps} AP need multi-gig or PoE++ ports and were grouped on mGig switches.` });
+  if (core.portsUsed > CORE_PORTS - 4) T.warn.push({ t: 'warn', m: `The core uses ${core.portsUsed} of ${CORE_PORTS} ports. Plan a second core or a distribution layer.` });
+  const empty = T.floors.filter(f => !f.nAp);
+  if (empty.length) T.warn.push({ t: 'info', m: `${empty.length} floor${empty.length > 1 ? 's have' : ' has'} no APs and ${empty.length > 1 ? 'are' : 'is'} not drawn (${empty.map(f => f.name).join(', ')}).` });
+  if (nAp && T.devices.some(d => d.type === 'ap' && d.info.vendor && d.info.vendor !== 'h3c')) T.warn.push({ t: 'info', m: 'Some APs are not H3C. Their PoE data may be missing; check them in the AP catalog.' });
+
+  // summary
+  const sum = { nAp, nSw: T.devices.filter(d => d.type === 'access').length, w: 0, wb: 0, models: {}, cls: {} };
+  T.devices.forEach(d => {
+    if (d.type === 'ap') { const k = d.model; (sum.models[k] = sum.models[k] || { n: 0, w: d.info.w, wifi: d.info.wifi }).n++; sum.w += d.info.w; }
+    if (d.type === 'access') { sum.cls[d.cls] = (sum.cls[d.cls] || 0) + 1; }
+  });
+  sum.wb = sum.w * (1 + buf);
+  T.sum = sum;
+  return T;
+}
+
+/* ============================================================
+   STATE + LAYOUT
+   ============================================================ */
+const S = { projects: [], proj: null, st: { names: {}, collapsed: {}, cfg: {} }, cfg: defCfg(null), T: null, C: null, sel: null, view: { x: 0, y: 0, k: 1 }, bounds: { x: 0, y: 0, w: 1, h: 1 }, boxes: [] };
+const SWW = 300, INW = 300, APW = 124, APH = 48, GX = 10, GY = 10, PAD = 26, HD = 46, CG = 38, FG = 64;
+const HT = { isp: 74, fw: 74, core: 104, access: 116, ap: APH };
+const NH = d => HT[d.type];
+const NW = d => d.type === 'ap' ? APW : (d.type === 'access' ? SWW : INW);
+
+function colors() {
+  const cs = getComputedStyle(document.body), g = n => cs.getPropertyValue(n).trim();
+  return { bg: g('--bg'), surface: g('--surface'), surface2: g('--surface-2'), border: g('--border'), border2: g('--border-strong'), text: g('--text'), dim: g('--text-dim'), muted: g('--text-muted'), accent: g('--accent'), accent2: g('--accent-2'), accent3: g('--accent-3'), danger: g('--danger'), warn: g('--warning') };
+}
+const typeCol = (d, C) => d.type === 'isp' ? C.accent2 : d.type === 'fw' ? C.danger : d.type === 'core' ? C.accent3 : d.type === 'access' ? (d.cls === 'mg24' ? C.accent2 : C.accent) : (d.info.wifi >= 7 ? C.accent : d.info.wifi === 6 ? C.accent2 : C.dim);
+const speedCol = (l, C) => l.speed >= 10 ? (l.kind === 'ap' ? C.accent3 : C.accent) : l.speed > 1 ? C.accent2 : C.dim;
+
+function measure(sw, lr) {
+  const n = S.st.collapsed[sw.floor] ? 0 : sw.apIds.length;
+  let cols = clamp(Math.round(Math.sqrt(n * 1.9)), 1, 10);
+  if (lr) cols = n <= 3 ? n : n <= 16 ? 3 : n <= 40 ? 5 : 7;
+  cols = Math.max(cols, n ? 1 : 0);
+  const rows = n ? Math.ceil(n / cols) : 0;
+  const gw = n ? cols * APW + (cols - 1) * GX : 0, gh = n ? rows * APH + (rows - 1) * GY : 0;
+  if (!lr) return { n, cols, gw, gh, w: Math.max(SWW, gw), h: HT.access + (n ? 50 + gh : 36) };
+  return { n, cols, gw, gh, w: SWW + (n ? 70 + gw : 80), h: Math.max(HT.access, gh) };
+}
+function placeGrid(sw, m, gx, gy) {
+  sw.apIds.forEach((id, i) => { const d = S.T.byId[id]; if (S.st.collapsed[sw.floor]) { d.hidden = true; return; } d.hidden = false; d.x = gx + (i % m.cols) * (APW + GX); d.y = gy + Math.floor(i / m.cols) * (APH + GY); });
+}
+function layoutAll() {
+  const T = S.T, lr = T.lr, by = T.byId;
+  T.devices.forEach(d => { d.w = NW(d); d.h = NH(d); });
+  const fls = T.floors.filter(f => f.swIds.length);
+  fls.forEach(f => { f.cl = f.swIds.map(id => measure(by[id], lr)); });
+  const boxes = []; let maxX = 0, maxY = 0;
+  const infra = ['isp', 'fw', 'core'].map(k => by[k]).filter(Boolean);
+  if (!lr) {
+    let fx = 0, maxH = 0;
+    fls.forEach(f => {
+      const col = S.st.collapsed[f.id];
+      const cw = f.cl.reduce((s, c) => s + c.w, 0) + (f.cl.length - 1) * CG, ch = Math.max.apply(null, f.cl.map(c => c.h));
+      f.box = { x: fx, w: cw + 2 * PAD, h: HD + PAD + ch + PAD, y: 0 };
+      let cx = fx + PAD;
+      f.swIds.forEach((id, i) => { const sw = by[id], m = f.cl[i]; sw.x = cx + (m.w - SWW) / 2; sw.y = 0; sw._m = m; sw._cx = cx; cx += m.w + CG; });
+      fx += f.box.w + FG; maxH = Math.max(maxH, f.box.h);
+    });
+    const totalW = Math.max(fx - FG, INW);
+    
+    let y = 0; infra.forEach(d => { d.x = totalW / 2 - d.w / 2; d.y = y; y += d.h + 64; });
+    const fy = y + 40;
+    fls.forEach(f => { f.box.y = fy; f.swIds.forEach((id, i) => { const sw = by[id], m = f.cl[i]; sw.y = fy + HD; placeGrid(sw, m, sw._cx + (m.w - m.gw) / 2, sw.y + HT.access + 50); }); });
+    maxX = totalW; maxY = fy + maxH;
+  } else {
+    const cp = INW + 120, x0 = infra.length * cp + 10;
+    let y = 0;
+    fls.forEach(f => {
+      const cw = Math.max.apply(null, f.cl.map(c => c.w)), chs = f.cl.reduce((s, c) => s + c.h, 0) + (f.cl.length - 1) * CG;
+      f.box = { x: x0, y, w: cw + 2 * PAD, h: HD + PAD + chs + PAD };
+      let cy = y + HD + 4;
+      f.swIds.forEach((id, i) => { const sw = by[id], m = f.cl[i]; sw.x = x0 + PAD; sw.y = cy + (m.h - HT.access) / 2; placeGrid(sw, m, sw.x + SWW + 70, cy + (m.h - m.gh) / 2); cy += m.h + CG; });
+      y += f.box.h + 44; maxX = Math.max(maxX, x0 + f.box.w);
+    });
+    const totalH = Math.max(y - 44, 200);
+    infra.forEach((d, i) => { d.x = i * cp; d.y = totalH / 2 - d.h / 2; });
+    maxY = totalH;
+  }
+  T.boxes = fls;
+  S.bounds = { x: 0, y: 0, w: maxX, h: maxY };
+}
+
+/* ============================================================
+   DRAWING
+   ============================================================ */
+const F_SANS = "Geist,'Segoe UI',Arial,sans-serif", F_MONO = "'JetBrains Mono',Consolas,'Courier New',monospace";
+const tx = (s, n) => { s = String(s == null ? '' : s); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+const ICON = {
+  isp: 'M7 18a4 4 0 1 1 .8-7.9A5.5 5.5 0 0 1 18 11.5 3.3 3.3 0 0 1 17.5 18z',
+  fw: 'M12 3l7 3v5.5c0 4.4-3 7.7-7 9.5-4-1.8-7-5.1-7-9.5V6z M9 12l2 2 4-4',
+  core: 'M4 6h16v4H4z M4 14h16v4H4z M7 8h.01 M7 16h.01 M10 8h.01 M10 16h.01',
+  access: 'M3 8h18v8H3z M6 12h.01 M9 12h.01 M12 12h.01 M15 12h.01 M18 12h.01',
+  ap: 'M3 9a14 14 0 0 1 18 0 M6 12.5a9.5 9.5 0 0 1 12 0 M9 16a5 5 0 0 1 6 0 M12 19.5h.01'
+};
+function icon(t, x, y, col, s) { return `<path d="${ICON[t]}" transform="translate(${x},${y}) scale(${s || 0.85})" fill="none" stroke="${col}" stroke-width="${2 / (s || 0.85)}" stroke-linecap="round" stroke-linejoin="round"/>`; }
+
+function faceplate(d, C, col, x0, y0) {
+  let out = '';
+  if (d.type === 'core') {
+    const per = 24;
+    for (let p = 1; p <= CORE_PORTS; p++) {
+      const r = (p - 1) >= per ? 1 : 0, c = (p - 1) % per, on = p <= d.portsUsed;
+      out += `<rect x="${x0 + c * 11}" y="${y0 + r * 11}" width="8" height="8" rx="2" fill="${on ? col : 'none'}" stroke="${on ? col : C.border2}" stroke-width="1" opacity="${on ? 1 : .8}"/>`;
+    }
+    return out;
+  }
+  const n = d.ports, per = n / 2;
+  for (let p = 1; p <= n; p++) {
+    const r = p % 2 ? 0 : 1, c = Math.floor((p - 1) / 2), on = p <= d.portsUsed;
+    out += `<rect x="${x0 + c * 10}" y="${y0 + r * 11}" width="8" height="8" rx="2" fill="${on ? col : 'none'}" stroke="${on ? col : C.border2}" stroke-width="1" opacity="${on ? 1 : .8}"/>`;
+  }
+  const sx = x0 + per * 10 + 14;
+  for (let u = 0; u < d.upN; u++) {
+    const on = u < d.lag;
+    out += `<rect x="${sx + (u % 2) * 13}" y="${y0 + Math.floor(u / 2) * 11}" width="10" height="8" rx="2" fill="${on ? C.accent3 : 'none'}" stroke="${on ? C.accent3 : C.border2}" stroke-width="1"/>`;
+  }
+  out += `<text x="${sx + 29}" y="${y0 + 14}" font-size="8.5" fill="${C.muted}" font-family="${F_MONO}">SFP+</text>`;
+  return out;
+}
+function poeBar(d, C, x, y, w) {
+  const pct = d.poeBudget ? d.poeBuf / d.poeBudget : 0, col = pct < .7 ? C.accent : pct < .9 ? C.warn : C.danger;
+  return `<rect x="${x}" y="${y}" width="${w}" height="6" rx="3" fill="${C.border}"/><rect x="${x}" y="${y}" width="${Math.max(3, Math.min(1, pct) * w)}" height="6" rx="3" fill="${col}"/>` +
+    `<text x="${x}" y="${y + 19}" font-size="9.5" fill="${C.dim}" font-family="${F_MONO}">PoE ${fmtW(d.poeUsed)} / ${fmtW(d.poeBudget)} W · ${Math.round(pct * 100)}% with buffer</text>`;
+}
+function drawDev(d, C, o) {
+  if (d.hidden) return '';
+  const col = typeCol(d, C), sel = o.sel === d.id, dim = o.dim && !o.rel.has(d.id);
+  let s = `<g class="dv" data-d="${esc(d.id)}" transform="translate(${d.x},${d.y})" opacity="${dim ? .3 : 1}" style="cursor:pointer">`;
+  s += `<rect width="${d.w}" height="${d.h}" rx="11" fill="${C.surface}" stroke="${sel ? col : C.border2}" stroke-width="${sel ? 2 : 1}"/>`;
+  if (sel) s += `<rect x="-4" y="-4" width="${d.w + 8}" height="${d.h + 8}" rx="14" fill="none" stroke="${col}" stroke-width="1" opacity=".4"/>`;
+  if (d.type === 'ap') {
+    s += `<rect x="0" y="0" width="5" height="${d.h}" rx="2.5" fill="${col}"/>`;
+    s += icon('ap', 12, 7, col, .6);
+    s += `<text x="34" y="19" font-size="11.5" font-weight="600" fill="${C.text}" font-family="${F_SANS}">${esc(tx(d.name, 12))}</text>`;
+    s += `<text x="14" y="33" font-size="9.5" fill="${C.dim}" font-family="${F_MONO}">${esc(tx(d.model, 17))}</text>`;
+    s += `<text x="14" y="44" font-size="9" fill="${C.muted}" font-family="${F_MONO}">${d.info.w ? fmtW(d.info.w) + ' W' : 'no PoE data'} · ${d.info.speed}G${d.info.wifi ? ' · W' + d.info.wifi : ''}</text>`;
+    return s + '</g>';
+  }
+  s += `<rect x="0" y="0" width="${d.w}" height="4" rx="2" fill="${col}" opacity=".9"/>`;
+  s += icon(d.type, 14, 15, col, .95);
+  s += `<text x="44" y="29" font-size="13.5" font-weight="600" fill="${C.text}" font-family="${F_SANS}">${esc(tx(d.name, 26))}</text>`;
+  s += `<text x="44" y="43" font-size="10" fill="${C.dim}" font-family="${F_MONO}">${esc(tx(d.model, 40))}</text>`;
+  if (d.type === 'access') {
+    s += faceplate(d, C, col, 14, 56);
+    s += poeBar(d, C, 14, 83, d.w - 28);
+    s += `<text x="${d.w - 14}" y="102" text-anchor="end" font-size="9.5" fill="${C.muted}" font-family="${F_MONO}">${d.portsUsed}/${d.ports} ports</text>`;
+  } else if (d.type === 'core') {
+    s += faceplate(d, C, col, 14, 56);
+    s += `<text x="14" y="95" font-size="9.5" fill="${C.dim}" font-family="${F_MONO}">${d.portsUsed} of ${d.portsTotal} SFP+ ports used</text>`;
+  } else {
+    s += `<text x="44" y="60" font-size="9.5" fill="${C.muted}" font-family="${F_MONO}">${d.type === 'isp' ? 'WAN · 1G handoff' : 'WAN 1G · LAN 10G'}</text>`;
+  }
+  return s + '</g>';
+}
+function linkGeom(l) {
+  const a = S.T.byId[l.a], b = S.T.byId[l.b];
+  if (S.T.lr) { const x1 = a.x + a.w, y1 = a.y + a.h / 2, x2 = b.x, y2 = b.y + b.h / 2, dx = Math.max(30, (x2 - x1) * .5); return { d: `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`, mx: (x1 + x2) / 2, my: (y1 + y2) / 2 }; }
+  const x1 = a.x + a.w / 2, y1 = a.y + a.h, x2 = b.x + b.w / 2, y2 = b.y, dy = Math.max(30, (y2 - y1) * .55);
+  return { d: `M${x1},${y1} C${x1},${y1 + dy} ${x2},${y2 - dy} ${x2},${y2}`, mx: (x1 + x2) / 2, my: (y1 + y2) / 2 };
+}
+function linkLabel(l) { return (l.lag > 1 ? '2×' : '') + (l.speed >= 1 ? l.speed + 'G' : '') + (l.lag > 1 ? ' LACP' : ''); }
+function drawLink(l, C, o) {
+  const b = S.T.byId[l.b], a = S.T.byId[l.a];
+  if (b.hidden || a.hidden) return '';
+  if (l.kind === 'ap' && !o.apl && o.sel !== l.id) return '';
+  const col = speedCol(l, C), sel = o.sel === l.id, dim = o.dim && !o.relL.has(l.id);
+  const g = linkGeom(l), w = l.kind === 'ap' ? 1.4 : 2.6 + (l.lag > 1 ? 1.6 : 0);
+  let s = `<g class="lk" data-l="${l.id}" opacity="${dim ? .18 : 1}" style="cursor:pointer">`;
+  s += `<path d="${g.d}" fill="none" stroke="transparent" stroke-width="12"/>`;
+  s += `<path d="${g.d}" fill="none" stroke="${col}" stroke-width="${sel ? w + 1.5 : w}" stroke-linecap="round" ${l.kind === 'uplink' || (l.kind === 'infra' && l.speed >= 10) ? 'stroke-dasharray="7 5"' : ''} opacity="${l.kind === 'ap' && !o.dim && !o.plain ? .5 : 1}"/>`;
+  if (l.lag > 1) s += `<path d="${g.d}" fill="none" stroke="${C.bg}" stroke-width="1.4" ${'stroke-dasharray="7 5"'}/>`;
+  if ((l.kind !== 'ap' && o.lbl) || sel) {
+    const t = linkLabel(l), w2 = t.length * 6.4 + 14;
+    s += `<rect x="${g.mx - w2 / 2}" y="${g.my - 9}" width="${w2}" height="18" rx="9" fill="${C.surface}" stroke="${col}" stroke-width="1"/><text x="${g.mx}" y="${g.my + 3.6}" text-anchor="middle" font-size="10" font-weight="600" fill="${col}" font-family="${F_MONO}">${t}</text>`;
+  }
+  return s + '</g>';
+}
+function drawBox(f, C, o) {
+  const b = f.box, col = S.st.collapsed[f.id];
+  const nsw = f.swIds.length;
+  let s = `<g class="fb" data-f="${esc(f.id)}"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="18" fill="${C.surface2}" opacity=".5" stroke="${C.border2}" stroke-dasharray="6 5"/>`;
+  s += `<text x="${b.x + 22}" y="${b.y + 29}" font-size="15" font-weight="600" fill="${C.text}" font-family="${F_SANS}">${esc(tx(f.name, 30))}</text>`;
+  s += `<text x="${b.x + 22 + Math.min(f.name.length, 30) * 8.6 + 12}" y="${b.y + 29}" font-size="11" fill="${C.muted}" font-family="${F_MONO}">${f.nAp} AP · ${nsw} switch${nsw > 1 ? 'es' : ''} · ${fmtW(f.w)} W</text>`;
+  if (!o.plain) s += `<g class="fc" data-f="${esc(f.id)}" style="cursor:pointer"><circle cx="${b.x + b.w - 26}" cy="${b.y + 25}" r="12" fill="${C.surface}" stroke="${C.border2}"/><path d="${col ? 'M-3,-4 L3,0 L-3,4' : 'M-4,-2 L0,3 L4,-2'}" transform="translate(${b.x + b.w - 26},${b.y + 25})" fill="none" stroke="${C.dim}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>`;
+  s += '</g>';
+  if (col) f.swIds.forEach(id => { const sw = S.T.byId[id]; s += `<g class="fc" data-f="${esc(f.id)}" style="cursor:pointer"><rect x="${sw.x + sw.w / 2 - 54}" y="${sw.y + sw.h + 10}" width="108" height="22" rx="11" fill="${C.surface}" stroke="${C.border2}"/><text x="${sw.x + sw.w / 2}" y="${sw.y + sw.h + 25}" text-anchor="middle" font-size="10.5" fill="${C.dim}" font-family="${F_MONO}">▸ ${sw.apIds.length} APs</text></g>`; });
+  return s;
+}
+function relatedSet() {
+  const T = S.T, rel = new Set(), relL = new Set(), sel = S.sel;
+  if (!sel) return { rel, relL, dim: false };
+  if (sel.k === 'l') { const l = T.links.find(x => x.id === sel.id); if (l) { rel.add(l.a); rel.add(l.b); relL.add(l.id); } }
+  else {
+    rel.add(sel.id); let cur = sel.id;
+    for (let g = 0; g < 6; g++) { const up = T.links.find(x => x.b === cur); if (!up) break; relL.add(up.id); rel.add(up.a); cur = up.a; }
+    T.links.forEach(l => { if (l.a === sel.id) { relL.add(l.id); rel.add(l.b); } });
+  }
+  return { rel, relL, dim: true };
+}
+function contentSVG(plain) {
+  const C = S.C, T = S.T, R = plain ? { rel: new Set(), relL: new Set(), dim: false } : relatedSet();
+  const o = { sel: !plain && S.sel ? S.sel.id : null, dim: R.dim, rel: R.rel, relL: R.relL, lbl: S.cfg.lbl, apl: S.cfg.apl, plain };
+  let s = T.boxes.map(f => drawBox(f, C, o)).join('');
+  s += T.links.map(l => drawLink(l, C, o)).join('');
+  s += T.devices.map(d => drawDev(d, C, o)).join('');
+  return s;
+}
+function draw() {
+  if (!S.T) return;
+  S.C = colors();
+  $('vp').innerHTML = contentSVG(false);
+  applyView(); drawMini();
+}
+
+/* ============================================================
+   VIEW (pan / zoom / fit) + MINIMAP
+   ============================================================ */
+function applyView() {
+  const v = S.view; $('vp').setAttribute('transform', `translate(${v.x},${v.y}) scale(${v.k})`);
+  $('zl').textContent = Math.round(v.k * 100) + '%'; updateMiniView();
+}
+function fitCalc() {
+  const st = $('stage'), W = st.clientWidth || 900, H = st.clientHeight || 600, b = S.bounds;
+  const padT = 80, pad = 50, k = clamp(Math.min((W - pad * 2) / Math.max(b.w, 1), (H - padT - pad) / Math.max(b.h, 1)), 0.08, 1.15);
+  return { k, x: (W - b.w * k) / 2, y: padT + (H - padT - pad - b.h * k) / 2 };
+}
+function fit() { if (!S.bounds.w || !S.bounds.h) return; S.view = fitCalc(); applyView(); }
+function zoomAt(f, cx, cy) {
+  const v = S.view, nk = clamp(v.k * f, 0.08, 3), r = nk / v.k;
+  v.x = cx - (cx - v.x) * r; v.y = cy - (cy - v.y) * r; v.k = nk; applyView();
+}
+function centerOn(wx, wy) { const st = $('stage'); S.view.x = st.clientWidth / 2 - wx * S.view.k; S.view.y = st.clientHeight / 2 - wy * S.view.k; applyView(); }
+const MM = { w: 210, h: 140, pad: 8 };
+function mmScale() { const b = S.bounds, s = Math.min((MM.w - MM.pad * 2) / Math.max(b.w, 1), (MM.h - MM.pad * 2) / Math.max(b.h, 1)); return { s, ox: (MM.w - b.w * s) / 2, oy: (MM.h - b.h * s) / 2 }; }
+function drawMini() {
+  const C = S.C, T = S.T, m = mmScale(); if (!T) return;
+  let s = T.boxes.map(f => `<rect x="${m.ox + f.box.x * m.s}" y="${m.oy + f.box.y * m.s}" width="${f.box.w * m.s}" height="${f.box.h * m.s}" rx="3" fill="${C.surface2}" stroke="${C.border2}" stroke-width=".6"/>`).join('');
+  s += T.devices.filter(d => !d.hidden).map(d => `<rect x="${m.ox + d.x * m.s}" y="${m.oy + d.y * m.s}" width="${Math.max(1.5, d.w * m.s)}" height="${Math.max(1.5, d.h * m.s)}" rx="1" fill="${typeCol(d, C)}" opacity="${d.type === 'ap' ? .8 : 1}"/>`).join('');
+  $('msv').innerHTML = s + '<rect id="mvw" fill="none" stroke="' + C.accent + '" stroke-width="1.5" rx="2"/><rect id="mvf" fill="' + C.accent + '" opacity=".08"/>';
+  updateMiniView();
+}
+function updateMiniView() {
+  const w = $('mvw'); if (!w || !S.T) return; const m = mmScale(), v = S.view, st = $('stage');
+  const x = m.ox + (-v.x / v.k) * m.s, y = m.oy + (-v.y / v.k) * m.s, ww = (st.clientWidth / v.k) * m.s, hh = (st.clientHeight / v.k) * m.s;
+  [w, $('mvf')].forEach(e => { e.setAttribute('x', x); e.setAttribute('y', y); e.setAttribute('width', ww); e.setAttribute('height', hh); });
+}
+
+/* ============================================================
+   PERSISTENCE + BUILD
+   ============================================================ */
+function saveState() { if (S.proj) lsSet(stKey(S.proj.id), S.st); }
+function selectProject(p, keepSel) {
+  S.proj = p; S.st = Object.assign({ names: {}, collapsed: {}, cfg: {} }, lsGet(stKey(p.id), {}));
+  S.st.names = S.st.names || {}; S.st.collapsed = S.st.collapsed || {}; S.st.cfg = S.st.cfg || {};
+  lsSet('cl_topo_last', p.id); if (!keepSel) S.sel = null;
+  rebuild(false); renderProjects();
+}
+function rebuild(keepView) {
+  const p = S.proj; if (!p) return;
+  S.cfg = Object.assign(defCfg(p), S.st.cfg);
+  S.T = generate(p, S.cfg, S.st);
+  if (S.cfg.layout === 'auto') {
+    S.T.lr = false; layoutAll(); const kt = fitCalc().k;
+    S.T.lr = true; layoutAll(); const kl = fitCalc().k;
+    S.T.lr = kl > kt * 1.08;
+  }
+  if (S.sel && !(S.sel.k === 'l' ? S.T.links.find(l => l.id === S.sel.id) : S.T.byId[S.sel.id])) S.sel = null;
+  layoutAll(); syncControls(); draw(); renderFloors(); renderInsp();
+  const none = !S.T.nAp;
+  $('empty').style.display = none ? 'flex' : 'none';
+  $('empty-t').textContent = none ? 'This project has no APs yet. Place APs in the WiFi Planner and the topology appears here.' : '';
+  $('cv').style.visibility = none ? 'hidden' : 'visible';
+  if (!keepView) fit();
+}
+function relayout() { layoutAll(); draw(); renderFloors(); }
+
+/* ============================================================
+   LEFT PANEL
+   ============================================================ */
+function renderProjects() {
+  const L = S.projects, el = $('plist');
+  $('pcount').textContent = L.length ? L.length + ' saved' : '';
+  if (L === null) { el.innerHTML = '<div class="warn-i">Browser storage is not available here (private window?).</div>'; return; }
+  if (!L.length) { el.innerHTML = '<div class="warn-i info">No Planner projects in this browser yet.</div><a class="btn sm" href="/wifi.html">Open the WiFi Planner</a>'; return; }
+  el.innerHTML = L.slice().sort((a, b) => (b.updated || 0) - (a.updated || 0)).map(p => {
+    const aps = (p.floors || []).reduce((n, f) => n + ((f.data && f.data.aps) ? f.data.aps.length : 0), 0), sub = [p.client, p.location].filter(Boolean).join(' · ');
+    return `<div class="pcard ${S.proj && S.proj.id === p.id ? 'on' : ''}" data-p="${esc(p.id)}"><b>${esc(p.name || 'Untitled')}</b><span>${esc(sub) || '&nbsp;'}</span><br><span>${(p.floors || []).length} floor${(p.floors || []).length === 1 ? '' : 's'} · ${aps} AP</span></div>`;
+  }).join('');
+}
+function syncControls() {
+  const c = S.cfg;
+  $('w-ge24').value = c.ge24; $('w-ge48').value = c.ge48; $('w-mg24').value = c.mg24; $('o-buf').value = c.buf; $('o-upl').value = c.upl;
+  $('o-isp').checked = c.isp; $('o-fw').checked = c.fw; $('o-lbl').checked = c.lbl; $('o-apl').checked = c.apl;
+  document.querySelectorAll('#seg-layout button').forEach(b => b.classList.toggle('on', b.dataset.v === c.layout));
+}
+function renderFloors() {
+  const T = S.T; if (!T) return;
+  const fl = T.floors.filter(f => f.nAp);
+  $('fcount').textContent = T.floors.length + ' total';
+  $('flist').innerHTML = fl.length ? fl.map(f => `<div class="fl" data-fc="${esc(f.id)}" title="Click to collapse or expand"><span style="color:var(--text-muted);width:12px">${S.st.collapsed[f.id] ? '▸' : '▾'}</span><b>${esc(f.name)}</b><span class="pill">${f.nAp} AP</span><span class="pill">${f.swIds.length} sw</span></div>`).join('') : '<div class="note">No floors with APs.</div>';
+}
+function setCfg(k, v) { S.st.cfg[k] = v; saveState(); rebuild(true); }
+function bindLeft() {
+  $('plist').addEventListener('click', e => { const c = e.target.closest('[data-p]'); if (!c) return; const p = S.projects.find(x => x.id === c.dataset.p); if (p) selectProject(p); });
+  [['w-ge24', 'ge24', 1, 20000], ['w-ge48', 'ge48', 1, 20000], ['w-mg24', 'mg24', 1, 20000], ['o-buf', 'buf', 0, 200]].forEach(([id, k, lo, hi]) => $(id).addEventListener('change', () => setCfg(k, clamp(num($(id).value, defCfg(S.proj)[k]), lo, hi))));
+  $('o-upl').addEventListener('change', () => setCfg('upl', $('o-upl').value));
+  [['o-isp', 'isp'], ['o-fw', 'fw'], ['o-lbl', 'lbl'], ['o-apl', 'apl']].forEach(([id, k]) => $(id).addEventListener('change', () => setCfg(k, $(id).checked)));
+  $('seg-layout').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { setCfg('layout', b.dataset.v); syncControls(); fit(); } });
+  $('flist').addEventListener('click', e => { const r = e.target.closest('[data-fc]'); if (r) toggleFloor(r.dataset.fc); });
+  $('b-colall').onclick = () => { S.T.floors.forEach(f => { S.st.collapsed[f.id] = true; }); saveState(); relayout(); fit(); };
+  $('b-expall').onclick = () => { S.st.collapsed = {}; saveState(); relayout(); fit(); };
+}
+function toggleFloor(id) { S.st.collapsed[id] = !S.st.collapsed[id]; if (!S.st.collapsed[id]) delete S.st.collapsed[id]; saveState(); relayout(); renderInsp(); }
+
+/* ============================================================
+   INSPECTOR
+   ============================================================ */
+const TYPE_NAME = { isp: 'Internet / ISP', fw: 'Firewall', core: 'Core switch', access: 'Access switch', ap: 'Access point' };
+function pillFor(pct) { return pct < .7 ? 'ok' : pct < .9 ? 'warn' : 'bad'; }
+function barCol(pct) { return pct < .7 ? 'var(--accent)' : pct < .9 ? 'var(--warning)' : 'var(--danger)'; }
+function renderInsp() {
+  const el = $('insp'), T = S.T;
+  if (!T) { el.innerHTML = '<div class="sec"><h4>Details</h4><div class="note">Pick a project.</div></div>'; return; }
+  if (!S.sel) el.innerHTML = inspSummary(); else if (S.sel.k === 'l') el.innerHTML = inspLink(T.links.find(l => l.id === S.sel.id)); else el.innerHTML = inspDev(T.byId[S.sel.id]);
+}
+function inspSummary() {
+  const T = S.T, s = T.sum, p = S.proj;
+  const mods = Object.keys(s.models).sort((a, b) => s.models[b].n - s.models[a].n).map(k => `<tr><td>${esc(k)}</td><td>${s.models[k].w ? fmtW(s.models[k].w) + ' W' : '—'}</td><td>${s.models[k].n}</td></tr>`).join('');
+  const sw = Object.keys(s.cls).map(k => `<tr><td>${esc(SWC[k].label)}</td><td>${fmtW(S.cfg[k])} W</td><td>${s.cls[k]}</td></tr>`).join('');
+  const fls = T.floors.filter(f => f.nAp).map(f => `<div class="lnk" data-sf="${esc(f.id)}"><span>${esc(f.name)}</span><span>${f.nAp} AP · ${f.swIds.length} sw · ${fmtW(f.w)} W</span></div>`).join('');
+  const warns = T.warn.map(w => `<div class="warn-i ${w.t === 'info' ? 'info' : ''}"><span>${w.t === 'info' ? 'ℹ' : '⚠'}</span><span>${esc(w.m)}</span></div>`).join('');
+  return `<div class="sec"><h4>${esc(p.name || 'Project')} <small>${esc([p.client, p.location].filter(Boolean).join(' · '))}</small></h4>
+    <div style="margin:-2px 0 10px"><a class="btn sm" href="/wifi.html#p=${encodeURIComponent(p.id)}">Open in WiFi Planner ↗</a></div><div class="stats"><div class="stat"><b>${s.nAp}</b><span>Access points</span></div><div class="stat"><b>${s.nSw}</b><span>Access switches</span></div><div class="stat"><b>${fmtW(s.w)}</b><span>PoE draw (W)</span></div><div class="stat"><b>${fmtW(s.wb)}</b><span>With ${S.cfg.buf}% buffer</span></div></div></div>
+    ${warns ? `<div class="sec"><h4>Notes</h4>${warns}</div>` : ''}
+    <div class="sec"><h4>Bill of materials <small>network side</small></h4>
+      <table class="bom"><tr><th>Item</th><th>Spec</th><th>Qty</th></tr>
+      ${T.isp ? '<tr><td>Internet / ISP handoff</td><td>1G</td><td>1</td></tr>' : ''}${T.fw ? '<tr><td>Firewall</td><td>10G LAN</td><td>1</td></tr>' : ''}<tr><td>Core / distribution L3</td><td>${CORE_PORTS} x SFP+</td><td>1</td></tr>
+      ${sw}${mods}</table>
+      <div class="note">Switch and core specs are typical values, not specific part numbers. Uplink optics (SFP+ / DAC) and cable counts come in the next phase.</div></div>
+    <div class="sec"><h4>Floors</h4>${fls || '<div class="note">No floors with APs.</div>'}</div>`;
+}
+function linksOf(id) {
+  return S.T.links.filter(l => l.a === id || l.b === id).map(l => { const peer = S.T.byId[l.a === id ? l.b : l.a]; return `<div class="lnk" data-sl="${l.id}"><span>${esc(tx(peer.name, 22))}</span><span>${esc(tx(l.a === id ? l.aPort : l.bPort, 22))} · ${linkLabel(l)}</span></div>`; }).join('');
+}
+function inspDev(d) {
+  if (!d) return inspSummary();
+  const T = S.T, back = '<div class="sec" style="padding-bottom:6px"><button class="btn sm" data-back="1">← Overview</button></div>';
+  let kv = `<dt>Type</dt><dd>${TYPE_NAME[d.type]}</dd><dt>Model</dt><dd>${esc(d.model)}</dd>`;
+  if (d.floorName) kv += `<dt>Floor</dt><dd>${esc(d.floorName)}</dd>`;
+  let extra = '';
+  if (d.type === 'access') {
+    const pct = d.poeBuf / d.poeBudget, fp = d.portsUsed / d.ports;
+    kv += `<dt>Ports</dt><dd>${d.portsUsed} / ${d.ports} used</dd><dt>Uplink</dt><dd>${d.lag > 1 ? '2 x 10G LACP' : '1 x 10G'}</dd><dt>PoE class</dt><dd>${esc(SWC[d.cls].poe)}</dd>`;
+    extra = `<div class="sec"><h4>PoE budget <span class="pill ${pillFor(pct)}">${Math.round(pct * 100)}%</span></h4><div class="bar"><i style="width:${Math.min(100, pct * 100)}%;background:${barCol(pct)}"></i></div>
+      <dl class="kv" style="margin-top:8px"><dt>AP draw</dt><dd>${fmtW(d.poeUsed)} W</dd><dt>With ${S.cfg.buf}% buffer</dt><dd>${fmtW(d.poeBuf)} W</dd><dt>Switch budget</dt><dd>${fmtW(d.poeBudget)} W</dd></dl>
+      <div class="bar" style="margin-top:12px"><i style="width:${fp * 100}%;background:var(--accent-2)"></i></div><div class="note" style="margin-top:2px">${d.portsUsed} of ${d.ports} PoE ports used</div></div>`;
+  } else if (d.type === 'core') {
+    kv += `<dt>SFP+ ports</dt><dd>${d.portsUsed} / ${d.portsTotal} used</dd>`;
+  } else if (d.type === 'ap') {
+    const i = d.info;
+    kv += `<dt>Wi-Fi</dt><dd>${i.wifi ? 'Wi-Fi ' + i.wifi : '—'}</dd><dt>Max power</dt><dd>${i.w ? fmtW(i.w) + ' W' : 'not in catalog'}</dd><dt>PoE needed</dt><dd>${CLS_TXT[i.cls]}</dd><dt>Uplink port</dt><dd>${esc(i.up || '—')}</dd>`;
+    const sw = T.byId[d.sw]; if (sw) kv += `<dt>Switch</dt><dd><a href="#" data-sd="${esc(sw.id)}" style="color:var(--accent);text-decoration:none">${esc(sw.name)}</a></dd>`;
+    if (d.loc) kv += `<dt>Position</dt><dd>${d.loc.x.toFixed(1)}, ${d.loc.y.toFixed(1)} m</dd>`;
+    if (i.est) extra = '<div class="sec"><div class="note">Watts and uplink for this model come from installation guides; radio values are estimates in the Planner.</div></div>';
+  }
+  const ls = linksOf(d.id);
+  return `${back}<div class="sec"><h4>Name</h4><input type="text" id="i-name" value="${esc(d.name)}" maxlength="40"><div class="note">Rename is kept for this project. <a href="#" id="i-reset" style="color:var(--accent)">Reset</a></div></div>
+    <div class="sec"><h4>Details</h4><dl class="kv">${kv}</dl></div>${extra}
+    <div class="sec"><h4>Connections <small>${T.links.filter(l => l.a === d.id || l.b === d.id).length}</small></h4>${ls ? (d.type === 'access' && d.apIds.length > 8 ? linksOf(d.id).split('</div>').slice(0, 8).join('</div>') + '</div><div class="note">Showing the first 8. Export the CSV for the full port map.</div>' : ls) : '<div class="note">No links.</div>'}</div>`;
+}
+function inspLink(l) {
+  if (!l) return inspSummary();
+  const T = S.T, a = T.byId[l.a], b = T.byId[l.b], back = '<div class="sec" style="padding-bottom:6px"><button class="btn sm" data-back="1">← Overview</button></div>';
+  let kv = `<dt>From</dt><dd><a href="#" data-sd="${esc(a.id)}" style="color:var(--accent);text-decoration:none">${esc(a.name)}</a></dd><dt>Port</dt><dd>${esc(l.aPort)}</dd><dt>To</dt><dd><a href="#" data-sd="${esc(b.id)}" style="color:var(--accent);text-decoration:none">${esc(b.name)}</a></dd><dt>Port</dt><dd>${esc(l.bPort)}</dd><dt>Speed</dt><dd>${linkLabel(l)}</dd><dt>Media</dt><dd>${esc(l.media)}</dd>`;
+  if (l.kind === 'ap') kv += `<dt>PoE load</dt><dd>${l.poe ? fmtW(l.poe) + ' W (' + CLS_TXT[l.poeCls] + ')' : 'unknown'}</dd>`;
+  return `${back}<div class="sec"><h4>Link <span class="pill">${l.kind === 'ap' ? 'AP link' : l.kind === 'uplink' ? 'Uplink' : 'Infrastructure'}</span></h4><dl class="kv">${kv}</dl></div>`;
+}
+function select(k, id, open) {
+  S.sel = k ? { k, id } : null; draw(); renderInsp();
+  if (open && k && window.innerWidth <= 1100) $('right').classList.add('open');
+}
+function bindInsp() {
+  $('insp').addEventListener('click', e => {
+    const t = e.target;
+    if (t.closest('[data-back]')) return select(null);
+    const sd = t.closest('[data-sd]'); if (sd) { e.preventDefault(); const d = S.T.byId[sd.dataset.sd]; select('d', d.id); if (!d.hidden) centerOn(d.x + d.w / 2, d.y + d.h / 2); return; }
+    const sl = t.closest('[data-sl]'); if (sl) return select('l', sl.dataset.sl);
+    const sf = t.closest('[data-sf]'); if (sf) { const f = S.T.floors.find(x => x.id === sf.dataset.sf); if (f && f.box) centerOn(f.box.x + f.box.w / 2, f.box.y + f.box.h / 2); return; }
+    if (t.id === 'i-reset') { e.preventDefault(); delete S.st.names[S.sel.id]; saveState(); rebuild(true); }
+  });
+  $('insp').addEventListener('change', e => { if (e.target.id !== 'i-name' || !S.sel) return; const v = e.target.value.trim(); if (v) S.st.names[S.sel.id] = v; else delete S.st.names[S.sel.id]; saveState(); rebuild(true); });
+}
+
+/* ============================================================
+   CANVAS INTERACTION
+   ============================================================ */
+function bindCanvas() {
+  const cv = $('cv'), st = $('stage'), pts = new Map(); let drag = null, pinch = null;
+  const rect = () => cv.getBoundingClientRect();
+  cv.addEventListener('pointerdown', e => {
+    $('tip').style.display = 'none'; cv.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 1) drag = { x: e.clientX, y: e.clientY, vx: S.view.x, vy: S.view.y, moved: false, t: e.target };
+    else if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), k: S.view.k }; drag = null; }
+  });
+  cv.addEventListener('pointermove', e => {
+    if (pts.has(e.pointerId)) pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && pts.size >= 2) { const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y), r = rect(); zoomAt((pinch.k * d / pinch.d) / S.view.k, (a.x + b.x) / 2 - r.left, (a.y + b.y) / 2 - r.top); return; }
+    if (drag) { const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (!drag.moved && Math.hypot(dx, dy) > 4) { drag.moved = true; cv.classList.add('pan'); } if (drag.moved) { S.view.x = drag.vx + dx; S.view.y = drag.vy + dy; applyView(); } return; }
+    hoverTip(e);
+  });
+  const up = e => {
+    pts.delete(e.pointerId); if (pts.size < 2) pinch = null;
+    if (drag && !drag.moved && pts.size === 0) {
+      const t = drag.t, fc = t.closest && t.closest('.fc'), dv = t.closest && t.closest('[data-d]'), lk = t.closest && t.closest('[data-l]');
+      if (fc) toggleFloor(fc.dataset.f); else if (dv) select('d', dv.dataset.d, true); else if (lk) select('l', lk.dataset.l, true); else if (S.sel) select(null);
+    }
+    if (pts.size === 0) { drag = null; cv.classList.remove('pan'); }
+  };
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  cv.addEventListener('pointerleave', () => { $('tip').style.display = 'none'; });
+  cv.addEventListener('wheel', e => { e.preventDefault(); const r = rect(); zoomAt(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0016)), e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+  // minimap
+  const mini = $('mini'); let md = false;
+  const mmGo = e => { const r = mini.getBoundingClientRect(), m = mmScale(); centerOn(((e.clientX - r.left) - m.ox) / m.s, ((e.clientY - r.top) - m.oy) / m.s); };
+  mini.addEventListener('pointerdown', e => { md = true; mini.setPointerCapture(e.pointerId); mmGo(e); });
+  mini.addEventListener('pointermove', e => { if (md) mmGo(e); });
+  mini.addEventListener('pointerup', () => { md = false; });
+  // toolbar
+  $('b-zi').onclick = () => zoomAt(1.25, st.clientWidth / 2, st.clientHeight / 2);
+  $('b-zo').onclick = () => zoomAt(0.8, st.clientWidth / 2, st.clientHeight / 2);
+  $('b-fit').onclick = () => fit();
+  $('b-grid').onclick = () => { const on = st.classList.toggle('nogrid'); $('b-grid').classList.toggle('on', !on); };
+  $('b-edit').onclick = toEditor;
+  $('b-regen').onclick = async () => { const L = await loadProjects(); if (L) { S.projects = L; const p = L.find(x => S.proj && x.id === S.proj.id); if (p) { S.proj = p; rebuild(true); renderProjects(); toast('Rebuilt from the latest Planner project'); } else toast('Project not found'); } };
+  $('b-lt').onclick = () => { $('right').classList.remove('open'); $('left').classList.toggle('open'); };
+  $('b-rt').onclick = () => { $('left').classList.remove('open'); $('right').classList.toggle('open'); };
+  $('b-exp').onclick = e => { e.stopPropagation(); $('exp').classList.toggle('open'); };
+  document.addEventListener('click', e => { if (!e.target.closest('#exp')) $('exp').classList.remove('open'); });
+  $('exp').querySelector('.dd').addEventListener('click', e => { const b = e.target.closest('[data-x]'); if (!b) return; $('exp').classList.remove('open'); doExport(b.dataset.x); });
+  window.addEventListener('keydown', e => {
+    if (/INPUT|SELECT|TEXTAREA/.test((e.target.tagName || ''))) return;
+    if (e.key === 'f' || e.key === 'F') fit(); else if (e.key === '+' || e.key === '=') $('b-zi').click(); else if (e.key === '-') $('b-zo').click(); else if (e.key === 'g' || e.key === 'G') $('b-grid').click(); else if (e.key === 'Escape') select(null);
+  });
+  window.addEventListener('resize', updateMiniView);
+}
+function hoverTip(e) {
+  const t = e.target.closest && (e.target.closest('[data-d]') || e.target.closest('[data-l]')), tip = $('tip'); if (!t || !S.T) { tip.style.display = 'none'; return; }
+  let h = '';
+  if (t.dataset.d) { const d = S.T.byId[t.dataset.d]; h = `<b>${esc(d.name)}</b><br><span style="color:var(--text-muted)">${esc(d.model)}</span>` + (d.type === 'ap' ? `<br>${d.info.w ? fmtW(d.info.w) + ' W · ' : ''}${d.info.speed}G uplink` : d.type === 'access' ? `<br>${d.portsUsed}/${d.ports} ports · ${fmtW(d.poeUsed)} / ${fmtW(d.poeBudget)} W` : ''); }
+  else { const l = S.T.links.find(x => x.id === t.dataset.l); if (l) h = `<b>${esc(S.T.byId[l.a].name)} → ${esc(S.T.byId[l.b].name)}</b><br>${linkLabel(l)} · ${esc(l.media)}`; }
+  if (!h) { tip.style.display = 'none'; return; }
+  const r = $('stage').getBoundingClientRect(); tip.innerHTML = h; tip.style.display = 'block';
+  tip.style.left = Math.min(e.clientX - r.left + 14, r.width - 270) + 'px'; tip.style.top = (e.clientY - r.top + 14) + 'px';
+}
+
+/* ============================================================
+   EXPORT
+   ============================================================ */
+function exportSVG() {
+  const C = S.C = colors(), b = S.bounds, P = 60, HDR = 96, FTR = 64, W = Math.max(b.w + P * 2, 900), H = b.h + HDR + FTR + P;
+  const ox = (W - b.w) / 2, p = S.proj, T = S.T, date = new Date().toISOString().slice(0, 10);
+  const leg = [[C.dim, '1G', 0], [C.accent2, '2.5G / 5G', 0], [C.accent, '10G fiber / DAC', 1], [C.accent3, '10G copper', 0]];
+  let lx = P, lg = '';
+  leg.forEach(([c, t, d]) => { lg += `<line x1="${lx}" y1="${H - 34}" x2="${lx + 26}" y2="${H - 34}" stroke="${c}" stroke-width="3" ${d ? 'stroke-dasharray="7 5"' : ''} stroke-linecap="round"/><text x="${lx + 34}" y="${H - 30}" font-size="11" fill="${C.dim}" font-family="${F_MONO}">${t}</text>`; lx += 34 + t.length * 7 + 30; });
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="${C.bg}"/>
+  <text x="${P}" y="46" font-size="24" font-weight="700" fill="${C.text}" font-family="${F_SANS}">${esc(p.name || 'Network topology')}</text>
+  <text x="${P}" y="70" font-size="12" fill="${C.dim}" font-family="${F_MONO}">${esc([p.client, p.location].filter(Boolean).join(' · ') || 'Network topology')} · ${T.sum.nAp} APs · ${T.sum.nSw} access switches · ${fmtW(T.sum.w)} W PoE</text>
+  <text x="${W - P}" y="46" text-anchor="end" font-size="14" fill="${C.accent}" font-family="${F_SANS}" font-weight="600">ConfigLabs.online</text><text x="${W - P}" y="64" text-anchor="end" font-size="11" fill="${C.muted}" font-family="${F_MONO}">${date}</text>
+  <g transform="translate(${ox},${HDR})">${contentSVG(true)}</g>${lg}
+  <text x="${W - P}" y="${H - 30}" text-anchor="end" font-size="10" fill="${C.muted}" font-family="${F_MONO}">Generated from the WiFi Planner project. Switch specs are typical values.</text></svg>`;
+}
+const safeName = () => (S.proj.name || 'topology').replace(/[^\w\-]+/g, '_').slice(0, 40) || 'topology';
+function download(name, blob) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800); }
+function doExport(kind) {
+  if (!S.T || !S.T.nAp) { toast('Nothing to export yet'); return; }
+  if (kind === 'svg') { download(safeName() + '-topology.svg', new Blob([exportSVG()], { type: 'image/svg+xml' })); toast('SVG saved'); }
+  else if (kind === 'png') {
+    const svg = exportSVG(), m = /width="(\d+)" height="(\d+)"/.exec(svg), w = +m[1], h = +m[2], sc = Math.min(2, 8000 / Math.max(w, h)), img = new Image();
+    img.onload = () => { const c = document.createElement('canvas'); c.width = Math.round(w * sc); c.height = Math.round(h * sc); const x = c.getContext('2d'); x.scale(sc, sc); x.drawImage(img, 0, 0, w, h); c.toBlob(b => { download(safeName() + '-topology.png', b); toast('PNG saved'); }, 'image/png'); };
+    img.onerror = () => toast('PNG export failed, try SVG');
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  } else if (kind === 'print') {
+    $('printbox').innerHTML = exportSVG(); const done = () => { $('printbox').innerHTML = ''; window.removeEventListener('afterprint', done); }; window.addEventListener('afterprint', done); setTimeout(() => window.print(), 60);
+  } else if (kind === 'csv') {
+    const q = v => { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }, T = S.T, rows = [];
+    rows.push(['LINKS (cable schedule)']); rows.push(['From device', 'From port', 'To device', 'To port', 'Speed (Gbps)', 'Lanes', 'Media', 'PoE load (W)', 'Type']);
+    T.links.forEach(l => rows.push([T.byId[l.a].name, l.aPort, T.byId[l.b].name, l.bPort, l.speed, l.lag, l.media, l.poe ? fmtW(l.poe) : '', l.kind]));
+    rows.push([]); rows.push(['DEVICES']); rows.push(['Name', 'Type', 'Model', 'Floor', 'Ports used', 'Ports total', 'PoE draw (W)', 'PoE budget (W)']);
+    T.devices.forEach(d => rows.push([d.name, TYPE_NAME[d.type], d.model, d.floorName || '', d.type === 'access' ? d.portsUsed : d.type === 'core' ? d.portsUsed : '', d.type === 'access' ? d.ports : d.type === 'core' ? d.portsTotal : '', d.type === 'access' ? fmtW(d.poeUsed) : d.type === 'ap' ? (d.info.w ? fmtW(d.info.w) : '') : '', d.type === 'access' ? fmtW(d.poeBudget) : '']));
+    download(safeName() + '-topology.csv', new Blob(['﻿' + rows.map(r => r.map(q).join(',')).join('\r\n')], { type: 'text/csv' })); toast('CSV saved');
+  }
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function setTheme(t) { document.body.dataset.theme = t; const b = $('theme-btn'); if (b) b.textContent = t === 'dark' ? '🌙' : '☀️'; try { localStorage.setItem('clab_theme', t); } catch (e) {} }
+
+function toEditor() {
+  if (!S.T || !S.T.nAp) { toast('Nothing to edit yet'); return; }
+  const T = S.T, k = 1.35, mapT = { isp: 'cloud', fw: 'fw', core: 'l3sw', access: 'l2sw', ap: 'ap' }, items = [], ok = {};
+  T.boxes.forEach(f => items.push({ id: 'b' + f.id, k: 'box', x: Math.round(f.box.x * k), y: Math.round(f.box.y * k), w: Math.round(f.box.w * k), h: Math.round(f.box.h * k), label: f.name, c: '#7cf4c7' }));
+  T.devices.forEach(d => { if (d.hidden || d.x == null) return; ok[d.id] = 1; items.push({ id: d.id, k: 'dev', t: mapT[d.type] || 'generic', x: Math.round((d.x + d.w / 2) * k), y: Math.round((d.y + d.h / 2) * k), label: d.name || '', vendor: '', model: d.type === 'ap' ? (d.model || '') : '', ip: '', note: '', s: d.type === 'ap' ? .8 : 1 }); });
+  const links = T.links.filter(l => ok[l.a] && ok[l.b]).map(l => ({ id: 'k' + l.id, a: l.a, b: l.b, type: l.kind === 'ap' ? 'copper' : (l.a === 'isp' || l.b === 'isp' ? 'wan' : 'fiber'), route: 'orth', la: l.kind === 'ap' ? '' : (l.aPort || ''), lb: l.kind === 'ap' ? '' : (l.bPort || ''), label: l.kind === 'ap' ? '' : (l.speed + 'G' + (l.lag > 1 ? ' x' + l.lag : '')), c: '', wd: 2 }));
+  try { localStorage.setItem('cl_tg_import', JSON.stringify({ name: ((S.proj && S.proj.name) || 'Project') + ' topology', items, links })); } catch (e) { toast('Could not hand over the diagram (storage blocked)'); return; }
+  location.href = '/topology.html?import=1';
+}
+function toggleTheme() { setTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'); draw(); }
+(async function init() {
+  let th = 'dark'; try { th = localStorage.getItem('clab_theme') || 'dark'; } catch (e) {}
+  setTheme(th); bindLeft(); bindCanvas(); bindInsp();
+  const L = await loadProjects(); S.projects = L === null ? null : L;
+  if (L === null) { renderProjects(); $('empty').style.display = 'flex'; $('empty-t').textContent = 'Browser storage is not available, so Planner projects cannot be read here.'; return; }
+  renderProjects();
+  if (!L.length) { $('empty').style.display = 'flex'; $('cv').style.visibility = 'hidden'; renderInsp(); return; }
+  const q = new URLSearchParams(location.search).get('p'), last = lsGet('cl_topo_last', null);
+  const withAp = L.filter(p => (p.floors || []).some(f => f.data && f.data.aps && f.data.aps.length));
+  const pick = L.find(p => p.id === q) || L.find(p => p.id === last) || withAp.sort((a, b) => (b.updated || 0) - (a.updated || 0))[0] || L[0];
+  if (q && !L.find(p => p.id === q)) toast('That project was not found in this browser');
+  selectProject(pick);
+})();
+</script>
+</body>
+</html>
