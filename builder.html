@@ -174,6 +174,8 @@ label .hint{font-family:var(--mono);color:var(--text-muted);font-weight:400;marg
 input,select,textarea{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;transition:all .15s var(--ease)}
 input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent)}
 input::placeholder{color:var(--text-muted)}
+input.inv,select.inv{border-color:var(--danger)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--danger) 20%,transparent)!important}
+input.wrn,select.wrn{border-color:var(--warning)!important}
 textarea{resize:vertical;min-height:80px;font-family:var(--sans)}
 .segmented{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;padding:4px;background:var(--bg);border:1px solid var(--border);border-radius:10px}
 .segmented button{padding:8px 12px;background:transparent;border:none;color:var(--text-dim);font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer;border-radius:7px;transition:all .2s;text-transform:uppercase;letter-spacing:.5px}
@@ -391,7 +393,7 @@ footer{margin-top:80px;padding:40px 0 30px;border-top:1px solid var(--border)}
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
       Continue with Google
     </button>
-    <p class="auth-terms">By signing in you agree to our <a href="/about.html">Terms</a>.<br>We never share your data.</p>
+    <p class="auth-terms">By signing in you agree to our <a href="/about.html#terms">Terms</a>.<br>We never share your data.</p>
   </div>
 </div>
 
@@ -951,20 +953,28 @@ function addOspfNet(data = {}) {
   document.getElementById('rep-ospf-nets').appendChild(makeItem('Network', html));
 }
 
-function addAcl(data = {}) {
-  const rules = (data.rules && data.rules.length) ? data.rules : [{}];
-  const rowHtml = r => `<div class="acl-row" style="display:grid;grid-template-columns:50px 76px 68px 1fr 1fr;gap:6px;margin-bottom:6px">
+const ACL_GRID = 'display:grid;grid-template-columns:50px 76px 68px 1fr 1fr;gap:6px;margin-bottom:10px';
+function aclRowHtml(r = {}) {
+  const sel = (v, d) => (r.protocol || 'ip') === v ? 'selected' : '';
+  return `<div class="acl-row" style="${ACL_GRID}">
     <input class="acl-rid" value="${r.rule_id||''}" placeholder="5">
     <select class="acl-act"><option value="permit" ${r.action==='permit'?'selected':''}>permit</option><option value="deny" ${r.action==='deny'?'selected':''}>deny</option></select>
-    <select class="acl-proto"><option value="ip"   ${(r.protocol||'ip')==='ip'  ?'selected':''}>ip</option><option value="tcp" ${r.protocol==='tcp' ?'selected':''}>tcp</option><option value="udp" ${r.protocol==='udp' ?'selected':''}>udp</option><option value="icmp" ${r.protocol==='icmp'?'selected':''}>icmp</option></select>
-    <input class="acl-src" value="${r.source||'any'}" placeholder="any">
+    <select class="acl-proto"><option value="ip" ${sel('ip')}>ip</option><option value="tcp" ${sel('tcp')}>tcp</option><option value="udp" ${sel('udp')}>udp</option><option value="icmp" ${sel('icmp')}>icmp</option></select>
+    <input class="acl-src" value="${r.source||'any'}" placeholder="source: any">
     <input class="acl-wc"  value="${r.wildcard||''}"  placeholder="0.0.0.255">
+    <span style="grid-column:1 / span 3;text-align:right;align-self:center;font-family:var(--mono);font-size:11px;color:var(--text-muted)">to destination ↳</span>
+    <input class="acl-dst" value="${r.destination||''}" placeholder="dest: any">
+    <input class="acl-dwc" value="${r.dest_wildcard||''}" placeholder="0.0.0.255">
   </div>`;
+}
+function addAcl(data = {}) {
+  const rules = (data.rules && data.rules.length) ? data.rules : [{}];
+  const rowHtml = aclRowHtml;
   const html = `<div class="field-row">
     <div class="field"><label>ACL Number</label><input class="a-num" value="${data.acl_number||'3000'}" placeholder="3000"></div>
     <div class="field"><label>Description</label><input class="a-desc" value="${data.description||''}" placeholder="ACL-NAME"></div>
   </div>
-  <label>Rules <span class="hint">id · action · proto · source · wildcard</span></label>
+  <label>Rules <span class="hint">id · action · proto · source · wildcard · destination (optional, ACL 3000+)</span></label>
   <div class="acl-rules">${rules.map(rowHtml).join('')}</div>
   <button class="btn-add" style="margin-top:8px" onclick="addAclRow(this)">＋ Add Rule</button>`;
   document.getElementById('rep-acls').appendChild(makeItem('ACL', html));
@@ -972,11 +982,9 @@ function addAcl(data = {}) {
 }
 
 function addAclRow(btn) {
-  const row = document.createElement('div');
-  row.className = 'acl-row';
-  row.style.cssText = 'display:grid;grid-template-columns:50px 76px 68px 1fr 1fr;gap:6px;margin-bottom:6px';
-  row.innerHTML = `<input class="acl-rid" placeholder="10"><select class="acl-act"><option>permit</option><option>deny</option></select><select class="acl-proto"><option>ip</option><option>tcp</option><option>udp</option><option>icmp</option></select><input class="acl-src" placeholder="any"><input class="acl-wc" placeholder="0.0.0.255">`;
-  btn.previousElementSibling.appendChild(row);
+  const t = document.createElement('div');
+  t.innerHTML = aclRowHtml({});
+  btn.previousElementSibling.appendChild(t.firstElementChild);
 }
 
 
@@ -1139,7 +1147,9 @@ function collectData() {
         action: r.querySelector('.acl-act').value,
         protocol: r.querySelector('.acl-proto').value,
         source: r.querySelector('.acl-src').value.trim(),
-        wildcard: r.querySelector('.acl-wc').value.trim()
+        wildcard: r.querySelector('.acl-wc').value.trim(),
+        destination: r.querySelector('.acl-dst').value.trim() || undefined,
+        dest_wildcard: r.querySelector('.acl-dwc').value.trim() || undefined
       })).filter(r => r.source)
     })).filter(a => a.acl_number),
     pbr: (state.vendor === 'h3c' && state.os === 'comware') ? collectPbr() : undefined
@@ -1202,10 +1212,95 @@ function loadExample() {
 /* ============================================================
    GENERATE
    ============================================================ */
+
+/* ============================================================
+   INPUT CHECKS (lint) — runs before Generate
+   ============================================================ */
+const LINT_V4 = v => { const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(v); return !!m && m.slice(1).every(n => +n <= 255); };
+const LINT_CIDRIP = v => { const p = v.split('/'); return p.length === 2 && LINT_V4(p[0]) && /^\d{1,2}$/.test(p[1]) && +p[1] >= 0 && +p[1] <= 32; };
+const LINT_PFX = v => /^\d{1,2}$/.test(v) && +v >= 0 && +v <= 32;
+document.addEventListener('input', e => { if (e.target && e.target.classList) e.target.classList.remove('inv','wrn'); });
+function lintClear() { document.querySelectorAll('input.inv,select.inv,input.wrn,select.wrn').forEach(e => e.classList.remove('inv','wrn')); }
+function lint() {
+  const errs = [], warns = [];
+  const E = (tab, el, msg) => errs.push({tab, el, msg});
+  const W = (tab, el, msg) => warns.push({tab, el, msg});
+  const q = (root, sel) => [...root.querySelectorAll(sel)];
+  // VLANs: range + duplicates
+  const seen = {};
+  q(document, '#rep-vlans .v-id').forEach(el => {
+    const v = el.value.trim(); if (!v) return;
+    if (!/^\d+$/.test(v) || +v < 1 || +v > 4094) { E('vlan', el, `VLAN ID "${v}" must be a number from 1 to 4094`); return; }
+    (seen[+v] = seen[+v] || []).push(el);
+  });
+  Object.keys(seen).forEach(k => { if (seen[k].length > 1) seen[k].forEach(el => E('vlan', el, `Duplicate VLAN ID ${k}`)); });
+  // SVIs
+  const sv = {};
+  q(document, '#rep-svis .repeater-item').forEach(it => {
+    const vl = it.querySelector('.s-vlan').value.trim(); if (!vl) return;
+    (sv[vl] = sv[vl] || []).push(it.querySelector('.s-vlan'));
+    const ipEl = it.querySelector('.s-ip'), ip = ipEl.value.trim(), mode = it.querySelector('.s-dhcp-mode').value;
+    if (mode === 'client') return;
+    if (ip && !LINT_CIDRIP(ip)) E('svi', ipEl, `VLAN-int ${vl}: "${ip}" is not a valid IP/prefix (use e.g. 10.0.0.1/24)`);
+    else if (!ip) W('svi', ipEl, `VLAN-int ${vl} has no IP address`);
+  });
+  Object.keys(sv).forEach(k => { if (sv[k].length > 1) sv[k].forEach(el => E('svi', el, `VLAN-int ${k} is defined more than once`)); });
+  // Interfaces
+  q(document, '#rep-intfs .repeater-item').forEach(it => {
+    const nm = it.querySelector('.i-name').value.trim(); if (!nm) return;
+    const mode = it.querySelector('.i-mode').value;
+    if (mode === 'trunk' && !it.querySelector('.i-allowed').value.trim()) W('intf', it.querySelector('.i-allowed'), `${nm}: trunk has no Allowed VLANs, so it will carry no VLANs`);
+    if (mode === 'access' && !it.querySelector('.i-vlan').value.trim()) W('intf', it.querySelector('.i-vlan'), `${nm}: access port has no VLAN (stays in VLAN 1)`);
+  });
+  // DHCP
+  q(document, '#rep-dhcp .repeater-item').forEach(it => {
+    const nm = it.querySelector('.d-name').value.trim(); if (!nm) return;
+    [['.d-net','network'],['.d-gw','gateway']].forEach(([c, l]) => { const el = it.querySelector(c), v = el.value.trim(); if (v && !LINT_V4(v)) E('dhcp', el, `DHCP ${nm}: ${l} "${v}" is not a valid IP`); });
+    const cd = it.querySelector('.d-cidr'); if (cd.value.trim() && !LINT_PFX(cd.value.trim())) E('dhcp', cd, `DHCP ${nm}: prefix must be 0-32`);
+    const dn = it.querySelector('.d-dns'); dn.value.trim().split(/[\s,]+/).filter(Boolean).forEach(t => { if (!LINT_V4(t)) E('dhcp', dn, `DHCP ${nm}: DNS "${t}" is not a valid IP`); });
+  });
+  // Static routes
+  q(document, '#rep-routes .repeater-item').forEach(it => {
+    [['.r-net','network'],['.r-nh','next hop']].forEach(([c, l]) => { const el = it.querySelector(c), v = el.value.trim(); if (v && !LINT_V4(v)) E('route', el, `Route ${l} "${v}" is not a valid IP`); });
+    const cd = it.querySelector('.r-cidr'); if (cd.value.trim() && !LINT_PFX(cd.value.trim())) E('route', cd, 'Route prefix must be 0-32');
+  });
+  // OSPF
+  const rid = document.getElementById('ospf-rid');
+  if (rid && rid.value.trim() && !LINT_V4(rid.value.trim())) E('ospf', rid, `OSPF router-id "${rid.value.trim()}" is not a valid IP`);
+  q(document, '#rep-ospf-nets .repeater-item').forEach(it => {
+    const n = it.querySelector('.o-net'), c = it.querySelector('.o-cidr');
+    if (n.value.trim() && !LINT_V4(n.value.trim())) E('ospf', n, `OSPF network "${n.value.trim()}" is not a valid IP`);
+    if (c.value.trim() && !LINT_PFX(c.value.trim())) E('ospf', c, 'OSPF prefix must be 0-32');
+  });
+  // ACL
+  q(document, '#rep-acls .repeater-item').forEach(it => {
+    const num = it.querySelector('.a-num').value.trim(), n = parseInt(num, 10);
+    q(it, '.acl-row').forEach(r => {
+      [['.acl-src','source'],['.acl-dst','destination']].forEach(([c, l]) => { const el = r.querySelector(c), v = el.value.trim(); if (v && v.toLowerCase() !== 'any' && !LINT_V4(v)) E('acl', el, `ACL ${num}: ${l} "${v}" is not a valid IP (or "any")`); });
+      [['.acl-wc','wildcard'],['.acl-dwc','destination wildcard']].forEach(([c, l]) => { const el = r.querySelector(c), v = el.value.trim(); if (v && !LINT_V4(v)) E('acl', el, `ACL ${num}: ${l} "${v}" is not a valid wildcard`); });
+      const d = r.querySelector('.acl-dst'); if (d.value.trim() && d.value.trim().toLowerCase() !== 'any' && state.vendor === 'h3c' && n >= 2000 && n <= 2999) W('acl', d, `ACL ${num} is a basic ACL, so the destination is ignored (use 3000-3999)`);
+    });
+  });
+  return {errs, warns};
+}
+
 async function generate() {
   const data = collectData();
   const hasData = data.system || (data.vlans||[]).length || (data.svis||[]).length || (data.interfaces||[]).length || (data.dhcp_pools||[]).length || (data.static_routes||[]).length || data.ospf || (data.acls||[]).length || data.pbr;
   if (!hasData) { toast('Add something first!', true); return; }
+  lintClear();
+  const L = lint();
+  if (L.errs.length) {
+    L.errs.forEach(x => x.el.classList.add('inv'));
+    const f = L.errs[0];
+    const tb = document.querySelector('.tab[data-tab="' + f.tab + '"]'); if (tb) tb.click();
+    f.el.focus();
+    const more = L.errs.length > 1 ? ` (+${L.errs.length - 1} more)` : '';
+    setStatus(`Fix ${L.errs.length} error${L.errs.length > 1 ? 's' : ''} before generating`, 'err');
+    toast(f.msg + more, true);
+    return;
+  }
+  L.warns.forEach(x => x.el.classList.add('wrn'));
   setStatus('Generating...', '');
   try {
     const res = await fetch(API + '/generate', {
@@ -1221,7 +1316,8 @@ async function generate() {
     document.getElementById('line-info').textContent = `${lines} lines`;
     setStatus(`Generated ${new Date().toLocaleTimeString()} · ${state.vendor.toUpperCase()}/${state.os.toUpperCase()}`, 'ok');
     saveHistory(lastConfig);
-    toast('Config generated!');
+    if (L.warns.length) toast(`Generated with ${L.warns.length} warning${L.warns.length > 1 ? 's' : ''}: ${L.warns[0].msg}`, 'warn');
+    else toast('Config generated!');
   } catch(e) {
     if (e && e.api) { setStatus(e.message, 'err'); toast(e.message, true); return; }
     setStatus('Server unreachable — please try again in a moment', 'err');
@@ -1321,11 +1417,11 @@ async function loadTemplates() {
 function toast(msg, isErr) {
   const t = document.getElementById('toast');
   document.getElementById('toast-msg').textContent = msg;
-  t.querySelector('.t-icon').style.background = isErr ? 'var(--danger)' : 'var(--success)';
+  t.querySelector('.t-icon').style.background = isErr === 'warn' ? 'var(--warning)' : isErr ? 'var(--danger)' : 'var(--success)';
   t.querySelector('.t-icon').textContent = isErr ? '!' : '✓';
   t.classList.add('show');
   clearTimeout(window._tt);
-  window._tt = setTimeout(() => t.classList.remove('show'), 2400);
+  window._tt = setTimeout(() => t.classList.remove('show'), isErr ? 5000 : 2400);
 }
 function openFeedback()  { document.getElementById('feedback-modal').classList.add('show'); }
 function closeFeedback() { document.getElementById('feedback-modal').classList.remove('show'); }

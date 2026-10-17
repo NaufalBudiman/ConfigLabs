@@ -118,7 +118,7 @@ def init_db_once():
         with_app_context_done = True
 
 APP_NAME = "ConfigLabs"
-APP_VERSION = "6.0.0"
+APP_VERSION = "6.1.0"
 
 # ==========================================================
 # VENDOR / OS REGISTRY
@@ -449,6 +449,9 @@ def gen_h3c_comware(data):
             else:
                 wc = rule.get("wildcard") or "0"
                 line = f" rule {rid} {rule['action']} {proto} source {src} {wc}"
+            dst = (rule.get("destination") or "").strip()
+            if dst and dst.lower() != "any" and acl_type == "advanced":
+                line += f" destination {dst} {rule.get('dest_wildcard') or '0'}"
             config.append(" " + " ".join(line.split()).lstrip())
         config.append("#")
 
@@ -629,7 +632,7 @@ def gen_cisco_ios(data):
                 if dest.lower() == "any":
                     line += " any"
                 else:
-                    dwc = rule.get("dest_wildcard", "0.0.0.0")
+                    dwc = (rule.get("dest_wildcard") or "0.0.0.0")
                     line += f" {dest} {dwc}"
             else:
                 line += " any"
@@ -808,7 +811,7 @@ def gen_cisco_iosxe(data):
                 if dest.lower() == "any":
                     line += " any"
                 else:
-                    dwc = rule.get("dest_wildcard", "0.0.0.0")
+                    dwc = (rule.get("dest_wildcard") or "0.0.0.0")
                     line += f" {dest} {dwc}"
             else:
                 line += " any"
@@ -1001,7 +1004,7 @@ def gen_cisco_nxos(data):
                 if dest.lower() == "any":
                     line += " any"
                 else:
-                    dwc = rule.get("dest_wildcard", "0.0.0.0")
+                    dwc = (rule.get("dest_wildcard") or "0.0.0.0")
                     line += f" {dest} {dwc}"
             else:
                 line += " any"
