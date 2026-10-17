@@ -29,6 +29,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2 MB request cap
 # Same-origin in production; allow the site itself and local dev only.
 CORS(app, supports_credentials=True, origins=[
     'https://configlabs.online', 'https://www.configlabs.online',
@@ -118,7 +119,7 @@ def init_db_once():
         with_app_context_done = True
 
 APP_NAME = "ConfigLabs"
-APP_VERSION = "6.3.3"
+APP_VERSION = "6.3.5"
 
 # ==========================================================
 # VENDOR / OS REGISTRY
@@ -320,16 +321,18 @@ def gen_h3c_comware(data):
     sys_data = data.get("system", {})
     if sys_data:
         if sys_data.get("hostname"):
-            config.append(f" sysname {sys_data['hostname']}")
+            config.append(f"sysname {sys_data['hostname']}")
             config.append("#")
         if sys_data.get("timezone"):
-            config.append(f" clock timezone {sys_data['timezone']}")
+            config.append(f"clock timezone {sys_data['timezone']}")
             config.append("#")
         if sys_data.get("ntp"):
-            config.append(f" ntp-service unicast-server {sys_data['ntp']}")
+            config.append(f"ntp-service unicast-server {sys_data['ntp']}")
             config.append("#")
         if sys_data.get("banner"):
-            config.append(f" header shell {sys_data['banner']}")
+            _bn = str(sys_data['banner']).replace("\r", " ").replace("\n", " ")
+            _dl = next((d for d in "%#@$~" if d not in _bn), "%")
+            config.append(f"header shell {_dl}{_bn}{_dl}")
             config.append("#")
 
     # VLANs (L2)
@@ -343,8 +346,14 @@ def gen_h3c_comware(data):
     # DHCP pools
     pools = data.get("dhcp_pools", [])
     if pools:
-        config.append(" dhcp enable")
+        config.append("dhcp enable")
         config.append("#")
+        _fb = []
+        for p in pools:
+            for ip in str(p.get("forbidden_ips", "") or "").replace(",", " ").split():
+                if ip.strip() and ip.strip() not in _fb: _fb.append(ip.strip())
+        for ip in _fb: config.append(f"dhcp server forbidden-ip {ip}")
+        if _fb: config.append("#")
         for p in pools:
             if not p.get("pool_name"): continue
             config.append(f"dhcp server ip-pool {p['pool_name']}")
@@ -354,10 +363,6 @@ def gen_h3c_comware(data):
             if p.get("dns"): config.append(f" dns-list {p['dns']}")
             if p.get("lease_days"): config.append(f" expired day {p['lease_days']}")
             if p.get("domain"): config.append(f" domain-name {p['domain']}")
-            forbidden = p.get("forbidden_ips", "")
-            if forbidden:
-                for ip in str(forbidden).replace(",", " ").split():
-                    if ip.strip(): config.append(f" forbidden-ip {ip.strip()}")
             config.append("#")
 
     # SVIs (L3 VLAN-interfaces)
@@ -373,8 +378,8 @@ def gen_h3c_comware(data):
                 ip_addr, cidr = s["ip"].split("/")
                 config.append(f" ip address {ip_addr} {cidr_to_mask(cidr)}")
             except: pass
-        if dhcp_mode == "server" and s.get("dhcp_apply_pool"):
-            config.append(f" dhcp server apply ip-pool {s['dhcp_apply_pool']}")
+        if dhcp_mode == "server":
+            pass  # common pools are matched to the interface subnet automatically (dhcp select server global-pool is the default)
         elif dhcp_mode == "relay" and s.get("dhcp_relay"):
             config.append(" dhcp select relay")
             config.append(f" dhcp relay server-address {s['dhcp_relay']}")
@@ -1060,9 +1065,9 @@ TEMPLATES = {
         "data": {
             "system": {"hostname": "SW-CORE-01"},
             "vlans": [
-                {"vlan": "10", "name": "USERS"},
-                {"vlan": "20", "name": "SERVERS"},
-                {"vlan": "99", "name": "MGMT"}
+                {"vlan": "10", "name": "USERS", "description": "End-user VLAN"},
+                {"vlan": "20", "name": "SERVERS", "description": "Server VLAN"},
+                {"vlan": "99", "name": "MGMT", "description": "Management VLAN"}
             ],
             "svis": [
                 {"vlan": "10", "description": "User gateway", "ip": "10.10.10.1/24"},
@@ -1187,8 +1192,8 @@ TEMPLATES = {
         "data": {
             "system": {"hostname": "SW-ACCESS-01"},
             "vlans": [
-                {"vlan": "10", "name": "USERS"},
-                {"vlan": "99", "name": "MGMT"}
+                {"vlan": "10", "name": "USERS", "description": "End-user VLAN"},
+                {"vlan": "99", "name": "MGMT", "description": "Management VLAN"}
             ],
             "interfaces": [
                 {"interface": "GigabitEthernet0/1", "mode": "access", "vlan": "10", "description": "User Port", "stp_edge": True},
@@ -1203,8 +1208,8 @@ TEMPLATES = {
         "data": {
             "system": {"hostname": "RTR-CORE-01"},
             "vlans": [
-                {"vlan": "10", "name": "USERS"},
-                {"vlan": "20", "name": "SERVERS"}
+                {"vlan": "10", "name": "USERS", "description": "End-user VLAN"},
+                {"vlan": "20", "name": "SERVERS", "description": "Server VLAN"}
             ],
             "svis": [
                 {"vlan": "10", "description": "Users", "ip": "10.10.10.1/24"},
@@ -1224,7 +1229,7 @@ TEMPLATES = {
         "name": "📡 DHCP Server Router",
         "description": "Router with DHCP pool for VLAN",
         "data": {
-            "vlans": [{"vlan": "10", "name": "USERS"}],
+            "vlans": [{"vlan": "10", "name": "USERS", "description": "End-user VLAN"}],
             "dhcp_pools": [{
                 "pool_name": "USERS_POOL", "network": "10.10.10.0", "cidr": "24",
                 "gateway": "10.10.10.1", "dns": "8.8.8.8 1.1.1.1",
@@ -1259,8 +1264,8 @@ TEMPLATES = {
         "data": {
             "system": {"hostname": "C9K-ACCESS-01"},
             "vlans": [
-                {"vlan": "10", "name": "USERS"},
-                {"vlan": "99", "name": "MGMT"}
+                {"vlan": "10", "name": "USERS", "description": "End-user VLAN"},
+                {"vlan": "99", "name": "MGMT", "description": "Management VLAN"}
             ],
             "interfaces": [
                 {"interface": "GigabitEthernet1/0/1", "mode": "access", "vlan": "10", "description": "User Port", "stp_edge": True},
@@ -1275,8 +1280,8 @@ TEMPLATES = {
         "data": {
             "system": {"hostname": "ISR4K-01"},
             "vlans": [
-                {"vlan": "10", "name": "USERS"},
-                {"vlan": "20", "name": "SERVERS"}
+                {"vlan": "10", "name": "USERS", "description": "End-user VLAN"},
+                {"vlan": "20", "name": "SERVERS", "description": "Server VLAN"}
             ],
             "svis": [
                 {"vlan": "10", "description": "Users", "ip": "10.10.10.1/24"},
@@ -1293,7 +1298,7 @@ TEMPLATES = {
         "name": "📡 DHCP Server",
         "description": "DHCP pool with SVI gateway",
         "data": {
-            "vlans": [{"vlan": "10", "name": "USERS"}],
+            "vlans": [{"vlan": "10", "name": "USERS", "description": "End-user VLAN"}],
             "dhcp_pools": [{
                 "pool_name": "USERS_POOL", "network": "10.10.10.0", "cidr": "24",
                 "gateway": "10.10.10.1", "dns": "8.8.8.8 1.1.1.1",
@@ -1311,8 +1316,8 @@ TEMPLATES = {
         "data": {
             "system": {"hostname": "N9K-LEAF-01"},
             "vlans": [
-                {"vlan": "10", "name": "USERS"},
-                {"vlan": "20", "name": "SERVERS"}
+                {"vlan": "10", "name": "USERS", "description": "End-user VLAN"},
+                {"vlan": "20", "name": "SERVERS", "description": "Server VLAN"}
             ],
             "interfaces": [
                 {"interface": "Ethernet1/1", "mode": "access", "vlan": "10", "description": "Server port", "stp_edge": True},
@@ -1327,8 +1332,8 @@ TEMPLATES = {
         "data": {
             "system": {"hostname": "N9K-SPINE-01"},
             "vlans": [
-                {"vlan": "10", "name": "USERS"},
-                {"vlan": "20", "name": "SERVERS"}
+                {"vlan": "10", "name": "USERS", "description": "End-user VLAN"},
+                {"vlan": "20", "name": "SERVERS", "description": "Server VLAN"}
             ],
             "svis": [
                 {"vlan": "10", "description": "Users", "ip": "10.10.10.1/24"},
@@ -1348,7 +1353,7 @@ TEMPLATES = {
         "name": "📡 Nexus DHCP Server",
         "description": "Nexus with DHCP pool and SVI",
         "data": {
-            "vlans": [{"vlan": "10", "name": "USERS"}],
+            "vlans": [{"vlan": "10", "name": "USERS", "description": "End-user VLAN"}],
             "dhcp_pools": [{
                 "pool_name": "USERS_POOL", "network": "10.10.10.0", "cidr": "24",
                 "gateway": "10.10.10.1", "dns": "8.8.8.8 1.1.1.1", "lease_days": "7",
@@ -1362,6 +1367,11 @@ TEMPLATES = {
 # ============================================================
 # ROUTES
 # ============================================================
+@app.errorhandler(413)
+def _too_big(e):
+    return jsonify({'success': False, 'error': 'Request too large (max 2 MB)'}), 413
+
+
 @app.route("/")
 def root():
     return jsonify({
@@ -1424,9 +1434,10 @@ def templates():
 def feedback():
     try:
         data = request.json or {}
-        msg = data.get("message", "")
-        email = data.get("email", "anonymous")
-        print(f"[FEEDBACK v{APP_VERSION}] from={email} msg={msg[:300]}")
+        _clean = lambda v, n: re.sub(r"[\r\n\t\x00-\x1f]+", " ", str(v or ""))[:n]
+        msg = _clean(data.get("message", ""), 300)
+        email = _clean(data.get("email", "anonymous"), 100)
+        print(f"[FEEDBACK v{APP_VERSION}] from={email} msg={msg}")
         return jsonify({"success": True, "message": "Thanks for your feedback!"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400

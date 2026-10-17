@@ -595,14 +595,14 @@ footer{margin-top:80px;padding:40px 0 30px;border-top:1px solid var(--border)}
         <a onclick="document.querySelector('.templates-section').scrollIntoView({behavior:'smooth'})">Templates</a>
         <a onclick="openFeedback()">Send feedback</a>
         <a onclick="openSupport()">☕ Support us</a>
-        <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank">GitHub</a>
+        <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" rel="noopener noreferrer">GitHub</a>
       </div>
       <div class="footer-col">
         <h4>Vendors</h4>
-        <a href="https://www.h3c.com" target="_blank">H3C Official</a>
-        <a href="https://www.cisco.com" target="_blank">Cisco Official</a>
-        <a href="https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/" target="_blank">IOS Docs</a>
-        <a href="https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/" target="_blank">NX-OS Docs</a>
+        <a href="https://www.h3c.com" target="_blank" rel="noopener noreferrer">H3C Official</a>
+        <a href="https://www.cisco.com" target="_blank" rel="noopener noreferrer">Cisco Official</a>
+        <a href="https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/" target="_blank" rel="noopener noreferrer">IOS Docs</a>
+        <a href="https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/" target="_blank" rel="noopener noreferrer">NX-OS Docs</a>
       </div>
       <div class="footer-col">
         <h4>Legal</h4>
@@ -670,7 +670,7 @@ footer{margin-top:80px;padding:40px 0 30px;border-top:1px solid var(--border)}
       <h4>Your support helps:</h4>
       <ul><li>Cover server &amp; database hosting</li><li>Keep the domain alive</li><li>Stay completely ad-free</li><li>Add more vendors &amp; features</li></ul>
     </div>
-    <a href="https://saweria.co/configlabs" target="_blank" class="btn-saweria">💚 Support via <span class="saweria-pill">SAWERIA</span></a>
+    <a href="https://saweria.co/configlabs" target="_blank" rel="noopener noreferrer" class="btn-saweria">💚 Support via <span class="saweria-pill">SAWERIA</span></a>
     <p style="text-align:center;font-family:var(--mono);font-size:12px;color:var(--text-muted);margin-top:14px">Terima kasih banyak! 🙏</p>
     <div class="modal-actions" style="justify-content:center"><button class="btn btn-secondary" onclick="closeSupport()">Maybe later</button></div>
   </div>
@@ -811,9 +811,9 @@ function makeItem(title, html) {
 
 function addVlan(data = {}) {
   const html = `<div class="field-row-3">
-    <div class="field"><label>VLAN ID</label><input class="v-id" value="${data.vlan||''}" placeholder="10" oninput="refreshSviDropdowns()"></div>
-    <div class="field"><label>Name</label><input class="v-name" value="${data.name||''}" placeholder="USERS"></div>
-    <div class="field"><label>Description</label><input class="v-desc" value="${data.description||''}" placeholder="Office users"></div>
+    <div class="field"><label>VLAN ID</label><input class="v-id" value="${escA(data.vlan||'')}" placeholder="10" oninput="refreshSviDropdowns()"></div>
+    <div class="field"><label>Name <span class="hint">max 32</span></label><input class="v-name" value="${escA(data.name||'')}" placeholder="USERS"></div>
+    <div class="field"><label>Description <span class="hint">max 255</span></label><input class="v-desc" value="${escA(data.description||'')}" placeholder="Office users"></div>
   </div>`;
   document.getElementById('rep-vlans').appendChild(makeItem('VLAN', html));
   updateBadges(); refreshSviDropdowns();
@@ -822,10 +822,10 @@ function addVlan(data = {}) {
 function addSvi(data = {}) {
   const mode = data.dhcp_mode || 'none';
   const html = `<div class="field-row">
-    <div class="field"><label>VLAN ID</label><select class="s-vlan" data-sel="${data.vlan||''}"><option value="">— select —</option></select></div>
-    <div class="field"><label>Description</label><input class="s-desc" value="${data.description||''}" placeholder="User gateway"></div>
+    <div class="field"><label>VLAN ID</label><select class="s-vlan" data-sel="${escA(data.vlan||'')}"><option value="">— select —</option></select></div>
+    <div class="field"><label>Description</label><input class="s-desc" value="${escA(data.description||'')}" placeholder="User gateway"></div>
   </div>
-  <div class="field"><label>IP Address <span class="hint">CIDR e.g. 10.0.0.1/24</span></label><input class="s-ip" value="${data.ip||''}" placeholder="10.10.10.1/24"></div>
+  <div class="field"><label>IP Address <span class="hint">CIDR e.g. 10.0.0.1/24</span></label><input class="s-ip" value="${escA(data.ip||'')}" placeholder="10.10.10.1/24"></div>
   <div class="field"><label>DHCP Mode</label>
     <div class="segmented dhcp-seg">
       <button type="button" data-m="none"   class="${mode==='none'   ?'active':''}">None</button>
@@ -835,8 +835,8 @@ function addSvi(data = {}) {
     </div>
     <input type="hidden" class="s-dhcp-mode" value="${mode}">
   </div>
-  <div class="field s-server-wrap" style="display:${mode==='server'?'block':'none'}"><label>Apply Pool</label><select class="s-pool" data-sel="${data.dhcp_apply_pool||''}"><option value="">— select pool —</option></select></div>
-  <div class="field s-relay-wrap"  style="display:${mode==='relay' ?'block':'none'}"><label>Relay IP</label><input class="s-relay" value="${data.dhcp_relay||''}" placeholder="10.10.100.10"></div>
+  <div class="field s-server-wrap" style="display:${mode==='server'?'block':'none'}"><label>Apply Pool</label><select class="s-pool" data-sel="${escA(data.dhcp_apply_pool||'')}"><option value="">— select pool —</option></select></div>
+  <div class="field s-relay-wrap"  style="display:${mode==='relay' ?'block':'none'}"><label>Relay IP</label><input class="s-relay" value="${escA(data.dhcp_relay||'')}" placeholder="10.10.100.10"></div>
   <label class="check" style="margin-top:8px"><input type="checkbox" class="s-shut" ${data.shutdown?'checked':''}> Shutdown</label>`;
   const el = makeItem('VLAN-interface', html);
   document.getElementById('rep-svis').appendChild(el);
@@ -872,8 +872,8 @@ function addIntf(data = {}) {
   const mode = data.mode || 'access';
   const ifEx = state.vendor==='cisco' && state.os==='nxos' ? 'Ethernet1/1' : state.vendor==='cisco' ? 'GigabitEthernet0/1' : 'GigabitEthernet1/0/1';
   const html = `<div class="field-row">
-    <div class="field"><label>Interface</label><input class="i-name" value="${data.interface||''}" placeholder="${ifEx}"></div>
-    <div class="field"><label>Description</label><input class="i-desc" value="${data.description||''}" placeholder="Uplink"></div>
+    <div class="field"><label>Interface</label><input class="i-name" value="${escA(data.interface||'')}" placeholder="${ifEx}"></div>
+    <div class="field"><label>Description</label><input class="i-desc" value="${escA(data.description||'')}" placeholder="Uplink"></div>
   </div>
   <div class="field"><label>Mode</label>
     <div class="segmented mode-seg">
@@ -883,12 +883,12 @@ function addIntf(data = {}) {
     </div>
     <input type="hidden" class="i-mode" value="${mode}">
   </div>
-  <div class="field i-access-w" style="display:${mode==='access'?'block':'none'}"><label>Access VLAN</label><input class="i-vlan" value="${data.vlan||''}" placeholder="10"></div>
+  <div class="field i-access-w" style="display:${mode==='access'?'block':'none'}"><label>Access VLAN</label><input class="i-vlan" value="${escA(data.vlan||'')}" placeholder="10"></div>
   <div class="field i-trunk-w"  style="display:${mode==='trunk' ?'block':'none'}">
-    <div class="field-row"><div class="field"><label>Allowed VLANs</label><input class="i-allowed" value="${data.allowed||''}" placeholder="10 20 30"></div><div class="field"><label>Native/PVID</label><input class="i-pvid" value="${data.pvid||''}" placeholder="1"></div></div>
+    <div class="field-row"><div class="field"><label>Allowed VLANs</label><input class="i-allowed" value="${escA(data.allowed||'')}" placeholder="10 20 30"></div><div class="field"><label>Native/PVID</label><input class="i-pvid" value="${escA(data.pvid||'')}" placeholder="1"></div></div>
   </div>
   <div class="field i-hybrid-w" style="display:${mode==='hybrid'?'block':'none'}">
-    <div class="field-row"><div class="field"><label>Untagged</label><input class="i-untagged" value="${data.untagged||''}" placeholder="10"></div><div class="field"><label>Tagged</label><input class="i-tagged" value="${data.tagged||''}" placeholder="20 30"></div></div>
+    <div class="field-row"><div class="field"><label>Untagged</label><input class="i-untagged" value="${escA(data.untagged||'')}" placeholder="10"></div><div class="field"><label>Tagged</label><input class="i-tagged" value="${escA(data.tagged||'')}" placeholder="20 30"></div></div>
   </div>
   <div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap">
     <label class="check"><input type="checkbox" class="i-edge" ${data.stp_edge?'checked':''}> STP Edge/PortFast</label>
@@ -915,17 +915,17 @@ function addDhcp(data = {}) {
   if (Array.isArray(forbidden)) forbidden = forbidden.join(' ');
   forbidden = forbidden || '';
   const html = `<div class="field-row">
-    <div class="field"><label>Pool Name</label><input class="d-name" value="${data.pool_name||''}" placeholder="USERS_POOL" oninput="refreshSviDropdowns()"></div>
-    <div class="field"><label>Lease Days</label><input class="d-lease" value="${data.lease_days||'7'}" placeholder="7"></div>
+    <div class="field"><label>Pool Name</label><input class="d-name" value="${escA(data.pool_name||'')}" placeholder="USERS_POOL" oninput="refreshSviDropdowns()"></div>
+    <div class="field"><label>Lease Days</label><input class="d-lease" value="${escA(data.lease_days||'7')}" placeholder="7"></div>
   </div>
   <div class="field-row-3">
-    <div class="field"><label>Network</label><input class="d-net" value="${data.network||''}" placeholder="10.10.10.0"></div>
-    <div class="field"><label>CIDR</label><input class="d-cidr" value="${data.cidr||''}" placeholder="24"></div>
-    <div class="field"><label>Gateway</label><input class="d-gw" value="${data.gateway||''}" placeholder="10.10.10.1"></div>
+    <div class="field"><label>Network</label><input class="d-net" value="${escA(data.network||'')}" placeholder="10.10.10.0"></div>
+    <div class="field"><label>CIDR</label><input class="d-cidr" value="${escA(data.cidr||'')}" placeholder="24"></div>
+    <div class="field"><label>Gateway</label><input class="d-gw" value="${escA(data.gateway||'')}" placeholder="10.10.10.1"></div>
   </div>
   <div class="field-row">
-    <div class="field"><label>DNS Servers</label><input class="d-dns" value="${data.dns||'8.8.8.8 1.1.1.1'}" placeholder="8.8.8.8"></div>
-    <div class="field"><label>Domain</label><input class="d-domain" value="${data.domain||''}" placeholder="company.local"></div>
+    <div class="field"><label>DNS Servers</label><input class="d-dns" value="${escA(data.dns||'8.8.8.8 1.1.1.1')}" placeholder="8.8.8.8"></div>
+    <div class="field"><label>Domain</label><input class="d-domain" value="${escA(data.domain||'')}" placeholder="company.local"></div>
   </div>
   <div class="field"><label>Excluded IPs <span class="hint">space-separated</span></label><input class="d-forbidden" value="${forbidden}" placeholder="10.10.10.1 10.10.10.2"></div>`;
   document.getElementById('rep-dhcp').appendChild(makeItem('DHCP Pool', html));
@@ -934,13 +934,13 @@ function addDhcp(data = {}) {
 
 function addRoute(data = {}) {
   const html = `<div class="field-row-3">
-    <div class="field"><label>Destination</label><input class="r-net" value="${data.network||''}" placeholder="0.0.0.0"></div>
-    <div class="field"><label>CIDR</label><input class="r-cidr" value="${data.cidr||''}" placeholder="0"></div>
-    <div class="field"><label>Next Hop</label><input class="r-nh" value="${data.next_hop||''}" placeholder="192.168.1.1"></div>
+    <div class="field"><label>Destination</label><input class="r-net" value="${escA(data.network||'')}" placeholder="0.0.0.0"></div>
+    <div class="field"><label>CIDR</label><input class="r-cidr" value="${escA(data.cidr||'')}" placeholder="0"></div>
+    <div class="field"><label>Next Hop</label><input class="r-nh" value="${escA(data.next_hop||'')}" placeholder="192.168.1.1"></div>
   </div>
   <div class="field-row">
-    <div class="field"><label>Preference</label><input class="r-pref" value="${data.preference||''}" placeholder="60"></div>
-    <div class="field"><label>Description</label><input class="r-desc" value="${data.description||''}" placeholder="Default route"></div>
+    <div class="field"><label>Preference</label><input class="r-pref" value="${escA(data.preference||'')}" placeholder="60"></div>
+    <div class="field"><label>Description</label><input class="r-desc" value="${escA(data.description||'')}" placeholder="Default route"></div>
   </div>`;
   document.getElementById('rep-routes').appendChild(makeItem('Static Route', html));
   updateBadges();
@@ -948,8 +948,8 @@ function addRoute(data = {}) {
 
 function addOspfNet(data = {}) {
   const html = `<div class="field-row">
-    <div class="field"><label>Network</label><input class="o-net" value="${data.network||''}" placeholder="10.0.0.0"></div>
-    <div class="field"><label>CIDR</label><input class="o-cidr" value="${data.cidr||''}" placeholder="16"></div>
+    <div class="field"><label>Network</label><input class="o-net" value="${escA(data.network||'')}" placeholder="10.0.0.0"></div>
+    <div class="field"><label>CIDR</label><input class="o-cidr" value="${escA(data.cidr||'')}" placeholder="16"></div>
   </div>`;
   document.getElementById('rep-ospf-nets').appendChild(makeItem('Network', html));
 }
@@ -958,22 +958,22 @@ const ACL_GRID = 'display:grid;grid-template-columns:50px 76px 68px 1fr 1fr;gap:
 function aclRowHtml(r = {}) {
   const sel = (v, d) => (r.protocol || 'ip') === v ? 'selected' : '';
   return `<div class="acl-row" style="${ACL_GRID}">
-    <input class="acl-rid" value="${r.rule_id||''}" placeholder="5">
+    <input class="acl-rid" value="${escA(r.rule_id||'')}" placeholder="5">
     <select class="acl-act"><option value="permit" ${r.action==='permit'?'selected':''}>permit</option><option value="deny" ${r.action==='deny'?'selected':''}>deny</option></select>
     <select class="acl-proto"><option value="ip" ${sel('ip')}>ip</option><option value="tcp" ${sel('tcp')}>tcp</option><option value="udp" ${sel('udp')}>udp</option><option value="icmp" ${sel('icmp')}>icmp</option></select>
-    <input class="acl-src" value="${r.source||'any'}" placeholder="source: any">
-    <input class="acl-wc"  value="${r.wildcard||''}"  placeholder="0.0.0.255">
+    <input class="acl-src" value="${escA(r.source||'any')}" placeholder="source: any">
+    <input class="acl-wc"  value="${escA(r.wildcard||'')}"  placeholder="0.0.0.255">
     <span style="grid-column:1 / span 3;text-align:right;align-self:center;font-family:var(--mono);font-size:11px;color:var(--text-muted)">to destination ↳</span>
-    <input class="acl-dst" value="${r.destination||''}" placeholder="dest: any">
-    <input class="acl-dwc" value="${r.dest_wildcard||''}" placeholder="0.0.0.255">
+    <input class="acl-dst" value="${escA(r.destination||'')}" placeholder="dest: any">
+    <input class="acl-dwc" value="${escA(r.dest_wildcard||'')}" placeholder="0.0.0.255">
   </div>`;
 }
 function addAcl(data = {}) {
   const rules = (data.rules && data.rules.length) ? data.rules : [{}];
   const rowHtml = aclRowHtml;
   const html = `<div class="field-row">
-    <div class="field"><label>ACL Number</label><input class="a-num" value="${data.acl_number||'3000'}" placeholder="3000"></div>
-    <div class="field"><label>Description</label><input class="a-desc" value="${data.description||''}" placeholder="ACL-NAME"></div>
+    <div class="field"><label>ACL Number</label><input class="a-num" value="${escA(data.acl_number||'3000')}" placeholder="3000"></div>
+    <div class="field"><label>Description</label><input class="a-desc" value="${escA(data.description||'')}" placeholder="ACL-NAME"></div>
   </div>
   <label>Rules <span class="hint">id · action · proto · source · wildcard · destination (optional, ACL 3000+)</span></label>
   <div class="acl-rules">${rules.map(rowHtml).join('')}</div>
@@ -993,15 +993,15 @@ function addIsp(data = {}) {
   if (document.querySelectorAll('#rep-isps .repeater-item').length >= 5) { toast('Max 5 ISPs', true); return; }
   const n = document.querySelectorAll('#rep-isps .repeater-item').length;
   const html = `<div class="field-row">
-    <div class="field"><label>Name</label><input class="p-name" value="${data.name||''}" placeholder="ISP-${'ABCDE'[n]}"></div>
-    <div class="field"><label>Gateway (next-hop)</label><input class="p-gw" value="${data.gateway||''}" placeholder="100.0.0.1"></div>
+    <div class="field"><label>Name</label><input class="p-name" value="${escA(data.name||'')}" placeholder="ISP-${'ABCDE'[n]}"></div>
+    <div class="field"><label>Gateway (next-hop)</label><input class="p-gw" value="${escA(data.gateway||'')}" placeholder="100.0.0.1"></div>
   </div>
   <div class="field-row">
-    <div class="field"><label>Probe target <span class="hint">ping via this ISP</span></label><input class="p-probe" value="${data.probe_ip||''}" placeholder="${['8.8.8.8','1.1.1.1','9.9.9.9','208.67.222.222','8.8.4.4'][n]}"></div>
-    <div class="field"><label>WAN interface</label><input class="p-wan" value="${data.wan_interface||''}" placeholder="GigabitEthernet0/1"></div>
+    <div class="field"><label>Probe target <span class="hint">ping via this ISP</span></label><input class="p-probe" value="${escA(data.probe_ip||'')}" placeholder="${['8.8.8.8','1.1.1.1','9.9.9.9','208.67.222.222','8.8.4.4'][n]}"></div>
+    <div class="field"><label>WAN interface</label><input class="p-wan" value="${escA(data.wan_interface||'')}" placeholder="GigabitEthernet0/1"></div>
   </div>
   <div class="field-row">
-    <div class="field"><label>WAN IP <span class="hint">CIDR, optional</span></label><input class="p-wanip" value="${data.wan_ip||''}" placeholder="100.0.0.2/30"></div>
+    <div class="field"><label>WAN IP <span class="hint">CIDR, optional</span></label><input class="p-wanip" value="${escA(data.wan_ip||'')}" placeholder="100.0.0.2/30"></div>
     <div class="field"><label>NAT outbound</label><select class="p-nat"><option value="1" ${data.nat===false?'':'selected'}>Yes</option><option value="0" ${data.nat===false?'selected':''}>No</option></select></div>
   </div>`;
   document.getElementById('rep-isps').appendChild(makeItem('ISP ' + 'ABCDE'[n], html));
@@ -1010,19 +1010,19 @@ function addIsp(data = {}) {
 function addLan(data = {}) {
   const sel = (v, arr) => arr.map(x => `<option value="${x}" ${String(v||'')===String(x)?'selected':''}>${x||'auto'}</option>`).join('');
   const html = `<div class="field-row-3">
-    <div class="field"><label>Name</label><input class="l-name" value="${data.name||''}" placeholder="LAN-1"></div>
-    <div class="field"><label>Source network</label><input class="l-net" value="${data.network||''}" placeholder="10.10.10.0 (blank = any)"></div>
-    <div class="field"><label>CIDR <span class="hint">32 = host</span></label><input class="l-cidr" value="${data.cidr||''}" placeholder="24"></div>
+    <div class="field"><label>Name</label><input class="l-name" value="${escA(data.name||'')}" placeholder="LAN-1"></div>
+    <div class="field"><label>Source network</label><input class="l-net" value="${escA(data.network||'')}" placeholder="10.10.10.0 (blank = any)"></div>
+    <div class="field"><label>CIDR <span class="hint">32 = host</span></label><input class="l-cidr" value="${escA(data.cidr||'')}" placeholder="24"></div>
   </div>
   <div class="field-row-3">
-    <div class="field"><label>Destination <span class="hint">optional</span></label><input class="l-dnet" value="${data.dst_network||''}" placeholder="1.2.3.0"></div>
-    <div class="field"><label>Dst CIDR</label><input class="l-dcidr" value="${data.dst_cidr||''}" placeholder="24"></div>
+    <div class="field"><label>Destination <span class="hint">optional</span></label><input class="l-dnet" value="${escA(data.dst_network||'')}" placeholder="1.2.3.0"></div>
+    <div class="field"><label>Dst CIDR</label><input class="l-dcidr" value="${escA(data.dst_cidr||'')}" placeholder="24"></div>
     <div class="field"><label>Primary ISP</label><select class="l-primary">${sel(data.primary,['',1,2,3,4,5])}</select></div>
   </div>
   <div class="field-row-3">
     <div class="field"><label>Protocol</label><select class="l-proto">${['ip','tcp','udp','icmp'].map(p=>`<option ${((data.protocol||'ip')===p)?'selected':''}>${p}</option>`).join('')}</select></div>
-    <div class="field"><label>Dst port <span class="hint">tcp/udp</span></label><input class="l-dport" value="${data.dst_port||''}" placeholder="443"></div>
-    <div class="field"><label>Apply on interface</label><input class="l-if" value="${data.interface||''}" placeholder="Vlan-interface10"></div>
+    <div class="field"><label>Dst port <span class="hint">tcp/udp</span></label><input class="l-dport" value="${escA(data.dst_port||'')}" placeholder="443"></div>
+    <div class="field"><label>Apply on interface</label><input class="l-if" value="${escA(data.interface||'')}" placeholder="Vlan-interface10"></div>
   </div>`;
   document.getElementById('rep-lans').appendChild(makeItem('Rule', html));
 }
@@ -1253,6 +1253,8 @@ function lint() {
     if (mode === 'trunk' && !it.querySelector('.i-allowed').value.trim()) W('intf', it.querySelector('.i-allowed'), `${nm}: trunk has no Allowed VLANs, so it will carry no VLANs`);
     if (mode === 'access' && !it.querySelector('.i-vlan').value.trim()) W('intf', it.querySelector('.i-vlan'), `${nm}: access port has no VLAN (stays in VLAN 1)`);
   });
+  // Hostname
+  { const hn = document.getElementById('sys-hostname'); if (hn && hn.value.trim() && !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,62}$/.test(hn.value.trim())) W('sys', hn, `Hostname "${hn.value.trim().slice(0,30)}" has invalid characters (use letters, digits, - _ . only; max 63)`); }
   // DHCP
   q(document, '#rep-dhcp .repeater-item').forEach(it => {
     const nm = it.querySelector('.d-name').value.trim(); if (!nm) return;
@@ -1346,7 +1348,8 @@ function hlLine(line) {
   return s;
 }
 
-function escH(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escH(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function escA(s) { return escH(s==null?'':s); }
 function setStatus(t, cls) { const s = document.getElementById('status'); s.className = 'status-bar' + (cls?' '+cls:''); document.getElementById('status-text').textContent = t; }
 function toggleLineNumbers() { showLineNumbers = !showLineNumbers; document.getElementById('toggle-ln').classList.toggle('active', showLineNumbers); if (lastConfig) renderOutput(lastConfig); }
 function toggleHighlight()   { showHighlight   = !showHighlight;   document.getElementById('toggle-hl').classList.toggle('active', showHighlight);   if (lastConfig) renderOutput(lastConfig); }
@@ -1465,7 +1468,7 @@ document.addEventListener('keydown', e => {
 })();
 </script>
 <script>
-(function(){var _u=null,_t=localStorage.getItem("clab_token")||"";;window.authOpenModal=function(){document.getElementById("auth-modal").classList.add("open")};window.authCloseModal=function(){document.getElementById("auth-modal").classList.remove("open")};document.addEventListener("keydown",function(e){if(e.key==="Escape")authCloseModal()});window.authToggleDropdown=function(){var d=document.getElementById("auth-dd");if(d)d.classList.toggle("open")};document.addEventListener("click",function(e){var w=document.getElementById("auth-nav");if(w&&!w.contains(e.target)){var d=document.getElementById("auth-dd");if(d)d.classList.remove("open")}});window.authLogout=function(){localStorage.removeItem("clab_token");_u=null;_t="";rAN();if(typeof toast==="function")toast("Logged out")};function rAN(){var el=document.getElementById("auth-nav");if(!el)return;if(_u){var av=_u.avatar_url?"<img class='auth-avatar' src='"+_u.avatar_url+"' alt=''  onclick='authToggleDropdown()'>": "<button class='auth-avatar' onclick='authToggleDropdown()' style='background:var(--accent);color:var(--bg);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center'>"+_u.name[0].toUpperCase()+"</button>";el.innerHTML="<div class='auth-user-wrap'>"+av+"<div class='auth-dropdown' id='auth-dd'><div class='auth-dropdown-header'><div class='auth-dropdown-name'>"+_u.name+"</div><div class='auth-dropdown-email'>"+_u.email+"</div><div class='auth-dropdown-provider'>via "+_u.provider+"</div></div><button class='auth-dropdown-item danger' onclick='authLogout()'>Logout</button></div></div>";}else{el.innerHTML="<button class='auth-login-btn' onclick='authOpenModal()'>Login</button>";}}async function fetchMe(){if(!_t){rAN();return;}try{var r=await fetch("/api/me",{headers:{"Authorization":"Bearer "+_t}});if(r.ok){_u=await r.json();}else{localStorage.removeItem("clab_token");_t="";_u=null;}}catch(e){_u=null;}rAN();}var p=new URLSearchParams(window.location.search);var tk=p.get("auth_token"),er=p.get("auth_error");if(tk){localStorage.setItem("clab_token",tk);_t=tk;window.history.replaceState({},"",window.location.pathname);}if(er){window.history.replaceState({},"",window.location.pathname);}fetchMe();})();
+(function(){var _u=null,_t=localStorage.getItem("clab_token")||"";;window.authOpenModal=function(){document.getElementById("auth-modal").classList.add("open")};window.authCloseModal=function(){document.getElementById("auth-modal").classList.remove("open")};document.addEventListener("keydown",function(e){if(e.key==="Escape")authCloseModal()});window.authToggleDropdown=function(){var d=document.getElementById("auth-dd");if(d)d.classList.toggle("open")};document.addEventListener("click",function(e){var w=document.getElementById("auth-nav");if(w&&!w.contains(e.target)){var d=document.getElementById("auth-dd");if(d)d.classList.remove("open")}});window.authLogout=function(){localStorage.removeItem("clab_token");_u=null;_t="";rAN();if(typeof toast==="function")toast("Logged out")};function X(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}function rAN(){var el=document.getElementById("auth-nav");if(!el)return;if(_u){var av=_u.avatar_url?"<img class='auth-avatar' src='"+(/^https:\/\//.test(_u.avatar_url)?X(_u.avatar_url):"")+"' alt=''  onclick='authToggleDropdown()'>": "<button class='auth-avatar' onclick='authToggleDropdown()' style='background:var(--accent);color:var(--bg);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center'>"+X((_u.name||"?")[0].toUpperCase())+"</button>";el.innerHTML="<div class='auth-user-wrap'>"+av+"<div class='auth-dropdown' id='auth-dd'><div class='auth-dropdown-header'><div class='auth-dropdown-name'>"+X(_u.name)+"</div><div class='auth-dropdown-email'>"+X(_u.email)+"</div><div class='auth-dropdown-provider'>via "+X(_u.provider)+"</div></div><button class='auth-dropdown-item danger' onclick='authLogout()'>Logout</button></div></div>";}else{el.innerHTML="<button class='auth-login-btn' onclick='authOpenModal()'>Login</button>";}}async function fetchMe(){if(!_t){rAN();return;}try{var r=await fetch("/api/me",{headers:{"Authorization":"Bearer "+_t}});if(r.ok){_u=await r.json();}else{localStorage.removeItem("clab_token");_t="";_u=null;}}catch(e){_u=null;}rAN();}var p=new URLSearchParams(window.location.search);var tk=p.get("auth_token"),er=p.get("auth_error");if(tk&&/^[\w-]+\.[\w-]+\.[\w-]+$/.test(tk)){localStorage.setItem("clab_token",tk);_t=tk;window.history.replaceState({},"",window.location.pathname);}else if(tk){window.history.replaceState({},"",window.location.pathname);}if(er){window.history.replaceState({},"",window.location.pathname);}fetchMe();})();
 </script>
 <!-- MY FILES MODAL -->
 <div class="auth-modal-overlay" id="myfiles-modal" onclick="if(event.target===this)closeMyFiles()">

@@ -4491,14 +4491,15 @@ function renderAuthLogin() {
 }
 
 function renderAuthUser(user) {
+  const _X=v=>String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
   const av = user.avatar_url
-    ? `<img class="auth-avatar" src="${user.avatar_url}" onclick="document.getElementById('auth-dd').classList.toggle('open')">`
-    : `<button class="auth-avatar" onclick="document.getElementById('auth-dd').classList.toggle('open')" style="background:var(--accent);color:var(--bg);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center">${user.name[0]}</button>`;
+    ? `<img class="auth-avatar" src="${/^https:\/\//.test(user.avatar_url)?_X(user.avatar_url):''}" onclick="document.getElementById('auth-dd').classList.toggle('open')">`
+    : `<button class="auth-avatar" onclick="document.getElementById('auth-dd').classList.toggle('open')" style="background:var(--accent);color:var(--bg);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center">${_X((user.name||"?")[0])}</button>`;
   document.getElementById('auth-nav').innerHTML = `
     <div class="auth-user-wrap">
       ${av}
       <div class="auth-dropdown" id="auth-dd">
-        <div class="auth-dropdown-header"><div class="auth-dropdown-name">${user.name}</div><div class="auth-dropdown-email">${user.email}</div></div>
+        <div class="auth-dropdown-header"><div class="auth-dropdown-name">${_X(user.name)}</div><div class="auth-dropdown-email">${_X(user.email)}</div></div>
         <button class="auth-dropdown-item danger" onclick="localStorage.removeItem('clab_token');try{localStorage.removeItem('cl_matlib');localStorage.removeItem('cl_apcat')}catch(e){};location.reload()">Logout</button>
       </div>
     </div>`;

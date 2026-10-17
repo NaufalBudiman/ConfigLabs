@@ -1,20 +1,84 @@
 {
   "redirects": [
-    { "source": "/solutions-showcase-v3.html", "destination": "/", "permanent": true },
-    { "source": "/about", "destination": "/about.html", "permanent": true },
-    { "source": "/builder", "destination": "/builder.html", "permanent": true },
-    { "source": "/wifi", "destination": "/wifi.html", "permanent": true },
-    { "source": "/topology", "destination": "/topology.html", "permanent": false }
+    {
+      "source": "/solutions-showcase-v3.html",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/about",
+      "destination": "/about.html",
+      "permanent": true
+    },
+    {
+      "source": "/builder",
+      "destination": "/builder.html",
+      "permanent": true
+    },
+    {
+      "source": "/wifi",
+      "destination": "/wifi.html",
+      "permanent": true
+    },
+    {
+      "source": "/topology",
+      "destination": "/topology.html",
+      "permanent": false
+    }
   ],
   "rewrites": [
-    { "source": "/auth/:path*", "destination": "/api/index" },
-    { "source": "/api/:path*", "destination": "/api/index" },
-    { "source": "/templates", "destination": "/api/index" },
-    { "source": "/generate", "destination": "/api/index" },
-    { "source": "/vendors", "destination": "/api/index" },
-    { "source": "/feedback", "destination": "/api/index" }
+    {
+      "source": "/auth/:path*",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/templates",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/generate",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/vendors",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/feedback",
+      "destination": "/api/index"
+    }
   ],
   "functions": {
-    "api/index.py": { "includeFiles": "{ConfigLab.py,models.py}", "maxDuration": 30 }
-  }
+    "api/index.py": {
+      "includeFiles": "{ConfigLab.py,models.py}",
+      "maxDuration": 30
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        }
+      ]
+    }
+  ]
 }

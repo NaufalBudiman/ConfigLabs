@@ -463,20 +463,21 @@ function saveDoc() {
   try { const b = allBounds(); if (b) { const m = sceneMarkup(), W = Math.max(b.w + 60, 560), H = Math.max(b.h + 60, 350), vx = b.x + b.w / 2 - W / 2, vy = b.y + b.h / 2 - H / 2; if (m.length < 160000) ls.set('cl_tg_t_' + d.id, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${W} ${H}" preserveAspectRatio="xMidYMid meet">${m}</svg>`); } else ls.del('cl_tg_t_' + d.id); } catch (x) {}
   setSave('Saved ✓ ' + new Date().toTimeString().slice(0, 5));
 }
+const CLR=c=>{c=String(c||'').trim();return /^(#[0-9a-fA-F]{3,8}|var\(--[\w-]+\)|rgba?\([\d\s.,%]+\)|[a-zA-Z]{3,20})$/.test(c)?c:''};
 function cleanDoc(o) {
   const d = { id: uid('d'), name: String((o && o.name) || 'Untitled diagram').slice(0, 80), items: [], links: [] };
   const ids = new Set();
   ((o && o.items) || []).forEach(i => {
     if (!i || !['dev', 'box', 'txt'].includes(i.k) || !isFinite(+i.x) || !isFinite(+i.y)) return;
-    const n = { id: String(i.id || uid('i')), k: i.k, x: +i.x, y: +i.y };
+    const n = { id: String(i.id || uid('i')), k: i.k, x: clamp(+i.x,-1e5,1e5), y: clamp(+i.y,-1e5,1e5) };
     if (ids.has(n.id)) n.id = uid('i'); ids.add(n.id);
-    if (i.k === 'dev') Object.assign(n, { t: TYPES[i.t] ? i.t : 'generic', label: String(i.label || ''), vendor: String(i.vendor || ''), model: String(i.model || ''), ip: String(i.ip || ''), note: String(i.note || ''), s: clamp(num(i.s, 1), .5, 2.5), c: i.c ? String(i.c) : '' });
-    if (i.k === 'box') Object.assign(n, { w: Math.max(40, num(i.w, 200)), h: Math.max(30, num(i.h, 140)), label: String(i.label || ''), c: i.c ? String(i.c) : BOXC[0] });
-    if (i.k === 'txt') Object.assign(n, { text: String(i.text || ''), size: clamp(num(i.size, 16), 8, 80), c: i.c ? String(i.c) : '' });
+    if (i.k === 'dev') Object.assign(n, { t: TYPES[i.t] ? i.t : 'generic', label: String(i.label || ''), vendor: String(i.vendor || ''), model: String(i.model || ''), ip: String(i.ip || ''), note: String(i.note || ''), s: clamp(num(i.s, 1), .5, 2.5), c: CLR(i.c) });
+    if (i.k === 'box') Object.assign(n, { w: Math.max(40, num(i.w, 200)), h: Math.max(30, num(i.h, 140)), label: String(i.label || ''), c: CLR(i.c) || BOXC[0] });
+    if (i.k === 'txt') Object.assign(n, { text: String(i.text || ''), size: clamp(num(i.size, 16), 8, 80), c: CLR(i.c) });
     d.items.push(n);
   });
   const dv = new Set(d.items.filter(i => i.k === 'dev').map(i => i.id));
-  ((o && o.links) || []).forEach(l => { if (l && dv.has(l.a) && dv.has(l.b) && l.a !== l.b) d.links.push({ id: String(l.id || uid('l')), a: l.a, b: l.b, type: LT[l.type] ? l.type : 'copper', route: ['straight', 'orth', 'curve'].includes(l.route) ? l.route : 'orth', la: String(l.la || ''), lb: String(l.lb || ''), label: String(l.label || ''), c: l.c ? String(l.c) : '', wd: l.wd ? clamp(num(l.wd, 2), 1, 8) : 0 }); });
+  ((o && o.links) || []).forEach(l => { if (l && dv.has(l.a) && dv.has(l.b) && l.a !== l.b) d.links.push({ id: String(l.id || uid('l')), a: l.a, b: l.b, type: LT[l.type] ? l.type : 'copper', route: ['straight', 'orth', 'curve'].includes(l.route) ? l.route : 'orth', la: String(l.la || ''), lb: String(l.lb || ''), label: String(l.label || ''), c: CLR(l.c), wd: l.wd ? clamp(num(l.wd, 2), 1, 8) : 0 }); });
   return d;
 }
 function openDoc(id, keepView) {

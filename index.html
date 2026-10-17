@@ -500,7 +500,7 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
     </a>
 
     <!-- ABOUT - Opens GitHub -->
-    <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" class="feature-card about">
+    <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" rel="noopener noreferrer" class="feature-card about">
       <div class="feature-icon">
         <svg viewBox="0 0 64 64" fill="none">
           <path d="M12 12C10.9 12 10 12.9 10 14V54C10 55.1 10.9 56 12 56H52C53.1 56 54 55.1 54 54V14C54 12.9 53.1 12 52 12H12Z" stroke="#ffb86b" stroke-width="2.5" stroke-linejoin="round"/>
@@ -533,11 +533,11 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
         <p>Active development with regular releases. Here's what shipped recently:</p>
       </div>
       <div class="changelog">
-        <div class="cl-item"><span class="cl-version"><span data-cl-version>v6.3.3</span></span><div class="cl-content"><h4>Topology: Export Everywhere</h4><p>JPEG, WebP and PDF downloads are now also in the WiFi Planner view, and every diagram on the My diagrams page has an Export image / PDF option in its menu that opens the export dialog directly.</p></div></div>
+        <div class="cl-item"><span class="cl-version"><span data-cl-version>v6.3.5</span></span><div class="cl-content"><h4>H3C config accuracy</h4><p>H3C output now follows the official Comware 7 command reference: DHCP forbidden-ip moved to system view, banner delimiters, common DHCP pools no longer emit an extended-pool apply command, and VLAN templates fill both Name and Description.</p></div></div>
+        <div class="cl-item"><span class="cl-version">v6.3.4</span><div class="cl-content"><h4>Security hardening</h4><p>Safer handling of imported diagrams and of text typed into Config Builder fields, stricter account-menu rendering, request size limits, hostname validation in the linter, and standard security headers.</p></div></div>
+        <div class="cl-item"><span class="cl-version">v6.3.3</span><div class="cl-content"><h4>Topology: Export Everywhere</h4><p>JPEG, WebP and PDF downloads are now also in the WiFi Planner view, and every diagram on the My diagrams page has an Export image / PDF option in its menu that opens the export dialog directly.</p></div></div>
         <div class="cl-item"><span class="cl-version">v6.3.2</span><div class="cl-content"><h4>Topology (beta): Export</h4><p>The Topology editor is now labelled Beta. Export has its own dialog with a live preview: PNG, JPEG, WebP, SVG, PDF (A4, A3, Letter or fit-to-diagram), draw.io for editing in diagrams.net, and a .json backup. Choose resolution, theme, transparent background and whether to include the title and legend.</p></div></div>
         <div class="cl-item"><span class="cl-version">v6.3.1</span><div class="cl-content"><h4>My Diagrams</h4><p>The Topology page now opens on a file page: create a diagram (blank or from the campus example), see all your saved diagrams with previews, then rename, duplicate, export, import or delete them. Open any diagram again to keep editing, and use the Diagrams button in the editor to come back.</p></div></div>
-        <div class="cl-item"><span class="cl-version">v6.3.0</span><div class="cl-content"><h4>Topology Editor</h4><p>The Topology page is now a free drawing editor: drag routers, switches, firewalls, APs and servers onto a canvas, draw labelled cables between them, group devices in zones, and export to PNG, SVG or PDF. Diagrams save in your browser. The automatic WiFi Planner view is still there and can be opened as an editable diagram.</p></div></div>
-        <div class="cl-item"><span class="cl-version">v6.2.0</span><div class="cl-content"><h4>Network Topology</h4><p>New page that builds a network diagram from a WiFi Planner project: ISP, firewall, core and access switches per floor, with uplinks, port map and PoE budget. Auto, top-down or left-right layout, minimap, and export to PNG, SVG, PDF or a CSV cable schedule. Open it from the Planner with Analyze, then Network topology.</p></div></div>
       </div>
     </div>
   </section>
@@ -624,7 +624,7 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
         Start Building Now
       </a>
-      <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" class="btn-secondary">
+      <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" rel="noopener noreferrer" class="btn-secondary">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
         Star on GitHub
       </a>
@@ -654,15 +654,15 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
     <div class="footer-col">
       <h4>Resources</h4>
       <a href="/about.html">About</a>
-      <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank">GitHub</a>
-      <a href="https://github.com/NaufalBudiman/ConfigLabs/issues" target="_blank">Issues</a>
-      <a href="https://github.com/NaufalBudiman/ConfigLabs/releases" target="_blank">Changelog</a>
+      <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="https://github.com/NaufalBudiman/ConfigLabs/issues" target="_blank" rel="noopener noreferrer">Issues</a>
+      <a href="https://github.com/NaufalBudiman/ConfigLabs/releases" target="_blank" rel="noopener noreferrer">Changelog</a>
     </div>
     <div class="footer-col">
       <h4>Support</h4>
-      <a href="https://saweria.co/configlabs" target="_blank">Donate (Saweria)</a>
-      <a href="https://github.com/NaufalBudiman/ConfigLabs/issues/new" target="_blank">Report a Bug</a>
-      <a href="https://github.com/NaufalBudiman/ConfigLabs/issues/new" target="_blank">Feature Request</a>
+      <a href="https://saweria.co/configlabs" target="_blank" rel="noopener noreferrer">Donate (Saweria)</a>
+      <a href="https://github.com/NaufalBudiman/ConfigLabs/issues/new" target="_blank" rel="noopener noreferrer">Report a Bug</a>
+      <a href="https://github.com/NaufalBudiman/ConfigLabs/issues/new" target="_blank" rel="noopener noreferrer">Feature Request</a>
       <a href="/about.html#contact">Contact</a>
     </div>
   </div>
@@ -671,7 +671,7 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
     <div class="legal-links">
       <a href="/about.html#privacy">Privacy</a>
       <a href="/about.html#terms">Terms</a>
-      <a href="https://github.com/NaufalBudiman/ConfigLabs/blob/main/LICENSE" target="_blank">License (MIT)</a>
+      <a href="https://github.com/NaufalBudiman/ConfigLabs/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License (MIT)</a>
     </div>
   </div>
 </footer>
@@ -696,7 +696,7 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
         <li>Add more vendors &amp; features</li>
       </ul>
     </div>
-    <a href="https://saweria.co/configlabs" target="_blank" class="btn-saweria">💚 Support via <span class="saweria-pill">SAWERIA</span></a>
+    <a href="https://saweria.co/configlabs" target="_blank" rel="noopener noreferrer" class="btn-saweria">💚 Support via <span class="saweria-pill">SAWERIA</span></a>
     <p style="text-align:center;font-family:var(--mono);font-size:12px;color:var(--text-muted);margin-top:14px">Terima kasih banyak! 🙏</p>
     <div class="modal-actions" style="justify-content:center"><button class="btn btn-secondary" onclick="closeSupport()">Maybe later</button></div>
   </div>
@@ -823,18 +823,19 @@ if(statusEl){
     if (!el) return;
 
     if (_user) {
+      const _X=v=>String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
       const avatar = _user.avatar_url
-        ? `<img class="auth-avatar" src="${_user.avatar_url}" alt="avatar" onclick="authToggleDropdown()">`
-        : `<button class="auth-avatar" onclick="authToggleDropdown()" style="background:var(--accent);color:var(--bg);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center">${_user.name[0].toUpperCase()}</button>`;
+        ? `<img class="auth-avatar" src="${/^https:\/\//.test(_user.avatar_url)?_X(_user.avatar_url):''}" alt="avatar" onclick="authToggleDropdown()">`
+        : `<button class="auth-avatar" onclick="authToggleDropdown()" style="background:var(--accent);color:var(--bg);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center">${_X((_user.name||"?")[0].toUpperCase())}</button>`;
 
       el.innerHTML = `
         <div class="auth-user-wrap">
           ${avatar}
           <div class="auth-dropdown" id="auth-dd">
             <div class="auth-dropdown-header">
-              <div class="auth-dropdown-name">${_user.name}</div>
-              <div class="auth-dropdown-email">${_user.email}</div>
-              <div class="auth-dropdown-provider">via ${_user.provider}</div>
+              <div class="auth-dropdown-name">${_X(_user.name)}</div>
+              <div class="auth-dropdown-email">${_X(_user.email)}</div>
+              <div class="auth-dropdown-provider">via ${_X(_user.provider)}</div>
             </div>
             <button class="auth-dropdown-item danger" onclick="authLogout()">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -875,7 +876,8 @@ if(statusEl){
   const incoming = params.get('auth_token');
   const authErr  = params.get('auth_error');
 
-  if (incoming) {
+  if (incoming && !/^[\w-]+\.[\w-]+\.[\w-]+$/.test(incoming)) { window.history.replaceState({}, '', window.location.pathname); }
+  else if (incoming) {
     localStorage.setItem('clab_token', incoming);
     _token = incoming;
     try { const nx = localStorage.getItem('cl_next'); if (nx && /^\/[a-z]+\.html$/.test(nx)) { localStorage.removeItem('cl_next'); window.location.replace(nx); } } catch (e) {}
