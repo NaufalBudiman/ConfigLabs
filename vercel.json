@@ -1,11 +1,10 @@
 {
   "redirects": [
-    { "source": "/topology.html", "destination": "/builder.html", "permanent": true },
-    { "source": "/topology", "destination": "/builder.html", "permanent": true },
     { "source": "/solutions-showcase-v3.html", "destination": "/", "permanent": true },
     { "source": "/about", "destination": "/about.html", "permanent": true },
     { "source": "/builder", "destination": "/builder.html", "permanent": true },
-    { "source": "/wifi", "destination": "/wifi.html", "permanent": true }
+    { "source": "/wifi", "destination": "/wifi.html", "permanent": true },
+    { "source": "/topology", "destination": "/topology.html", "permanent": false }
   ],
   "rewrites": [
     { "source": "/auth/:path*", "destination": "/api/index" },

@@ -485,6 +485,9 @@ select option:disabled{color:var(--text-muted)}
     <a href="/wifi.html" class="nav-tab active">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>WiFi Planner
     </a>
+    <a href="/topology.html" class="nav-tab">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/></svg> Topology
+    </a>
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
@@ -718,6 +721,7 @@ select option:disabled{color:var(--text-muted)}
         <div class="filemenu-pop">
           <button id="btn-capacity" onclick="closeMenus();openCapacity()" title="Capacity planning: clients and traffic per area vs. the APs placed inside it">Capacity<small>Clients and traffic per area vs. APs placed</small></button>
           <button id="btn-power" onclick="closeMenus();openPower()" title="Power budget: total AP draw, PoE ports and switches needed">Power &amp; PoE<small>Watts, PoE ports and switches per floor</small></button>
+          <button id="btn-topology" onclick="closeMenus();openTopology()" title="Open this project as a network topology: ISP, firewall, core, access switches and APs">Network topology<small>Switches, uplinks and PoE per floor</small></button>
           <button id="btn-conflicts" onclick="closeMenus();openConflicts()" title="List the AP pairs that interfere with each other on the selected band">Conflicts<small>AP pairs that interfere on this band</small></button>
         </div>
       </div>
@@ -6390,6 +6394,7 @@ function buildReportDoc(D, floors, cfg, X0) {
 function toggleSec(btn) { btn.parentElement.classList.toggle('closed'); }
 function toggleLeft() { document.getElementById('left-panel').classList.toggle('collapsed'); }
 function closeProps() { wifi.sel = null; renderPropsPanel(); scheduleRender(); }
+async function openTopology() { if (!curProj) return; try { await flushSave(); } catch (e) {} location.href = '/topology.html?p=' + encodeURIComponent(curProj.id); }
 function closeMenus() { document.querySelectorAll('.topbar .filemenu.open').forEach(m => m.classList.remove('open')); }
 function toggleTbMenu(e, id) {
   e.stopPropagation();
