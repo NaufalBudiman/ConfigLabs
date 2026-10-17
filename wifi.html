@@ -479,6 +479,7 @@ select option:disabled{color:var(--text-muted)}
     <div>Config<em>Labs</em></div>
   </a>
   <div class="nav-center">
+    <a href="/" class="nav-tab">Home</a>
     <a href="/builder.html" class="nav-tab">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>Builder
     </a>
@@ -491,7 +492,7 @@ select option:disabled{color:var(--text-muted)}
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.30</span></div>
+    <div class="chip" title="ConfigLabs site" data-cl-title="Site v"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.30</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -4651,7 +4652,8 @@ async function saveNow() {
 window.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); if (curProj) saveNow(); }
 }, true);
-window.addEventListener('beforeunload', e => { if (_dirty) { try { saveCurrent(); } catch (x) {} e.preventDefault(); e.returnValue = ''; } });
+function _curSig() { try { return JSON.stringify(captureFloor()) + JSON.stringify(WALL_MATS) + JSON.stringify(userApCat()) + JSON.stringify(curProj.capThr || null) + JSON.stringify(curProj.pwrCfg || null) + (wifi.floorPlan ? 'P' : ''); } catch (x) { return null; } }
+window.addEventListener('beforeunload', e => { if (!_dirty || !curProj || RO) return; try { saveCurrent(); } catch (x) {} const s = _curSig(); if (s !== null && s === _lastSaved) return; e.preventDefault(); e.returnValue = ''; });
 async function savePlanBlob(file) {
   if (!curProj || !curFloor) return;
   try {
@@ -5093,7 +5095,7 @@ const TPL = [
 ];
 async function openTemplates() {
   if (RO) return;
-  if (!wifi.scaleSet) { toast('Set the scale first (Scale tool) so the room gets its real size', 'error'); return; }
+  if (!wifi.scaleSet) { toast('Set the scale first so the room gets its real size', 'error'); try { openScaleModal(); } catch (x) {} return; }
   const last = wifi.tpl || {};
   const sel = (id, opts, v) => `<select id="${id}" style="width:100%;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text)">${opts.map(o => `<option value="${o[0]}" ${String(o[0]) === String(v) ? 'selected' : ''}>${esc(o[1])}</option>`).join('')}</select>`;
   const p0 = TPL.find(q => q.id === last.id) || TPL[0];

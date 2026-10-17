@@ -135,7 +135,7 @@ table.bom td:last-child,table.bom th:last-child{text-align:right;font-family:var
 #toast.show{transform:translate(-50%,0)}
 #printbox{display:none}
 .tools .mtog{display:none}
-@media (max-width:1100px){#app{grid-template-columns:1fr}.panel{position:absolute;top:0;bottom:0;width:min(330px,88vw);transform:translateX(-102%);transition:transform .3s var(--ease);box-shadow:0 0 40px rgba(0,0,0,.5)}#right.panel{right:0;transform:translateX(102%)}.panel.open{transform:none}.tools .mtog{display:inline-flex!important}#mini{display:none}.nav-links{display:none}}
+@media (max-width:1100px){#app{grid-template-columns:1fr}.panel{position:absolute;top:0;bottom:0;width:min(330px,88vw);transform:translateX(-102%);transition:transform .3s var(--ease);box-shadow:0 0 40px rgba(0,0,0,.5)}#right.panel{right:0;transform:translateX(102%)}.panel.open{transform:none}.tools .mtog{display:inline-flex!important}#mini{display:none}nav{flex-wrap:wrap;padding:8px 14px}.nav-links{order:3;width:100%;flex-wrap:nowrap;overflow-x:auto;gap:0}.nav-link{padding:6px 10px;white-space:nowrap}.nav-link svg{display:none}}
 @media (max-width:700px){.tools{top:8px;padding:3px}.tools button{padding:0 7px;min-width:30px;font-size:12px}#b-grid,#b-regen,.tools .sep{display:none}#hint{display:none}.chip{display:none}}
 @media print{body{display:block;overflow:visible;background:#fff}nav,#app,#toast{display:none!important}#printbox{display:block}#printbox svg{width:100%;height:auto}@page{size:A4 landscape;margin:8mm}}
 </style>
@@ -709,7 +709,7 @@ function bindLeft() {
   [['w-ge24', 'ge24', 1, 20000], ['w-ge48', 'ge48', 1, 20000], ['w-mg24', 'mg24', 1, 20000], ['o-buf', 'buf', 0, 200]].forEach(([id, k, lo, hi]) => $(id).addEventListener('change', () => setCfg(k, clamp(num($(id).value, defCfg(S.proj)[k]), lo, hi))));
   $('o-upl').addEventListener('change', () => setCfg('upl', $('o-upl').value));
   [['o-isp', 'isp'], ['o-fw', 'fw'], ['o-lbl', 'lbl'], ['o-apl', 'apl']].forEach(([id, k]) => $(id).addEventListener('change', () => setCfg(k, $(id).checked)));
-  $('seg-layout').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { setCfg('layout', b.dataset.v); fit(); } });
+  $('seg-layout').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { setCfg('layout', b.dataset.v); syncControls(); fit(); } });
   $('flist').addEventListener('click', e => { const r = e.target.closest('[data-fc]'); if (r) toggleFloor(r.dataset.fc); });
   $('b-colall').onclick = () => { S.T.floors.forEach(f => { S.st.collapsed[f.id] = true; }); saveState(); relayout(); fit(); };
   $('b-expall').onclick = () => { S.st.collapsed = {}; saveState(); relayout(); fit(); };

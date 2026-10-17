@@ -118,7 +118,7 @@ def init_db_once():
         with_app_context_done = True
 
 APP_NAME = "ConfigLabs"
-APP_VERSION = "6.2.0"
+APP_VERSION = "6.2.1"
 
 # ==========================================================
 # VENDOR / OS REGISTRY
@@ -393,7 +393,7 @@ def gen_h3c_comware(data):
         elif mode == "trunk":
             config.append(" port link-type trunk")
             config.append(" undo port trunk permit vlan 1")
-            if i.get("allowed"): config.append(f" port trunk permit vlan {i['allowed']}")
+            if i.get("allowed"): config.append(f" port trunk permit vlan {' '.join(str(i['allowed']).replace(',', ' ').split())}")
             if i.get("pvid"): config.append(f" port trunk pvid vlan {i['pvid']}")
         elif mode == "hybrid":
             config.append(" port link-type hybrid")
@@ -439,9 +439,11 @@ def gen_h3c_comware(data):
         acl_type = "basic" if 2000 <= n <= 2999 else "advanced"
         config.append(f"acl {acl_type} {n}")
         if a.get("description"): config.append(f" description {a['description']}")
+        _auto = 0
         for rule in a.get("rules", []):
             if not (rule.get("action") and rule.get("source")): continue
-            rid = rule.get("rule_id", "").strip()
+            _auto += 5
+            rid = (rule.get("rule_id") or "").strip() or str(_auto)
             proto = rule.get("protocol", "ip")
             src = rule["source"]
             if src.lower() == "any":
