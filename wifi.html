@@ -3284,7 +3284,7 @@ async function open3D() {
       const live = q.cur, d = live ? { walls: wifi.walls, doors: wifi.doors, aps: wifi.aps, ppm: ppm } : Object.assign({ walls: [], doors: [], aps: [] }, q.f.data || {});
       const ppmF = (live ? ppm : (d.ppm || WORLD_W / 40)), sc = 1 / ppmF, Hf = multi ? Math.max(2, floorHeight(q.f) - 0.25) : H, el = multi ? floorElev(q.i) : 0;
       const dim = !live;
-      const wm = new T.MeshLambertMaterial({ color: 0xcfd6e0, transparent: true, opacity: dim ? 0.22 : 0.55, depthWrite: false });
+      const wm = new T.MeshLambertMaterial({ color: 0xcfd6e0, transparent: true, opacity: dim ? 0.14 : 0.55, depthWrite: false });
       const dm = new T.MeshLambertMaterial({ color: 0x9a6b3a, transparent: true, opacity: 0.8 });
       const Pf = (x, y) => [x * sc, y * sc];
       const seg = (x1, y1, x2, y2, y0, y1h, mat) => {
@@ -3300,9 +3300,15 @@ async function open3D() {
         ds.forEach(([p0, p1]) => { if (p0 > c) { const p = at(c), r = at(p0); seg(p[0], p[1], r[0], r[1], 0, Hf, wm); } const p = at(p0), r = at(p1); seg(p[0], p[1], r[0], r[1], 2.1, Hf, wm); seg(p[0], p[1], r[0], r[1], 0, 0.04, dm); c = p1; });
         if (c < 1) { const p = at(c), r = at(1); seg(p[0], p[1], r[0], r[1], 0, Hf, wm); }
       });
-      if (multi && el > 0 || (multi && !live)) { // slab plate under upper floors / dim floors
-        const sl = new T.Mesh(new T.PlaneGeometry(WW, WH), new T.MeshBasicMaterial({ color: live ? 0x1a1f27 : 0x6b7686, transparent: true, opacity: live ? 0.0 : 0.16, depthWrite: false, side: T.DoubleSide }));
-        sl.rotation.x = -Math.PI / 2; sl.position.set(WW / 2, el - 0.02, WH / 2); grp.add(sl);
+      if (multi && !live) { // slab plate sized to the floor content
+        let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; const ad = (x, y) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); };
+        (d.walls || []).forEach(w => { ad(w.x1, w.y1); ad(w.x2, w.y2); }); (d.aps || []).forEach(a => ad(a.x, a.y));
+        if (x0 < 1e8) {
+          const pw = (x1 - x0) * sc + 1, ph = (y1 - y0) * sc + 1;
+          const sl = new T.Mesh(new T.PlaneGeometry(pw, ph), new T.MeshBasicMaterial({ color: 0x6b7686, transparent: true, opacity: 0.14, depthWrite: false, side: T.DoubleSide }));
+          sl.rotation.x = -Math.PI / 2; sl.position.set((x0 + x1) / 2 * sc, el - 0.02, (y0 + y1) / 2 * sc); grp.add(sl);
+          const ed = new T.LineSegments(new T.EdgesGeometry(new T.PlaneGeometry(pw, ph)), new T.LineBasicMaterial({ color: 0x8a96a8, transparent: true, opacity: 0.5 })); ed.rotation.x = -Math.PI / 2; ed.position.copy(sl.position); grp.add(ed);
+        }
       }
       (d.aps || []).forEach(a => {
         const [x, z] = Pf(a.x, a.y), h = Math.min(Hf, a.height || 2.8);
@@ -4938,11 +4944,11 @@ async function openFloorSettings() {
   const tbl = c.slab === 'custom' ? c.custom : SLABS[c.slab];
   const html = `<div style="font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:10px">Floors are stacked in the order of the tabs (first tab = lowest floor) and share the same coordinates, so the same x, y is the same spot on every floor. APs on neighbouring floors then count as interference through the slab (they are never counted as coverage).</div>
     <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-bottom:10px"><input type="checkbox" id="mf-on" ${c.on ? 'checked' : ''} style="width:auto"> Include APs on other floors in SINR, interference and optimization</label>
-    <div class="field-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="dlg-field"><label>Floors counted above and below</label>${sel('mf-reach', [[1, '1 floor (nearest)'], [2, '2 floors']], c.reach)}</div>
-      <div class="dlg-field"><label>Floor slab</label>${sel('mf-slab', [['concrete', 'Concrete'], ['wood', 'Wood / light'], ['custom', 'Custom']], c.slab)}</div>
+    <div class="field-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end">
+      <div class="dlg-field"><label>Floors counted</label>${sel('mf-reach', [[1, '1 above / below'], [2, '2 above / below']], c.reach)}</div>
+      <div class="dlg-field"><label>Slab type</label>${sel('mf-slab', [['concrete', 'Concrete'], ['wood', 'Wood / light'], ['custom', 'Custom']], c.slab)}</div>
     </div>
-    <div class="field-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:6px">${['2.4', '5', '6'].map(b => `<div class="dlg-field"><label>Loss ${b} GHz (dB)</label><input type="number" id="mf-l${b}" step="1" min="0" value="${tbl[b]}" ${c.slab === 'custom' ? '' : 'disabled'}></div>`).join('')}</div>
+    <div class="field-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:6px">${['2.4', '5', '6'].map(b => `<div class="dlg-field"><label>${b} GHz (dB)</label><input type="number" id="mf-l${b}" step="1" min="0" value="${tbl[b]}" ${c.slab === 'custom' ? '' : 'disabled'}></div>`).join('')}</div>
     <div class="xp-cap" style="margin:12px 0 6px">Floor heights (floor to floor, m)</div>
     <div style="display:grid;grid-template-columns:1fr 110px;gap:6px 10px;align-items:center;font-size:13px">${fl.map((f, i) => `<div>${i + 1}. ${esc(f.name)}</div><input type="number" class="mf-h" data-f="${f.id}" step="0.1" min="2" max="10" value="${floorHeight(f)}" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);width:100%">`).join('')}</div>
     <div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.5">The slab losses are typical values, not measurements. Replace them with your own if you have survey data.</div>`;
