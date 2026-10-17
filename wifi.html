@@ -394,7 +394,7 @@ body.ro [data-tool]:not([data-tool=pan]),body.ro #btn-undo,body.ro #btn-redo,bod
 .topbar>.tsep{margin:0 2px}
 .tright{display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:auto}
 .tright .tsep{margin:0 2px}
-.tgroup .tsel{border:none;background:transparent;padding:6px 6px}
+.tgroup .tsel{border:none;background-color:var(--surface-2);padding:6px 6px}
 .tgroup .seg{border:none;background:transparent}
 .tgroup .seg button{background:transparent;border-radius:7px}
 .tgroup .seg button.on{background:color-mix(in srgb,var(--accent) 18%,var(--surface-2))}
@@ -412,6 +412,11 @@ body.ro [data-tool]:not([data-tool=pan]),body.ro #btn-undo,body.ro #btn-redo,bod
 .stats-bar{padding:10px 16px;gap:10px;flex-wrap:wrap}
 .stat-chip{padding:4px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border)}
 .stats-note{margin-left:auto;align-self:center}
+select{color-scheme:dark}
+[data-theme="light"] select{color-scheme:light}
+select option,select optgroup{background-color:var(--surface);color:var(--text)}
+select option:checked{background-color:color-mix(in srgb,var(--accent) 28%,var(--surface));color:var(--text)}
+select option:disabled{color:var(--text-muted)}
 </style>
 </head>
 <body data-theme="dark">
