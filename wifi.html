@@ -76,6 +76,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
 
 /* AP PALETTE */
 .vendor-group{margin-bottom:8px}
+.vendor-group.vg-closed .ap-item{display:none}
+.vendor-group.vg-closed .vg-caret{transform:rotate(-90deg);display:inline-block}
 .vendor-header{font-size:10px;font-weight:600;color:var(--text-muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;display:flex;align-items:center;gap:6px}
 .vendor-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .ap-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:grab;border:1px solid var(--border);background:var(--bg);margin-bottom:3px;transition:all .15s;user-select:none}
@@ -409,7 +411,7 @@ body.ro [data-tool]:not([data-tool=pan]),body.ro #btn-undo,body.ro #btn-redo,bod
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.17</span></div>
+    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.18</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -507,6 +509,7 @@ body.ro [data-tool]:not([data-tool=pan]),body.ro #btn-undo,body.ro #btn-redo,bod
       <div class="lp-body">
         <div class="lp-row" style="font-size:11px;color:var(--text-muted);line-height:1.5">Pick a model, click the plan. Power and channel are set <b>per radio</b> (2.4 / 5 / 6 GHz) in the AP properties.</div>
         <div id="ap-palette"></div>
+        <button class="btn-secondary-modal" style="width:100%;margin-top:6px;padding:7px;font-size:12px" onclick="openApCat()" title="Edit TX power, antenna gain, watts and PoE of each AP model, or add your own model">AP catalog…</button>
       </div>
     </div>
     <div class="lp-sec">
@@ -695,16 +698,42 @@ const VENDORS = {
   h3c: {
     name: 'H3C', color: '#7cf4c7', bg: '#16221a',
     models: [
-      { id:'wa6320', name:'WA6320',     wifi:6, bands:['2.4','5'],     tx:20, gain:3.0, range_m:30, indoor:true,  desc:'Wi-Fi 6 2x2 Indoor' },
-      { id:'wa6636', name:'WA6636',     wifi:6, bands:['2.4','5'],     tx:23, gain:4.0, range_m:40, indoor:true,  desc:'Wi-Fi 6 4x4 Tri-Radio', modes:[{id:'t55',name:'5G + 5G + 2.4G',radios:['5','5','2.4']}] },
-      { id:'wa7338', name:'WA7338-HI',  wifi:7, bands:['2.4','5','6'], tx:23, gain:5.0, range_m:45, indoor:true,  desc:'Wi-Fi 7 Tri-Band' },
-      { id:'wa7638', name:'WA7638',     wifi:7, bands:['2.4','5','6'], tx:26, gain:5.0, txb:{'2.4':26,'5':26,'6':26}, gainb:{'2.4':3.0,'5':5.0,'6':5.0}, range_m:45, indoor:true,  desc:'Wi-Fi 7 Tri-Radio 12 streams (datasheet)',
-        modes:[{id:'t55',name:'5G + 5G + 2.4G (default)',radios:['5','5','2.4']},{id:'t65',name:'6G + 5G + 2.4G',radios:['6','5','2.4']}] },
-      { id:'wa7330i',name:'WA7330i',    wifi:7, bands:['2.4','5','6'], tx:23, gain:4.1, txb:{'2.4':23,'5':23,'6':23}, gainb:{'2.4':2.8,'5':4.1,'6':4.7}, range_m:40, indoor:true,  desc:'Wi-Fi 7 Tri-Radio 6 streams (datasheet)',
-        modes:[{id:'t55',name:'5G + 5G + 2.4G (default)',radios:['5','5','2.4']},{id:'t65',name:'6G + 5G + 2.4G',radios:['6','5','2.4']}] },
-      { id:'wa7220', name:'WA7220-HI',  wifi:7, bands:['2.4','5','6'], tx:23, gain:3.2, txb:{'2.4':23,'5':23,'6':23}, gainb:{'2.4':1.9,'5':3.2,'6':3.1}, range_m:35, indoor:true,  desc:'Wi-Fi 7 Dual-Radio 4 streams (datasheet)',
-        modes:[{id:'d52',name:'5G + 2.4G (default)',radios:['5','2.4']},{id:'d62',name:'6G + 2.4G',radios:['6','2.4']}] },
+      // w = max power draw (W), poe = PoE classes accepted, up = uplink port(s), ss = spatial streams per radio.
+      // Source: H3C installation guides (Wi-Fi 5/6/7). est = TX power and antenna gain are estimates for the AP class, not datasheet values.
+      // ---- Wi-Fi 5 ----
+      { id:'wa530',  name:'WA530',      wifi:5, bands:['2.4','5'],     tx:20, gain:3.0, range_m:30, indoor:true,  desc:'Wi-Fi 5 2x2 Indoor', w:12.95, poe:'af', up:'2 x GE (PoE in)', ss:'5G 2x2 · 2.4G 2x2', est:true },
+      { id:'wa538',  name:'WA538',      wifi:5, bands:['2.4','5'],     tx:23, gain:4.0, range_m:40, indoor:true,  desc:'Wi-Fi 5 Tri-Radio', w:25, poe:'af/at', up:'2 x GE (PoE+ in)', ss:'5G 4x4 · 5G 2x2 · 2.4G 2x2', est:true, modes:[{id:'t55',name:'5G + 5G + 2.4G',radios:['5','5','2.4']}] },
+      { id:'wa560',  name:'WA560',      wifi:5, bands:['2.4','5'],     tx:23, gain:4.0, range_m:40, indoor:true,  desc:'Wi-Fi 5 4x4 Indoor', w:25, poe:'af/at', up:'2 x GE (PoE+ in)', ss:'5G 4x4 · 2.4G 4x4', est:true },
       { id:'wa5620', name:'WA5620E',    wifi:5, bands:['2.4','5'],     tx:26, gain:7.0, range_m:100,indoor:false, desc:'Wi-Fi 5 Outdoor 4x4' },
+      // ---- Wi-Fi 6 ----
+      { id:'wa6120', name:'WA6120',     wifi:6, bands:['2.4','5'],     tx:20, gain:3.0, range_m:30, indoor:true,  desc:'Wi-Fi 6 2x2 Indoor', w:13, poe:'af', up:'GE (PoE in)', ss:'5G 2x2 · 2.4G 2x2', est:true },
+      { id:'wa6320', name:'WA6320',     wifi:6, bands:['2.4','5'],     tx:20, gain:3.0, range_m:30, indoor:true,  desc:'Wi-Fi 6 2x2 Indoor', w:12.42, poe:'af', up:'GE (PoE in)', ss:'5G 2x2 · 2.4G 2x2' },
+      { id:'wa6320h',name:'WA6320H',    wifi:6, bands:['2.4','5'],     tx:20, gain:3.0, range_m:25, indoor:true,  desc:'Wi-Fi 6 2x2 Wall-plate', w:15.45, poe:'af', up:'Uplink (PoE in)', ss:'5G 2x2 · 2.4G 2x2', est:true },
+      { id:'wa6520', name:'WA6520',     wifi:6, bands:['2.4','5'],     tx:20, gain:3.0, range_m:30, indoor:true,  desc:'Wi-Fi 6 2x2 Indoor', w:13, poe:'af', up:'GE (PoE in) + 2.5GE SFP', ss:'5G 2x2 · 2.4G 2x2', est:true },
+      { id:'wa6330', name:'WA6330',     wifi:6, bands:['2.4','5'],     tx:20, gain:3.0, range_m:30, indoor:true,  desc:'Wi-Fi 6 2x2 Tri-Radio', w:32, poe:'af/at', up:'2.5GE (PoE+ in) + GE (PoE out)', ss:'3 radios, 2x2 each', est:true,
+        modes:[{id:'d52',name:'5G + 2.4G (default)',radios:['5','2.4']},{id:'t55',name:'5G + 5G + 2.4G',radios:['5','5','2.4']}] },
+      { id:'wa6526', name:'WA6526',     wifi:6, bands:['2.4','5'],     tx:23, gain:4.0, range_m:40, indoor:true,  desc:'Wi-Fi 6 4x4 Indoor', w:20.1, poe:'af/at', up:'2.5GE (PoE+ in)', ss:'5G 4x4 · 2.4G 2x2', est:true },
+      { id:'wa6526e',name:'WA6526E',    wifi:6, bands:['2.4','5'],     tx:23, gain:4.0, range_m:40, indoor:true,  desc:'Wi-Fi 6 4x4 Indoor', w:35.1, poe:'af/at', up:'2.5GE (PoE+ in) + GE (PoE out)', ss:'5G 4x4 · 2.4G 2x2', est:true },
+      { id:'wa6528i',name:'WA6528i',    wifi:6, bands:['2.4','5'],     tx:23, gain:4.0, range_m:40, indoor:true,  desc:'Wi-Fi 6 4x4 Smart Antenna', w:42.5, poe:'bt/at/af', up:'5GE (PoE++ in) + GE (PoE out)', ss:'5G 4x4 · 2.4G 4x4 · scan 1x1', est:true },
+      { id:'wa6622', name:'WA6622',     wifi:6, bands:['2.4','5'],     tx:23, gain:4.0, range_m:40, indoor:true,  desc:'Wi-Fi 6 4x4 Indoor', w:35.5, poe:'af/at', up:'5GE (PoE+ in) + GE (PoE out)', ss:'5G 4x4 · 2.4G 2x2', est:true },
+      { id:'wa6628', name:'WA6628',     wifi:6, bands:['2.4','5'],     tx:26, gain:5.0, range_m:45, indoor:true,  desc:'Wi-Fi 6 8x8 Indoor', w:28, poe:'bt/at/af', up:'10GE (PoE++ in) + GE', ss:'5G 8x8 · 2.4G 4x4', est:true },
+      { id:'wa6630x',name:'WA6630X',    wifi:6, bands:['2.4','5'],     tx:23, gain:4.0, range_m:40, indoor:true,  desc:'Wi-Fi 6 Tri-Radio 4x4', w:48.6, poe:'bt/at/af', up:'10GE (PoE++ in) + GE (PoE out)', ss:'5G 4x4 · 5G 4x4 · 2.4G 2x2', est:true, modes:[{id:'t55',name:'5G + 5G + 2.4G',radios:['5','5','2.4']}] },
+      { id:'wa6636', name:'WA6636',     wifi:6, bands:['2.4','5'],     tx:23, gain:4.0, range_m:40, indoor:true,  desc:'Wi-Fi 6 4x4 Tri-Radio', w:40, poe:'bt/at/af', up:'10GE (PoE++ in) + 2 x GE', ss:'5G 4x4 · 5G 2x2 · 2.4G 4x4', modes:[{id:'t55',name:'5G + 5G + 2.4G',radios:['5','5','2.4']}] },
+      { id:'wa6638', name:'WA6638',     wifi:6, bands:['2.4','5'],     tx:23, gain:4.0, range_m:40, indoor:true,  desc:'Wi-Fi 6 4x4 Tri-Radio', w:37, poe:'bt/at/af', up:'10GE (PoE++ in) + GE (PoE out)', ss:'4x4 on all 3 radios', est:true, modes:[{id:'t55',name:'5G + 5G + 2.4G',radios:['5','5','2.4']}] },
+      // ---- Wi-Fi 7 ----
+      { id:'wa7220', name:'WA7220-HI',  wifi:7, bands:['2.4','5','6'], tx:23, gain:3.2, txb:{'2.4':23,'5':23,'6':23}, gainb:{'2.4':1.9,'5':3.2,'6':3.1}, range_m:35, indoor:true,  desc:'Wi-Fi 7 Dual-Radio 4 streams (datasheet)', w:33.9, poe:'af/at', up:'2.5GE (PoE+ in)',
+        modes:[{id:'d52',name:'5G + 2.4G (default)',radios:['5','2.4']},{id:'d62',name:'6G + 2.4G',radios:['6','2.4']}] },
+      { id:'wa7320', name:'WA7320',     wifi:7, bands:['2.4','5','6'], tx:23, gain:3.2, range_m:35, indoor:true,  desc:'Wi-Fi 7 Dual-Radio', w:18.5, poe:'at', up:'2.5GE (PoE+ in) + 5GE SFP', est:true, estR:true,
+        modes:[{id:'d52',name:'5G + 2.4G (default)',radios:['5','2.4']},{id:'d62',name:'6G + 2.4G',radios:['6','2.4']}] },
+      { id:'wa7320i',name:'WA7320i',    wifi:7, bands:['2.4','5','6'], tx:23, gain:3.2, range_m:35, indoor:true,  desc:'Wi-Fi 7 Dual-Radio', w:39, poe:'af/at', up:'10GE (PoE+ in) + 10GE SFP+', est:true, estR:true,
+        modes:[{id:'d52',name:'5G + 2.4G (default)',radios:['5','2.4']},{id:'d62',name:'6G + 2.4G',radios:['6','2.4']}] },
+      { id:'wa7330i',name:'WA7330i',    wifi:7, bands:['2.4','5','6'], tx:23, gain:4.1, txb:{'2.4':23,'5':23,'6':23}, gainb:{'2.4':2.8,'5':4.1,'6':4.7}, range_m:40, indoor:true,  desc:'Wi-Fi 7 Tri-Radio 6 streams (datasheet)', w:42.12, poe:'bt/at', up:'10GE (PoE++ in) + 10GE SFP+',
+        modes:[{id:'t55',name:'5G + 5G + 2.4G (default)',radios:['5','5','2.4']},{id:'t65',name:'6G + 5G + 2.4G',radios:['6','5','2.4']}] },
+      { id:'wa7338', name:'WA7338-HI',  wifi:7, bands:['2.4','5','6'], tx:23, gain:5.0, range_m:45, indoor:true,  desc:'Wi-Fi 7 Tri-Band', w:41.8, poe:'bt/at', up:'10GE (PoE++ in) + 10GE SFP+' },
+      { id:'wa7539', name:'WA7539',     wifi:7, bands:['2.4','5','6'], tx:23, gain:4.1, range_m:40, indoor:true,  desc:'Wi-Fi 7 Tri-Radio', w:54, poe:'at/bt', up:'10GE (PoE++ in) + 10GE SFP+', est:true, estR:true,
+        modes:[{id:'t55',name:'5G + 5G + 2.4G (default)',radios:['5','5','2.4']},{id:'t65',name:'6G + 5G + 2.4G',radios:['6','5','2.4']}] },
+      { id:'wa7638', name:'WA7638',     wifi:7, bands:['2.4','5','6'], tx:26, gain:5.0, txb:{'2.4':26,'5':26,'6':26}, gainb:{'2.4':3.0,'5':5.0,'6':5.0}, range_m:45, indoor:true,  desc:'Wi-Fi 7 Tri-Radio 12 streams (datasheet)', w:57, poe:'bt/at', up:'10GE (PoE++ in) + GE + 10GE SFP+',
+        modes:[{id:'t55',name:'5G + 5G + 2.4G (default)',radios:['5','5','2.4']},{id:'t65',name:'6G + 5G + 2.4G',radios:['6','5','2.4']}] },
     ]
   },
   ruijie: {
@@ -733,8 +762,10 @@ const VENDORS = {
       { id:'eap772', name:'EAP772',    wifi:7, bands:['2.4','5','6'], tx:23, gain:4.0, range_m:40, indoor:true,  desc:'Wi-Fi 7 Tri-Band' },
       { id:'eap225o',name:'EAP225-O',  wifi:5, bands:['2.4','5'],     tx:27, gain:8.0, range_m:200,indoor:false, desc:'Wi-Fi 5 Outdoor' },
     ]
-  }
+  },
+  custom: { name: 'My APs', color: '#c9d1d9', bg: '#1b1f25', models: [] }
 };
+const VENDORS_BASE = JSON.parse(JSON.stringify(VENDORS));
 
 let RO = false, _roToken = null;
 let _cloudList = null, _cloudBadge = '', _cloudTimer = null, _cloudBusy = false, _cloudAgain = false, _cloudInternal = false, _conflictOpen = false;
@@ -828,7 +859,7 @@ const WORLD_W = 2000, WORLD_H = 1200;
 // INIT
 // ============================================================
 window.addEventListener('load', () => {
-  buildAPPalette();
+  applyApCat(userApCat());
   buildMatList();
   buildDoorList();
   initCanvas();
@@ -845,10 +876,12 @@ window.addEventListener('load', () => {
 
 function buildAPPalette() {
   const el = document.getElementById('ap-palette');
+  el.innerHTML = '';
   for (const [vid, vendor] of Object.entries(VENDORS)) {
+    if (!vendor.models.length) continue;
     const grp = document.createElement('div');
-    grp.className = 'vendor-group';
-    grp.innerHTML = `<div class="vendor-header"><div class="vendor-dot" style="background:${vendor.color}"></div>${vendor.name}</div>`;
+    grp.className = 'vendor-group' + (vid === 'h3c' || vid === 'custom' ? '' : ' vg-closed');
+    grp.innerHTML = `<div class="vendor-header" style="cursor:pointer" onclick="this.parentNode.classList.toggle('vg-closed')"><div class="vendor-dot" style="background:${vendor.color}"></div>${vendor.name}<span style="margin-left:auto;font-size:10px;color:var(--text-muted)">${vendor.models.length} <i class="vg-caret">▾</i></span></div>`;
     for (const model of vendor.models) {
       const wfColors = {5:'#a8b5ff',6:'#7cf4c7',7:'#ffb86b'};
       const item = document.createElement('div');
@@ -864,7 +897,7 @@ function buildAPPalette() {
         </div>
         <div class="ap-info">
           <div class="ap-name">${model.name}<span class="wifi-badge" style="background:${wfColors[model.wifi]}20;color:${wfColors[model.wifi]}">Wi-Fi ${model.wifi}</span></div>
-          <div class="ap-spec">${model.desc}</div>
+          <div class="ap-spec">${model.desc}${model.w ? ` · ${model.w} W · PoE ${model.poe || '—'}` : ''}</div>
         </div>`;
       item.addEventListener('dragstart', e => {
         wifi.placingVendor = vid;
@@ -1358,6 +1391,7 @@ function loadMats(proj) {
   WALL_MATS.length = 0;
   JSON.parse(JSON.stringify(src)).forEach(m => WALL_MATS.push(matNorm(m)));
   if (!WALL_MATS.some(m => m.id === wifi.mat)) wifi.mat = WALL_MATS[0].id;
+  loadApCat(proj);
 }
 const ENV_K  = { open: 0.85, office: 1.0, dense: 1.2 };
 function pathLoss(d_m, band) {
@@ -2144,6 +2178,12 @@ function renderPropsPanel() {
         <button class="props-close" onclick="closeProps()">✕</button><div class="props-title">${ap.name}</div>
         <div class="props-sub">${vendor.name} ${apModel.name} · <span style="color:${wfColors[apModel.wifi]}">Wi-Fi ${apModel.wifi}</span></div>
       </div>
+      <div class="pf" style="font-size:11px;line-height:1.7;color:var(--text-dim)">
+        ${apModel.w ? `<div>Power <b style="color:var(--text)">${apModel.w} W</b> max${apModel.poe ? ` · PoE <b style="color:var(--text)">${apModel.poe}</b>` : ''}</div>` : '<div style="color:var(--text-muted)">Power: not in catalog (<a href="#" onclick="event.preventDefault();openApCat()" style="color:var(--accent)">add it</a>)</div>'}
+        ${apModel.up ? `<div>Uplink <b style="color:var(--text)">${esc(apModel.up)}</b></div>` : ''}
+        ${apModel.ss ? `<div>Streams <b style="color:var(--text)">${esc(apModel.ss)}</b></div>` : ''}
+        ${apModel.est ? '<div style="color:var(--text-muted)">TX power / gain are estimates for this AP class. <a href="#" onclick="event.preventDefault();openApCat()" style="color:var(--accent)">Edit catalog</a></div>' : ''}${apModel.estR ? '<div style="color:var(--text-muted)">Radio layout assumed, check the datasheet.</div>' : ''}
+      </div>
       <div class="pf">
         <label>Hostname / Label</label>
         <input value="${ap.name}" oninput="updateAP('${ap.id}','name',this.value)">
@@ -2784,7 +2824,7 @@ function plcMakeAPs(o, pts) {
 async function openPlacement() {
   if (!wifi.floorPlan && !wifi.areas.length && !wifi.walls.length) { toast('Load a floor plan (or draw walls / a Render area) first', 'error'); return; }
   const dv = wifi.placingVendor || 'h3c', dm = wifi.placingModel || 'wa6320';
-  const opts = Object.keys(VENDORS).map(v => `<optgroup label="${esc(VENDORS[v].name)}">` + VENDORS[v].models.map(md => `<option value="${v}|${md.id}" ${v === dv && md.id === dm ? 'selected' : ''}>${esc(md.name)} · Wi-Fi ${md.wifi}</option>`).join('') + '</optgroup>').join('');
+  const opts = Object.keys(VENDORS).filter(v => VENDORS[v].models.length).map(v => `<optgroup label="${esc(VENDORS[v].name)}">` + VENDORS[v].models.map(md => `<option value="${v}|${md.id}" ${v === dv && md.id === dm ? 'selected' : ''}>${esc(md.name)} · Wi-Fi ${md.wifi}</option>`).join('') + '</optgroup>').join('');
   const zone = wifi.areas.length ? `${wifi.areas.length} Render area${wifi.areas.length > 1 ? 's' : ''}` : 'the whole plan (draw a Render area with the G tool to limit it)';
   const html = `<div style="font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:12px">Suggests how many APs are needed and where to put them, to cover <b>${zone}</b> at your target signal level. Walls and doors are taken into account.</div>
     <div class="dlg-field"><label>AP model</label><select id="pl-model" style="width:100%;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text)">${opts}</select></div>
@@ -3161,6 +3201,155 @@ async function openTrace() {
 }
 
 // ============================================================
+// AP CATALOG (v5.18): editable specs (TX, gain, watts, PoE) + your own models, saved to your account
+// ============================================================
+const POE_OPTS = ['', 'af', 'af/at', 'at', 'at/bt', 'bt/at', 'bt/at/af', 'bt'];
+function userApCat() { try { const c = JSON.parse(localStorage.getItem('cl_apcat') || 'null'); return c && typeof c === 'object' ? c : null; } catch (e) { return null; } }
+function apCatClean(c) {
+  const out = { ovr: {}, custom: [] };
+  if (!c || typeof c !== 'object') return out;
+  const num = (v, a, b) => { v = parseFloat(v); return isNaN(v) ? null : Math.max(a, Math.min(b, v)); };
+  const base = (vid, id) => VENDORS_BASE[vid] && VENDORS_BASE[vid].models.find(m => m.id === id);
+  const ov = c.ovr && typeof c.ovr === 'object' ? c.ovr : {};
+  for (const k of Object.keys(ov)) {
+    const [v, id] = k.split('|'); if (v === 'custom' || !base(v, id)) continue;
+    const o = ov[k] || {}, r = {};
+    const tx = num(o.tx, 0, 36), gn = num(o.gain, 0, 20), w = num(o.w, 0, 300);
+    if (tx != null) r.tx = tx; if (gn != null) r.gain = gn; if (w != null) r.w = w;
+    if (typeof o.poe === 'string') r.poe = o.poe.slice(0, 16);
+    if (Object.keys(r).length) out.ovr[k] = r;
+  }
+  (Array.isArray(c.custom) ? c.custom : []).slice(0, 30).forEach((m, i) => {
+    if (!m || typeof m !== 'object') return;
+    const bands = ['2.4', '5', '6'].filter(b => Array.isArray(m.bands) && m.bands.includes(b)); if (!bands.length) return;
+    const wf = [5, 6, 7].includes(+m.wifi) ? +m.wifi : 6;
+    out.custom.push({ id: String(m.id || ('c' + Date.now().toString(36) + i)).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 30) || ('c' + i), name: String(m.name || 'My AP').slice(0, 40), wifi: wf, bands,
+      tx: num(m.tx, 0, 36) ?? 20, gain: num(m.gain, 0, 20) ?? 3, w: num(m.w, 0, 300) ?? 0, poe: typeof m.poe === 'string' ? m.poe.slice(0, 16) : '' });
+  });
+  return out;
+}
+function apCustomModel(m) {
+  return { id: m.id, name: m.name, wifi: m.wifi, bands: m.bands.slice(), tx: m.tx, gain: m.gain, range_m: 35, indoor: true, desc: 'Wi-Fi ' + m.wifi + ' · my model', w: m.w || undefined, poe: m.poe || undefined, up: '', custom: true };
+}
+function applyApCat(cat) {
+  const c = apCatClean(cat);
+  for (const vid of Object.keys(VENDORS_BASE)) {
+    if (vid === 'custom') continue;
+    VENDORS_BASE[vid].models.forEach(bm => {
+      const live = VENDORS[vid].models.find(m => m.id === bm.id); if (!live) return;
+      for (const k of ['tx', 'gain', 'w', 'poe']) { if (bm[k] === undefined) delete live[k]; else live[k] = bm[k]; }
+      if (bm.txb) live.txb = Object.assign({}, bm.txb);
+      const o = c.ovr[vid + '|' + bm.id];
+      if (o) {
+        if (o.tx != null) { live.tx = o.tx; if (live.txb) for (const b in live.txb) live.txb[b] = o.tx; }
+        if (o.gain != null && !live.gainb) live.gain = o.gain;
+        if (o.w != null) live.w = o.w || undefined;
+        if (o.poe != null) live.poe = o.poe || undefined;
+      }
+    });
+  }
+  VENDORS.custom.models = c.custom.map(apCustomModel);
+  if (typeof wifi !== 'undefined' && wifi.aps) apClampAll();
+  buildAPPalette();
+}
+// keep placed APs inside the (possibly edited) limits of their model
+function apClampAll() {
+  wifi.aps.forEach(a => {
+    const m = getAPModel(a.vendor, a.model); if (!m || !Array.isArray(a.rad)) return;
+    const lay = apLayout(a, m); a.rad.forEach((r, i) => { if (lay[i]) r.tx = Math.min(r.tx, mTx(m, lay[i])); });
+  });
+}
+// custom models used by a project travel with it (so shared links still show them)
+function apCatSnapshot() { const u = apCatClean(userApCat()); return (Object.keys(u.ovr).length || u.custom.length) ? u : undefined; }
+function loadApCat(proj) {
+  if (RO) { applyApCat(proj && proj.apcat); return; }
+  const pc = proj && proj.apcat && Array.isArray(proj.apcat.custom) ? apCatClean(proj.apcat).custom : [];
+  let add = 0; pc.forEach(m => { if (!VENDORS.custom.models.some(x => x.id === m.id)) { VENDORS.custom.models.push(apCustomModel(m)); add++; } });
+  if (add) buildAPPalette();
+}
+async function cloudCatGet() {
+  if (!cl_token()) return undefined;
+  try { const r = await fetch('/api/wifi/apcat', { headers: { Authorization: 'Bearer ' + cl_token() } }); if (!r.ok) return undefined; const j = await r.json(); return j.cat || null; } catch (e) { return undefined; }
+}
+async function cloudCatPut(cat) {
+  if (!cl_token()) return false;
+  try { const r = await fetch('/api/wifi/apcat', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + cl_token() }, body: JSON.stringify({ cat }) }); return r.ok; } catch (e) { return false; }
+}
+async function cloudCatSync() {
+  const c = await cloudCatGet(); if (c === undefined) return;
+  if (c) { try { localStorage.setItem('cl_apcat', JSON.stringify(c)); } catch (e) {} applyApCat(c); }
+  else if (userApCat()) cloudCatPut(apCatClean(userApCat()));
+}
+let _apw = null, _apv = 'h3c';
+function apcRowsBuilt(vid) {
+  const inp = (k, v, ex) => `<input type="number" step="0.1" min="0" data-k="${k}" value="${v == null ? '' : v}" ${ex || ''} style="width:50px;padding:5px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text)">`;
+  const poeSel = v => `<select data-k="poe" style="padding:5px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text)">${(POE_OPTS.includes(v || '') ? POE_OPTS : POE_OPTS.concat([v])).map(o => `<option value="${o}" ${o === (v || '') ? 'selected' : ''}>${o || '—'}</option>`).join('')}</select>`;
+  if (vid === 'custom') {
+    return `<tr><th>Name</th><th>Wi-Fi</th><th>2.4</th><th>5</th><th>6</th><th>TX dBm</th><th>Gain dBi</th><th>Watt</th><th>PoE</th><th></th></tr>` +
+      _apw.custom.map(m => `<tr data-id="${esc(m.id)}"><td><input data-k="name" value="${esc(m.name)}" style="width:96px;padding:5px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text)"></td>
+        <td><select data-k="wifi" style="padding:5px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text)">${[5, 6, 7].map(n => `<option ${n === m.wifi ? 'selected' : ''}>${n}</option>`).join('')}</select></td>
+        ${['2.4', '5', '6'].map(b => `<td><input type="checkbox" data-k="b${b}" ${m.bands.includes(b) ? 'checked' : ''} style="width:auto"></td>`).join('')}
+        <td>${inp('tx', m.tx)}</td><td>${inp('gain', m.gain)}</td><td>${inp('w', m.w)}</td><td>${poeSel(m.poe)}</td>
+        <td><button onclick="this.closest('tr').remove()" title="Delete" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:15px">✕</button></td></tr>`).join('') ||
+      `<tr><td colspan="10" style="color:var(--text-muted);font-size:12px;padding:10px">No own models yet. Click “+ Add my own AP”.</td></tr>`;
+  }
+  return `<tr><th>Model</th><th>Wi-Fi</th><th>TX dBm</th><th>Gain dBi</th><th>Watt</th><th>PoE</th></tr>` +
+    VENDORS_BASE[vid].models.map(bm => {
+      const o = _apw.ovr[vid + '|' + bm.id] || {}, hasTx = !bm.txb, hasG = !bm.gainb;
+      return `<tr data-id="${bm.id}"><td><b>${esc(bm.name)}</b>${bm.est ? ' <span title="TX power and gain are estimates for this AP class, not datasheet values" style="font-size:10px;color:var(--warn,#ffb86b)">est.</span>' : ''}</td><td>${bm.wifi}</td>
+        <td>${inp('tx', o.tx != null ? o.tx : bm.tx, hasTx ? '' : 'disabled title="Per-band datasheet values, not editable here"')}</td>
+        <td>${inp('gain', o.gain != null ? o.gain : bm.gain, hasG ? '' : 'disabled title="Per-band datasheet values, not editable here"')}</td>
+        <td>${inp('w', o.w != null ? o.w : bm.w)}</td><td>${poeSel(o.poe != null ? o.poe : bm.poe)}</td></tr>`;
+    }).join('');
+}
+function apcCollect(root) {
+  const t = root.querySelector('#apc-tbl'); if (!t) return;
+  const val = (r, k) => { const e = r.querySelector(`[data-k="${k}"]`); return e ? e.value : ''; };
+  if (_apv === 'custom') {
+    _apw.custom = [...t.querySelectorAll('tr[data-id]')].map(r => ({ id: r.dataset.id, name: val(r, 'name').trim() || 'My AP', wifi: +val(r, 'wifi'),
+      bands: ['2.4', '5', '6'].filter(b => r.querySelector(`[data-k="b${b}"]`).checked), tx: val(r, 'tx'), gain: val(r, 'gain'), w: val(r, 'w'), poe: val(r, 'poe') }));
+    return;
+  }
+  t.querySelectorAll('tr[data-id]').forEach(r => {
+    const bm = VENDORS_BASE[_apv].models.find(m => m.id === r.dataset.id); if (!bm) return;
+    const key = _apv + '|' + bm.id, o = {};
+    const f = (k, bv) => { const v = parseFloat(val(r, k)); if (!isNaN(v) && v !== (bv == null ? 0 : bv)) o[k] = v; };
+    if (!bm.txb) f('tx', bm.tx); if (!bm.gainb) f('gain', bm.gain); f('w', bm.w);
+    const pv = val(r, 'poe'); if (pv !== (bm.poe || '')) o.poe = pv;
+    if (Object.keys(o).length) _apw.ovr[key] = o; else delete _apw.ovr[key];
+  });
+}
+function apcSwitch(root) {
+  apcCollect(root); _apv = root.querySelector('#apc-v').value;
+  root.querySelector('#apc-tbl').innerHTML = apcRowsBuilt(_apv);
+  root.querySelector('#apc-add').style.display = _apv === 'custom' ? '' : 'none';
+}
+async function openApCat() {
+  await cloudCatSync();
+  _apw = apCatClean(userApCat()); _apv = 'h3c';
+  const opts = Object.keys(VENDORS_BASE).map(v => `<option value="${v}">${esc(v === 'custom' ? 'My own APs' : VENDORS_BASE[v].name)}</option>`).join('');
+  const html = `<div style="font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:10px">Correct the specs of any AP model (from the datasheet or your own measurements), or add your own model. <b>Watt</b> and <b>PoE</b> are used for the power budget; <b>TX</b> and <b>Gain</b> change the heatmap. Models marked <i>est.</i> use estimated TX/gain values.</div>
+    <select id="apc-v" onchange="apcSwitch(this.closest('.modal'))" style="padding:7px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);margin-bottom:8px">${opts}</select>
+    <div style="max-height:46vh;overflow:auto"><table class="cal-tbl" id="apc-tbl">${apcRowsBuilt('h3c')}</table></div>
+    <div style="display:flex;gap:8px;margin-top:10px"><button id="apc-add" class="btn-secondary-modal" style="display:none;flex:1;padding:7px" onclick="apcAdd(this.closest('.modal'))">+ Add my own AP</button>
+      <button class="btn-secondary-modal" style="flex:1;padding:7px" onclick="apcReset(this.closest('.modal'))">Reset this list to defaults</button></div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:8px">${cl_token() ? '☁ Synced to your account.' : 'Stored in this browser only. <a href="#" onclick="event.preventDefault();authOpenModal()" style="color:var(--accent)">Log in</a> to sync across devices.'} Watt values are the maximum power draw from the H3C installation guides.</div>`;
+  const m = await dialog({ title: 'AP <em>catalog</em>', html, ok: 'Save catalog', wide: true });
+  if (!m) return;
+  apcCollect(m);
+  const clean = apCatClean(_apw);
+  try { localStorage.setItem('cl_apcat', JSON.stringify(clean)); } catch (e) { toast('Could not save in this browser', 'error'); }
+  if (cl_token()) { const ok = await cloudCatPut(clean); toast(ok ? 'AP catalog saved to your account' : 'Saved in this browser, but the account sync failed (try again later)', ok ? undefined : 'error'); }
+  else toast('AP catalog saved');
+  pushHistory(); applyApCat(clean); renderPropsPanel(); scheduleRender(); scheduleAutosave();
+}
+function apcAdd(root) { apcCollect(root); _apw.custom.push({ id: 'c' + Date.now().toString(36), name: 'My AP', wifi: 6, bands: ['2.4', '5'], tx: 20, gain: 3, w: 15, poe: 'at' }); root.querySelector('#apc-tbl').innerHTML = apcRowsBuilt('custom'); }
+function apcReset(root) {
+  if (_apv === 'custom') { _apw.custom = []; } else { for (const k of Object.keys(_apw.ovr)) if (k.startsWith(_apv + '|')) delete _apw.ovr[k]; }
+  root.querySelector('#apc-tbl').innerHTML = apcRowsBuilt(_apv);
+}
+
+// ============================================================
 // HELPERS
 // ============================================================
 function getAPModel(vid, mid) {
@@ -3321,7 +3510,7 @@ function initAuth() {
   if (token || incoming) {
     fetch('/api/me', {headers:{'Authorization':'Bearer '+(incoming||token)}})
       .then(r => r.ok ? r.json() : null)
-      .then(user => { if(user) { renderAuthUser(user); cloudLibSync(); } else renderAuthLogin(); })
+      .then(user => { if(user) { renderAuthUser(user); cloudLibSync(); cloudCatSync(); } else renderAuthLogin(); })
       .catch(() => renderAuthLogin());
   } else {
     renderAuthLogin();
@@ -3342,7 +3531,7 @@ function renderAuthUser(user) {
       ${av}
       <div class="auth-dropdown" id="auth-dd">
         <div class="auth-dropdown-header"><div class="auth-dropdown-name">${user.name}</div><div class="auth-dropdown-email">${user.email}</div></div>
-        <button class="auth-dropdown-item danger" onclick="localStorage.removeItem('clab_token');try{localStorage.removeItem('cl_matlib')}catch(e){};location.reload()">Logout</button>
+        <button class="auth-dropdown-item danger" onclick="localStorage.removeItem('clab_token');try{localStorage.removeItem('cl_matlib');localStorage.removeItem('cl_apcat')}catch(e){};location.reload()">Logout</button>
       </div>
     </div>`;
   document.addEventListener('click', e => {
@@ -3473,12 +3662,12 @@ async function saveCurrent() {
   if (!curProj || !curFloor || RO) return;
   const f = curFloorObj(); if (!f) return;
   const data = captureFloor();
-  const sig = JSON.stringify(data) + JSON.stringify(WALL_MATS) + (wifi.floorPlan ? 'P' : '');
+  const sig = JSON.stringify(data) + JSON.stringify(WALL_MATS) + JSON.stringify(userApCat()) + (wifi.floorPlan ? 'P' : '');
   if (sig === _lastSaved) { _dirty = false; setSaveState(_savedAt ? 'Saved ✓ ' + _savedAt : 'Saved in this browser'); return; }
   try {
     setSaveState('Saving…');
     f.data = data; f.hasPlan = !!wifi.floorPlan;
-    curProj.updated = Date.now(); curProj.mats = JSON.parse(JSON.stringify(WALL_MATS));
+    curProj.updated = Date.now(); curProj.mats = JSON.parse(JSON.stringify(WALL_MATS)); curProj.apcat = apCatSnapshot();
     await dbPut('projects', curProj);
     _lastSaved = sig; _dirty = false;
     _savedAt = new Date().toTimeString().slice(0, 5);
@@ -4289,7 +4478,7 @@ async function collectFloor(f, cfg) {
     cfg.bands.forEach(b => { const v = rads.filter(r => r.band === b).map(r => r.tx); pw[b] = v.length ? v.join('/') : 'N/A'; });
     out.aps.push({ name: a.name, model: m.name, loc: wifi.scaleSet ? (a.x / ppm).toFixed(1) + ', ' + (a.y / ppm).toFixed(1) + ' m' : '—', pw, r: [0, 1, 2].map(k => rads[k] ? rads[k].band + 'G · ' + rads[k].ch : 'N/A') });
     out.models[m.name] = (out.models[m.name] || 0) + 1;
-    out.info[m.name] = { vendor: (VENDORS[a.vendor] && VENDORS[a.vendor].name) || a.vendor, desc: m.desc || '', wifi: m.wifi, bands: (m.bands || []).join(' / ') };
+    out.info[m.name] = { vendor: (VENDORS[a.vendor] && VENDORS[a.vendor].name) || a.vendor, desc: m.desc || '', wifi: m.wifi, bands: (m.bands || []).join(' / '), w: m.w || 0, poe: m.poe || '' };
   });
   // obstacles + area for the report
   const wl = { n: wifi.walls.length, len: 0, doors: wifi.doors.length, by: {} };

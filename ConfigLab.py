@@ -1440,7 +1440,7 @@ def api_get_files():
         return jsonify({'error': 'Unauthorized'}), 401
 
     file_type = request.args.get('type')   # optional filter (only 'config' exists now)
-    query = SavedFile.query.filter_by(user_id=data['user_id']).filter(SavedFile.file_type.notin_(['topology', 'wifi_matlib']))  # legacy / internal rows hidden
+    query = SavedFile.query.filter_by(user_id=data['user_id']).filter(SavedFile.file_type.notin_(['topology', 'wifi_matlib', 'wifi_apcat']))  # legacy / internal rows hidden
     if file_type:
         query = query.filter_by(file_type=file_type)
     files = query.order_by(SavedFile.updated_at.desc()).all()
@@ -1631,6 +1631,75 @@ def api_wifi_matlib_put():
         db.session.add(row)
     db.session.commit()
     return jsonify({'mats': mats, 'message': 'Saved'})
+
+# ── WiFi Planner: per-account AP catalog (edited specs + own models) ──
+WIFI_APCAT = 'wifi_apcat'
+
+def _clean_apcat(c):
+    if not isinstance(c, dict):
+        return None
+    def num(v, lo, hi):
+        try:
+            return max(lo, min(hi, float(v)))
+        except (TypeError, ValueError):
+            return None
+    out = {'ovr': {}, 'custom': []}
+    ovr = c.get('ovr') if isinstance(c.get('ovr'), dict) else {}
+    for k, o in list(ovr.items())[:200]:
+        if not isinstance(k, str) or '|' not in k or len(k) > 60 or not isinstance(o, dict):
+            continue
+        r = {}
+        for f, lo, hi in (('tx', 0, 36), ('gain', 0, 20), ('w', 0, 300)):
+            v = num(o.get(f), lo, hi)
+            if v is not None:
+                r[f] = v
+        if isinstance(o.get('poe'), str):
+            r['poe'] = o['poe'][:16]
+        if r:
+            out['ovr'][k] = r
+    for m in (c.get('custom') if isinstance(c.get('custom'), list) else [])[:30]:
+        if not isinstance(m, dict):
+            continue
+        bands = [b for b in ('2.4', '5', '6') if b in (m.get('bands') or [])]
+        if not bands:
+            continue
+        wf = int(m.get('wifi')) if str(m.get('wifi')) in ('5', '6', '7') else 6
+        out['custom'].append({
+            'id': re.sub(r'[^A-Za-z0-9_-]', '', str(m.get('id') or ''))[:30] or 'c%d' % len(out['custom']),
+            'name': str(m.get('name') or 'My AP')[:40], 'wifi': wf, 'bands': bands,
+            'tx': num(m.get('tx'), 0, 36) if num(m.get('tx'), 0, 36) is not None else 20,
+            'gain': num(m.get('gain'), 0, 20) if num(m.get('gain'), 0, 20) is not None else 3,
+            'w': num(m.get('w'), 0, 300) or 0, 'poe': str(m.get('poe') or '')[:16]})
+    return out
+
+@app.route('/api/wifi/apcat', methods=['GET'])
+def api_wifi_apcat_get():
+    uid = _wifi_user()
+    if not uid:
+        return jsonify({'error': 'Unauthorized'}), 401
+    row = SavedFile.query.filter_by(user_id=uid, file_type=WIFI_APCAT).first()
+    if not row:
+        return jsonify({'cat': None})
+    try:
+        return jsonify({'cat': json.loads(row.data), 'updated_at': row.updated_at.isoformat()})
+    except Exception:
+        return jsonify({'cat': None})
+
+@app.route('/api/wifi/apcat', methods=['PUT'])
+def api_wifi_apcat_put():
+    uid = _wifi_user()
+    if not uid:
+        return jsonify({'error': 'Unauthorized'}), 401
+    cat = _clean_apcat((request.get_json(silent=True) or {}).get('cat'))
+    if cat is None:
+        return jsonify({'error': 'Invalid AP catalog'}), 400
+    row = SavedFile.query.filter_by(user_id=uid, file_type=WIFI_APCAT).first()
+    if row:
+        row.data = json.dumps(cat)
+    else:
+        db.session.add(SavedFile(user_id=uid, name='WiFi AP catalog', file_type=WIFI_APCAT, data=json.dumps(cat)))
+    db.session.commit()
+    return jsonify({'cat': cat, 'message': 'Saved'})
 
 # ── WiFi Planner: projects saved to the account + read-only share links ──
 _ID = re.compile(r'^[A-Za-z0-9_-]{3,40}$')
