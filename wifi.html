@@ -442,6 +442,24 @@ select option:disabled{color:var(--text-muted)}
 .xp-li i{flex:0 0 7px;height:7px;border-radius:50%;background:var(--accent);margin-top:6px}
 .xp-li.off{opacity:.4;text-decoration:line-through}.xp-li.off i{background:var(--text-muted)}
 @media(max-width:760px){.xp-grid{grid-template-columns:1fr}.xp-left{max-height:none}}
+
+/* ---- v5.24: auto placement ---- */
+.plc-float{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:25;display:flex;align-items:center;gap:12px;padding:11px 16px;background:color-mix(in srgb,var(--surface) 94%,transparent);border:1px solid var(--border-strong);border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.35);font-size:13px;color:var(--text);min-width:260px;max-width:92%}
+.plc-sub{font-size:11.5px;color:var(--text-dim);margin-top:2px;font-weight:400}
+.plc-bar{min-width:420px}
+.plc-spin{width:18px;height:18px;border-radius:50%;border:2px solid var(--border-strong);border-top-color:var(--accent);animation:plcspin .8s linear infinite;flex-shrink:0}
+@keyframes plcspin{to{transform:rotate(360deg)}}
+.plc-card{display:block;position:relative;padding:12px 14px 12px 40px;border:1px solid var(--border);border-radius:12px;margin-bottom:9px;background:var(--surface-2);cursor:pointer}
+.plc-card input{position:absolute;left:14px;top:16px;width:auto}
+.plc-card.rec{border-color:color-mix(in srgb,var(--accent) 55%,var(--border))}
+.plc-card:has(input:checked){outline:2px solid color-mix(in srgb,var(--accent) 60%,transparent)}
+.plc-h{display:flex;align-items:center;gap:10px;font-size:13.5px}
+.plc-h em{font-style:normal;font-size:10px;color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 45%,var(--border));border-radius:99px;padding:1px 8px}
+.plc-d{font-size:11.5px;color:var(--text-dim);margin:3px 0 8px;line-height:1.5}
+.plc-m{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.plc-m div{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:6px 4px;text-align:center}
+.plc-m b{display:block;font-family:var(--mono);font-size:14px;color:var(--text)}
+.plc-m span{font-size:10px;color:var(--text-muted)}
 </style>
 </head>
 <body data-theme="dark">
@@ -468,7 +486,7 @@ select option:disabled{color:var(--text-muted)}
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.23</span></div>
+    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.24</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -1306,6 +1324,7 @@ function renderExcl() {
 }
 function renderAreas() {
   renderExcl();
+  renderPlcPrev();
   for (const a of wifi.areas) {
     const sel = wifi.sel?.kind === 'area' && wifi.sel.id === a.id;
     ctx.beginPath();
@@ -2909,7 +2928,8 @@ async function openOptimize() {
 // ============================================================
 // AUTO PLACEMENT (v5.8): suggest number + positions of APs for the render area(s)
 // ============================================================
-async function runPlacement(o) {
+// ---- auto placement (v5.24): candidates, greedy variants, capacity top-up ----
+async function plcPrepare(o, prog) {
   const m = getAPModel(o.vendor, o.model);
   const rg = heatRegion(), band = o.band;
   const area = Math.max(1, (rg.x1 - rg.x0) * (rg.y1 - rg.y0));
@@ -2918,23 +2938,30 @@ async function runPlacement(o) {
   for (let py = rg.y0 + Sd / 2; py < rg.y1; py += Sd) for (let px = rg.x0 + Sd / 2; px < rg.x1; px += Sd) if (inRegion(rg, px, py)) cells.push(px, py);
   const nd = cells.length / 2;
   if (!nd) throw new Error('The area to cover is empty');
-  const cnt = new Uint8Array(nd);
-  if (o.keep && wifi.aps.length) {                                   // what the existing APs already cover
+  const cnt0 = new Uint8Array(nd);
+  if (o.keep && wifi.aps.length) {
     const h0 = prepHeat({ band, mode: 'rssi', threshold: o.target });
-    if (h0.aps.length) for (let d = 0; d < nd; d++) { cellRSSI(h0, cells[2 * d], cells[2 * d + 1]); if (_bR >= o.target) cnt[d] = 1; }
+    if (h0.aps.length) for (let d = 0; d < nd; d++) { cellRSSI(h0, cells[2 * d], cells[2 * d + 1]); if (_bR >= o.target) cnt0[d] = 1; }
   }
-  // candidate positions (grid, away from walls)
+  const nearWall = (px, py) => { for (const w of wifi.walls) if (distToSeg(px, py, { x: w.x1, y: w.y1 }, { x: w.x2, y: w.y2 }) < 10) return true; return false; };
   const Sc = Math.max(wifi.pxPerMeter * 2.5, Math.sqrt(area / 400));
   const cand = [];
   for (let py = rg.y0 + Sc / 2; py < rg.y1; py += Sc) for (let px = rg.x0 + Sc / 2; px < rg.x1; px += Sc) {
-    if (!inRegion(rg, px, py)) continue;
-    let ok = true;
-    for (const w of wifi.walls) { if (distToSeg(px, py, { x: w.x1, y: w.y1 }, { x: w.x2, y: w.y2 }) < 10) { ok = false; break; } }
-    if (ok) cand.push(px, py);
+    if (inRegion(rg, px, py) && !nearWall(px, py)) cand.push(px, py);
   }
+  // room centres: a natural spot for one AP per room / corridor
+  let nRoomC = 0;
+  const addCentre = pts => {
+    let cx = 0, cy = 0; pts.forEach(q => { cx += q.x; cy += q.y; }); cx /= pts.length; cy /= pts.length;
+    let best = null;
+    if (inPoly(pts, cx, cy)) best = { x: cx, y: cy };
+    else { let bd = 1e9; for (let t = 0; t < 40; t++) { const q = pts[Math.floor(Math.random() * 0 + t * pts.length / 40) % pts.length]; const d = Math.hypot(q.x - cx, q.y - cy); if (d < bd && inPoly(pts, (q.x + cx) / 2, (q.y + cy) / 2)) { bd = d; best = { x: (q.x + cx) / 2, y: (q.y + cy) / 2 }; } } }
+    if (best && inRegion(rg, best.x, best.y) && !nearWall(best.x, best.y)) { cand.push(best.x, best.y); nRoomC++; }
+  };
+  wifi.areas.forEach(ar => addCentre(ar.pts));
+  if (!wifi.areas.length && wifi.scaleSet && wifi.walls.length) { try { const rr = rmDetect(0.3); if (rr) rr.rooms.filter(q => q.m2 >= 6).slice(0, 60).forEach(q => addCentre(q.pts)); } catch (e) {} }
   const nc = cand.length / 2;
   if (!nc) throw new Error('No free spot found to place an AP');
-  // coverage lists
   const hc = prepHeat({ band, mode: 'rssi', threshold: o.target });
   const tx = defTx(m, band);
   hc.aps = [{ x: 0, y: 0, dz: o.height - wifi.clientH, eirp: tx + mGain(m, band), band, ch: 1, ap: 0, noise: NOISE_FLOOR[band] }];
@@ -2945,27 +2972,65 @@ async function runPlacement(o) {
     const l = [];
     for (let d = 0; d < nd; d++) { cellRSSI(hc, cells[2 * d], cells[2 * d + 1]); if (_bR >= o.target) l.push(d); }
     lists.push(Int32Array.from(l));
-    if (c % 25 === 24) { showBusy('Analysing positions… ' + Math.round(100 * c / nc) + '%'); await tick(); }
+    if (c % 25 === 24) { if (prog) prog(c / nc); await tick(); }
   }
-  // greedy cover
-  const chosen = [];
-  let covered = 0; for (let d = 0; d < nd; d++) if (cnt[d]) covered++;
+  return { nd, nc, cand, lists, cnt0, cells, rg, nRoomC };
+}
+// greedy cover. variants: A = fewest APs, B = spread out (penalises overlap), C = dense (2-fold coverage for roaming)
+async function plcSolve(P, o, v, onPick) {
+  const { nd, nc, lists, cand } = P;
+  const cnt = Uint8Array.from(P.cnt0);
+  let covered = 0, c2 = 0; for (let d = 0; d < nd; d++) { if (cnt[d]) covered++; if (cnt[d] > 1) c2++; }
+  const lam = v === 'B' ? 0.35 : 0, dense = v === 'C';
   const minGain = Math.max(2, Math.round(nd * 0.002));
-  while (covered / nd < o.goal && chosen.length < o.maxAP) {
-    let bc = -1, bg = 0;
-    for (let c = 0; c < nc; c++) { const l = lists[c]; let g = 0; for (let i = 0; i < l.length; i++) if (!cnt[l[i]]) g++; if (g > bg) { bg = g; bc = c; } }
-    if (bc < 0 || bg < minGain) break;
-    chosen.push(bc);
-    for (const d of lists[bc]) { if (!cnt[d]) covered++; if (cnt[d] < 250) cnt[d]++; }
+  const chosen = [], used = new Uint8Array(nc);
+  while (chosen.length < o.maxAP) {
+    const d1 = covered / nd >= o.goal, d2 = !dense || c2 / nd >= 0.6;
+    if (d1 && d2) break;
+    let bc = -1, bs = 0;
+    for (let c = 0; c < nc; c++) {
+      if (used[c]) continue;
+      const l = lists[c]; let g0 = 0, g1 = 0, ov = 0;
+      for (let i = 0; i < l.length; i++) { const k = cnt[l[i]]; if (k === 0) g0++; else { ov++; if (k === 1) g1++; } }
+      let sc;
+      if (!d1) { if (g0 < minGain) continue; sc = g0 + (dense ? 0.6 * g1 : 0) - lam * ov; }
+      else { if (g1 < minGain) continue; sc = g1; }
+      if (sc > bs) { bs = sc; bc = c; }
+    }
+    if (bc < 0) break;
+    chosen.push(bc); used[bc] = 1;
+    for (const d of lists[bc]) { if (!cnt[d]) covered++; else if (cnt[d] === 1) c2++; if (cnt[d] < 250) cnt[d]++; }
+    if (onPick) await onPick(chosen.map(c => ({ x: Math.round(cand[2 * c]), y: Math.round(cand[2 * c + 1]) })), covered / nd);
   }
-  // prune APs that became redundant
-  for (let i = chosen.length - 1; i >= 0; i--) {
+  if (!dense) for (let i = chosen.length - 1; i >= 0; i--) {
     const l = lists[chosen[i]]; let red = true;
     for (let k = 0; k < l.length; k++) if (cnt[l[k]] < 2) { red = false; break; }
     if (red) { for (const d of l) cnt[d]--; chosen.splice(i, 1); }
   }
   let cov2 = 0; for (let d = 0; d < nd; d++) if (cnt[d]) cov2++;
-  return { pts: chosen.map(c => ({ x: Math.round(cand[2 * c]), y: Math.round(cand[2 * c + 1]) })), cov: cov2 / nd, nd, nc };
+  return { pts: chosen.map(c => ({ x: Math.round(cand[2 * c]), y: Math.round(cand[2 * c + 1]) })), cov: cov2 / nd };
+}
+// add APs where an area with capacity settings has fewer APs than it needs
+function plcCapFix(o, pts, P) {
+  const caps = wifi.areas.filter(a => a.cap), saved = wifi.aps;
+  if (!caps.length) return { pts, added: 0 };
+  const out = pts.slice(); let added = 0;
+  try {
+    for (const ar of caps) {
+      for (let pass = 0; pass < 60; pass++) {
+        wifi.aps = (o.keep ? saved : []).concat(plcMakeAPs(o, out)); wifi.aps.forEach((a, i) => normAP(a, i));
+        const r = capCalc(ar); if (!r || r.status !== 'short') break;
+        const inside = wifi.aps.filter(q => inPoly(ar.pts, q.x, q.y));
+        let pool = []; for (let c = 0; c < P.nc; c++) if (inPoly(ar.pts, P.cand[2 * c], P.cand[2 * c + 1])) pool.push({ x: P.cand[2 * c], y: P.cand[2 * c + 1] });
+        if (!pool.length) { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; ar.pts.forEach(q => { x0 = Math.min(x0, q.x); y0 = Math.min(y0, q.y); x1 = Math.max(x1, q.x); y1 = Math.max(y1, q.y); }); const st = Math.max(10, wifi.pxPerMeter * 1.5); for (let y = y0 + st / 2; y < y1; y += st) for (let x = x0 + st / 2; x < x1; x += st) if (inPoly(ar.pts, x, y)) pool.push({ x, y }); }
+        if (!pool.length) break;
+        let best = pool[0], bd = -1;
+        pool.forEach(q => { let md = 1e9; inside.forEach(a => { md = Math.min(md, Math.hypot(a.x - q.x, a.y - q.y)); }); if (!inside.length) md = 1e8; if (md > bd) { bd = md; best = q; } });
+        out.push({ x: Math.round(best.x), y: Math.round(best.y) }); added++;
+      }
+    }
+  } finally { wifi.aps = saved; }
+  return { pts: out, added };
 }
 function plcMakeAPs(o, pts) {
   return pts.map((p, k) => {
@@ -2974,12 +3039,39 @@ function plcMakeAPs(o, pts) {
     return ap;
   });
 }
+// live progress panel and on-canvas preview
+function plcLive(text, sub) {
+  let el = document.getElementById('plc-live');
+  if (text == null) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'plc-live'; el.className = 'plc-float'; document.getElementById('canvas-wrap').appendChild(el); }
+  el.innerHTML = `<div class="plc-spin"></div><div><b>${text}</b>${sub ? `<div class="plc-sub">${sub}</div>` : ''}</div>`;
+}
+function renderPlcPrev() {
+  if (!wifi.plcPrev || !wifi.plcPrev.length) return;
+  const z = wifi.view.z;
+  wifi.plcPrev.forEach((p, i) => {
+    ctx.beginPath(); ctx.arc(p.x, p.y, 14 / z, 0, Math.PI * 2); ctx.fillStyle = 'rgba(124,244,199,0.18)'; ctx.fill();
+    ctx.setLineDash([5 / z, 4 / z]); ctx.lineWidth = 2 / z; ctx.strokeStyle = '#7cf4c7'; ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(p.x, p.y, 4.5 / z, 0, Math.PI * 2); ctx.fillStyle = '#7cf4c7'; ctx.fill();
+    ctx.font = `bold ${10 / z}px JetBrains Mono, monospace`; ctx.textAlign = 'center'; ctx.fillStyle = '#e6fff6'; ctx.fillText(String(i + 1), p.x, p.y - 18 / z);
+  });
+}
+function plcBar(html, onApply, onExit) {
+  let el = document.getElementById('plc-bar');
+  if (!html) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'plc-bar'; el.className = 'plc-float plc-bar'; document.getElementById('canvas-wrap').appendChild(el); }
+  el.innerHTML = `<div style="flex:1;min-width:0">${html}</div><button class="btn-secondary-modal" data-x style="padding:7px 14px;font-size:12px">Exit</button><button class="btn-primary-modal" data-a style="padding:7px 16px;font-size:12px">Apply</button>`;
+  el.querySelector('[data-x]').onclick = onExit; el.querySelector('[data-a]').onclick = onApply;
+}
 async function openPlacement() {
+  if (RO) return;
+  if (document.getElementById('plc-bar')) { toast('Apply or exit the current placement preview first', 'error'); return; }
   if (!wifi.floorPlan && !wifi.areas.length && !wifi.walls.length) { toast('Load a floor plan (or draw walls / a Render area) first', 'error'); return; }
   const dv = wifi.placingVendor || 'h3c', dm = wifi.placingModel || 'wa6320';
   const opts = Object.keys(VENDORS).filter(v => VENDORS[v].models.length).map(v => `<optgroup label="${esc(VENDORS[v].name)}">` + VENDORS[v].models.map(md => `<option value="${v}|${md.id}" ${v === dv && md.id === dm ? 'selected' : ''}>${esc(md.name)} · Wi-Fi ${md.wifi}</option>`).join('') + '</optgroup>').join('');
-  const zone = wifi.areas.length ? `${wifi.areas.length} Render area${wifi.areas.length > 1 ? 's' : ''}` : 'the whole plan (draw a Render area with the G tool to limit it)';
-  const html = `<div style="font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:12px">Suggests how many APs are needed and where to put them, to cover <b>${zone}</b> at your target signal level. Walls and doors are taken into account.</div>
+  const zone = wifi.areas.length ? `${wifi.areas.length} Render area${wifi.areas.length > 1 ? 's' : ''}` : 'the whole plan (draw a Render area with the G tool, or use Detect rooms, to limit it)';
+  const hasCap = wifi.areas.some(a => a.cap);
+  const html = `<div style="font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:12px">Builds <b>three plans</b> to cover <b>${zone}</b> at your target signal level and lets you compare them. Walls, doors and no-coverage zones are taken into account.</div>
     <div class="dlg-field"><label>AP model</label><select id="pl-model" style="width:100%;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text)">${opts}</select></div>
     <div class="field-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="dlg-field"><label>Plan for band</label><select id="pl-band" style="width:100%;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text)"></select></div>
@@ -2990,55 +3082,78 @@ async function openPlacement() {
       <div class="dlg-field"><label>Max APs</label><input id="pl-max" type="number" value="60" min="1" max="200"></div>
     </div>
     <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:4px"><input type="checkbox" id="pl-keep" ${wifi.aps.length ? 'checked' : ''} style="width:auto"> Keep the ${wifi.aps.length} existing AP${wifi.aps.length === 1 ? '' : 's'} (only add what is missing). Off = replace them</label>
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px"><input type="checkbox" id="pl-cap" ${hasCap ? 'checked' : 'disabled'} style="width:auto"> Add APs where capacity is short ${hasCap ? '' : '<span style="color:var(--text-muted)">(set capacity on an area first)</span>'}</label>
     <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px"><input type="checkbox" id="pl-opt" checked style="width:auto"> Then optimize channels and TX power</label>`;
   const m = await dialog({ title: 'Auto <em>placement</em>', html, ok: 'Run', wide: true });
   if (!m) return;
   const g = id => m.querySelector('#' + id);
   const [vendor, model] = g('pl-model').value.split('|');
-  const o = { vendor, model, band: g('pl-band').value, target: parseFloat(g('pl-target').value), goal: Math.max(0.5, Math.min(1, parseFloat(g('pl-goal').value) / 100)), height: parseFloat(g('pl-h').value) || 2.8, sinr: parseFloat(g('pl-sinr').value) || 20, maxAP: Math.max(1, parseInt(g('pl-max').value) || 60), keep: g('pl-keep').checked, opt: g('pl-opt').checked };
+  const o = { vendor, model, band: g('pl-band').value, target: parseFloat(g('pl-target').value), goal: Math.max(0.5, Math.min(1, parseFloat(g('pl-goal').value) / 100)), height: parseFloat(g('pl-h').value) || 2.8, sinr: parseFloat(g('pl-sinr').value) || 20, maxAP: Math.max(1, parseInt(g('pl-max').value) || 60), keep: g('pl-keep').checked, opt: g('pl-opt').checked, cap: g('pl-cap').checked };
   if (isNaN(o.target)) { toast('Enter a valid target signal', 'error'); return; }
-  showBusy('Analysing positions…'); await tick();
-  let r, est = null, apsNew, saved = wifi.aps, savedT = wifi.covTarget;
+  wifi.placingVendor = vendor; wifi.placingModel = model;
+  const saved = wifi.aps, savedT = wifi.covTarget, savedSel = wifi.sel;
+  const plans = [];
   try {
-    r = await runPlacement(o);
-    apsNew = plcMakeAPs(o, r.pts);
-    // estimate the final result (channels/power) with the new APs temporarily added
-    const base = o.keep ? saved : [];
-    wifi.aps = base.concat(apsNew); wifi.covTarget = o.target;
-    wifi.aps.forEach((a, i) => normAP(a, i));
-    showBusy('Estimating SINR…'); await tick();
-    const bands = floorBands();
-    const res = await runOptimize({ ch: o.opt, pw: o.opt, dfs: false, bands: bands.length ? bands : [o.band] });
-    est = res;
-  } catch (e) { wifi.aps = saved; wifi.covTarget = savedT; hideBusy(); console.error(e); toast('Placement failed: ' + e.message, 'error'); return; }
-  const estPlan = est.find(x => x.band === o.band);
-  const chosenTmp = { aps: wifi.aps, est };
-  wifi.aps = saved; wifi.covTarget = savedT;
-  hideBusy();
+    plcLive('Analysing positions…', '0%');
+    const P = await plcPrepare(o, f => plcLive('Analysing positions…', Math.round(f * 100) + '%'));
+    const VAR = [['A', 'Fewest APs', 'Covers the goal with the smallest number of APs.'], ['B', 'Balanced', 'Spreads APs out to cut co-channel overlap, so SINR is usually better.'], ['C', 'Roaming-friendly', 'Denser: most of the floor is covered by two APs, for smoother roaming.']];
+    const seen = new Set();
+    for (const [id, name, desc] of VAR) {
+      let lastPick = 0;
+      const onPick = async (pts, cov) => { plcLive(`Plan ${id} · ${name}`, `${pts.length} AP${pts.length > 1 ? 's' : ''} placed · coverage ${Math.round(cov * 100)}%`); if (id === 'A') { wifi.plcPrev = pts; scheduleRender(); if (pts.length <= 14) await new Promise(r => setTimeout(r, 160)); } else if (++lastPick % 3 === 0) await tick(); };
+      let r = await plcSolve(P, o, id, onPick);
+      let cp = { pts: r.pts, added: 0 };
+      if (o.cap) cp = plcCapFix(o, r.pts, P);
+      const sig = cp.pts.map(q => q.x + ',' + q.y).sort().join('|');
+      if (seen.has(sig)) continue; seen.add(sig);
+      const apsNew = plcMakeAPs(o, cp.pts);
+      plcLive(`Plan ${id} · estimating SINR…`, `${cp.pts.length} AP${cp.pts.length > 1 ? 's' : ''}`); await tick();
+      wifi.aps = (o.keep ? saved : []).concat(apsNew); wifi.covTarget = o.target; wifi.aps.forEach((a, i) => normAP(a, i));
+      const bands = floorBands();
+      const est = await runOptimize({ ch: o.opt, pw: o.opt, dfs: false, bands: bands.length ? bands : [o.band] });
+      const ep = est.find(x => x.band === o.band);
+      let sinrOk = null; if (ep) sinrOk = optEval(Object.assign({}, ep.M, { sinrT: o.sinr }), ep.tx, ep.ch, false).ok;
+      const watts = pwrCalc([{ name: 'f', aps: pwrAPs(wifi.aps) }]).tot.w;
+      plans.push({ id, name, desc, pts: cp.pts, capAdded: cp.added, cov: r.cov, total: wifi.aps.length, newN: apsNew.length, sinr: ep ? ep.after.sinr : null, sinrOk, watts, est, apsNew });
+      wifi.aps = saved; wifi.covTarget = savedT;
+    }
+  } catch (e) { wifi.aps = saved; wifi.covTarget = savedT; wifi.plcPrev = null; plcLive(null); scheduleRender(); console.error(e); toast('Placement failed: ' + e.message, 'error'); return; }
+  wifi.plcPrev = null; plcLive(null); scheduleRender();
+  // recommended: goal met first, then share of cells with good SINR, then fewer APs
+  const rank = pl => (pl.cov >= o.goal - 0.005 ? 1000 : 0) + (pl.sinrOk != null ? pl.sinrOk * 100 : 0) - pl.newN * 1.5;
+  const best = plans.reduce((b, q) => rank(q) > rank(b) ? q : b, plans[0]);
   const pct = v => Math.round(v * 100) + '%';
-  let sinrOk = null;
-  if (estPlan) { const ev = optEval(Object.assign({}, estPlan.M, { sinrT: o.sinr }), estPlan.tx, estPlan.ch, false); sinrOk = ev.ok; }
-  let h = `<table class="cal-tbl"><tr><th>New APs</th><th>Total APs</th><th>Coverage ≥ ${o.target} dBm</th>${estPlan ? `<th>Avg SINR</th><th>Cells ≥ ${o.sinr} dB SINR</th>` : ''}</tr>
-    <tr><td><b>${apsNew.length}</b></td><td>${(o.keep ? saved.length : 0) + apsNew.length}</td><td><b>${pct(r.cov)}</b> <span style="color:var(--text-muted)">(goal ${pct(o.goal)})</span></td>${estPlan ? `<td>${estPlan.after.sinr == null ? '—' : estPlan.after.sinr.toFixed(1) + ' dB'}</td><td>${sinrOk == null ? '—' : pct(sinrOk)}</td>` : ''}</tr></table>`;
-  if (r.cov < o.goal) h += `<div style="margin-top:10px;font-size:12px;color:var(--warning)">The goal was not reached${apsNew.length >= o.maxAP ? ' (max APs hit)' : ''}. Some spots may be shielded by thick walls — add a few APs manually there, or relax the target signal.</div>`;
-  if (!o.keep && saved.length) h += `<div style="margin-top:10px;font-size:12px;color:var(--warning)">The ${saved.length} existing AP${saved.length === 1 ? '' : 's'} will be replaced.</div>`;
-  h += `<div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.5">A prediction from the propagation model, not a guarantee. After applying you can drag APs, change models or run Optimize again. Validate with a site survey.</div>`;
-  if (!apsNew.length) { await dialog({ title: 'Placement <em>result</em>', html: '<div style="font-size:13px;color:var(--text-dim)">No extra APs are needed — the existing APs already meet the goal.</div>' + h, ok: 'Close', hideCancel: true, wide: true }); return; }
-  const ok = await dialog({ title: 'Placement <em>result</em>', html: h, ok: `Add ${apsNew.length} AP${apsNew.length > 1 ? 's' : ''}`, wide: true });
+  if (!plans[0].newN && plans.every(q => !q.newN)) { await dialog({ title: 'Placement <em>result</em>', html: '<div style="font-size:13px;color:var(--text-dim)">No extra APs are needed — the existing APs already meet the goal.</div>', ok: 'OK', hideCancel: true }); return; }
+  const card = q => `<label class="plc-card ${q === best ? 'rec' : ''}"><input type="radio" name="plc-pick" value="${q.id}" ${q === best ? 'checked' : ''}>
+      <div class="plc-h"><b>Plan ${q.id} · ${q.name}</b>${q === best ? '<em>recommended</em>' : ''}</div>
+      <div class="plc-d">${q.desc}</div>
+      <div class="plc-m"><div><b>${q.newN}</b><span>new APs</span></div><div><b>${q.total}</b><span>total</span></div><div><b>${pct(q.cov)}</b><span>coverage</span></div><div><b>${q.sinrOk == null ? '—' : pct(q.sinrOk)}</b><span>SINR ≥ ${o.sinr} dB</span></div><div><b>${q.watts ? Math.round(q.watts) + ' W' : '—'}</b><span>PoE draw</span></div></div>
+      ${q.capAdded ? `<div class="plc-d" style="margin-top:6px;color:var(--accent)">Includes ${q.capAdded} AP${q.capAdded > 1 ? 's' : ''} added for capacity.</div>` : ''}</label>`;
+  let h = plans.map(card).join('');
+  if (best.cov < o.goal) h += `<div style="margin-top:8px;font-size:12px;color:var(--warning)">The goal was not fully reached${best.newN >= o.maxAP ? ' (max APs hit)' : ''}. Some spots may be shielded by thick walls — add a few APs manually there, or relax the target signal.</div>`;
+  if (!o.keep && saved.length) h += `<div style="margin-top:8px;font-size:12px;color:var(--warning)">The ${saved.length} existing AP${saved.length === 1 ? '' : 's'} will be replaced.</div>`;
+  h += `<div style="margin-top:8px;font-size:11px;color:var(--text-muted);line-height:1.5">Predictions from the propagation model, not guarantees. You can preview the chosen plan on the floor plan before applying it.</div>`;
+  const ok = await dialog({ title: 'Placement <em>plans</em>', html: h, ok: 'Preview on plan', wide: true });
   if (!ok) return;
-  pushHistory();
-  if (!o.keep) wifi.aps = [];
-  wifi.counters.ap += apsNew.length;
-  apsNew.forEach(a => wifi.aps.push(a));
-  wifi.aps.forEach((a, i) => normAP(a, i));
-  wifi.covTarget = o.target;
-  const sl = document.querySelector('input[oninput*="covTarget"]'); if (sl) { sl.value = o.target; const cv = document.getElementById('cov-val'); if (cv) cv.textContent = o.target + 'dBm'; }
-  if (o.opt) {
-    chosenTmp.est.forEach(rs => rs.M.radios.forEach((rd, k) => { const rr = wifi.aps[rd.ai]?.rad[rd.ri]; if (rr) { rr.ch = rs.ch[k]; rr.tx = rs.tx[k]; } }));
-  }
-  wifi.sel = null; hideEmpty(); _precCanvas = null; _statSig = '';
-  renderPropsPanel(); scheduleRender(); scheduleAutosave();
-  toast('Added ' + apsNew.length + ' AP' + (apsNew.length > 1 ? 's' : '') + ' (Ctrl+Z to undo)');
+  const pick = plans.find(q => q.id === ok.querySelector('input[name="plc-pick"]:checked').value) || best;
+  // preview: put the plan on the canvas, apply or exit
+  const place = () => {
+    wifi.aps = (o.keep ? saved.slice() : []).concat(pick.apsNew.map(a => Object.assign({}, a)));
+    wifi.covTarget = o.target; wifi.aps.forEach((a, i) => normAP(a, i));
+    if (o.opt) pick.est.forEach(rs => rs.M.radios.forEach((rd, k) => { const rr = wifi.aps[rd.ai]?.rad[rd.ri]; if (rr) { rr.ch = rs.ch[k]; rr.tx = rs.tx[k]; } }));
+  };
+  place(); wifi.sel = null; hideEmpty(); _precCanvas = null; _statSig = ''; renderPropsPanel(); scheduleRender();
+  const finish = apply => {
+    plcBar(null);
+    if (!apply) { wifi.aps = saved; wifi.covTarget = savedT; wifi.sel = savedSel; _precCanvas = null; _statSig = ''; renderPropsPanel(); scheduleRender(); toast('Placement discarded'); return; }
+    const temp = wifi.aps; wifi.aps = saved; wifi.covTarget = savedT; pushHistory(); wifi.aps = temp;
+    wifi.counters.ap += pick.apsNew.length;
+    wifi.covTarget = o.target;
+    const sl = document.querySelector('input[oninput*="covTarget"]'); if (sl) { sl.value = o.target; const cv = document.getElementById('cov-val'); if (cv) cv.textContent = o.target + 'dBm'; }
+    _precCanvas = null; _statSig = ''; renderPropsPanel(); scheduleRender(); scheduleAutosave();
+    toast('Added ' + pick.newN + ' AP' + (pick.newN > 1 ? 's' : '') + ' (Ctrl+Z to undo)');
+  };
+  plcBar(`<b>Plan ${pick.id} · ${pick.name}</b><div class="plc-sub">${pick.newN} new AP${pick.newN > 1 ? 's' : ''} · coverage ${pct(pick.cov)}${pick.sinrOk != null ? ' · SINR ≥ ' + o.sinr + ' dB on ' + pct(pick.sinrOk) : ''}. Heatmap shows this plan.</div>`, () => finish(true), () => finish(false));
 }
 function plcFillBands() {
   const sel = document.getElementById('pl-model'), bs = document.getElementById('pl-band'); if (!sel || !bs) return;
