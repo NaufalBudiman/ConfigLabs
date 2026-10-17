@@ -417,6 +417,31 @@ select{color-scheme:dark}
 select option,select optgroup{background-color:var(--surface);color:var(--text)}
 select option:checked{background-color:color-mix(in srgb,var(--accent) 28%,var(--surface));color:var(--text)}
 select option:disabled{color:var(--text-muted)}
+
+/* ---- v5.23: export preview dialog ---- */
+.xp-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;align-items:start}
+.xp-cap{font-size:10.5px;letter-spacing:.8px;text-transform:uppercase;color:var(--text-muted);font-family:var(--mono);margin-bottom:8px}
+.xp-left{max-height:62vh;overflow-y:auto;padding-right:6px}
+.xp-ch{padding:9px 12px;border:1px solid var(--border);border-radius:10px;margin-bottom:7px;background:var(--surface-2)}
+.xp-h{display:flex;align-items:center;gap:9px;font-size:13px}
+.xp-h b{font-weight:600;color:var(--text)}
+.xp-h em{margin-left:auto;font-style:normal;font-size:10px;color:var(--text-muted);border:1px solid var(--border);border-radius:99px;padding:1px 8px}
+.xp-n{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;border-radius:6px;background:color-mix(in srgb,var(--accent) 16%,var(--bg));color:var(--accent);font-size:11px;font-family:var(--mono)}
+.xp-sub{display:flex;flex-wrap:wrap;gap:4px 16px;margin:8px 0 2px 29px}
+.xp-it{display:flex;align-items:center;gap:7px;font-size:12.5px;cursor:pointer;color:var(--text)}
+.xp-it input{width:auto}
+.xp-box{padding:12px 14px;border:1px solid var(--border);border-radius:12px;margin-bottom:10px}
+.xp-row{display:flex;flex-wrap:wrap;gap:6px 16px}
+.xp-note{font-size:11px;color:var(--text-muted);line-height:1.5;margin-top:6px;width:100%}
+.xp-out{background:var(--surface-2)}
+.xp-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.xp-stats div{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px;text-align:center}
+.xp-stats b{display:block;font-size:17px;color:var(--accent);font-family:var(--mono)}
+.xp-stats span{font-size:10.5px;color:var(--text-muted)}
+.xp-li{display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.5;color:var(--text-dim);padding:2px 0}
+.xp-li i{flex:0 0 7px;height:7px;border-radius:50%;background:var(--accent);margin-top:6px}
+.xp-li.off{opacity:.4;text-decoration:line-through}.xp-li.off i{background:var(--text-muted)}
+@media(max-width:760px){.xp-grid{grid-template-columns:1fr}.xp-left{max-height:none}}
 </style>
 </head>
 <body data-theme="dark">
@@ -443,7 +468,7 @@ select option:disabled{color:var(--text-muted)}
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.22</span></div>
+    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.23</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -676,6 +701,7 @@ select option:disabled{color:var(--text-muted)}
         <button class="tt menu-btn" onclick="toggleTbMenu(event,'menu-auto')" title="Automatic tools">Auto ▾</button>
         <div class="filemenu-pop">
           <button id="btn-trace" onclick="closeMenus();openTrace()" title="Auto-trace walls and doors from the floor plan image">Trace walls<small>Detect walls and doors from the plan image</small></button>
+          <button id="btn-rooms" onclick="closeMenus();openRooms()" title="Detect rooms from the walls and set which ones need coverage">Detect rooms<small>Rooms from walls; mark toilets and storage as no coverage</small></button>
           <button id="btn-autoplace" onclick="closeMenus();openPlacement()" title="Auto placement: suggest how many APs are needed and where to put them">Place APs<small>Suggest how many APs and where</small></button>
           <button id="btn-optimize" onclick="closeMenus();openOptimize()" title="Auto optimize: suggest channels and TX power for all APs on this floor">Optimize<small>Channels and TX power for all APs</small></button>
         </div>
@@ -697,6 +723,7 @@ select option:disabled{color:var(--text-muted)}
           <button onclick="fileAct('calib')">Calibrate with field measurements…</button>
           <button onclick="fileAct('clearacc')">Clear acceptance points</button>
           <button onclick="fileAct('cleararea')">Clear render area</button>
+          <button onclick="fileAct('clearexcl')">Clear no-coverage zones</button>
           <button class="danger" onclick="fileAct('clear')">Clear this floor…</button>
         </div>
       </div>
@@ -907,7 +934,7 @@ const wifi = {
   snapPt: null,
   ortho: false,
   env: 'office',
-  doors: [], areas: [], accPts: [], areaDraft: null, doorHover: null, doorType: 'wood', doorW: 0.9,
+  doors: [], areas: [], excl: [], accPts: [], areaDraft: null, doorHover: null, doorType: 'wood', doorW: 0.9,
   spaceDown: false,
   panning: null,
 };
@@ -1249,7 +1276,36 @@ function findAreaNear(x, y) {
   }
   return null;
 }
+function findExclNear(x, y) {
+  for (const a of wifi.excl) {
+    for (let i = 0; i < a.pts.length; i++) if (distToSeg(x, y, a.pts[i], a.pts[(i + 1) % a.pts.length]) < 9 / wifi.view.z) return a;
+  }
+  return null;
+}
+let _hatch = null;
+function hatchPattern() {
+  if (_hatch) return _hatch;
+  const c = document.createElement('canvas'); c.width = c.height = 12; const g = c.getContext('2d');
+  g.strokeStyle = 'rgba(150,160,175,.55)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(-2, 14); g.lineTo(14, -2); g.moveTo(-2, 8); g.lineTo(8, -2); g.moveTo(4, 14); g.lineTo(14, 4); g.stroke();
+  return (_hatch = ctx.createPattern(c, 'repeat'));
+}
+function renderExcl() {
+  for (const a of wifi.excl) {
+    const sel = wifi.sel?.kind === 'excl' && wifi.sel.id === a.id;
+    ctx.beginPath(); a.pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.closePath();
+    ctx.fillStyle = 'rgba(110,120,135,0.22)'; ctx.fill();
+    ctx.fillStyle = hatchPattern(); ctx.fill();
+    ctx.setLineDash([4, 5]); ctx.lineWidth = sel ? 3.5 : 1.8; ctx.strokeStyle = sel ? '#ffffff' : '#9aa3af'; ctx.stroke(); ctx.setLineDash([]);
+    let cx = 0, cy = 1e9; a.pts.forEach(p => { cx += p.x; cy = Math.min(cy, p.y); }); cx /= a.pts.length; cy += 14;
+    const t = (a.name ? a.name + ' · ' : '') + 'no coverage';
+    ctx.font = '10px JetBrains Mono, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(t).width;
+    ctx.fillStyle = 'rgba(8,10,14,0.78)'; ctx.beginPath(); ctx.roundRect(cx - tw / 2 - 5, cy - 8, tw + 10, 16, 5); ctx.fill();
+    ctx.fillStyle = '#b8c0cc'; ctx.fillText(t, cx, cy + 0.5); ctx.textBaseline = 'alphabetic';
+  }
+}
 function renderAreas() {
+  renderExcl();
   for (const a of wifi.areas) {
     const sel = wifi.sel?.kind === 'area' && wifi.sel.id === a.id;
     ctx.beginPath();
@@ -1406,6 +1462,7 @@ function sceneSig() {
     WALL_MATS.map(m => [m.id, m.b]),
     wifi.doors.map(d => [d.wall, d.t, d.w, d.attn]),
     wifi.areas.map(a => a.pts.map(p => [p.x, p.y])),
+    wifi.excl.map(a => a.pts.map(p => [p.x, p.y])),
     wifi.floorPlan ? wifi.floorPlan.width + 'x' + wifi.floorPlan.height : 0,
     document.getElementById('heatmap-mode').value,
     document.getElementById('global-band').value,
@@ -1491,13 +1548,14 @@ function heatRegion() {
   if (wifi.areas.length) {
     let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
     for (const a of wifi.areas) for (const p of a.pts) { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); }
-    return { x0: Math.max(0, x0), y0: Math.max(0, y0), x1: Math.min(WORLD_W, x1), y1: Math.min(WORLD_H, y1), polys: wifi.areas.map(a => a.pts) };
+    return { x0: Math.max(0, x0), y0: Math.max(0, y0), x1: Math.min(WORLD_W, x1), y1: Math.min(WORLD_H, y1), polys: wifi.areas.map(a => a.pts), holes: wifi.excl.length ? wifi.excl.map(a => a.pts) : null };
   }
-  if (wifi.floorPlan) { const r = planRect(); return { x0: r.x, y0: r.y, x1: r.x + r.w, y1: r.y + r.h, polys: null }; }
-  return { x0: 0, y0: 0, x1: WORLD_W, y1: WORLD_H, polys: null };
+  if (wifi.floorPlan) { const r = planRect(); return { x0: r.x, y0: r.y, x1: r.x + r.w, y1: r.y + r.h, polys: null, holes: wifi.excl.length ? wifi.excl.map(a => a.pts) : null }; }
+  return { x0: 0, y0: 0, x1: WORLD_W, y1: WORLD_H, polys: null, holes: wifi.excl.length ? wifi.excl.map(a => a.pts) : null };
 }
 function inRegion(rg, x, y) {
   if (x < rg.x0 || x > rg.x1 || y < rg.y0 || y > rg.y1) return false;
+  if (rg.holes) for (const h of rg.holes) if (inPoly(h, x, y)) return false;
   if (!rg.polys) return true;
   for (const p of rg.polys) if (inPoly(p, x, y)) return true;
   return false;
@@ -1822,12 +1880,12 @@ function renderAPs() {
 // ============================================================
 const _undo = [], _redo = [];
 function snapshot() {
-  return JSON.stringify({ cal: wifi.cal, aps: wifi.aps, walls: wifi.walls, doors: wifi.doors, areas: wifi.areas, acc: wifi.accPts, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet });
+  return JSON.stringify({ cal: wifi.cal, aps: wifi.aps, walls: wifi.walls, doors: wifi.doors, areas: wifi.areas, excl: wifi.excl, acc: wifi.accPts, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet });
 }
 function selObj() {
   if (!wifi.sel) return null;
   const k = wifi.sel.kind;
-  const arr = k === 'ap' ? wifi.aps : k === 'wall' ? wifi.walls : k === 'door' ? wifi.doors : wifi.areas;
+  const arr = k === 'ap' ? wifi.aps : k === 'wall' ? wifi.walls : k === 'door' ? wifi.doors : k === 'excl' ? wifi.excl : wifi.areas;
   return arr.find(x => x.id === wifi.sel.id) || null;
 }
 function pushHistory(snap) {
@@ -1843,7 +1901,7 @@ function pushHistoryDebounced() {
 }
 function restoreSnapshot(str) {
   const o = JSON.parse(str);
-  wifi.aps = o.aps; wifi.walls = o.walls; wifi.doors = o.doors || []; wifi.areas = o.areas || []; wifi.accPts = o.acc || []; wifi.cal = o.cal || null; wifi.aps.forEach((a, i) => normAP(a, i));
+  wifi.aps = o.aps; wifi.walls = o.walls; wifi.doors = o.doors || []; wifi.areas = o.areas || []; wifi.excl = o.excl || []; wifi.accPts = o.acc || []; wifi.cal = o.cal || null; wifi.aps.forEach((a, i) => normAP(a, i));
   wifi.pxPerMeter = o.ppm; wifi.scaleSet = o.scaleSet;
   if (wifi.sel && !selObj()) wifi.sel = null;
   setScaleDisplay();
@@ -1973,8 +2031,8 @@ function onPointerDown(e) {
     const wall = findWallNear(x, y);
     if (wall) { wifi.sel = {kind:'wall', id:wall.id}; }
     else {
-      const ar = findAreaNear(x, y);
-      wifi.sel = ar ? {kind:'area', id:ar.id} : null;
+      const ar = findAreaNear(x, y), ex = ar ? null : findExclNear(x, y);
+      wifi.sel = ar ? {kind:'area', id:ar.id} : ex ? {kind:'excl', id:ex.id} : null;
     }
     renderPropsPanel();
     scheduleRender();
@@ -2034,7 +2092,9 @@ function onPointerDown(e) {
     const wall = findWallNear(x, y);
     if (wall) { pushHistory(); removeWall(wall.id); scheduleRender(); return; }
     const ar = findAreaNear(x, y);
-    if (ar) { pushHistory(); wifi.areas = wifi.areas.filter(aa => aa.id !== ar.id); scheduleRender(); }
+    if (ar) { pushHistory(); wifi.areas = wifi.areas.filter(aa => aa.id !== ar.id); scheduleRender(); return; }
+    const ex = findExclNear(x, y);
+    if (ex) { pushHistory(); wifi.excl = wifi.excl.filter(aa => aa.id !== ex.id); scheduleRender(); }
   }
 }
 
@@ -2313,6 +2373,20 @@ function renderPropsPanel() {
       </div>
       <button class="delete-btn" onclick="deleteSelected()">Delete Door</button>`;
   }
+  else if (wifi.sel.kind === 'excl') {
+    const a = wifi.excl.find(q => q.id === wifi.sel.id);
+    if (!a) return;
+    const m2 = Math.round(polyArea(a.pts) / (wifi.pxPerMeter * wifi.pxPerMeter));
+    el.innerHTML = `
+      <div class="props-header" style="border-left:3px solid #9aa3af">
+        <button class="props-close" onclick="closeProps()">✕</button><div class="props-title">No-coverage zone</div>
+        <div class="props-sub">${a.name ? esc(a.name) + ' · ' : ''}${a.pts.length} corners · ≈ ${m2} m²</div>
+      </div>
+      <div class="pf"><label>Name</label><input type="text" value="${esc(a.name || '')}" onchange="exclRename('${a.id}', this.value)"></div>
+      <div class="pf"><div style="font-size:12px;color:var(--text-dim);line-height:1.6">This room does not need Wi-Fi (toilet, storage, shaft). It is left out of the heatmap and of every coverage statistic.</div></div>
+      <div class="pf"><button class="btn-secondary-modal" style="width:100%;font-size:12px" onclick="exclToArea('${a.id}')">Make it a coverage area instead</button></div>
+      <button class="delete-btn" onclick="deleteSelected()">Delete zone</button>`;
+  }
   else if (wifi.sel.kind === 'area') {
     const a = wifi.areas.find(q => q.id === wifi.sel.id);
     if (!a) return;
@@ -2394,6 +2468,7 @@ function deleteSelected() {
   if (wifi.sel.kind === 'wall') removeWall(wifi.sel.id);
   if (wifi.sel.kind === 'door') wifi.doors = wifi.doors.filter(d => d.id !== wifi.sel.id);
   if (wifi.sel.kind === 'area') wifi.areas = wifi.areas.filter(a => a.id !== wifi.sel.id);
+  if (wifi.sel.kind === 'excl') wifi.excl = wifi.excl.filter(a => a.id !== wifi.sel.id);
   wifi.sel = null;
   renderPropsPanel();
   scheduleRender();
@@ -3448,6 +3523,200 @@ async function openTrace() {
 }
 
 // ============================================================
+// ROOMS (v5.23): detect rooms from the walls, "no coverage" zones
+// ============================================================
+function exclRename(id, v) { const a = wifi.excl.find(q => q.id === id); if (a) { pushHistory(); a.name = v.trim() || undefined; scheduleRender(); scheduleAutosave && scheduleAutosave(); } }
+function exclToArea(id) {
+  const a = wifi.excl.find(q => q.id === id); if (!a) return;
+  pushHistory(); wifi.excl = wifi.excl.filter(q => q.id !== id);
+  wifi.counters.area = (wifi.counters.area || 0) + 1;
+  const n = { id: 'a' + wifi.counters.area, pts: a.pts }; if (a.name) n.name = a.name;
+  wifi.areas.push(n); wifi.sel = { kind: 'area', id: n.id }; renderPropsPanel(); scheduleRender();
+}
+function rmDilate(m, W, H, r) {
+  if (r <= 0) return m;
+  const t = new Uint8Array(m.length), o = new Uint8Array(m.length);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (m[y * W + x]) { for (let k = Math.max(0, x - r); k <= Math.min(W - 1, x + r); k++) t[y * W + k] = 1; }
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (t[y * W + x]) { for (let k = Math.max(0, y - r); k <= Math.min(H - 1, y + r); k++) o[k * W + x] = 1; }
+  return o;
+}
+function rmSimplify(pts, tol) {
+  const n = pts.length; if (n < 4) return pts;
+  const dseg = (p, a, b) => { const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy; if (!l2) return Math.hypot(p.x - a.x, p.y - a.y); const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2)); return Math.hypot(a.x + dx * t - p.x, a.y + dy * t - p.y); };
+  const dp = (arr) => {
+    if (arr.length < 3) return arr;
+    let mx = 0, mi = 0; for (let i = 1; i < arr.length - 1; i++) { const d = dseg(arr[i], arr[0], arr[arr.length - 1]); if (d > mx) { mx = d; mi = i; } }
+    if (mx <= tol) return [arr[0], arr[arr.length - 1]];
+    const L = dp(arr.slice(0, mi + 1)), R = dp(arr.slice(mi));
+    return L.slice(0, -1).concat(R);
+  };
+  let far = 0, fd = 0; for (let i = 1; i < n; i++) { const d = Math.hypot(pts[i].x - pts[0].x, pts[i].y - pts[0].y); if (d > fd) { fd = d; far = i; } }
+  const A = dp(pts.slice(0, far + 1)), B = dp(pts.slice(far).concat([pts[0]]));
+  return A.slice(0, -1).concat(B.slice(0, -1));
+}
+function rmOutline(lab, GW, GH, id) {
+  const out = new Map(), key = (x, y) => y * (GW + 1) + x;
+  const add = (x1, y1, x2, y2) => { const k = key(x1, y1); let a = out.get(k); if (!a) out.set(k, a = []); a.push([x2, y2, false]); };
+  for (let j = 0; j < GH; j++) for (let i = 0; i < GW; i++) {
+    if (lab[j * GW + i] !== id) continue;
+    if (j === 0 || lab[(j - 1) * GW + i] !== id) add(i, j, i + 1, j);
+    if (i === GW - 1 || lab[j * GW + i + 1] !== id) add(i + 1, j, i + 1, j + 1);
+    if (j === GH - 1 || lab[(j + 1) * GW + i] !== id) add(i + 1, j + 1, i, j + 1);
+    if (i === 0 || lab[j * GW + i - 1] !== id) add(i, j + 1, i, j);
+  }
+  let best = null, bestA = 0;
+  for (const [k0, arr0] of out) {
+    for (const e0 of arr0) {
+      if (e0[2]) continue;
+      const sx = k0 % (GW + 1), sy = Math.floor(k0 / (GW + 1));
+      const loop = [{ x: sx, y: sy }]; let e = e0, cx = sx, cy = sy, guard = 0;
+      while (e && guard++ < 200000) {
+        e[2] = true; cx = e[0]; cy = e[1];
+        if (cx === sx && cy === sy) break;
+        loop.push({ x: cx, y: cy });
+        const nx = out.get(key(cx, cy)); e = nx ? nx.find(q => !q[2]) : null;
+      }
+      let a2 = 0; for (let i = 0, j = loop.length - 1; i < loop.length; j = i++) a2 += loop[j].x * loop[i].y - loop[i].x * loop[j].y;
+      if (Math.abs(a2) > bestA) { bestA = Math.abs(a2); best = loop; }
+    }
+  }
+  return best;
+}
+function rmDetect(gapM) {
+  const ppm = wifi.pxPerMeter;
+  if (!wifi.walls.length) return null;
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  wifi.walls.forEach(w => { x0 = Math.min(x0, w.x1, w.x2); y0 = Math.min(y0, w.y1, w.y2); x1 = Math.max(x1, w.x1, w.x2); y1 = Math.max(y1, w.y1, w.y2); });
+  const cell = Math.max(3, ppm * 0.1), M = 4, r = Math.max(0, Math.ceil(gapM / 2 / cell));
+  const gx0 = x0 - M * cell, gy0 = y0 - M * cell;
+  const GW = Math.ceil((x1 - x0) / cell) + 2 * M + 2, GH = Math.ceil((y1 - y0) / cell) + 2 * M + 2;
+  const blk = new Uint8Array(GW * GH);
+  wifi.walls.forEach(w => {
+    const L = Math.hypot(w.x2 - w.x1, w.y2 - w.y1), n = Math.max(1, Math.ceil(L / (cell * 0.5)));
+    for (let k = 0; k <= n; k++) {
+      const gi = Math.floor((w.x1 + (w.x2 - w.x1) * k / n - gx0) / cell), gj = Math.floor((w.y1 + (w.y2 - w.y1) * k / n - gy0) / cell);
+      if (gi >= 0 && gj >= 0 && gi < GW && gj < GH) blk[gj * GW + gi] = 1;
+    }
+  });
+  const dm = rmDilate(blk, GW, GH, r);
+  const lab = new Int32Array(GW * GH), cnt = [0], outside = new Set();
+  let nl = 0; const stack = [];
+  for (let st = 0; st < lab.length; st++) {
+    if (lab[st] || dm[st]) continue;
+    nl++; cnt[nl] = 0; stack.push(st); lab[st] = nl;
+    while (stack.length) {
+      const c = stack.pop(); cnt[nl]++;
+      const cx = c % GW, cy = (c - cx) / GW;
+      if (cx === 0 || cy === 0 || cx === GW - 1 || cy === GH - 1) outside.add(nl);
+      if (cx > 0 && !lab[c - 1] && !dm[c - 1]) { lab[c - 1] = nl; stack.push(c - 1); }
+      if (cx < GW - 1 && !lab[c + 1] && !dm[c + 1]) { lab[c + 1] = nl; stack.push(c + 1); }
+      if (cy > 0 && !lab[c - GW] && !dm[c - GW]) { lab[c - GW] = nl; stack.push(c - GW); }
+      if (cy < GH - 1 && !lab[c + GW] && !dm[c + GW]) { lab[c + GW] = nl; stack.push(c + GW); }
+    }
+  }
+  // grow rooms back into the dilated wall cells
+  let cur = lab;
+  for (let step = 0; step < r; step++) {
+    const nx = Int32Array.from(cur);
+    for (let c = 0; c < cur.length; c++) {
+      if (cur[c] || !dm[c]) continue;
+      const cx = c % GW, cy = (c - cx) / GW; let v = 0;
+      if (cx > 0 && cur[c - 1]) v = cur[c - 1]; else if (cx < GW - 1 && cur[c + 1]) v = cur[c + 1]; else if (cy > 0 && cur[c - GW]) v = cur[c - GW]; else if (cy < GH - 1 && cur[c + GW]) v = cur[c + GW];
+      if (v) nx[c] = v;
+    }
+    cur = nx;
+  }
+  const cells = new Array(nl + 1).fill(0); for (let c = 0; c < cur.length; c++) if (cur[c]) cells[cur[c]]++;
+  // doors per room
+  const dcount = {};
+  wifi.doors.forEach(d => {
+    const w = wifi.walls.find(q => q.id === d.wall); if (!w) return;
+    const px = w.x1 + (w.x2 - w.x1) * d.t, py = w.y1 + (w.y2 - w.y1) * d.t, L = Math.hypot(w.x2 - w.x1, w.y2 - w.y1) || 1, nx = -(w.y2 - w.y1) / L, ny = (w.x2 - w.x1) / L, off = (r + 2) * cell;
+    const seen = new Set();
+    [-1, 1].forEach(sg => { const gi = Math.floor((px + nx * off * sg - gx0) / cell), gj = Math.floor((py + ny * off * sg - gy0) / cell); if (gi >= 0 && gj >= 0 && gi < GW && gj < GH) { const l = cur[gj * GW + gi]; if (l) seen.add(l); } });
+    seen.forEach(l => dcount[l] = (dcount[l] || 0) + 1);
+  });
+  const rooms = []; let skippedOut = 0;
+  for (let id = 1; id <= nl; id++) {
+    if (outside.has(id)) { if (cells[id] * cell * cell / (ppm * ppm) > 4) skippedOut++; continue; }
+    const m2 = cells[id] * cell * cell / (ppm * ppm);
+    if (m2 < 1.2) continue;
+    const loop = rmOutline(cur, GW, GH, id); if (!loop) continue;
+    let pts = loop.map(q => ({ x: gx0 + q.x * cell, y: gy0 + q.y * cell }));
+    pts = rmSimplify(pts, cell * 1.3);
+    if (pts.length < 3) continue;
+    const doors = dcount[id] || 0;
+    rooms.push({ pts, m2, doors, no: (m2 < 9 && doors <= 1) || m2 < 3 });
+  }
+  rooms.sort((a, b) => b.m2 - a.m2);
+  return { rooms, leak: Math.max(0, skippedOut - 1), bbox: { x0, y0, x1, y1 } };
+}
+async function openRooms() {
+  if (RO) return;
+  if (!wifi.walls.length) { toast('Draw or auto-trace the walls first', 'error'); return; }
+  if (!wifi.scaleSet) { toast('Set the scale first (File ▸ Set scale…) so room sizes are right', 'error'); return; }
+  const hasOld = wifi.areas.length || wifi.excl.length;
+  const sel = (id, v) => `<select class="rm-mode" data-i="${id}" style="padding:5px 6px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px"><option value="cov" ${v === 'cov' ? 'selected' : ''}>Coverage</option><option value="no" ${v === 'no' ? 'selected' : ''}>No coverage</option><option value="skip" ${v === 'skip' ? 'selected' : ''}>Skip</option></select>`;
+  const html = `<div style="font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:10px">Finds the closed rooms formed by the walls. <b>Coverage</b> rooms become render areas, <b>No coverage</b> rooms (toilets, storage) are left out of the heatmap and the statistics. Doors count as closed, so each room stays separate. A room that is missing usually has a gap in its walls: raise the gap setting.</div>
+    <canvas id="rm-prev" style="width:100%;max-height:260px;background:var(--bg-2);border:1px solid var(--border);border-radius:9px"></canvas>
+    <div class="field-row" style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-top:10px">
+      <div class="dlg-field"><label>Close gaps in walls up to</label><select id="rm-gap" style="width:100%;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text)"><option value="0.1">0.1 m (strict)</option><option value="0.3" selected>0.3 m</option><option value="0.6">0.6 m</option><option value="1">1.0 m (loose)</option></select></div>
+      <div id="rm-sum" style="font-size:12px;color:var(--text-dim);padding-bottom:10px"></div>
+    </div>
+    <div id="rm-warn" style="font-size:12px;color:var(--warning);margin:4px 0"></div>
+    <div id="rm-list" style="max-height:230px;overflow-y:auto;border:1px solid var(--border);border-radius:9px"></div>
+    ${hasOld ? `<label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:10px"><input type="checkbox" id="rm-rep" checked style="width:auto"> Replace the existing render areas and no-coverage zones</label>` : ''}`;
+  const pr = dialog({ title: 'Detect <em>rooms</em>', html, ok: 'Apply', wide: true });
+  const $ = id => document.getElementById(id);
+  let res = null;
+  const COL = { cov: ['rgba(124,244,199,.35)', '#7cf4c7'], no: ['rgba(150,160,175,.45)', '#9aa3af'], skip: ['rgba(0,0,0,0)', '#555'] };
+  const modes = () => Array.from(document.querySelectorAll('.rm-mode')).map(x => x.value);
+  const draw = () => {
+    const cv = $('rm-prev'); if (!cv || !res) return;
+    const b = res.bbox, pad = 30, Wd = b.x1 - b.x0 + pad * 2, Hd = b.y1 - b.y0 + pad * 2, k = Math.min(900 / Wd, 400 / Hd);
+    cv.width = Math.round(Wd * k); cv.height = Math.round(Hd * k);
+    const g = cv.getContext('2d'); g.scale(k, k); g.translate(pad - b.x0, pad - b.y0);
+    const ms = modes();
+    res.rooms.forEach((rm, i) => {
+      g.beginPath(); rm.pts.forEach((p, j) => j ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)); g.closePath();
+      g.fillStyle = COL[ms[i] || 'cov'][0]; g.fill(); g.strokeStyle = COL[ms[i] || 'cov'][1]; g.lineWidth = 1.5 / k; g.stroke();
+    });
+    g.strokeStyle = '#e6e9ee'; g.lineWidth = Math.max(1.5, 2 / k); g.lineCap = 'round';
+    wifi.walls.forEach(w => { g.beginPath(); g.moveTo(w.x1, w.y1); g.lineTo(w.x2, w.y2); g.stroke(); });
+    g.fillStyle = '#fff'; g.font = `bold ${Math.max(10, 12 / k)}px JetBrains Mono, monospace`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    res.rooms.forEach((rm, i) => { let cx = 0, cy = 0; rm.pts.forEach(p => { cx += p.x; cy += p.y; }); g.fillText(String(i + 1), cx / rm.pts.length, cy / rm.pts.length); });
+  };
+  const upd = () => {
+    res = rmDetect(+$('rm-gap').value);
+    const list = $('rm-list');
+    if (!res || !res.rooms.length) {
+      list.innerHTML = '<div style="padding:14px;font-size:12px;color:var(--text-muted)">No closed rooms found. Close the gaps in the outer walls, or allow a larger gap.</div>';
+      $('rm-sum').textContent = ''; $('rm-warn').textContent = ''; const cv = $('rm-prev'); if (cv) { cv.width = 10; cv.height = 10; } return;
+    }
+    list.innerHTML = res.rooms.map((rm, i) => `<div style="display:grid;grid-template-columns:28px 1fr 64px 120px;gap:8px;align-items:center;padding:6px 10px;border-bottom:1px solid var(--border)"><b style="font-family:var(--mono);font-size:12px;color:var(--text-dim)">${i + 1}</b><input class="rm-name" value="Room ${i + 1}" style="padding:5px 8px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;width:100%"><span style="font-size:12px;font-family:var(--mono);color:var(--text-dim);text-align:right">${rm.m2.toFixed(1)} m²</span>${sel(i, rm.no ? 'no' : 'cov')}</div>`).join('');
+    list.querySelectorAll('.rm-mode').forEach(x => x.addEventListener('change', () => { draw(); sum(); }));
+    $('rm-warn').textContent = res.leak ? `${res.leak} separate open space${res.leak > 1 ? 's' : ''} outside the building were ignored.` : '';
+    sum(); draw();
+  };
+  const sum = () => { const ms = modes(); $('rm-sum').innerHTML = `<b>${ms.filter(x => x === 'cov').length}</b> coverage · <b>${ms.filter(x => x === 'no').length}</b> no coverage`; };
+  $('rm-gap').addEventListener('change', upd);
+  upd();
+  const m = await pr;
+  if (!m || !res || !res.rooms.length) return;
+  const ms = Array.from(m.querySelectorAll('.rm-mode')).map(x => x.value), nm = Array.from(m.querySelectorAll('.rm-name')).map(x => x.value.trim());
+  const rep = m.querySelector('#rm-rep');
+  pushHistory();
+  if (rep && rep.checked) { wifi.areas = []; wifi.excl = []; }
+  let nc = 0, nn = 0;
+  res.rooms.forEach((rm, i) => {
+    if (ms[i] === 'cov') { wifi.counters.area = (wifi.counters.area || 0) + 1; const a = { id: 'a' + wifi.counters.area, pts: rm.pts }; if (nm[i]) a.name = nm[i]; wifi.areas.push(a); nc++; }
+    else if (ms[i] === 'no') { wifi.counters.excl = (wifi.counters.excl || 0) + 1; const a = { id: 'x' + wifi.counters.excl, pts: rm.pts }; if (nm[i]) a.name = nm[i]; wifi.excl.push(a); nn++; }
+  });
+  wifi.sel = null; renderPropsPanel(); scheduleRender(); scheduleAutosave && scheduleAutosave();
+  toast(`${nc} coverage area${nc === 1 ? '' : 's'}, ${nn} no-coverage zone${nn === 1 ? '' : 's'}`);
+}
+
+// ============================================================
 // AP CATALOG (v5.18): editable specs (TX, gain, watts, PoE) + your own models, saved to your account
 // ============================================================
 const POE_OPTS = ['', 'af', 'af/at', 'at', 'at/bt', 'bt/at', 'bt/at/af', 'bt'];
@@ -3712,7 +3981,7 @@ async function clearAll() {
   const ok = await dialog({ title: 'Clear this floor?', html: '<p>All walls and access points on this floor will be removed. The floor plan image and scale are kept. You can still undo with Ctrl+Z.</p>', ok: 'Clear', danger: true });
   if (!ok) return;
   pushHistory();
-  wifi.aps = []; wifi.walls = []; wifi.sel = null;
+  wifi.aps = []; wifi.walls = []; wifi.excl = []; wifi.sel = null;
   renderPropsPanel(); scheduleRender();
   toast('Floor cleared');
 }
@@ -3858,10 +4127,10 @@ async function askText(title, label, value) {
 }
 
 // ---- floor data <-> editor state ----
-function newFloorData() { return { cal: null, aps: [], walls: [], doors: [], areas: [], acc: [], ppm: WORLD_W / 40, scaleSet: false, counters: { ap: 0, wall: 0 }, band: '5', env: 'office', started: false }; }
+function newFloorData() { return { cal: null, aps: [], walls: [], doors: [], areas: [], excl: [], acc: [], ppm: WORLD_W / 40, scaleSet: false, counters: { ap: 0, wall: 0 }, band: '5', env: 'office', started: false }; }
 function captureFloor() {
   return {
-    cal: wifi.cal, aps: wifi.aps, walls: wifi.walls, doors: wifi.doors, areas: wifi.areas, acc: wifi.accPts, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet,
+    cal: wifi.cal, aps: wifi.aps, walls: wifi.walls, doors: wifi.doors, areas: wifi.areas, excl: wifi.excl, acc: wifi.accPts, ppm: wifi.pxPerMeter, scaleSet: wifi.scaleSet,
     counters: wifi.counters, band: document.getElementById('global-band').value, env: wifi.env,
     started: wifi.started || !!wifi.floorPlan || wifi.aps.length > 0 || wifi.walls.length > 0,
   };
@@ -3874,6 +4143,7 @@ function applyFloor(data, bmp) {
   wifi.walls = JSON.parse(JSON.stringify(data.walls || []));
   wifi.doors = JSON.parse(JSON.stringify(data.doors || []));
   wifi.areas = JSON.parse(JSON.stringify(data.areas || []));
+  wifi.excl = JSON.parse(JSON.stringify(data.excl || []));
   wifi.accPts = JSON.parse(JSON.stringify(data.acc || []));
   wifi.areaDraft = null;
   wifi.pxPerMeter = data.ppm || WORLD_W / 40;
@@ -4749,6 +5019,10 @@ async function collectFloor(f, cfg) {
   let apx = 0;
   if (wifi.areas.length) { for (const a of wifi.areas) { let s2 = 0; for (let i = 0, j = a.pts.length - 1; i < a.pts.length; j = i++) s2 += (a.pts[j].x * a.pts[i].y - a.pts[i].x * a.pts[j].y); apx += Math.abs(s2) / 2; } }
   else { const cr = reportCrop(); apx = cr.w * cr.h; }
+  let hx = 0, hn = 0;
+  wifi.excl.forEach(h => { let cx = 0, cy = 0; h.pts.forEach(q => { cx += q.x; cy += q.y; }); cx /= h.pts.length; cy /= h.pts.length; if (!wifi.areas.length || wifi.areas.some(a => inPoly(a.pts, cx, cy))) { hx += polyArea(h.pts); hn++; } });
+  apx = Math.max(0, apx - hx);
+  out.excl = { n: hn, m2: wifi.scaleSet ? Math.round(hx / (ppm * ppm)) : null };
   out.areaM2 = wifi.scaleSet && hasStuff ? apx / (ppm * ppm) : null;
   out.cap = capAll();
   out.pwrAps = pwrAPs(wifi.aps);
@@ -4768,22 +5042,56 @@ async function reportConfigDialog() {
   let last = {};
   try { last = JSON.parse(localStorage.getItem('clab_rep_cfg') || '{}'); } catch (e) {}
   const ck = (k, d) => (last[k] !== undefined ? last[k] : d);
-  const chk = (n, lab, on) => `<label><input type="checkbox" data-k="${n}" ${on ? 'checked' : ''}> ${lab}</label>`;
-  const rad = (n, v, lab, on) => `<label><input type="radio" name="rc-${n}" value="${v}" ${on ? 'checked' : ''}> ${lab}</label>`;
-  const html = `
-    <div class="rc-row"><b>Image setting</b><div class="rc-opts">${chk('sim', 'Simulation diagram', ck('sim', true))}${chk('weak', 'Weak-field diagram', ck('weak', false))}${chk('sinr', 'SINR diagram', ck('sinr', false))}${chk('interf', 'Interference diagram', ck('interf', false))}${chk('bitmap', 'Bitmap', ck('bitmap', true))}</div></div>
-    <div class="rc-row"><b>Frequency setting</b><div class="rc-opts">${chk('b24', '2.4 GHz', ck('b24', true))}${chk('b5', '5 GHz', ck('b5', true))}${chk('b6', '6 GHz', ck('b6', true))}</div></div>
-    <div class="rc-row"><b>Image accuracy</b><div class="rc-opts">${['original', 'high', 'middle', 'low'].map(v => rad('acc', v, v[0].toUpperCase() + v.slice(1), ck('acc', 'high') === v)).join('')}</div></div>
-    <div class="rc-row"><b>Algorithm chapter</b><div class="rc-opts">${rad('algo', '0', 'Does not contain', !ck('algo', false))}${rad('algo', '1', 'Contain', ck('algo', false))}</div></div>
-    <div class="rc-row"><b>Language setting</b><div class="rc-opts">${rad('lang', 'en', 'English', ck('lang', 'en') === 'en')}${rad('lang', 'id', 'Indonesia', ck('lang', 'en') === 'id')}</div></div>
-    <div class="rc-row"><b>Extra sections</b><div class="rc-opts">${chk('bom', 'Bill of materials', ck('bom', true))}${chk('mats', 'Wall materials summary', ck('mats', true))}${chk('cap', 'Capacity planning', ck('cap', true))}${chk('pwr', 'Power &amp; PoE', ck('pwr', true))}${chk('toc', 'Catalogue with page numbers', ck('toc', true))}</div></div>
-    <div class="rc-row"><b>Original image</b><div class="rc-opts">${rad('orig', '0', 'Does not contain', !ck('orig', true))}${rad('orig', '1', 'Contain', ck('orig', true))}</div></div>
-    <div style="font-size:11px;color:var(--text-muted);line-height:1.5">Catalogue page numbers: Word asks once to update fields when you open the file, answer Yes. Image accuracy: Original = finest (slowest), Low = fastest. Weak-field marks areas below your coverage target (${wifi.covTarget} dBm). The simulation diagrams use exactly what you see in the editor.</div>`;
-  const m = await dialog({ title: 'Reports <em>config</em>', html, ok: 'Determine', wide: true });
-  if (!m) return null;
-  const g = k => m.querySelector(`[data-k="${k}"]`).checked;
-  const r = n => m.querySelector(`input[name="rc-${n}"]:checked`).value;
-  const cfg = { sim: g('sim'), weak: g('weak'), sinr: g('sinr'), interf: g('interf'), bitmap: g('bitmap'), b24: g('b24'), b5: g('b5'), b6: g('b6'), acc: r('acc'), algo: r('algo') === '1', lang: r('lang'), orig: r('orig') === '1', bom: g('bom'), mats: g('mats'), cap: g('cap'), pwr: g('pwr'), toc: g('toc') };
+  const cb = (k, lab, d) => `<label class="xp-it"><input type="checkbox" data-k="${k}" ${ck(k, d) ? 'checked' : ''}><span>${lab}</span></label>`;
+  const rad = (n, v, lab, on) => `<label class="xp-it"><input type="radio" name="rc-${n}" value="${v}" ${on ? 'checked' : ''}><span>${lab}</span></label>`;
+  const ch = (n, t, body, locked) => `<div class="xp-ch"><div class="xp-h"><span class="xp-n">${n}</span><b>${t}</b>${locked ? '<em>always included</em>' : ''}</div>${body ? `<div class="xp-sub">${body}</div>` : ''}</div>`;
+  const nF = curProj.floors.length;
+  const html = `<div class="xp-grid">
+    <div class="xp-left">
+      <div class="xp-cap">Chapters</div>
+      ${ch('•', 'Cover, document control, catalogue', cb('toc', 'Page numbers in the catalogue', true), true)}
+      ${ch('1', 'Executive summary', '', true)}
+      ${ch('2', 'Project information', '', true)}
+      ${ch('3', 'Design basis', cb('mats', 'Wall materials summary', true))}
+      ${ch('4', 'Solution summary', cb('bom', 'Bill of materials', true) + cb('pwr', 'Power &amp; PoE', true))}
+      ${ch('5', 'Floor-by-floor design', cb('orig', 'Original floor plan', true) + cb('bitmap', 'AP positions and acceptance points', true) + cb('sim', 'Signal (RSSI) simulation', true) + cb('weak', 'Weak-field map', false) + cb('sinr', 'SINR map', false) + cb('interf', 'Interference map', false))}
+      ${ch('6', 'Interference and capacity', cb('cap', 'Capacity planning', true))}
+      ${ch('7', 'Validation plan', '', true)}
+      ${ch('8', 'Conclusion and recommendations', '', true)}
+      ${ch('A', 'Appendices', cb('algo', 'Algorithm description', false) + '<div class="xp-note">Acronyms, assumptions and references are always included.</div>')}
+    </div>
+    <div class="xp-right">
+      <div class="xp-box"><div class="xp-cap">Frequency bands</div><div class="xp-row">${cb('b24', '2.4 GHz', true)}${cb('b5', '5 GHz', true)}${cb('b6', '6 GHz', true)}</div></div>
+      <div class="xp-box"><div class="xp-cap">Image quality</div><div class="xp-row">${['original', 'high', 'middle', 'low'].map(v => rad('acc', v, v[0].toUpperCase() + v.slice(1), ck('acc', 'high') === v)).join('')}</div><div class="xp-note">Original is the sharpest but slowest to build.</div></div>
+      <div class="xp-box"><div class="xp-cap">Language</div><div class="xp-row">${rad('lang', 'en', 'English', ck('lang', 'en') === 'en')}${rad('lang', 'id', 'Indonesia', ck('lang', 'en') === 'id')}</div></div>
+      <div class="xp-box xp-out"><div class="xp-cap">What you will get</div><div id="xp-sum"></div><div id="xp-list"></div></div>
+    </div>
+  </div>
+  <div class="xp-note" style="margin-top:10px">Word asks once to update fields when you open the file: answer Yes so the catalogue shows page numbers. Weak-field marks areas below your coverage target (${wifi.covTarget} dBm).</div>`;
+  const pr = dialog({ title: 'Export <em>report</em>', html, ok: 'Export report', wide: true });
+  const m = Array.from(document.querySelectorAll('.modal-overlay.open')).pop().querySelector('.modal');
+  m.style.maxWidth = '920px';
+  const g = k => { const e = m.querySelector(`[data-k="${k}"]`); return !!(e && e.checked); };
+  const upd = () => {
+    const nb = ['b24', 'b5', 'b6'].filter(g).length, nd = ['sim', 'weak', 'sinr', 'interf'].filter(g).length;
+    const per = 1 + ((g('orig') || g('bitmap')) ? 1 : 0) + (g('bitmap') ? 1 : 0) + Math.ceil(nd * nb / 2);
+    const pg = 3 + 2 + 1 + (g('mats') ? 1 : 0) + 1 + (g('bom') ? 2 : 1) + (g('pwr') ? 1 : 0) + nF * per + 1 + 2 + 1 + (g('algo') ? 1 : 0) + 3;
+    const imgs = nF * ((g('orig') ? 1 : 0) + (g('bitmap') ? 2 : 0) + nd * nb);
+    m.querySelector('#xp-sum').innerHTML = nb ? `<div class="xp-stats"><div><b>~${Math.round(pg * 0.88)}–${Math.round(pg * 1.08)}</b><span>pages</span></div><div><b>${nF}</b><span>floor${nF > 1 ? 's' : ''}</span></div><div><b>${imgs}</b><span>map images</span></div></div>` : '<div style="color:var(--warning);font-size:12px">Pick at least one frequency band.</div>';
+    const row = (on, t) => `<div class="xp-li ${on ? '' : 'off'}"><i></i>${t}</div>`;
+    m.querySelector('#xp-list').innerHTML = [
+      row(true, 'Cover, document control, catalogue'), row(true, 'Executive summary with charts'), row(true, 'Project information'),
+      row(true, 'Design basis' + (g('mats') ? ' + wall materials' : '')),
+      row(true, 'Solution summary' + [g('bom') ? 'bill of materials' : '', g('pwr') ? 'power &amp; PoE' : ''].filter(Boolean).map(x => ' · ' + x).join('')),
+      row(true, 'Floor design: ' + ([g('orig') ? 'plan' : '', g('bitmap') ? 'AP map, acceptance' : '', g('sim') ? 'RSSI' : '', g('weak') ? 'weak-field' : '', g('sinr') ? 'SINR' : '', g('interf') ? 'interference' : ''].filter(Boolean).join(', ') || 'statistics only')),
+      row(g('cap'), 'Capacity planning'), row(true, 'Interference table, validation plan, conclusion'),
+      row(g('algo'), 'Algorithm appendix'), row(true, 'Acronyms, assumptions, references')].join('');
+  };
+  m.addEventListener('change', upd); upd();
+  const mm = await pr;
+  if (!mm) return null;
+  const r = n => mm.querySelector(`input[name="rc-${n}"]:checked`).value;
+  const cfg = { sim: g('sim'), weak: g('weak'), sinr: g('sinr'), interf: g('interf'), bitmap: g('bitmap'), b24: g('b24'), b5: g('b5'), b6: g('b6'), acc: r('acc'), algo: g('algo'), lang: r('lang'), orig: g('orig'), bom: g('bom'), mats: g('mats'), cap: g('cap'), pwr: g('pwr'), toc: g('toc') };
   try { localStorage.setItem('clab_rep_cfg', JSON.stringify(cfg)); } catch (e) {}
   cfg.bands = BAND_LIST.filter(b => cfg['b' + b.replace('.', '')]);
   if (!cfg.bands.length) { toast('Pick at least one frequency', 'error'); return reportConfigDialog(); }
@@ -4913,8 +5221,8 @@ const RT2 = {
 };
 
 const RT3 = {
-  en: { figL: 'Figure', noteL: 'Note', chCov: 'Coverage at target, by floor and band', chCap: 'APs placed vs. required per area', chPwr: 'PoE power share by AP model', goal: '90% goal', cover1: 'Prepared for' },
-  id: { figL: 'Gambar', noteL: 'Catatan', chCov: 'Cakupan sesuai target, per lantai dan band', chCap: 'AP terpasang vs. dibutuhkan per area', chPwr: 'Porsi daya PoE per model AP', goal: 'Target 90%', cover1: 'Disiapkan untuk' },
+  en: { figL: 'Figure', noteL: 'Note', chCov: 'Coverage at target, by floor and band', chCap: 'APs placed vs. required per area', chPwr: 'PoE power share by AP model', goal: '90% goal', cover1: 'Prepared for', exclN: (n, m2) => `${n} room${n > 1 ? 's' : ''}${m2 ? ' (about ' + m2 + ' m²)' : ''} marked as no coverage needed (toilets, storage or similar) ${n > 1 ? 'are' : 'is'} left out of the coverage statistics and the heatmap.` },
+  id: { figL: 'Gambar', noteL: 'Catatan', chCov: 'Cakupan sesuai target, per lantai dan band', chCap: 'AP terpasang vs. dibutuhkan per area', chPwr: 'Porsi daya PoE per model AP', goal: 'Target 90%', cover1: 'Disiapkan untuk', exclN: (n, m2) => `${n} ruangan${m2 ? ' (sekitar ' + m2 + ' m²)' : ''} ditandai tidak perlu coverage (toilet, gudang, atau sejenisnya) dan tidak dihitung dalam statistik cakupan maupun heatmap.` },
 };
 function repBarChart(o) {
   const rows = o.rows, W = 1200, rowH = 52, top = o.title ? 84 : 30, labW = 420, rightW = 190, H = top + rows.length * rowH + 30;
@@ -5119,6 +5427,7 @@ function buildReportDoc(D, floors, cfg, X0) {
     floors.map(f => [f.name, f.nAP, ...cfg.bands.flatMap(b => { const c = f.cov[b]; return [c ? chip(Math.round(c.cov / c.total * 100) + '%', covTone(Math.round(c.cov / c.total * 100))) : '—', c ? Math.round(c.exc / c.total * 100) + '%' : '—']; })]),
     [2400, 900, ...cfg.bands.flatMap(() => [cw, cw])]));
   body.push(gap(60), ...callout(T.covNote(X.target), 'info', NL));
+  { const en = floors.reduce((n, f) => n + (f.excl ? f.excl.n : 0), 0), em = floors.reduce((n, f) => n + (f.excl && f.excl.m2 ? f.excl.m2 : 0), 0); if (en) body.push(...callout(T.exclN(en, em), 'info', NL)); }
   if (hasScale) {
     body.push(para(''));
     body.push(gtable(T.dsum, [T.floor, T.aps, T.areaM2, T.perAP], floors.map(f => [f.name, f.nAP, f.areaM2 != null ? Math.round(f.areaM2) : '—', (f.areaM2 != null && f.nAP) ? Math.round(f.areaM2 / f.nAP) : '—']), [3000, 1500, 2300, 2226]));
@@ -5360,6 +5669,7 @@ function fileAct(a) {
   else if (a === 'csv') exportCSV();
   else if (a === 'calib') openCalibration();
   else if (a === 'clearacc') { if (wifi.accPts.length) { pushHistory(); wifi.accPts = []; scheduleRender(); toast('Acceptance points cleared'); } else toast('No acceptance points'); }
+  else if (a === 'clearexcl') { if (wifi.excl.length) { pushHistory(); wifi.excl = []; scheduleRender(); toast('No-coverage zones cleared'); } else toast('No no-coverage zones'); }
   else if (a === 'cleararea') { if (wifi.areas.length) { pushHistory(); wifi.areas = []; scheduleRender(); toast('Render area cleared'); } else toast('No render area set'); }
   else if (a === 'clear') clearAll();
 }
