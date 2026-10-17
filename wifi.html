@@ -487,7 +487,7 @@ select option:disabled{color:var(--text-muted)}
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.27</span></div>
+    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.28</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -655,6 +655,7 @@ select option:disabled{color:var(--text-muted)}
           <button onclick="floorAct('rename')">Rename floor…</button>
           <button onclick="floorAct('dup')">Duplicate floor</button>
           <button onclick="floorAct('mf')">Floor settings (height, slab)…</button>
+          <button onclick="floorAct('cp')">Copy layout to another floor…</button>
           <button class="danger" onclick="floorAct('del')">Delete floor…</button>
         </div>
       </div>
@@ -669,6 +670,7 @@ select option:disabled{color:var(--text-muted)}
       <div class="tgroup">
       <button class="tt" data-tool="wall" onclick="setTool('wall')" title="Draw wall (W)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="20" y2="4"/><circle cx="4" cy="20" r="1.5"/><circle cx="20" cy="4" r="1.5"/></svg><span class="lbl">Wall</span></button>
       <button class="tt" data-tool="rect" onclick="setTool('rect')" title="Draw room (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="1"/></svg><span class="lbl">Room</span></button>
+      <button class="tt" data-tool="tpl" onclick="openTemplates()" title="Room templates: drop a ready-made classroom, office, toilet… (walls, door, area, APs)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="13" height="13" rx="1"/><path d="M19 3v6M16 6h6M3 13h4"/></svg><span class="lbl">Template</span></button>
       <button class="tt" data-tool="door" onclick="setTool('door')" title="Place door on a wall (D)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3"/><path d="M13 20h9"/><path d="M10 12v.01"/><path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"/></svg><span class="lbl">Door</span></button>
       </div>
       <div class="tgroup">
@@ -1430,6 +1432,12 @@ function renderDrafts() {
     ctx.setLineDash([]);
     label(meters(Math.hypot(sp.x - wifi.wallStart.x, sp.y - wifi.wallStart.y)), sp.x, sp.y - 10 / z);
   }
+  if (wifi.tool === 'tpl' && wifi.tpl && sp) {
+    const sz = tplSize(), x0 = sp.x - sz.w / 2, y0 = sp.y - sz.h / 2;
+    ctx.fillStyle = 'rgba(124,244,199,.10)'; ctx.fillRect(x0, y0, sz.w, sz.h);
+    ctx.strokeStyle = '#7cf4c7'; ctx.lineWidth = 3 / z; ctx.setLineDash([8 / z, 5 / z]); ctx.strokeRect(x0, y0, sz.w, sz.h); ctx.setLineDash([]);
+    label(`${wifi.tpl.name} · ${meters(sz.w)} × ${meters(sz.h)}`, sp.x + 8 / z, y0 - 8 / z);
+  }
   if (wifi.rectStart && sp) {
     const a = wifi.rectStart;
     ctx.strokeStyle = '#7cf4c7';
@@ -2124,6 +2132,10 @@ function onPointerDown(e) {
     wallPoint(x, y, e.shiftKey);
     _wallDown = { sx: s.x, sy: s.y, justStarted: !hadStart && !!wifi.wallStart };
   }
+  else if (wifi.tool === 'tpl') {
+    if (!wifi.tpl) { openTemplates(); return; }
+    const p = snapPoint(x, y, null, e.shiftKey); tplPlace(p.x, p.y);
+  }
   else if (wifi.tool === 'rect') {
     const p = snapPoint(x, y, null, e.shiftKey);
     if (!wifi.rectStart) { wifi.rectStart = {x: p.x, y: p.y}; }
@@ -2573,6 +2585,7 @@ function onKey(e) {
   }
   if (e.code === 'Space') { e.preventDefault(); if (!wifi.spaceDown) { wifi.spaceDown = true; refreshCursor(); } return; }
   const map = { s:'select', a:'place', w:'wall', r:'rect', c:'calibrate', e:'erase', h:'pan', d:'door', g:'area', p:'acc' };
+  if (k === 't' && wifi.tool === 'tpl' && wifi.tpl) { wifi.tpl.rot = !wifi.tpl.rot; scheduleRender(); return; }
   if (k === 'o') { setOrtho(!wifi.ortho); return; }
   if (map[k]) { setTool(map[k]); return; }
   if (k === 'f') { fitView(); return; }
@@ -2601,6 +2614,7 @@ function updateUI() {
     place:     'Click on the plan to drop an AP · choose the model in the side panel',
     wall:      wifi.wallStart ? 'Click the next point (or drag) · <kbd>Enter</kbd> / right-click / double-click to finish · <kbd>Shift</kbd> flips Free ↔ Ortho'
                               : 'Click (or drag) to draw a wall · <kbd>O</kbd> toggles Ortho (horizontal / vertical only)',
+    tpl:       'Click to drop the room · <kbd>T</kbd> rotates · <kbd>S</kbd> stops · change the room type with the Template button',
     rect:      wifi.rectStart ? 'Click the opposite corner' : 'Click one corner of the room, then the opposite corner',
     calibrate: wifi.calibA ? 'Click the second point' : 'Click two points with a known real distance (e.g. a door width)',
     erase:     'Click an AP, door, wall or render area to delete it',
@@ -4937,6 +4951,118 @@ function toggleMenu(e, id) {
 }
 function toggleFloorMenu(e) { toggleMenu(e, 'floormenu'); }
 document.addEventListener('click', e => { document.querySelectorAll('.projbar .filemenu.open').forEach(fm => { if (!fm.contains(e.target)) fm.classList.remove('open'); }); });
+// ============================================================
+// ROOM TEMPLATES (v5.28): drop a ready-made room (walls, door, render area, APs) on the plan
+// ============================================================
+const TPL = [
+  { id: 'class', name: 'Classroom', w: 8, h: 7, area: 'class', users: 40, ap: 1 },
+  { id: 'lecture', name: 'Lecture hall', w: 15, h: 10, area: 'hall', users: 120, ap: 2 },
+  { id: 'office', name: 'Open office', w: 10, h: 8, area: 'office', users: 20, ap: 1 },
+  { id: 'meet', name: 'Meeting room', w: 6, h: 4, area: 'office', users: 12, ap: 1 },
+  { id: 'priv', name: 'Private office', w: 4, h: 3, area: 'office', users: 2, ap: 0 },
+  { id: 'lobby', name: 'Lobby', w: 12, h: 8, area: 'lobby', users: 40, ap: 1 },
+  { id: 'ward', name: 'Hospital ward', w: 8, h: 6, area: 'ward', users: 8, ap: 1 },
+  { id: 'corr', name: 'Corridor', w: 20, h: 2.4, ap: 0, door: false },
+  { id: 'wc', name: 'Toilet (no coverage)', w: 3, h: 2.5, excl: true, ap: 0 },
+  { id: 'store', name: 'Storage (no coverage)', w: 3, h: 3, excl: true, ap: 0 },
+  { id: 'custom', name: 'Custom room', w: 6, h: 5, ap: 0 },
+];
+async function openTemplates() {
+  if (RO) return;
+  if (!wifi.scaleSet) { toast('Set the scale first (Scale tool) so the room gets its real size', 'error'); return; }
+  const last = wifi.tpl || {};
+  const sel = (id, opts, v) => `<select id="${id}" style="width:100%;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text)">${opts.map(o => `<option value="${o[0]}" ${String(o[0]) === String(v) ? 'selected' : ''}>${esc(o[1])}</option>`).join('')}</select>`;
+  const p0 = TPL.find(q => q.id === last.id) || TPL[0];
+  const html = `<div style="font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:10px">Pick a room type, then click on the plan to drop it. Press <kbd>T</kbd> to rotate, <kbd>S</kbd> to stop. Each drop is one undo step.</div>
+    <div class="field-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end">
+      <div class="dlg-field" style="grid-column:1/3"><label>Room type</label>${sel('tp-type', TPL.map(q => [q.id, q.name]), p0.id)}</div>
+      <div class="dlg-field"><label>Width (m)</label><input id="tp-w" type="number" step="0.1" min="1" value="${p0.w}"></div>
+      <div class="dlg-field"><label>Depth (m)</label><input id="tp-h" type="number" step="0.1" min="1" value="${p0.h}"></div>
+      <div class="dlg-field"><label>Wall material</label>${sel('tp-mat', WALL_MATS.map(m => [m.id, m.name]), last.mat || wifi.mat)}</div>
+      <div class="dlg-field"><label>APs inside</label><input id="tp-ap" type="number" min="0" max="8" value="${p0.ap}"></div>
+      <div class="dlg-field" id="tp-ufld"><label>Expected users</label><input id="tp-u" type="number" min="0" value="${p0.users || 0}"></div>
+    </div>
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:8px"><input type="checkbox" id="tp-door" ${p0.door === false ? '' : 'checked'} style="width:auto"> Add a door</label>
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px"><input type="checkbox" id="tp-area" ${p0.area || p0.excl ? 'checked' : ''} style="width:auto"> <span id="tp-area-l">Add a render area with capacity</span></label>`;
+  const m = await dialog({ title: 'Room <em>templates</em>', html, ok: 'Place on plan' });
+  if (!m) return;
+  const g = id => m.querySelector('#' + id), p = TPL.find(q => q.id === g('tp-type').value) || TPL[0];
+  const w = parseFloat(g('tp-w').value), h = parseFloat(g('tp-h').value);
+  if (!(w >= 1 && h >= 1)) { toast('Enter a valid size', 'error'); return; }
+  wifi.tpl = { id: p.id, name: p.name, w, h, mat: g('tp-mat').value, ap: Math.max(0, Math.min(8, parseInt(g('tp-ap').value) || 0)), users: Math.max(0, parseInt(g('tp-u').value) || 0), door: g('tp-door').checked, area: g('tp-area').checked, areaProf: p.area || null, excl: !!p.excl, rot: false };
+  setTool('tpl');
+}
+document.addEventListener('change', e => {
+  if (!e.target || e.target.id !== 'tp-type') return;
+  const p = TPL.find(q => q.id === e.target.value); if (!p) return;
+  const set = (id, v) => { const i = document.getElementById(id); if (i) i.value = v; };
+  set('tp-w', p.w); set('tp-h', p.h); set('tp-ap', p.ap); set('tp-u', p.users || 0);
+  const d = document.getElementById('tp-door'); if (d) d.checked = p.door !== false;
+  const a = document.getElementById('tp-area'); if (a) a.checked = !!(p.area || p.excl);
+  const l = document.getElementById('tp-area-l'); if (l) l.textContent = p.excl ? 'Mark as a no-coverage zone' : 'Add a render area with capacity';
+  const u = document.getElementById('tp-ufld'); if (u) u.style.display = p.excl ? 'none' : '';
+});
+function tplSize() { const t = wifi.tpl, ppm = wifi.pxPerMeter; return t.rot ? { w: t.h * ppm, h: t.w * ppm } : { w: t.w * ppm, h: t.h * ppm }; }
+function tplPlace(cx, cy) {
+  const t = wifi.tpl; if (!t) return;
+  const sz = tplSize(), x0 = cx - sz.w / 2, y0 = cy - sz.h / 2, x1 = x0 + sz.w, y1 = y0 + sz.h;
+  pushHistory();
+  const c = [{ x: x0, y: y0 }, { x: x1, y: y0 }, { x: x1, y: y1 }, { x: x0, y: y1 }];
+  const keepMat = wifi.mat; wifi.mat = t.mat;
+  const ids = []; for (let i = 0; i < 4; i++) { addWall(c[i], c[(i + 1) % 4]); ids.push(wifi.walls[wifi.walls.length - 1].id); }
+  wifi.mat = keepMat;
+  if (t.door) {
+    const dt = DOOR_TYPES.find(q => q.id === wifi.doorType) || DOOR_TYPES[0];
+    wifi.counters.door = (wifi.counters.door || 0) + 1;
+    wifi.doors.push({ id: 'd' + wifi.counters.door, wall: ids[2], t: 0.5, w: Math.min(wifi.doorW, Math.max(0.6, (sz.w / wifi.pxPerMeter) * 0.5)), type: dt.id, attn: dt.attn });
+  }
+  const pts = c.map(q => ({ x: q.x, y: q.y }));
+  if (t.area && t.excl) { wifi.counters.excl = (wifi.counters.excl || 0) + 1; wifi.excl.push({ id: 'x' + wifi.counters.excl, pts, name: t.name.replace(/ \(.*\)/, '') }); }
+  else if (t.area) {
+    wifi.counters.area = (wifi.counters.area || 0) + 1;
+    const a = { id: 'a' + wifi.counters.area, pts, name: t.name };
+    const pr = CAP_PROF[t.areaProf || 'office'];
+    if (t.users > 0) a.cap = { prof: t.areaProf || 'office', users: t.users, dpu: pr.dpu, conc: pr.conc, mbps: pr.mbps, cpa: pr.cpa };
+    wifi.areas.push(a);
+  }
+  if (t.ap > 0) {
+    if (!wifi.placingVendor) { wifi.placingVendor = 'h3c'; wifi.placingModel = 'wa6320'; }
+    const vendor = VENDORS[wifi.placingVendor], horiz = sz.w >= sz.h;
+    for (let k = 0; k < t.ap; k++) {
+      const f = (k + 0.5) / t.ap, x = horiz ? x0 + sz.w * f : (x0 + x1) / 2, y = horiz ? (y0 + y1) / 2 : y0 + sz.h * f;
+      wifi.counters.ap++;
+      const ap = { id: 'ap' + wifi.counters.ap, vendor: wifi.placingVendor, model: wifi.placingModel, name: vendor.name + '-' + wifi.counters.ap, x, y, height: 2.5 };
+      normAP(ap, wifi.aps.length); wifi.aps.push(ap);
+    }
+  }
+  hideEmpty(); _precCanvas = null; _statSig = ''; renderPropsPanel(); scheduleRender(); scheduleAutosave();
+  toast(t.name + ' placed. Click to place another, T rotates, S stops');
+}
+// copy the walls / rooms / APs of this floor to another floor
+async function openCopyLayout() {
+  if (!curProj || curProj.floors.length < 2) { toast('Add another floor first', 'error'); return; }
+  const others = curProj.floors.filter(f => f.id !== curFloor);
+  const html = `<div style="font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:10px">Copies this floor's layout onto another floor, useful for typical floors. What you tick <b>replaces</b> the same items on the target floor. Coordinates stay the same, so everything lines up in the stacked 3D view.</div>
+    <div class="dlg-field"><label>Copy to</label><select id="cp-to" style="width:100%;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text)">${others.map(f => `<option value="${f.id}">${esc(f.name)}</option>`).join('')}</select></div>
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px"><input type="checkbox" id="cp-w" checked style="width:auto"> Walls and doors (${wifi.walls.length} / ${wifi.doors.length})</label>
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px"><input type="checkbox" id="cp-a" checked style="width:auto"> Render areas and no-coverage zones (${wifi.areas.length} / ${wifi.excl.length})</label>
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px"><input type="checkbox" id="cp-p" style="width:auto"> Access points (${wifi.aps.length})</label>`;
+  const m = await dialog({ title: 'Copy layout to <em>another floor</em>', html, ok: 'Copy' });
+  if (!m) return;
+  const g = id => m.querySelector('#' + id), tf = curProj.floors.find(f => f.id === g('cp-to').value); if (!tf) return;
+  if (!g('cp-w').checked && !g('cp-a').checked && !g('cp-p').checked) { toast('Nothing selected'); return; }
+  await flushSave();
+  const d = tf.data = tf.data || newFloorData(), cl = o => JSON.parse(JSON.stringify(o));
+  if (!d.scaleSet) { d.ppm = wifi.pxPerMeter; d.scaleSet = wifi.scaleSet; }
+  const k = (d.ppm || wifi.pxPerMeter) / wifi.pxPerMeter, sc = p => ({ x: p.x * k, y: p.y * k });
+  d.counters = d.counters || { ap: 0, wall: 0 };
+  if (g('cp-w').checked) { d.walls = cl(wifi.walls).map(w => Object.assign(w, { x1: w.x1 * k, y1: w.y1 * k, x2: w.x2 * k, y2: w.y2 * k })); d.doors = cl(wifi.doors); d.counters.wall = wifi.counters.wall; d.counters.door = wifi.counters.door || 0; }
+  if (g('cp-a').checked) { d.areas = cl(wifi.areas).map(a => Object.assign(a, { pts: a.pts.map(sc) })); d.excl = cl(wifi.excl).map(a => Object.assign(a, { pts: a.pts.map(sc) })); d.counters.area = wifi.counters.area || 0; d.counters.excl = wifi.counters.excl || 0; }
+  if (g('cp-p').checked) { d.aps = cl(wifi.aps).map(a => Object.assign(a, { x: a.x * k, y: a.y * k })); d.counters.ap = wifi.counters.ap; }
+  d.started = true; tf.data = d; curProj.updated = Date.now(); _xfC.sig = '';
+  try { await dbPut('projects', curProj); } catch (e) {}
+  toast('Layout copied to ' + tf.name);
+}
 async function openFloorSettings() {
   if (!curProj) return;
   const c = mfCfg(), fl = curProj.floors;
@@ -4969,6 +5095,7 @@ async function floorAct(a) {
   document.getElementById('floormenu').classList.remove('open');
   const f = curFloorObj(); if (!f) return;
   if (a === 'mf') { openFloorSettings(); return; }
+  if (a === 'cp') { openCopyLayout(); return; }
   if (a === 'rename') {
     const n = await askText('Rename floor', 'Floor name', f.name);
     if (!n) return;
