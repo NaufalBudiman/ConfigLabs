@@ -1,6 +1,6 @@
 /* ConfigLabs — single source of truth for version numbers.
    Change them here only; every page reads them from this file. */
-window.CL = { version: '6.0.0', wifi: '5.26' };
+window.CL = { version: '6.0.0', wifi: '5.27' };
 (function () {
   function fill() {
     document.querySelectorAll('[data-cl-version]').forEach(function (e) { e.textContent = 'v' + CL.version; });

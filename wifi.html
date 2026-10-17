@@ -487,7 +487,7 @@ select option:disabled{color:var(--text-muted)}
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.26</span></div>
+    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.27</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -654,6 +654,7 @@ select option:disabled{color:var(--text-muted)}
         <div class="filemenu-pop">
           <button onclick="floorAct('rename')">Rename floor…</button>
           <button onclick="floorAct('dup')">Duplicate floor</button>
+          <button onclick="floorAct('mf')">Floor settings (height, slab)…</button>
           <button class="danger" onclick="floorAct('del')">Delete floor…</button>
         </div>
       </div>
@@ -1489,6 +1490,7 @@ function sceneSig() {
     document.getElementById('global-band').value,
     wifi.threshold, wifi.opacity, wifi.pxPerMeter, wifi.env,
     wifi.dragging ? 1 : 0,
+    (function () { const x = xfEnts(document.getElementById('global-band').value); return x.length ? x.map(e => [e.x, e.y, e.dz, e.eirp, e.ch]) : 0; })(),
   ]);
 }
 
@@ -1544,6 +1546,39 @@ function pathLoss(d_m, band) {
   const d = Math.max(d_m, 0.1);
   if (d <= 5) return fspl(d, FREQ_MHZ[band]);
   return fspl(5, FREQ_MHZ[band]) + 10 * PL_N[band] * ENV_K[wifi.env] * Math.log10(d / 5);
+}
+// ---- multi-floor (v5.27): other floors act as interferers through the slab ----
+const SLABS = { concrete: { '2.4': 15, '5': 20, '6': 23 }, wood: { '2.4': 6, '5': 8, '6': 9 } };
+let _xfNames = {}, _xfC = { sig: '', by: {} };
+function mfCfg() { const p = (curProj && curProj.mf) || {}; return { on: p.on !== false, reach: p.reach === 2 ? 2 : 1, slab: p.slab || 'concrete', custom: p.custom || { '2.4': 10, '5': 14, '6': 16 } }; }
+function slabDb(band) { const c = mfCfg(), t = c.slab === 'custom' ? c.custom : (SLABS[c.slab] || SLABS.concrete); return +(t[band] != null ? t[band] : t['5']); }
+function floorHeight(f) { const h = curProj && curProj.mf && curProj.mf.fh && curProj.mf.fh[f.id]; return +(h > 0 ? h : 3.5); }
+function floorElev(idx) { let e = 0; for (let i = 0; i < idx; i++) e += floorHeight(curProj.floors[i]); return e; }
+function xfEnts(band) {
+  if (!curProj || !curProj.floors || curProj.floors.length < 2) return [];
+  const cfg = mfCfg(); if (!cfg.on) return [];
+  const ci = curProj.floors.findIndex(f => f.id === curFloor); if (ci < 0) return [];
+  const others = [];
+  curProj.floors.forEach((f, fi) => { if (fi !== ci && Math.abs(fi - ci) <= cfg.reach && f.data && (f.data.aps || []).length) others.push([f, fi]); });
+  if (!others.length) return [];
+  const sig = JSON.stringify([band, ci, cfg, wifi.pxPerMeter, wifi.clientH, curProj.floors.map(f => floorHeight(f)), others.map(([f]) => [f.id, (f.data.aps || []).map(a => [a.x, a.y, a.height, a.model, a.vendor, a.mode, a.rad]), f.data.ppm])]);
+  if (_xfC.sig === sig) return _xfC.by.v || [];
+  const out = [], base = floorElev(ci);
+  others.forEach(([f, fi]) => {
+    const ppmF = f.data.ppm || WORLD_W / 40, dz0 = floorElev(fi) - base;
+    (f.data.aps || []).forEach((ap0, i) => {
+      const m = getAPModel(ap0.vendor, ap0.model); if (!m) return;
+      let ap = ap0; if (!ap.rad) { ap = JSON.parse(JSON.stringify(ap0)); normAP(ap, i); }
+      let rads; try { rads = apRadios(ap, m); } catch (e) { return; }
+      const id = 1000 + fi * 100 + i; _xfNames[id] = { name: ap0.name || 'AP', floor: f.name };
+      rads.forEach(r => {
+        if (r.band !== band) return;
+        out.push({ x: ap.x / ppmF * wifi.pxPerMeter, y: ap.y / ppmF * wifi.pxPerMeter, dz: dz0 + (ap.height || 2.5) - wifi.clientH, eirp: r.tx + mGain(m, band) - slabDb(band) * Math.abs(fi - ci), band, ch: r.ch, ap: id, noise: NOISE_FLOOR[band], xf: 1 });
+      });
+    });
+  });
+  _xfC = { sig, by: { v: out } };
+  return out;
 }
 // field calibration: measured - predicted = a + b * 10log10(d/5)
 function calMatAdj(w, band) { const c = wifi.cal && wifi.cal[band]; return (c && c.m && c.m[w.mat]) || 0; }
@@ -1610,6 +1645,7 @@ function prepHeat(ov) {
       return { x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2, mat: w.mat, attn: Math.max(0, wallLoss(w, band) + calMatAdj(w, band)) / WALL_K[band], doors: ds.length ? ds : null };
     }),
     aps: ents,
+    xaps: xfEnts(band),
     _rs: new Float32Array(ents.length),
   };
 }
@@ -1656,7 +1692,15 @@ function cellRSSI(hc, px, py) {
         const w = chOverlap(A[bi].band, A[bi].ch, A[j].ch);
         if (w > 0) { I += w * Math.pow(10, rs[j] / 10); const pe = rs[j] + 10 * Math.log10(w); if (pe > mx) { mx = pe; mj = j; } }
       }
-      if (mj >= 0) { _bI = mx; _bJ = A[mj].ap; }
+      let jid = mj >= 0 ? A[mj].ap : -1;
+      const XA = hc.xaps;
+      if (XA && XA.length) for (let q = 0; q < XA.length; q++) {
+        const xa = XA[q], w = chOverlap(A[bi].band, A[bi].ch, xa.ch); if (w <= 0) continue;
+        const dd = Math.sqrt(Math.pow(Math.hypot(px - xa.x, py - xa.y) / hc.ppm, 2) + xa.dz * xa.dz);
+        const rr = xa.eirp - pathLoss(dd, xa.band); if (rr < -150) continue;
+        I += w * Math.pow(10, rr / 10); const pe = rr + 10 * Math.log10(w); if (pe > mx) { mx = pe; jid = xa.ap; }
+      }
+      if (jid >= 0) { _bI = mx; _bJ = jid; }
       _bK = A[bi].ap;
       _bQ = best - 10 * Math.log10(I + Math.pow(10, A[bi].noise / 10));
     }
@@ -2765,6 +2809,12 @@ function optBuild(band) {
     cellRSSI(hc, cells[2 * c], cells[2 * c + 1]);
     for (let k = 0; k < N; k++) P[c * N + k] = hc._rs[k] > -199 ? hc._rs[k] - hc.aps[k].eirp : -999;
   }
+  // other floors: fixed interferers, summed per cell for every distinct foreign channel
+  const xch = [...new Set((hc.xaps || []).map(e => e.ch))], K = xch.length, XP = new Float32Array(nc * Math.max(1, K));
+  if (K) for (let c = 0; c < nc; c++) for (const xa of hc.xaps) {
+    const dd = Math.sqrt(Math.pow(Math.hypot(cells[2 * c] - xa.x, cells[2 * c + 1] - xa.y) / hc.ppm, 2) + xa.dz * xa.dz), rr = xa.eirp - pathLoss(dd, xa.band);
+    if (rr > -150) XP[c * K + xch.indexOf(xa.ch)] += Math.pow(10, rr / 10);
+  }
   // radio-to-radio (at each AP position) for the "hear each other" count
   const Q = new Float32Array(N * N);
   for (let j = 0; j < N; j++) {
@@ -2772,7 +2822,7 @@ function optBuild(band) {
     cellRSSI(hc, a.x, a.y);
     for (let k = 0; k < N; k++) Q[j * N + k] = (k === j) ? -999 : (hc._rs[k] > -199 ? hc._rs[k] - hc.aps[k].eirp : -999);
   }
-  return { band, N, nc, P, Q, radios, noise: NOISE_FLOOR[band], target: wifi.covTarget };
+  return { band, N, nc, P, Q, radios, noise: NOISE_FLOOR[band], target: wifi.covTarget, xch, K, XP };
 }
 function optOvl(band, ch) {
   const N = ch.length, o = new Float32Array(N * N);
@@ -2786,6 +2836,7 @@ function optEval(M, tx, ch, full) {
   const r = new Float32Array(N), pw = new Float32Array(N);
   let J = 0, cov = 0, sinrSum = 0, sinrN = 0, okN = 0; const sT = M.sinrT || OPT_SINR_T;
   const W = full ? new Float64Array(N * N) : null;
+  const K = M.K || 0, XP = M.XP, xch = M.xch, WX = full && K ? new Float64Array(N * K) : null;
   for (let c = 0; c < nc; c++) {
     let b = -1, r1 = -999, above = 0, r2 = -999;
     for (let k = 0; k < N; k++) {
@@ -2800,6 +2851,7 @@ function optEval(M, tx, ch, full) {
       cov++;
       let I = 0;
       for (let k = 0; k < N; k++) { if (k === b) continue; const o = ov[b * N + k]; if (o > 0) I += o * pw[k]; }
+      for (let q = 0; q < K; q++) { const ox = chOverlap(band, ch[b], xch[q]), xp = XP[c * K + q]; if (ox > 0) I += ox * xp; if (WX) WX[b * K + q] += xp; }
       const sinr = r1 - 10 * Math.log10(I + Math.pow(10, noise / 10));
       sinrSum += sinr; sinrN++; if (sinr >= sT) okN++;
       J += 0.5 * Math.max(0, Math.min(1, (OPT_SINR_T - sinr) / OPT_SINR_T)) + 0.08 * Math.min(3, Math.max(0, above - 2));
@@ -2816,18 +2868,20 @@ function optEval(M, tx, ch, full) {
     const b2 = M.Q[j * N + i] > -900 ? M.Q[j * N + i] + tx[i] + gain[i] : -999;
     if (Math.max(a, b2) >= OPT_PAIR_T) pairs++;
   }
-  return { J, cov: cov / nc, sinr: sinrN ? sinrSum / sinrN : null, pairs, W, ok: okN / nc };
+  return { J, cov: cov / nc, sinr: sinrN ? sinrSum / sinrN : null, pairs, W, WX, ok: okN / nc };
 }
 function optChannels(M, tx, ch0, allowDFS) {
   const N = M.N, band = M.band;
   let cand = band === '5' ? OPT_CH['5'].concat(allowDFS ? OPT_CH['5dfs'] : []) : OPT_CH[band];
   const ev = optEval(M, tx, ch0, true), W = ev.W;
+  const K = M.K || 0, WX = ev.WX, xch = M.xch;
+  const fx = (i, v) => { let t = 0; if (WX) for (let q = 0; q < K; q++) t += WX[i * K + q] * chOverlap(band, v, xch[q]); return t; };
   const S = new Float64Array(N * N);
   for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) if (i !== j) {
     S[i * N + j] = W[i * N + j] + W[j * N + i];
     if (M.radios[i].ai === M.radios[j].ai) S[i * N + j] += 1e-3;      // radios of the same AP must not share a channel
   }
-  const cost = ch => { let s = 0; for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) { const w = S[i * N + j]; if (w > 0) s += w * chOverlap(band, ch[i], ch[j]); } return s; };
+  const cost = ch => { let s = 0; for (let i = 0; i < N; i++) { s += fx(i, ch[i]); for (let j = i + 1; j < N; j++) { const w = S[i * N + j]; if (w > 0) s += w * chOverlap(band, ch[i], ch[j]); } } return s; };
   const rnd = _rng(1234);
   let best = null, bestC = Infinity;
   for (let rs = 0; rs < 8; rs++) {
@@ -2838,14 +2892,14 @@ function optChannels(M, tx, ch0, allowDFS) {
     const ch = new Array(N).fill(0), set = new Array(N).fill(false);
     for (const i of order) {                                        // greedy
       let bc = Infinity, bv = cand[0];
-      for (const v of cand) { let s = 0; for (let j = 0; j < N; j++) if (set[j]) s += S[i * N + j] * chOverlap(band, v, ch[j]); if (s < bc - 1e-18 || (Math.abs(s - bc) <= 1e-18 && v === ch0[i])) { bc = s; bv = v; } }
+      for (const v of cand) { let s = fx(i, v); for (let j = 0; j < N; j++) if (set[j]) s += S[i * N + j] * chOverlap(band, v, ch[j]); if (s < bc - 1e-18 || (Math.abs(s - bc) <= 1e-18 && v === ch0[i])) { bc = s; bv = v; } }
       ch[i] = bv; set[i] = true;
     }
     for (let pass = 0; pass < 20; pass++) {                         // local search
       let ch2 = false;
       for (const i of order) {
-        let cur = 0; for (let j = 0; j < N; j++) cur += S[i * N + j] * chOverlap(band, ch[i], ch[j]);
-        for (const v of cand) { if (v === ch[i]) continue; let s = 0; for (let j = 0; j < N; j++) s += S[i * N + j] * chOverlap(band, v, ch[j]); if (s < cur - 1e-15) { cur = s; ch[i] = v; ch2 = true; } }
+        let cur = fx(i, ch[i]); for (let j = 0; j < N; j++) cur += S[i * N + j] * chOverlap(band, ch[i], ch[j]);
+        for (const v of cand) { if (v === ch[i]) continue; let s = fx(i, v); for (let j = 0; j < N; j++) s += S[i * N + j] * chOverlap(band, v, ch[j]); if (s < cur - 1e-15) { cur = s; ch[i] = v; ch2 = true; } }
       }
       if (!ch2) break;
     }
@@ -3185,7 +3239,8 @@ async function open3D() {
   hideBusy();
   const wrap = document.getElementById('canvas-wrap');
   const root = document.createElement('div'); root.id = 'v3d'; root.className = 'v3d';
-  root.innerHTML = `<div class="v3-bar"><b>3D view</b><label>Ceiling <input id="v3-h" type="number" step="0.1" min="2" max="10" value="${wifi.ceilH || 3}" style="width:56px"> m</label>
+  const mfl = !!(curProj && curProj.floors.length > 1), vis = {};
+  root.innerHTML = `<div class="v3-bar"><b>3D view</b><label ${mfl ? 'style="display:none"' : ''}>Ceiling <input id="v3-h" type="number" step="0.1" min="2" max="10" value="${wifi.ceilH || 3}" style="width:56px"> m</label>${mfl ? curProj.floors.map((f, i) => `<label title="Show or hide this floor"><input type="checkbox" class="v3-fl" data-f="${f.id}" ${f.id === curFloor ? 'checked disabled' : 'checked'} style="width:auto"> ${esc(f.name)}</label>`).join('') : ''}
     <label><input type="checkbox" id="v3-heat" checked style="width:auto"> Heatmap</label><label><input type="checkbox" id="v3-plan" checked style="width:auto"> Floor plan</label>
     <button class="tt" id="v3-reset">Reset view</button><button class="tt primary" id="v3-close">Back to 2D</button></div>
     <div class="v3-hint">Drag to rotate · right-drag or Shift+drag to move · scroll to zoom</div>`;
@@ -3207,44 +3262,60 @@ async function open3D() {
     const H = Math.max(2, parseFloat(document.getElementById('v3-h').value) || 3); wifi.ceilH = H;
     const showHeat = document.getElementById('v3-heat').checked, showPlan = document.getElementById('v3-plan').checked;
     const WW = WORLD_W * S, WH = WORLD_H * S;
+    const curEl = (curProj && curProj.floors.length > 1) ? floorElev(curProj.floors.findIndex(f => f.id === curFloor)) : 0;
     // floor
     const fc = document.createElement('canvas'); fc.width = 1600; fc.height = 960; const fx = fc.getContext('2d');
     fx.fillStyle = '#1a1f27'; fx.fillRect(0, 0, fc.width, fc.height);
     if (showPlan && wifi.floorPlan) { const r = planRect(), k = fc.width / WORLD_W; fx.globalAlpha = 0.9; fx.drawImage(wifi.floorPlan, r.x * k, r.y * k, r.w * k, r.h * k); fx.globalAlpha = 1; }
     const fm = new T.Mesh(new T.PlaneGeometry(WW, WH), new T.MeshBasicMaterial({ map: new T.CanvasTexture(fc) }));
-    fm.rotation.x = -Math.PI / 2; fm.position.set(WW / 2, 0, WH / 2); grp.add(fm);
+    fm.rotation.x = -Math.PI / 2; fm.position.set(WW / 2, curEl, WH / 2); grp.add(fm);
     // heatmap (use the current render; build it if needed)
     if (showHeat && wifi.aps.length) {
       let hcv = (_precCanvas && _precSig === sceneSig()) ? _precCanvas : null;
       if (!hcv) { if (!_hmCanvas || _hmSig !== sceneSig()) { _hmSig = sceneSig(); buildHeatmap(); } hcv = _hmCanvas; }
       const tex = new T.CanvasTexture(hcv); tex.minFilter = T.LinearFilter;
       const hm = new T.Mesh(new T.PlaneGeometry(WW, WH), new T.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.85, depthWrite: false }));
-      hm.rotation.x = -Math.PI / 2; hm.position.set(WW / 2, 0.02, WH / 2); grp.add(hm);
+      hm.rotation.x = -Math.PI / 2; hm.position.set(WW / 2, curEl + 0.02, WH / 2); grp.add(hm);
     }
-    // walls (split around doors)
-    const wm = new T.MeshLambertMaterial({ color: 0xcfd6e0, transparent: true, opacity: 0.55 });
-    const dm = new T.MeshLambertMaterial({ color: 0x9a6b3a, transparent: true, opacity: 0.8 });
-    const seg = (x1, y1, x2, y2, y0, y1h, mat) => {
-      const [ax, az] = P(x1, y1), [bx, bz] = P(x2, y2), L = Math.hypot(bx - ax, bz - az); if (L < 0.02 || y1h - y0 < 0.01) return;
-      const m = new T.Mesh(new T.BoxGeometry(L, y1h - y0, 0.14), mat);
-      m.position.set((ax + bx) / 2, (y0 + y1h) / 2, (az + bz) / 2); m.rotation.y = -Math.atan2(bz - az, bx - ax); grp.add(m);
-    };
-    wifi.walls.forEach(w => {
-      const L = Math.hypot(w.x2 - w.x1, w.y2 - w.y1) || 1;
-      const ds = wifi.doors.filter(d => d.wall === w.id).map(d => { const h = (d.w * ppm / 2) / L; return [Math.max(0, d.t - h), Math.min(1, d.t + h)]; }).sort((a, b) => a[0] - b[0]);
-      const at = t => [w.x1 + (w.x2 - w.x1) * t, w.y1 + (w.y2 - w.y1) * t];
-      let c = 0;
-      ds.forEach(([a, b]) => { if (a > c) { const p = at(c), q = at(a); seg(p[0], p[1], q[0], q[1], 0, H, wm); } const p = at(a), q = at(b); seg(p[0], p[1], q[0], q[1], 2.1, H, wm); seg(p[0], p[1], q[0], q[1], 0, 0.04, dm); c = b; });
-      if (c < 1) { const p = at(c), q = at(1); seg(p[0], p[1], q[0], q[1], 0, H, wm); }
-    });
-    // access points
-    wifi.aps.forEach(a => {
-      const [x, z] = P(a.x, a.y), h = Math.min(H, a.height || 2.8);
-      const sph = new T.Mesh(new T.SphereGeometry(0.28, 16, 12), new T.MeshLambertMaterial({ color: 0x35e0b0 })); sph.position.set(x, h, z); grp.add(sph);
-      const ln = new T.Mesh(new T.CylinderGeometry(0.015, 0.015, h, 6), new T.MeshBasicMaterial({ color: 0x35e0b0, transparent: true, opacity: 0.5 })); ln.position.set(x, h / 2, z); grp.add(ln);
-      const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const cx = cv.getContext('2d');
-      cx.fillStyle = 'rgba(14,17,22,.85)'; cx.fillRect(0, 8, 256, 48); cx.fillStyle = '#fff'; cx.font = 'bold 30px sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText(a.name || 'AP', 128, 33);
-      const sp = new T.Sprite(new T.SpriteMaterial({ map: new T.CanvasTexture(cv), depthTest: false })); sp.scale.set(2.4, 0.6, 1); sp.position.set(x, h + 0.7, z); grp.add(sp);
+    // floors: walls (split around doors) and access points; other floors are shown dimmer
+    const multi = !!(curProj && curProj.floors.length > 1);
+    const FL = multi ? curProj.floors.map((f, i) => ({ f, i, cur: f.id === curFloor })).filter(q => q.cur || (_v3.vis[q.f.id] !== false)) : [{ f: null, i: 0, cur: true }];
+    FL.forEach(q => {
+      const live = q.cur, d = live ? { walls: wifi.walls, doors: wifi.doors, aps: wifi.aps, ppm: ppm } : Object.assign({ walls: [], doors: [], aps: [] }, q.f.data || {});
+      const ppmF = (live ? ppm : (d.ppm || WORLD_W / 40)), sc = 1 / ppmF, Hf = multi ? Math.max(2, floorHeight(q.f) - 0.25) : H, el = multi ? floorElev(q.i) : 0;
+      const dim = !live;
+      const wm = new T.MeshLambertMaterial({ color: 0xcfd6e0, transparent: true, opacity: dim ? 0.22 : 0.55, depthWrite: false });
+      const dm = new T.MeshLambertMaterial({ color: 0x9a6b3a, transparent: true, opacity: 0.8 });
+      const Pf = (x, y) => [x * sc, y * sc];
+      const seg = (x1, y1, x2, y2, y0, y1h, mat) => {
+        const [ax, az] = Pf(x1, y1), [bx, bz] = Pf(x2, y2), L = Math.hypot(bx - ax, bz - az); if (L < 0.02 || y1h - y0 < 0.01) return;
+        const m = new T.Mesh(new T.BoxGeometry(L, y1h - y0, 0.14), mat);
+        m.position.set((ax + bx) / 2, el + (y0 + y1h) / 2, (az + bz) / 2); m.rotation.y = -Math.atan2(bz - az, bx - ax); grp.add(m);
+      };
+      (d.walls || []).forEach(w => {
+        const L = Math.hypot(w.x2 - w.x1, w.y2 - w.y1) || 1;
+        const ds = (d.doors || []).filter(dd => dd.wall === w.id).map(dd => { const h = (dd.w * ppmF / 2) / L; return [Math.max(0, dd.t - h), Math.min(1, dd.t + h)]; }).sort((p, r) => p[0] - r[0]);
+        const at = t => [w.x1 + (w.x2 - w.x1) * t, w.y1 + (w.y2 - w.y1) * t];
+        let c = 0;
+        ds.forEach(([p0, p1]) => { if (p0 > c) { const p = at(c), r = at(p0); seg(p[0], p[1], r[0], r[1], 0, Hf, wm); } const p = at(p0), r = at(p1); seg(p[0], p[1], r[0], r[1], 2.1, Hf, wm); seg(p[0], p[1], r[0], r[1], 0, 0.04, dm); c = p1; });
+        if (c < 1) { const p = at(c), r = at(1); seg(p[0], p[1], r[0], r[1], 0, Hf, wm); }
+      });
+      if (multi && el > 0 || (multi && !live)) { // slab plate under upper floors / dim floors
+        const sl = new T.Mesh(new T.PlaneGeometry(WW, WH), new T.MeshBasicMaterial({ color: live ? 0x1a1f27 : 0x6b7686, transparent: true, opacity: live ? 0.0 : 0.16, depthWrite: false, side: T.DoubleSide }));
+        sl.rotation.x = -Math.PI / 2; sl.position.set(WW / 2, el - 0.02, WH / 2); grp.add(sl);
+      }
+      (d.aps || []).forEach(a => {
+        const [x, z] = Pf(a.x, a.y), h = Math.min(Hf, a.height || 2.8);
+        const col = dim ? 0x7d8aa0 : 0x35e0b0;
+        const sph = new T.Mesh(new T.SphereGeometry(0.28, 16, 12), new T.MeshLambertMaterial({ color: col })); sph.position.set(x, el + h, z); grp.add(sph);
+        const ln = new T.Mesh(new T.CylinderGeometry(0.015, 0.015, h, 6), new T.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.5 })); ln.position.set(x, el + h / 2, z); grp.add(ln);
+        if (dim && !(multi && q.i)) { /* label only on the active floor to keep the view clear */ }
+        if (!dim) {
+          const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const cx = cv.getContext('2d');
+          cx.fillStyle = 'rgba(14,17,22,.85)'; cx.fillRect(0, 8, 256, 48); cx.fillStyle = '#fff'; cx.font = 'bold 30px sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText(a.name || 'AP', 128, 33);
+          const sp = new T.Sprite(new T.SpriteMaterial({ map: new T.CanvasTexture(cv), depthTest: false })); sp.scale.set(2.4, 0.6, 1); sp.position.set(x, el + h + 0.7, z); grp.add(sp);
+        }
+      });
     });
   };
   // focus point = centre of the content
@@ -3252,7 +3323,7 @@ async function open3D() {
     let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; const add = (x, y) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); };
     wifi.walls.forEach(w => { add(w.x1, w.y1); add(w.x2, w.y2); }); wifi.aps.forEach(a => add(a.x, a.y)); wifi.areas.forEach(a => a.pts.forEach(p => add(p.x, p.y)));
     if (x0 > 1e8) { const r = planRect(); x0 = r.x; y0 = r.y; x1 = r.x + r.w; y1 = r.y + r.h; }
-    view.tx = (x0 + x1) / 2 * S; view.tz = (y0 + y1) / 2 * S; view.ty = 0; view.d = Math.max(12, Math.hypot(x1 - x0, y1 - y0) * S * 0.9); view.th = -0.6; view.ph = 0.95;
+    view.tx = (x0 + x1) / 2 * S; view.tz = (y0 + y1) / 2 * S; view.ty = (curProj && curProj.floors.length > 1) ? floorElev(curProj.floors.length) / 2 : 0; view.d = Math.max(12, Math.hypot(x1 - x0, y1 - y0) * S * 0.9); view.th = -0.6; view.ph = 0.95;
   };
   const place = () => {
     const sp = Math.sin(view.ph), cp = Math.cos(view.ph);
@@ -3276,7 +3347,8 @@ async function open3D() {
   const ro = new ResizeObserver(size); ro.observe(wrap);
   root.querySelector('#v3-close').onclick = close3D; root.querySelector('#v3-reset').onclick = () => { focus(); };
   ['v3-h', 'v3-heat', 'v3-plan'].forEach(id => root.querySelector('#' + id).addEventListener('change', build));
-  _v3 = { root, renderer, st, ro, onKey, scene, view, build };
+  _v3 = { root, renderer, st, ro, onKey, scene, view, build, vis };
+  root.querySelectorAll('.v3-fl').forEach(cb => cb.addEventListener('change', () => { vis[cb.dataset.f] = cb.checked; build(); }));
   focus(); build(); size(); loop();
 }
 function close3D() {
@@ -3312,8 +3384,8 @@ async function openConflicts() {
   showBusy('Analysing interference…'); await tick();
   const r = computeConflicts(band, T); hideBusy();
   if (!r || !r.total) { toast('No covered area on this band to analyse', 'error'); return; }
-  const chOf = idx => { const a = wifi.aps[idx], m = a && getAPModel(a.vendor, a.model); const rd = m && apRadios(a, m).find(q => q.band === band); return rd ? rd.ch : '—'; };
-  const nm = idx => wifi.aps[idx] ? esc(wifi.aps[idx].name) : '?';
+  const chOf = idx => { if (idx >= 1000) { const x = xfEnts(band).find(q => q.ap === idx); return x ? x.ch : '—'; } const a = wifi.aps[idx], m = a && getAPModel(a.vendor, a.model); const rd = m && apRadios(a, m).find(q => q.band === band); return rd ? rd.ch : '—'; };
+  const nm = idx => idx >= 1000 ? (_xfNames[idx] ? esc(_xfNames[idx].floor + ' / ' + _xfNames[idx].name) : '?') : wifi.aps[idx] ? esc(wifi.aps[idx].name) : '?';
   const pct = v => (v / r.total * 100).toFixed(1) + '%';
   const rows = r.list.slice(0, 12).map(e => `<tr><td><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${INTF_PAL[e.i % INTF_PAL.length]};margin-right:6px"></i>${nm(e.i)} <span style="color:var(--text-muted)">ch ${chOf(e.i)}</span></td><td>${nm(e.s)} <span style="color:var(--text-muted)">ch ${chOf(e.s)}</span></td><td><b>${pct(e.n)}</b></td><td>${e.worst.toFixed(1)} dB</td></tr>`).join('');
   const html = `<div style="font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:10px">${band} GHz · area where the signal of the serving AP is at least ${wifi.covTarget} dBm. A spot is counted as <b>disturbed</b> when its SINR (signal vs. co-channel APs and noise) is below <b>${T} dB</b>.</div>
@@ -4859,9 +4931,38 @@ function toggleMenu(e, id) {
 }
 function toggleFloorMenu(e) { toggleMenu(e, 'floormenu'); }
 document.addEventListener('click', e => { document.querySelectorAll('.projbar .filemenu.open').forEach(fm => { if (!fm.contains(e.target)) fm.classList.remove('open'); }); });
+async function openFloorSettings() {
+  if (!curProj) return;
+  const c = mfCfg(), fl = curProj.floors;
+  const sel = (id, opts, v) => `<select id="${id}" style="width:100%;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text)">${opts.map(o => `<option value="${o[0]}" ${String(o[0]) === String(v) ? 'selected' : ''}>${o[1]}</option>`).join('')}</select>`;
+  const tbl = c.slab === 'custom' ? c.custom : SLABS[c.slab];
+  const html = `<div style="font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:10px">Floors are stacked in the order of the tabs (first tab = lowest floor) and share the same coordinates, so the same x, y is the same spot on every floor. APs on neighbouring floors then count as interference through the slab (they are never counted as coverage).</div>
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-bottom:10px"><input type="checkbox" id="mf-on" ${c.on ? 'checked' : ''} style="width:auto"> Include APs on other floors in SINR, interference and optimization</label>
+    <div class="field-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="dlg-field"><label>Floors counted above and below</label>${sel('mf-reach', [[1, '1 floor (nearest)'], [2, '2 floors']], c.reach)}</div>
+      <div class="dlg-field"><label>Floor slab</label>${sel('mf-slab', [['concrete', 'Concrete'], ['wood', 'Wood / light'], ['custom', 'Custom']], c.slab)}</div>
+    </div>
+    <div class="field-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:6px">${['2.4', '5', '6'].map(b => `<div class="dlg-field"><label>Loss ${b} GHz (dB)</label><input type="number" id="mf-l${b}" step="1" min="0" value="${tbl[b]}" ${c.slab === 'custom' ? '' : 'disabled'}></div>`).join('')}</div>
+    <div class="xp-cap" style="margin:12px 0 6px">Floor heights (floor to floor, m)</div>
+    <div style="display:grid;grid-template-columns:1fr 110px;gap:6px 10px;align-items:center;font-size:13px">${fl.map((f, i) => `<div>${i + 1}. ${esc(f.name)}</div><input type="number" class="mf-h" data-f="${f.id}" step="0.1" min="2" max="10" value="${floorHeight(f)}" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);width:100%">`).join('')}</div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.5">The slab losses are typical values, not measurements. Replace them with your own if you have survey data.</div>`;
+  const m = await dialog({ title: 'Floor <em>settings</em>', html, ok: 'Save' });
+  if (!m) return;
+  const g = id => m.querySelector('[id="' + id + '"]');
+  const mf = { on: g('mf-on').checked, reach: +g('mf-reach').value, slab: g('mf-slab').value, custom: { '2.4': +g('mf-l2.4').value || 0, '5': +g('mf-l5').value || 0, '6': +g('mf-l6').value || 0 }, fh: {} };
+  m.querySelectorAll('.mf-h').forEach(i => { const v = parseFloat(i.value); mf.fh[i.dataset.f] = v > 0 ? v : 3.5; });
+  if (mf.slab !== 'custom') mf.custom = c.custom;
+  curProj.mf = mf; curProj.updated = Date.now(); _xfC.sig = ''; _precCanvas = null; _statSig = '';
+  try { await dbPut('projects', curProj); } catch (e) {}
+  scheduleRender(); toast('Floor settings saved');
+}
+document.addEventListener('change', e => {
+  if (e.target && e.target.id === 'mf-slab') { const v = e.target.value, t = v === 'custom' ? mfCfg().custom : SLABS[v]; ['2.4', '5', '6'].forEach(b => { const i = document.getElementById('mf-l' + b); if (i) { i.value = t[b]; i.disabled = v !== 'custom'; } }); }
+});
 async function floorAct(a) {
   document.getElementById('floormenu').classList.remove('open');
   const f = curFloorObj(); if (!f) return;
+  if (a === 'mf') { openFloorSettings(); return; }
   if (a === 'rename') {
     const n = await askText('Rename floor', 'Floor name', f.name);
     if (!n) return;
@@ -5339,7 +5440,7 @@ async function collectFloor(f, cfg) {
       if (!fb.includes(b)) continue;
       out.st[b] = computeStats(b);
       const cf = wifi.aps.length > 1 ? computeConflicts(b, 20) : null;
-      if (cf && cf.total) out.conf[b] = { bad: cf.bad, total: cf.total, top: cf.list.slice(0, 3).map(e => ({ s: wifi.aps[e.s] && wifi.aps[e.s].name, i: wifi.aps[e.i] && wifi.aps[e.i].name, n: e.n, worst: e.worst })) };
+      if (cf && cf.total) out.conf[b] = { bad: cf.bad, total: cf.total, top: cf.list.slice(0, 3).map(e => ({ s: wifi.aps[e.s] && wifi.aps[e.s].name, i: e.i >= 1000 ? (_xfNames[e.i] ? _xfNames[e.i].floor + ' / ' + _xfNames[e.i].name : '?') : wifi.aps[e.i] && wifi.aps[e.i].name, n: e.n, worst: e.worst })) };
     }
   }
   if (hasStuff) {
@@ -5480,7 +5581,9 @@ async function exportReport() {
     await loadFloor(origFloor);
     _undo.length = 0; _redo.length = 0; stashU.forEach(x => _undo.push(x)); stashR.forEach(x => _redo.push(x));
 
-    const doc = buildReportDoc(D, floors, cfg, { target, anyCal, mats: JSON.parse(JSON.stringify(WALL_MATS)), lg: { rssi: reportLegend('rssi'), sinr: reportLegend('sinr'), weak: reportLegend('weak') } });
+    const _mc = mfCfg(), _mfOn = _mc.on && curProj.floors.length > 1 && curProj.floors.some(f => (f.data && (f.data.aps || []).length) || f.id === origFloor);
+    const mfTxt = _mfOn ? (cfg.lang === 'id' ? `Access point di lantai sebelahnya dihitung sebagai interferensi (${_mc.reach} lantai); redaman pelat ${slabDb('2.4')} / ${slabDb('5')} / ${slabDb('6')} dB pada 2.4 / 5 / 6 GHz` : `APs on neighbouring floors count as interference (${_mc.reach} floor${_mc.reach > 1 ? 's' : ''}); slab loss ${slabDb('2.4')} / ${slabDb('5')} / ${slabDb('6')} dB at 2.4 / 5 / 6 GHz`) : (cfg.lang === 'id' ? 'Tidak diterapkan' : 'Not applied');
+    const doc = buildReportDoc(D, floors, cfg, { target, anyCal, mfTxt, mats: JSON.parse(JSON.stringify(WALL_MATS)), lg: { rssi: reportLegend('rssi'), sinr: reportLegend('sinr'), weak: reportLegend('weak') } });
     const blob = await D.Packer.toBlob(doc);
     downloadBlob(blob, safeName(curProj.name) + '-WLAN-Survey-Design.docx');
     hideBusy();
@@ -5536,7 +5639,7 @@ const RT2 = {
     cs75: '7.5 Field calibration', calT: 'The prediction model was fitted to signal levels measured on site. Error is measured minus predicted, in dB; the cross-check error shows how well the fit predicts a point that was not used to train it.', calCol: ['Floor', 'Band', 'Points', 'Error before (dB)', 'Error after (dB)', 'Cross-check (dB)', 'Result'], calV: ['Excellent', 'Good', 'Fair', 'Poor'], calAdj: 'Applied corrections', calOff: 'offset', calSlope: 'distance slope', calMatW: 'wall material',     cs73: '7.3 Prediction vs measurement', pmCol: ['No.', 'Floor', 'Location', 'Predicted', 'Measured', 'Pass / Fail'], cs74: '7.4 Limitations', lim: ['The results are a prediction from a propagation model, not a guarantee of performance.', 'Furniture, people, glass and metal objects, and client devices change the real signal.', 'Neighbouring networks and non-WiFi interference are not part of the model.', 'Validate with a site survey and adjust the design with the measured values.'],
     cs8: '8 Conclusion and recommendations',
     apA: 'Appendix A', apB: 'Appendix B', apC: 'Appendix C', apD: 'Appendix D', apAt: 'Algorithm', apBt: 'List of acronyms', apCt: 'Assumptions', apDt: 'References', asCol: ['Item', 'Value'],
-    asRows: (X, P) => [['Signal target', `${X.target} dBm`], ['Environment', X.envName], ['Field calibration', X.anyCal ? 'Applied' : 'Not applied'], ['Capacity: usable throughput per AP', `Wi-Fi 5 ${X.thr[5]}, Wi-Fi 6 ${X.thr[6]}, Wi-Fi 7 ${X.thr[7]} Mbps`], ['Power: safety buffer', `${X.pwr.buf}%`], ['Power: budget of a 24 / 48-port PoE switch', `${X.pwr.sw[0].w} W / ${X.pwr.sw[1].w} W`], ['Wall losses', 'Taken from the project wall library (section 3.4)']],
+    asRows: (X, P) => [['Signal target', `${X.target} dBm`], ['Environment', X.envName], ['Field calibration', X.anyCal ? 'Applied' : 'Not applied'], ['Inter-floor interference', X.mfTxt], ['Capacity: usable throughput per AP', `Wi-Fi 5 ${X.thr[5]}, Wi-Fi 6 ${X.thr[6]}, Wi-Fi 7 ${X.thr[7]} Mbps`], ['Power: safety buffer', `${X.pwr.buf}%`], ['Power: budget of a 24 / 48-port PoE switch', `${X.pwr.sw[0].w} W / ${X.pwr.sw[1].w} W`], ['Wall losses', 'Taken from the project wall library (section 3.4)']],
     refs: ['H3C Wi-Fi 6 and Wi-Fi 7 indoor access points installation guides (power consumption, PoE, uplink ports).', 'H3C access point product documentation (radio and stream configuration).', 'IEEE 802.3af / at / bt (Power over Ethernet).'],
     envN: { open: 'Open space', office: 'Office', dense: 'Dense (many partitions)' },
     classLbl: 'Class', dash: '—',
@@ -5567,7 +5670,7 @@ const RT2 = {
     cs75: '7.5 Kalibrasi lapangan', calT: 'Model prediksi disesuaikan dengan level sinyal hasil pengukuran di lokasi. Error adalah terukur dikurangi prediksi, dalam dB; error cross-check menunjukkan seberapa baik hasil penyesuaian memprediksi titik yang tidak dipakai untuk melatihnya.', calCol: ['Lantai', 'Band', 'Titik', 'Error sebelum (dB)', 'Error sesudah (dB)', 'Cross-check (dB)', 'Hasil'], calV: ['Sangat baik', 'Baik', 'Cukup', 'Kurang'], calAdj: 'Koreksi yang diterapkan', calOff: 'offset', calSlope: 'kemiringan jarak', calMatW: 'material dinding',     cs73: '7.3 Prediksi vs pengukuran', pmCol: ['No.', 'Lantai', 'Lokasi', 'Prediksi', 'Terukur', 'Lulus / Gagal'], cs74: '7.4 Keterbatasan', lim: ['Hasil adalah prediksi dari model propagasi, bukan jaminan kinerja.', 'Furnitur, orang, kaca, benda logam, dan perangkat client mengubah sinyal sebenarnya.', 'Jaringan tetangga dan interferensi non-WiFi tidak termasuk dalam model.', 'Validasi dengan survei lapangan dan sesuaikan desain dengan nilai terukur.'],
     cs8: '8 Kesimpulan dan rekomendasi',
     apA: 'Lampiran A', apB: 'Lampiran B', apC: 'Lampiran C', apD: 'Lampiran D', apAt: 'Algoritma', apBt: 'Daftar singkatan', apCt: 'Asumsi', apDt: 'Referensi', asCol: ['Item', 'Nilai'],
-    asRows: (X, P) => [['Target sinyal', `${X.target} dBm`], ['Lingkungan', X.envName], ['Kalibrasi lapangan', X.anyCal ? 'Diterapkan' : 'Tidak diterapkan'], ['Kapasitas: throughput usable per AP', `Wi-Fi 5 ${X.thr[5]}, Wi-Fi 6 ${X.thr[6]}, Wi-Fi 7 ${X.thr[7]} Mbps`], ['Daya: buffer pengaman', `${X.pwr.buf}%`], ['Daya: budget switch PoE 24 / 48 port', `${X.pwr.sw[0].w} W / ${X.pwr.sw[1].w} W`], ['Redaman dinding', 'Diambil dari library dinding proyek (bagian 3.4)']],
+    asRows: (X, P) => [['Target sinyal', `${X.target} dBm`], ['Lingkungan', X.envName], ['Kalibrasi lapangan', X.anyCal ? 'Diterapkan' : 'Tidak diterapkan'], ['Interferensi antar lantai', X.mfTxt], ['Kapasitas: throughput usable per AP', `Wi-Fi 5 ${X.thr[5]}, Wi-Fi 6 ${X.thr[6]}, Wi-Fi 7 ${X.thr[7]} Mbps`], ['Daya: buffer pengaman', `${X.pwr.buf}%`], ['Daya: budget switch PoE 24 / 48 port', `${X.pwr.sw[0].w} W / ${X.pwr.sw[1].w} W`], ['Redaman dinding', 'Diambil dari library dinding proyek (bagian 3.4)']],
     refs: ['Installation guide access point indoor H3C Wi-Fi 6 dan Wi-Fi 7 (konsumsi daya, PoE, port uplink).', 'Dokumentasi produk access point H3C (konfigurasi radio dan stream).', 'IEEE 802.3af / at / bt (Power over Ethernet).'],
     envN: { open: 'Ruang terbuka', office: 'Kantor', dense: 'Padat (banyak sekat)' },
     classLbl: 'Kelas', dash: '—',
