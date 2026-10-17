@@ -124,6 +124,20 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 input[type=color]{width:34px;height:30px;padding:0;border:1px solid var(--border);border-radius:8px;background:var(--bg);cursor:pointer}
 .row>input[type=color]{flex:none;width:48px}
 a.btn{text-decoration:none}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:90;display:none;align-items:center;justify-content:center;padding:16px}
+.ov.on{display:flex}
+.md{background:var(--surface);border:1px solid var(--border-strong);border-radius:16px;width:min(500px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:20px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.md h3{font-size:18px;margin-bottom:12px;font-weight:600}
+.md .ft{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.xfm{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.xfm button{padding:6px 11px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg);color:var(--text-dim);font:500 12px var(--sans);cursor:pointer}
+.xfm button.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--bg))}
+.xprev{height:190px;border:1px solid var(--border);border-radius:10px;margin-bottom:12px;display:grid;place-items:center;overflow:hidden}
+.xprev img{width:100%;height:100%;object-fit:contain;display:block}
+.xr{display:grid;grid-template-columns:130px 1fr;gap:10px;align-items:center;margin-bottom:9px}
+.xr>label{font-size:12px;color:var(--text-dim)}
+.xr input[type=range]{width:75%}
+.ro-hide{}
 .sw{display:flex;gap:6px;flex-wrap:wrap}
 .sw i{width:22px;height:22px;border-radius:7px;cursor:pointer;border:2px solid transparent}
 .sw i.on{border-color:var(--text)}
@@ -155,6 +169,7 @@ a.btn{text-decoration:none}
 #docbar{position:absolute;left:0;right:0;top:0;height:46px;display:flex;align-items:center;gap:10px;padding:0 14px;background:color-mix(in srgb,var(--bg-2) 94%,transparent);border-bottom:1px solid var(--border);z-index:7}
 #docbar input{width:auto;flex:0 1 340px;background:transparent;border-color:transparent;font-family:var(--sans);font-size:14px;font-weight:600}
 #docbar input:hover{border-color:var(--border)}#docbar input:focus{background:var(--bg)}
+.beta{font:700 9px var(--mono);letter-spacing:1px;padding:2px 6px;border-radius:99px;background:color-mix(in srgb,var(--accent-3) 18%,transparent);color:var(--accent-3);border:1px solid color-mix(in srgb,var(--accent-3) 45%,transparent);margin-left:6px;vertical-align:1px}
 #savest{font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-left:auto}
 #savest.dirty{color:var(--warning)}
 .tools .mtog{display:none}
@@ -184,7 +199,7 @@ body.ro .palette,body.ro [data-edit]{display:none!important}
     <a href="/about.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>About</a>
   </div>
   <div class="nav-actions">
-    <div class="chip"><span class="dot"></span><span>Diagram editor</span></div>
+    <div class="chip"><span class="dot"></span><span>Diagram editor</span><span class="beta">BETA</span></div>
     <button class="icon-btn" onclick="toggleTheme()" title="Theme" id="theme-btn">🌙</button>
   </div>
 </nav>
@@ -203,7 +218,7 @@ body.ro .palette,body.ro [data-edit]{display:none!important}
     </div>
   </aside>
   <main id="stage" data-tool="select" tabindex="0">
-    <div id="docbar"><a class="btn sm" href="/topology.html" title="Back to all diagrams">← Diagrams</a><input type="text" id="docname" maxlength="80" placeholder="Diagram name" spellcheck="false"><span id="savest">Saved</span></div>
+    <div id="docbar"><a class="btn sm" href="/topology.html" title="Back to all diagrams">← Diagrams</a><input type="text" id="docname" maxlength="80" placeholder="Diagram name" spellcheck="false"><span class="beta" title="Beta: features are still being added. Export a .json backup of important diagrams.">BETA</span><span id="savest">Saved</span></div>
     <svg id="cv" xmlns="http://www.w3.org/2000/svg"><g id="vp"><g id="sc"></g><g id="ov"></g></g></svg>
     <div class="tools">
       <button class="mtog" id="b-lt" title="Devices and diagrams">☰</button>
@@ -217,14 +232,7 @@ body.ro .palette,body.ro [data-edit]{display:none!important}
       <div class="sep"></div>
       <button id="b-zo" title="Zoom out (-)">−</button><span class="zl" id="zl">100%</span><button id="b-zi" title="Zoom in (+)">+</button><button id="b-fit" title="Fit to screen (0)">⤢</button>
       <div class="sep"></div>
-      <div class="menu" id="exp"><button id="b-exp">⬇ Export</button>
-        <div class="dd">
-          <button data-x="png">PNG image<small>2x resolution, with title and legend</small></button>
-          <button data-x="svg">SVG vector<small>Editable in Visio, Illustrator, Inkscape</small></button>
-          <button data-x="print">Print / save as PDF<small>A4 landscape, light theme</small></button>
-          <button data-x="json">Diagram file (.json)<small>Back up or import later</small></button>
-        </div>
-      </div>
+      <button id="b-exp" title="Export as PNG, JPEG, WebP, SVG, PDF, draw.io (Ctrl+E)">⬇ Export</button>
       <button class="mtog" id="b-rt" title="Details">ⓘ</button>
     </div>
     <div id="welcome"><div class="box"><h2>Blank <em>canvas</em></h2><p>Drag a router, switch, firewall or AP from the left and draw your own topology. No WiFi Planner project needed.</p><div class="row"><button class="btn pri" id="w-ex">Load an example</button><a class="btn" href="/topology-auto.html">Import from WiFi Planner</a></div></div></div>
@@ -733,36 +741,13 @@ function buildPalette() {
   document.querySelectorAll('[data-shape]').forEach(p => p.setAttribute('draggable', 'true'));
 }
 /* ---------- export ---------- */
-const LIGHT = { '--bg': '#ffffff', '--surface': '#ffffff', '--surface-2': '#f1ede3', '--text': '#1a1a1a', '--text-dim': '#4a4a4a', '--text-muted': '#8a8a8a', '--border': '#e4dfd0', '--border-strong': '#cfc8b4', '--accent': '#0f766e' };
-function resolveVars(s, light) { const cs = getComputedStyle(document.body); return s.replace(/var\((--[a-z0-9-]+)\)/g, (m, n) => (light && LIGHT[n]) || cs.getPropertyValue(n).trim() || '#888'); }
-function exportSVG(light) {
-  const b = allBounds(); if (!b) return null; const pad = 48, usedT = [...new Set(links().map(l => l.type))], hdr = 40, ftr = usedT.length ? 46 : 28;
-  const W = Math.ceil(b.w + pad * 2), H = Math.ceil(b.h + pad * 2 + hdr + ftr), W2 = Math.max(W, 420);
-  let leg = ''; let lx = pad; usedT.forEach(t => { const T = LT[t]; leg += `<line x1="${lx}" y1="${H - 34}" x2="${lx + 26}" y2="${H - 34}" stroke="${T.c}" stroke-width="${T.w}" ${T.d ? `stroke-dasharray="${T.d}"` : ''} stroke-linecap="round"/><text x="${lx + 32}" y="${H - 30}" font-size="11" fill="var(--text-dim)" font-family="${F_SANS}">${T.n}</text>`; lx += 52 + T.n.length * 6.4; });
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W2}" height="${H}" viewBox="0 0 ${W2} ${H}"><rect width="${W2}" height="${H}" fill="var(--bg)"/><text x="${pad}" y="34" font-size="20" font-weight="700" fill="var(--text)" font-family="${F_SANS}">${esc(S.doc.name)}</text><g transform="translate(${pad - b.x},${pad + hdr - b.y})">${sceneMarkup()}</g>${leg}<text x="${W2 - pad}" y="${H - 14}" text-anchor="end" font-size="10" fill="var(--text-muted)" font-family="${F_MONO}">ConfigLabs.online · ${new Date().toISOString().slice(0, 10)}</text></svg>`;
-  return resolveVars(svg, light);
-}
-function download(name, blob) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800); }
-const safeName = () => (S.doc.name || 'diagram').replace(/[^\w\-]+/g, '_').slice(0, 50) || 'diagram';
-function doExport(kind) {
-  if (kind === 'json') { download(safeName() + '.json', new Blob([JSON.stringify({ app: 'configlabs-topology', v: 1, name: S.doc.name, items: S.doc.items, links: S.doc.links }, null, 1)], { type: 'application/json' })); toast('Diagram file saved'); return; }
-  if (!items().length) { toast('Nothing to export yet'); return; }
-  if (kind === 'svg') { download(safeName() + '.svg', new Blob([exportSVG()], { type: 'image/svg+xml' })); toast('SVG saved'); }
-  else if (kind === 'png') {
-    const svg = exportSVG(), m = /width="(\d+)" height="(\d+)"/.exec(svg), w = +m[1], h = +m[2], sc = Math.min(2, 8000 / Math.max(w, h)), img = new Image();
-    img.onload = () => { const c = document.createElement('canvas'); c.width = Math.round(w * sc); c.height = Math.round(h * sc); const x = c.getContext('2d'); x.scale(sc, sc); x.drawImage(img, 0, 0, w, h); c.toBlob(bl => { download(safeName() + '.png', bl); toast('PNG saved'); }, 'image/png'); };
-    img.onerror = () => toast('PNG export failed, try SVG'); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-  } else if (kind === 'print') { $('printbox').innerHTML = exportSVG(true); setTimeout(() => { window.print(); }, 60); }
-}
-window.addEventListener('afterprint', () => { $('printbox').innerHTML = ''; });
 
 /* ---------- init ---------- */
 function bindUI() {
   document.querySelectorAll('.tools [data-tool]').forEach(b => b.onclick = () => setTool(b.dataset.tool));
   $('b-un').onclick = undo; $('b-re').onclick = redo;
   $('b-zo').onclick = () => { const z = stageSize(); zoomAt(1 / 1.25, z.w / 2, z.h / 2); }; $('b-zi').onclick = () => { const z = stageSize(); zoomAt(1.25, z.w / 2, z.h / 2); }; $('b-fit').onclick = fit;
-  $('b-exp').onclick = e => { e.stopPropagation(); $('exp').classList.toggle('open'); }; document.addEventListener('click', () => $('exp').classList.remove('open'));
-  $('exp').querySelector('.dd').addEventListener('click', e => { const b = e.target.closest('[data-x]'); if (b) { $('exp').classList.remove('open'); doExport(b.dataset.x); } });
+  $('b-exp').onclick = () => openExport();
   $('w-ex').onclick = loadExample;
   const lt = $('b-lt'), rt = $('b-rt'); lt.onclick = () => { $('left').classList.toggle('open'); $('right').classList.remove('open'); }; rt.onclick = () => { $('right').classList.toggle('open'); $('left').classList.remove('open'); };
   $('stage').addEventListener('pointerdown', () => { $('left').classList.remove('open'); $('right').classList.remove('open'); });
@@ -774,6 +759,7 @@ function bindUI() {
     if (c && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); } else if (c && k === 'y') { e.preventDefault(); redo(); }
     else if (c && k === 'c') { copySel(); } else if (c && k === 'v') { pasteClip(); } else if (c && k === 'd') { e.preventDefault(); dupSel(); }
     else if (c && k === 'a') { e.preventDefault(); select(items().map(i => i.id).concat(links().map(l => l.id))); }
+    else if (c && k === 'e') { e.preventDefault(); openExport(); }
     else if (c && k === 's') { e.preventDefault(); saveDoc(); toast('Saved in this browser'); }
     else if (k === 'delete' || k === 'backspace') { e.preventDefault(); delSel(); }
     else if (k === 'escape') { if (S.tool !== 'select') setTool('select'); else select([]); }
@@ -801,5 +787,6 @@ function syncName() { $('docname').value = S.doc.name; document.title = (S.doc.n
   setTimeout(fit, 0);
 })();
 </script>
+<script src="/topology-export.js"></script>
 </body>
 </html>

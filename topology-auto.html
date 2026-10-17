@@ -40,6 +40,7 @@ nav{flex:none;z-index:60;padding:12px 24px;background:color-mix(in srgb,var(--bg
 .nav-link:hover{color:var(--text);background:var(--surface)}
 .nav-link.active{color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
 .nav-actions{display:flex;gap:8px;align-items:center}
+.beta{font:700 9px var(--mono);letter-spacing:1px;padding:2px 6px;border-radius:99px;background:color-mix(in srgb,var(--accent-3) 18%,transparent);color:var(--accent-3);border:1px solid color-mix(in srgb,var(--accent-3) 45%,transparent);margin-left:6px}
 .chip{font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:999px;border:1px solid var(--border-strong);color:var(--text-dim);display:inline-flex;align-items:center;gap:6px}
 .chip .dot{width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success)}
 .icon-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);width:36px;height:36px;border-radius:10px;cursor:pointer;display:grid;place-items:center;transition:all .2s var(--ease);font-size:15px}
@@ -159,7 +160,7 @@ table.bom td:last-child,table.bom th:last-child{text-align:right;font-family:var
     <a href="/about.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>About</a>
   </div>
   <div class="nav-actions">
-    <div class="chip"><span class="dot"></span><span>Planner view</span></div>
+    <div class="chip"><span class="dot"></span><span>Planner view</span><span class="beta">BETA</span></div>
     <button class="icon-btn" onclick="toggleTheme()" title="Theme" id="theme-btn">🌙</button>
   </div>
 </nav>
