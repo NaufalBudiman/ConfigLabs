@@ -381,10 +381,37 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
 .ro-banner,.ro-only{display:none}
 body.ro .ro-banner{display:inline-block;font-family:var(--mono);font-size:11px;color:var(--accent-3)}
 body.ro .ro-only{display:inline-block}
-body.ro [data-tool]:not([data-tool=pan]),body.ro #btn-undo,body.ro #btn-redo,body.ro #btn-trace,body.ro #btn-autoplace,body.ro #btn-optimize,body.ro .seg,body.ro #btn-snap,body.ro #left-panel,body.ro #savemenu,body.ro #floormenu,body.ro #filemenu,body.ro .pb-add,body.ro .save-state,body.ro #btn-precise,body.ro #btn-conflicts,body.ro #wifi-props{display:none !important}
+body.ro [data-tool]:not([data-tool=pan]),body.ro #btn-undo,body.ro #btn-redo,body.ro #menu-auto,body.ro .seg,body.ro #btn-snap,body.ro #left-panel,body.ro #savemenu,body.ro #floormenu,body.ro #filemenu,body.ro .pb-add,body.ro .save-state,body.ro #btn-precise,body.ro #btn-conflicts,body.ro #wifi-props{display:none !important}
 #mat-list .mat-btn{display:flex;align-items:center;gap:8px;padding:7px 9px}
 #mat-list .mat-btn span:nth-child(2){flex:1;overflow:visible;text-overflow:clip;white-space:nowrap}
 #mat-list .mat-attn{font-size:10px;color:var(--text-muted);font-family:var(--mono);white-space:nowrap}
+
+/* ---- v5.22: cleaner toolbar, grouped tools, legend stats ---- */
+.topbar{gap:6px;padding:8px 12px;row-gap:8px}
+.tgroup{display:flex;align-items:center;gap:2px;padding:3px;background:var(--surface-2);border:1px solid var(--border);border-radius:11px;flex-shrink:0}
+.tgroup .tt{padding:6px 7px;border-radius:8px}
+.tgroup .tsel{max-width:118px;text-overflow:ellipsis}
+.topbar>.tsep{margin:0 2px}
+.tright{display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:auto}
+.tright .tsep{margin:0 2px}
+.tgroup .tsel{border:none;background:transparent;padding:6px 6px}
+.tgroup .seg{border:none;background:transparent}
+.tgroup .seg button{background:transparent;border-radius:7px}
+.tgroup .seg button.on{background:color-mix(in srgb,var(--accent) 18%,var(--surface-2))}
+.menu-btn{border:1px solid var(--border);background:var(--surface-2);font-weight:500;padding:7px 12px}
+.menu-btn:hover{border-color:var(--border-strong)}
+.filemenu.open .menu-btn{border-color:color-mix(in srgb,var(--accent) 50%,var(--border));color:var(--accent)}
+.menu-l .filemenu-pop{left:0;right:auto;min-width:260px}
+.filemenu-pop button small{display:block;margin-top:2px;font-size:10.5px;color:var(--text-muted);font-weight:400}
+.tt.primary{padding:7px 14px;border-radius:9px}
+.legend{padding:12px 16px;border-radius:12px;min-width:200px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+.legend-stats{display:none;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid var(--border);font-size:10.5px;font-family:var(--mono);color:var(--text-dim)}
+.legend-stats.show{display:flex}
+.legend-stats i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+.legend-stats b{color:var(--text)}
+.stats-bar{padding:10px 16px;gap:10px;flex-wrap:wrap}
+.stat-chip{padding:4px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border)}
+.stats-note{margin-left:auto;align-self:center}
 </style>
 </head>
 <body data-theme="dark">
@@ -411,7 +438,7 @@ body.ro [data-tool]:not([data-tool=pan]),body.ro #btn-undo,body.ro #btn-redo,bod
     <a href="/about.html" class="nav-tab">About</a>
   </div>
   <div class="nav-right">
-    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.21</span></div>
+    <div class="chip" title="Site v6.0.0"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.22</span></div>
     <div id="auth-nav" style="display:flex;align-items:center"></div>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -585,26 +612,37 @@ body.ro [data-tool]:not([data-tool=pan]),body.ro #btn-undo,body.ro #btn-redo,bod
     <div class="topbar">
       <button class="tt" onclick="toggleLeft()" title="Show / hide side panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="9" y1="4" x2="9" y2="20"/></svg></button>
       <div class="tsep"></div>
+      <div class="tgroup">
       <button class="tt active" data-tool="select" onclick="setTool('select')" title="Select (S)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l7 19 2-8 8-2L3 3z"/></svg><span class="lbl">Select</span></button>
       <button class="tt" data-tool="pan" onclick="setTool('pan')" title="Pan / drag the view (H). Space+drag also works"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg><span class="lbl">Pan</span></button>
+      </div>
+      <div class="tgroup">
       <button class="tt" data-tool="wall" onclick="setTool('wall')" title="Draw wall (W)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="20" y2="4"/><circle cx="4" cy="20" r="1.5"/><circle cx="20" cy="4" r="1.5"/></svg><span class="lbl">Wall</span></button>
       <button class="tt" data-tool="rect" onclick="setTool('rect')" title="Draw room (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="1"/></svg><span class="lbl">Room</span></button>
       <button class="tt" data-tool="door" onclick="setTool('door')" title="Place door on a wall (D)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3"/><path d="M13 20h9"/><path d="M10 12v.01"/><path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"/></svg><span class="lbl">Door</span></button>
+      </div>
+      <div class="tgroup">
       <button class="tt" data-tool="place" onclick="setTool('place')" title="Place AP (A)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg><span class="lbl">AP</span></button>
       <button class="tt" data-tool="area" onclick="setTool('area')" title="Render area (G): the heatmap and statistics are computed only inside it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l7-3 9 4-2 11-9 3-5-8z" stroke-dasharray="3 3"/></svg><span class="lbl">Area</span></button>
       <button class="tt" data-tool="acc" onclick="setTool('acc')" title="Acceptance point (P): mark the spots to test after installation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span class="lbl">Test pt</span></button>
+      </div>
+      <div class="tgroup">
       <button class="tt" data-tool="erase" onclick="setTool('erase')" title="Erase (E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H7L3 16l9.16-9.16a2 2 0 012.83 0L20 12a2 2 0 010 2.83L13.5 20"/></svg><span class="lbl">Erase</span></button>
       <button class="tt" data-tool="calibrate" onclick="setTool('calibrate')" title="Calibrate scale (C)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.3 8.7l-5.99-6a1 1 0 0 0-1.42 0L2.7 13.9a1 1 0 0 0 0 1.42l6 5.99a1 1 0 0 0 1.42 0L21.3 10.1a1 1 0 0 0 0-1.42z"/><path d="M7.5 10.5l2 2M10.5 7.5l2 2M13.5 4.5l2 2M4.5 13.5l2 2"/></svg><span class="lbl">Scale</span></button>
-      <div class="tsep"></div>
+      </div>
+      <div class="tgroup">
       <div class="seg" title="Wall angle: Free (snaps to 45°) or Ortho (horizontal / vertical only). Hold Shift to flip temporarily. Key: O">
         <button id="mode-free" class="on" onclick="setOrtho(false)">Free</button>
         <button id="mode-ortho" onclick="setOrtho(true)">Ortho</button>
       </div>
       <button class="tt on" id="btn-snap" onclick="toggleSnap()" title="Snap to wall ends and 45° angles">Snap</button>
-      <div class="tsep"></div>
+      </div>
+      <div class="tgroup">
       <button class="tt" id="btn-undo" onclick="undo()" title="Undo (Ctrl+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg></button>
       <button class="tt" id="btn-redo" onclick="redo()" title="Redo (Ctrl+Y)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 15-6.7L21 13"/></svg></button>
+      </div>
       <div class="tgrow"></div>
+      <div class="tgroup">
       <select class="tsel" id="global-band" onchange="updateGlobalBand(this.value)" title="Frequency band">
         <option value="2.4">2.4 GHz</option>
         <option value="5" selected>5 GHz</option>
@@ -619,12 +657,24 @@ body.ro [data-tool]:not([data-tool=pan]),body.ro #btn-undo,body.ro #btn-redo,bod
         <option value="interf">Interference (who disturbs)</option>
       </select>
       <button class="tt" id="btn-toggle-hm" onclick="toggleHeatmap()" title="Show / hide heatmap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span class="lbl">Heatmap</span></button>
-      <button class="tt" id="btn-capacity" onclick="openCapacity()" title="Capacity planning: clients and traffic per area vs. the APs placed inside it">👥 Capacity</button>
-      <button class="tt" id="btn-power" onclick="openPower()" title="Power budget: total AP draw, PoE ports and switches needed, per floor and for the whole project">🔌 Power &amp; PoE</button>
-      <button class="tt" id="btn-conflicts" onclick="openConflicts()" title="List the AP pairs that interfere with each other on the selected band">⚡ Conflicts</button>
-      <button class="tt" id="btn-trace" onclick="openTrace()" title="Auto-trace walls and doors from the floor plan image">🧱 Trace walls</button>
-      <button class="tt" id="btn-autoplace" onclick="openPlacement()" title="Auto placement: suggest how many APs are needed and where to put them">📍 Auto place</button>
-      <button class="tt" id="btn-optimize" onclick="openOptimize()" title="Auto optimize: suggest channels and TX power for all APs on this floor">✨ Optimize</button>
+      </div>
+      <div class="tright">
+      <div class="filemenu menu-l" id="menu-analyze">
+        <button class="tt menu-btn" onclick="toggleTbMenu(event,'menu-analyze')" title="Capacity, power and interference checks">Analyze ▾</button>
+        <div class="filemenu-pop">
+          <button id="btn-capacity" onclick="closeMenus();openCapacity()" title="Capacity planning: clients and traffic per area vs. the APs placed inside it">Capacity<small>Clients and traffic per area vs. APs placed</small></button>
+          <button id="btn-power" onclick="closeMenus();openPower()" title="Power budget: total AP draw, PoE ports and switches needed">Power &amp; PoE<small>Watts, PoE ports and switches per floor</small></button>
+          <button id="btn-conflicts" onclick="closeMenus();openConflicts()" title="List the AP pairs that interfere with each other on the selected band">Conflicts<small>AP pairs that interfere on this band</small></button>
+        </div>
+      </div>
+      <div class="filemenu menu-l" id="menu-auto">
+        <button class="tt menu-btn" onclick="toggleTbMenu(event,'menu-auto')" title="Automatic tools">Auto ▾</button>
+        <div class="filemenu-pop">
+          <button id="btn-trace" onclick="closeMenus();openTrace()" title="Auto-trace walls and doors from the floor plan image">Trace walls<small>Detect walls and doors from the plan image</small></button>
+          <button id="btn-autoplace" onclick="closeMenus();openPlacement()" title="Auto placement: suggest how many APs are needed and where to put them">Place APs<small>Suggest how many APs and where</small></button>
+          <button id="btn-optimize" onclick="closeMenus();openOptimize()" title="Auto optimize: suggest channels and TX power for all APs on this floor">Optimize<small>Channels and TX power for all APs</small></button>
+        </div>
+      </div>
       <button class="tt primary" id="btn-precise" onclick="startPrecise()" title="Re-render the heatmap at high resolution">Precise render</button>
       <div class="tsep"></div>
       <span class="chip-scale" id="scale-display">not set</span>
@@ -644,6 +694,7 @@ body.ro [data-tool]:not([data-tool=pan]),body.ro #btn-undo,body.ro #btn-redo,bod
           <button onclick="fileAct('cleararea')">Clear render area</button>
           <button class="danger" onclick="fileAct('clear')">Clear this floor…</button>
         </div>
+      </div>
       </div>
     </div>
 
@@ -671,6 +722,7 @@ body.ro [data-tool]:not([data-tool=pan]),body.ro #btn-undo,body.ro #btn-redo,bod
         <div class="legend-labels" id="legend-labels">
           <span>-90</span><span>-80</span><span>-70</span><span>-60</span><span>-50</span><span>-40 dBm</span>
         </div>
+        <div class="legend-stats" id="legend-stats"></div>
       </div>
     </div>
 
@@ -2555,6 +2607,7 @@ function updateStats() {
     document.getElementById('stat-cov').textContent  = '—';
     document.getElementById('stat-exc').textContent  = '—';
     document.getElementById('stat-dead').textContent = '—';
+    const ls0 = document.getElementById('legend-stats'); if (ls0) ls0.classList.remove('show');
     _statSig = '';
     return;
   }
@@ -2569,6 +2622,13 @@ function updateStats() {
   covEl.className   = 'stat-val ' + (covPct > 80 ? 'stat-good' : covPct > 60 ? 'stat-warn' : 'stat-bad');
   document.getElementById('stat-exc').textContent  = Math.round(st.exc / st.total * 100) + '%';
   document.getElementById('stat-dead').textContent = Math.round(st.dead / st.total * 100) + '%';
+  const ls = document.getElementById('legend-stats');
+  if (ls) {
+    const gd = Math.round(st.exc / st.total * 100), po = Math.round(st.dead / st.total * 100), fr = Math.max(0, 100 - gd - po);
+    ls.innerHTML = `<span><i style="background:#46dc3c"></i>Good <b>${gd}%</b></span><span><i style="background:#ffc800"></i>Fair <b>${fr}%</b></span><span><i style="background:#ff4a2a"></i>Poor <b>${po}%</b></span>`;
+    ls.title = `Good: above -60 dBm · Fair: ${wifi.covTarget} to -60 dBm · Poor: below ${wifi.covTarget} dBm`;
+    ls.classList.add('show');
+  }
 }
 
 // ============================================================
@@ -5273,6 +5333,15 @@ function buildReportDoc(D, floors, cfg, X0) {
 function toggleSec(btn) { btn.parentElement.classList.toggle('closed'); }
 function toggleLeft() { document.getElementById('left-panel').classList.toggle('collapsed'); }
 function closeProps() { wifi.sel = null; renderPropsPanel(); scheduleRender(); }
+function closeMenus() { document.querySelectorAll('.topbar .filemenu.open').forEach(m => m.classList.remove('open')); }
+function toggleTbMenu(e, id) {
+  e.stopPropagation();
+  const m = document.getElementById(id), was = m.classList.contains('open'); closeMenus();
+  if (was) return;
+  m.classList.add('open');
+  const pop = m.querySelector('.filemenu-pop'), r = m.getBoundingClientRect(), w = pop.offsetWidth || 260;
+  if (r.left + w > window.innerWidth - 8) { pop.style.left = 'auto'; pop.style.right = '0'; } else { pop.style.left = '0'; pop.style.right = 'auto'; }
+}
 function toggleFileMenu(e) { e.stopPropagation(); const fc = document.getElementById('fm-cloud'); if (fc && curProj) fc.textContent = curProj.cloud ? '☁ Remove from my account…' : '☁ Sync to my account'; document.getElementById('filemenu').classList.toggle('open'); }
 function fileAct(a) {
   document.getElementById('filemenu').classList.remove('open');
@@ -5290,6 +5359,7 @@ function fileAct(a) {
   else if (a === 'clear') clearAll();
 }
 document.addEventListener('click', e => {
+  document.querySelectorAll('.topbar .menu-l.open').forEach(m => { if (!m.contains(e.target)) m.classList.remove('open'); });
   const fm = document.getElementById('filemenu');
   if (fm && !fm.contains(e.target)) fm.classList.remove('open');
 });
