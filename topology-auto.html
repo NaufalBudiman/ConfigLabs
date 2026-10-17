@@ -908,7 +908,7 @@ function toEditor() {
   T.devices.forEach(d => { if (d.hidden || d.x == null) return; ok[d.id] = 1; items.push({ id: d.id, k: 'dev', t: mapT[d.type] || 'generic', x: Math.round((d.x + d.w / 2) * k), y: Math.round((d.y + d.h / 2) * k), label: d.name || '', vendor: '', model: d.type === 'ap' ? (d.model || '') : '', ip: '', note: '', s: d.type === 'ap' ? .8 : 1 }); });
   const links = T.links.filter(l => ok[l.a] && ok[l.b]).map(l => ({ id: 'k' + l.id, a: l.a, b: l.b, type: l.kind === 'ap' ? 'copper' : (l.a === 'isp' || l.b === 'isp' ? 'wan' : 'fiber'), route: 'orth', la: l.kind === 'ap' ? '' : (l.aPort || ''), lb: l.kind === 'ap' ? '' : (l.bPort || ''), label: l.kind === 'ap' ? '' : (l.speed + 'G' + (l.lag > 1 ? ' x' + l.lag : '')), c: '', wd: 2 }));
   try { localStorage.setItem('cl_tg_import', JSON.stringify({ name: ((S.proj && S.proj.name) || 'Project') + ' topology', items, links })); } catch (e) { toast('Could not hand over the diagram (storage blocked)'); return; }
-  location.href = '/topology.html?import=1';
+  location.href = '/topology-editor.html?import=1';
 }
 function toggleTheme() { setTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'); draw(); }
 (async function init() {

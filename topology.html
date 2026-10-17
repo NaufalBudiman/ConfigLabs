@@ -3,14 +3,15 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Network Topology Editor — ConfigLabs</title>
-<meta name="description" content="Draw your own network topology: drag routers, switches, firewalls and APs onto a canvas, connect them with labelled cables and export to PNG, SVG or PDF. Free, no login."/>
+<title>My Network Diagrams — ConfigLabs</title>
+<meta name="description" content="Create, save and reopen your own network topology diagrams. Drag routers, switches, firewalls and APs, connect them and export. Free, no login."/>
 <meta name="author" content="ConfigLabs"/>
-<meta property="og:title" content="Network Topology Editor — ConfigLabs"/>
+<meta property="og:title" content="My Network Diagrams — ConfigLabs"/>
 <meta property="og:description" content="A free network topology editor: drag, connect, label and export. No account needed."/>
 <meta property="og:type" content="website"/>
 <link rel="canonical" href="https://configlabs.online/topology.html"/>
 <meta property="og:url" content="https://configlabs.online/topology.html"/>
+
 <meta name="theme-color" content="#0b0d10"/>
 <link rel="icon" type="image/x-icon" href="/favicon.ico"/>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/>
@@ -91,71 +92,69 @@ select:focus,input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-m
 #toast{position:fixed;bottom:22px;left:50%;transform:translate(-50%,90px);background:var(--surface);border:1px solid var(--border-strong);padding:10px 16px;border-radius:999px;font-size:12.5px;z-index:99;transition:transform .3s var(--ease);box-shadow:0 14px 34px rgba(0,0,0,.4)}
 #toast.show{transform:translate(-50%,0)}
 #printbox{display:none}
-#app{flex:1;min-height:0;display:grid;grid-template-columns:276px 1fr 304px;grid-template-rows:minmax(0,1fr);position:relative}
-#right.panel{border-right:none;border-left:1px solid var(--border)}
-#stage{position:relative;overflow:hidden;background:var(--bg);touch-action:none;min-width:0;outline:none}
-#cv{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:default;user-select:none;-webkit-user-select:none}
-#stage[data-tool=pan] #cv,#stage.panning #cv{cursor:grab}
-#stage.panning #cv{cursor:grabbing}
-#stage[data-tool=link] #cv,#stage[data-tool=box] #cv,#stage[data-tool=text] #cv{cursor:crosshair}
-.tabs{display:flex;border-bottom:1px solid var(--border);flex:none}
-.tabs button{flex:1;padding:11px 8px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);font:600 12px var(--sans);cursor:pointer}
-.tabs button.on{color:var(--accent);border-bottom-color:var(--accent)}
-.pal{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
-.pt{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 2px 6px;border:1px solid var(--border);border-radius:10px;background:var(--surface);cursor:grab;font-size:10.5px;color:var(--text-dim);text-align:center;line-height:1.2;user-select:none}
-.pt:hover{border-color:var(--accent);background:var(--surface-hover);color:var(--text)}
-.pt svg{width:38px;height:38px}
-.pt:active{cursor:grabbing}
-.dcard{padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);cursor:pointer;margin-bottom:8px;position:relative}
-.dcard:hover{border-color:var(--border-strong);background:var(--surface-hover)}
-.dcard.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
-.dcard b{font-size:13px;display:block;font-weight:600;padding-right:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dcard span{font-size:11px;color:var(--text-muted);font-family:var(--mono)}
-.dcard .acts{position:absolute;right:6px;top:6px;display:none;gap:2px}
-.dcard:hover .acts{display:flex}
-.dcard .acts button{background:var(--bg);border:1px solid var(--border);color:var(--text-dim);width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:12px;line-height:1}
-.dcard .acts button:hover{color:var(--accent);border-color:var(--accent)}
-.fld{margin-bottom:10px}
-.fld>label,.lbl{font-size:11.5px;color:var(--text-dim);margin-bottom:4px;display:block}
-textarea{width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;resize:vertical;min-height:58px}
-textarea:focus{border-color:var(--accent)}
-input[type=range]{width:100%;accent-color:var(--accent)}
-input[type=color]{width:34px;height:30px;padding:0;border:1px solid var(--border);border-radius:8px;background:var(--bg);cursor:pointer}
-.row>input[type=color]{flex:none;width:48px}
-.sw{display:flex;gap:6px;flex-wrap:wrap}
-.sw i{width:22px;height:22px;border-radius:7px;cursor:pointer;border:2px solid transparent}
-.sw i.on{border-color:var(--text)}
-.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 11px}
-.stat b{display:block;font-size:19px;font-weight:600;letter-spacing:-.5px;font-family:var(--mono)}
-.stat span{font-size:10.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.al{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}
-.al button{padding:7px 0;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text-dim);cursor:pointer;font-size:14px}
-.al button:hover{border-color:var(--accent);color:var(--accent)}
-.lg{display:grid;gap:7px;font-size:11.5px;color:var(--text-dim)}
-.lg div{display:flex;align-items:center;gap:9px}
-.lg i{width:26px;height:0;border-top:3px solid;border-radius:2px;flex:none}
-.lnk{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;padding:5px 0;border-bottom:1px dashed var(--border);cursor:pointer;color:var(--text-dim)}
-.lnk:hover{color:var(--accent)}
-.lnk span:last-child{font-family:var(--mono);color:var(--text-muted)}
-.kbd{font-family:var(--mono);font-size:10px;padding:1px 5px;border:1px solid var(--border-strong);border-radius:5px;color:var(--text-dim)}
-.sc{display:grid;grid-template-columns:auto 1fr;gap:5px 10px;font-size:11.5px;color:var(--text-dim);align-items:center}
-.ed{position:absolute;z-index:12;background:var(--surface);color:var(--text);border:1.5px solid var(--accent);border-radius:7px;padding:4px 8px;font:12px var(--sans);outline:none;box-shadow:0 8px 24px rgba(0,0,0,.4)}
-#welcome{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:30px;z-index:3;pointer-events:none}
-#welcome .box{max-width:440px;pointer-events:auto}
-#welcome h2{font-family:var(--serif);font-weight:400;font-size:36px;margin-bottom:8px}
-#welcome h2 em{color:var(--accent)}
-#welcome p{color:var(--text-dim);margin-bottom:16px}
-#welcome .row{justify-content:center;flex-wrap:wrap}
-#welcome .row>*{flex:none}
-.tools{max-width:calc(100% - 20px);flex-wrap:nowrap;overflow:visible}
-.tools .mtog{display:none}
-.tools button svg{width:16px;height:16px}
-body.ro .palette,body.ro [data-edit]{display:none!important}
-@media (max-width:1100px){#app{grid-template-columns:1fr}.panel{position:absolute;top:0;bottom:0;width:min(320px,88vw);transform:translateX(-102%);transition:transform .3s var(--ease);box-shadow:0 0 40px rgba(0,0,0,.5)}#right.panel{right:0;transform:translateX(102%)}.panel.open{transform:none}.tools .mtog{display:inline-flex!important}#mini{display:none}nav{flex-wrap:wrap;padding:8px 14px}.nav-links{order:3;width:100%;flex-wrap:nowrap;overflow-x:auto;gap:0}.nav-link{padding:6px 10px;white-space:nowrap}.nav-link svg{display:none}}
-@media (max-width:760px){.tools{top:8px;padding:3px;overflow-x:auto}.tools button{padding:0 7px;min-width:30px;font-size:12px}.tools .sep{display:none}#hint{display:none}.chip{display:none}}
-@media print{body{display:block;overflow:visible;background:#fff}nav,#app,#toast{display:none!important}#printbox{display:block}#printbox svg{width:100%;height:auto}@page{size:A4 landscape;margin:8mm}}
+body{display:block;overflow:auto;height:auto;min-height:100%}
+nav{position:sticky;top:0}
+a.btn{text-decoration:none}
+.wrap{max-width:1240px;margin:0 auto;padding:34px 24px 80px}
+.hd{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.hd h1{font-family:var(--serif);font-weight:400;font-size:42px;letter-spacing:-.5px;line-height:1.05}
+.hd h1 em{color:var(--accent)}
+.hd p{color:var(--text-dim);margin-top:6px;font-size:13.5px}
+.hd .acts{display:flex;gap:8px;flex-wrap:wrap}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.bar input[type=text]{max-width:300px;flex:1;min-width:160px}
+.bar select{width:auto}
+.bar .sp{flex:1}
+.seg{display:flex;background:var(--bg-2);border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px}
+.seg button{padding:6px 10px;border:none;background:none;color:var(--text-dim);font-size:12px;border-radius:6px;cursor:pointer;font-family:var(--sans)}
+.seg button.on{background:color-mix(in srgb,var(--accent) 16%,var(--surface));color:var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.dc{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;position:relative;transition:all .2s var(--ease)}
+.dc:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 14px 34px rgba(0,0,0,.25)}
+.dc .th{aspect-ratio:16/10;background:var(--bg);background-image:radial-gradient(var(--border) 1px,transparent 1px);background-size:16px 16px;display:grid;place-items:center;border-bottom:1px solid var(--border);overflow:hidden}
+.dc .th svg{width:100%;height:100%;display:block}
+.dc .th .ph{color:var(--text-muted);font-size:12px;font-family:var(--mono)}
+.dc .mt{padding:12px 14px 13px}
+.dc .mt b{display:block;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:30px}
+.dc .mt span{display:block;font-size:11.5px;color:var(--text-muted);font-family:var(--mono);margin-top:2px}
+.dc .mt .ds{font-family:var(--sans);color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dots{position:absolute;right:8px;bottom:10px;width:30px;height:30px;border-radius:8px;border:1px solid transparent;background:none;color:var(--text-dim);cursor:pointer;font-size:18px;line-height:1}
+.dots:hover{background:var(--surface-hover);border-color:var(--border-strong);color:var(--text)}
+.pop{position:fixed;z-index:80;min-width:170px;background:var(--surface);border:1px solid var(--border-strong);border-radius:11px;box-shadow:0 18px 40px rgba(0,0,0,.4);padding:5px;display:none}
+.pop button{display:block;width:100%;text-align:left;padding:8px 10px;background:none;border:none;border-radius:7px;color:var(--text);font-size:12.5px;cursor:pointer;font-family:var(--sans)}
+.pop button:hover{background:var(--surface-hover)}
+.pop button.dng{color:var(--danger)}
+.new{border:2px dashed var(--border-strong);background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:230px;color:var(--text-dim);font-size:13px}
+.new:hover{color:var(--accent);background:color-mix(in srgb,var(--accent) 5%,transparent)}
+.new i{font-style:normal;font-size:34px;line-height:1;color:var(--accent)}
+.list .grid{grid-template-columns:1fr;gap:8px}
+.list .dc{display:flex;align-items:center}
+.list .dc .th{width:120px;aspect-ratio:16/10;border-bottom:none;border-right:1px solid var(--border);flex:none}
+.list .dc .mt{flex:1;min-width:0}
+.list .dots{bottom:auto;top:50%;transform:translateY(-50%)}
+.list .new{min-height:70px;flex-direction:row}
+.empty{text-align:center;padding:60px 20px;color:var(--text-dim)}
+.empty h2{font-family:var(--serif);font-weight:400;font-size:34px;color:var(--text);margin-bottom:8px}
+.empty h2 em{color:var(--accent)}
+.empty .row{justify-content:center;margin-top:16px;flex-wrap:wrap}
+.empty .row>*{flex:none}
+.foot{margin-top:26px;font-size:11.5px;color:var(--text-muted);font-family:var(--mono)}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:90;display:none;align-items:center;justify-content:center;padding:20px}
+.ov.on{display:flex}
+.md{background:var(--surface);border:1px solid var(--border-strong);border-radius:16px;width:min(460px,100%);padding:22px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.md h3{font-size:18px;margin-bottom:14px;font-weight:600}
+.md .fld{margin-bottom:12px}
+.md label.l{font-size:11.5px;color:var(--text-dim);display:block;margin-bottom:4px}
+.md .ft{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.tpl{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tpl div{padding:10px 12px;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:12.5px;background:var(--bg)}
+.tpl div b{display:block;font-size:13px;margin-bottom:2px}
+.tpl div span{color:var(--text-muted);font-size:11.5px}
+.tpl div.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--bg))}
+.drop{position:fixed;inset:0;z-index:95;background:color-mix(in srgb,var(--accent) 12%,rgba(0,0,0,.6));display:none;align-items:center;justify-content:center;font-size:22px;font-family:var(--serif);color:var(--text);pointer-events:none;border:3px dashed var(--accent)}
+.drop.on{display:flex}
+@media (max-width:1100px){nav{flex-wrap:wrap;padding:8px 14px}.nav-links{order:3;width:100%;flex-wrap:nowrap;overflow-x:auto;gap:0}.nav-link{padding:6px 10px;white-space:nowrap}.nav-link svg{display:none}}
+@media (max-width:640px){.wrap{padding:22px 16px 60px}.hd h1{font-size:32px}.grid{grid-template-columns:1fr 1fr;gap:10px}.chip{display:none}}
 </style>
 </head>
 <body data-theme="dark">
@@ -181,560 +180,28 @@ body.ro .palette,body.ro [data-edit]{display:none!important}
     <button class="icon-btn" onclick="toggleTheme()" title="Theme" id="theme-btn">🌙</button>
   </div>
 </nav>
-<div id="app">
-  <aside class="panel" id="left">
-    <div class="tabs"><button id="tb-dev" class="on" data-edit>Devices</button><button id="tb-doc">Diagrams</button></div>
-    <div id="p-dev" class="palette">
-      <div class="sec" id="pal"></div>
-      <div class="sec">
-        <h4>Shapes</h4>
-        <div class="pal">
-          <div class="pt" data-shape="box"><svg viewBox="-30 -30 60 60"><rect x="-24" y="-18" width="48" height="36" rx="6" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="5 4"/></svg>Zone / box</div>
-          <div class="pt" data-shape="txt"><svg viewBox="-30 -30 60 60"><text x="0" y="9" text-anchor="middle" font-size="26" font-weight="700" fill="var(--text-dim)" font-family="Georgia,serif">Aa</text></svg>Text</div>
-        </div>
-        <div class="note">Click a device to drop it in the middle, or drag it onto the canvas. Draw a cable by dragging from a dot on a selected device, or use the Link tool.</div>
-      </div>
-    </div>
-    <div id="p-doc" style="display:none">
-      <div class="sec">
-        <div class="row"><button class="btn pri" id="d-new">+ New diagram</button><button class="btn" id="d-imp" title="Open a .json diagram file">Import file</button></div>
-        <input type="file" id="d-file" accept=".json,application/json" style="display:none"/>
-      </div>
-      <div class="sec"><div id="dlist"></div></div>
-      <div class="sec">
-        <h4>More</h4>
-        <a class="btn" href="/topology-auto.html" style="width:100%;margin-bottom:8px">Import from WiFi Planner</a>
-        <button class="btn" id="d-ex" style="width:100%">Load example (campus)</button>
-        <div class="note">Diagrams are saved in this browser. Export a .json file to back up or move one.</div>
-      </div>
-    </div>
-  </aside>
-  <main id="stage" data-tool="select" tabindex="0">
-    <svg id="cv" xmlns="http://www.w3.org/2000/svg"><g id="vp"><g id="sc"></g><g id="ov"></g></g></svg>
-    <div class="tools">
-      <button class="mtog" id="b-lt" title="Devices and diagrams">☰</button>
-      <button data-tool="select" class="on" title="Select and move (V)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M5 3l14 8-6 2-2 6z"/></svg></button>
-      <button data-tool="link" data-edit title="Link: drag from one device to another (L)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M7 17L17 7"/></svg></button>
-      <button data-tool="box" data-edit title="Zone / box: drag to draw (B)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3 2.5"><rect x="3" y="5" width="18" height="14" rx="2"/></svg></button>
-      <button data-tool="text" data-edit title="Text (T)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></svg></button>
-      <button data-tool="pan" title="Pan (H or hold Space)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 11V5a1.5 1.5 0 0 1 3 0v5M11 10V4a1.5 1.5 0 0 1 3 0v6M14 10V6a1.5 1.5 0 0 1 3 0v8c0 4-2 6-5 6-3 0-4-1-6-4l-2-3a1.5 1.5 0 0 1 2.5-1.5L8 14"/></svg></button>
-      <div class="sep" data-edit></div>
-      <button id="b-un" data-edit title="Undo (Ctrl+Z)">↶</button><button id="b-re" data-edit title="Redo (Ctrl+Y)">↷</button>
-      <div class="sep"></div>
-      <button id="b-zo" title="Zoom out (-)">−</button><span class="zl" id="zl">100%</span><button id="b-zi" title="Zoom in (+)">+</button><button id="b-fit" title="Fit to screen (0)">⤢</button>
-      <div class="sep"></div>
-      <div class="menu" id="exp"><button id="b-exp">⬇ Export</button>
-        <div class="dd">
-          <button data-x="png">PNG image<small>2x resolution, with title and legend</small></button>
-          <button data-x="svg">SVG vector<small>Editable in Visio, Illustrator, Inkscape</small></button>
-          <button data-x="print">Print / save as PDF<small>A4 landscape, light theme</small></button>
-          <button data-x="json">Diagram file (.json)<small>Back up or import later</small></button>
-        </div>
-      </div>
-      <button class="mtog" id="b-rt" title="Details">ⓘ</button>
-    </div>
-    <div id="welcome"><div class="box"><h2>Blank <em>canvas</em></h2><p>Drag a router, switch, firewall or AP from the left and draw your own topology. No WiFi Planner project needed.</p><div class="row"><button class="btn pri" id="w-ex">Load an example</button><a class="btn" href="/topology-auto.html">Import from WiFi Planner</a></div></div></div>
-    <div id="hint">Scroll to zoom · drag empty space to select · Space + drag to pan</div>
-    <div id="mini"><svg id="mm"></svg></div>
-  </main>
-  <aside class="panel" id="right"><div id="insp"></div></aside>
-</div>
+<main class="wrap" id="main">
+  <div class="hd">
+    <div><h1>My <em>diagrams</em></h1><p>Draw network topologies, save them here and open them again any time. Everything is stored in this browser.</p></div>
+    <div class="acts"><button class="btn" id="b-imp">Import file</button><button class="btn pri" id="b-new">+ New diagram</button></div>
+  </div>
+  <div class="bar" id="bar">
+    <input type="text" id="q" placeholder="Search diagrams" autocomplete="off">
+    <select id="sort"><option value="upd">Last edited</option><option value="name">Name A to Z</option><option value="cre">Newest created</option></select>
+    <div class="sp"></div>
+    <div class="seg" id="vw"><button data-v="grid" class="on">Grid</button><button data-v="list">List</button></div>
+  </div>
+  <div id="area"></div>
+  <div class="foot" id="foot"></div>
+  <input type="file" id="file" accept=".json,application/json" multiple style="display:none">
+</main>
+<div class="pop" id="pop"></div>
+<div class="ov" id="ov"><div class="md" id="md"></div></div>
+<div class="drop" id="drop">Drop a diagram file to import it</div>
 <div id="toast"></div>
-<div id="printbox"></div>
 <script>
-'use strict';
-const $ = id => document.getElementById(id);
-const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-const num = (v, d) => { v = parseFloat(v); return isFinite(v) ? v : d; };
-let _u = 0; const uid = p => p + Date.now().toString(36) + (++_u).toString(36) + Math.floor(Math.random() * 1296).toString(36);
-const F_SANS = 'Geist, Arial, sans-serif', F_MONO = "'JetBrains Mono', monospace";
-
-/* ---------- device types & icons ---------- */
-const TYPES = {
-  router: { n: 'Router', c: '#7cf4c7', p: 'RTR' }, l3sw: { n: 'L3 Switch', c: '#a8b5ff', p: 'L3SW' }, l2sw: { n: 'L2 Switch', c: '#8ab4ff', p: 'SW' },
-  fw: { n: 'Firewall', c: '#ff6478', p: 'FW' }, lb: { n: 'Load Balancer', c: '#f78fb3', p: 'LB' },
-  ap: { n: 'Access Point', c: '#ffc857', p: 'AP' }, wlc: { n: 'WLC / AC', c: '#ffb86b', p: 'WLC' },
-  server: { n: 'Server', c: '#c792ea', p: 'SRV' }, nas: { n: 'Storage / NAS', c: '#b392f0', p: 'NAS' }, pc: { n: 'PC / Laptop', c: '#9aa3af', p: 'PC' },
-  printer: { n: 'Printer', c: '#9aa3af', p: 'PRN' }, phone: { n: 'IP Phone', c: '#9aa3af', p: 'PHONE' }, cctv: { n: 'CCTV Camera', c: '#7cd4f4', p: 'CAM' },
-  cloud: { n: 'Internet / Cloud', c: '#7cd4f4', p: 'Internet' }, generic: { n: 'Other device', c: '#9aa3af', p: 'DEV' }
-};
-const PAL = [['Network', ['router', 'l3sw', 'l2sw', 'fw', 'lb']], ['Wireless', ['ap', 'wlc']], ['Servers and endpoints', ['server', 'nas', 'pc', 'printer', 'phone', 'cctv']], ['WAN', ['cloud', 'generic']]];
-const GLYPH = {
-  router: '<circle r="8"/><path d="M-19 0H-8M8 0H19M0-19V-8M0 8V19M-16-3L-19 0L-16 3M16-3L19 0L16 3M-3-16L0-19L3-16M-3 16L0 19L3 16"/>',
-  l3sw: '<rect x="-18" y="-3" width="36" height="16" rx="3"/><path d="M-12 8h2M-6 8h2M0 8h2M6 8h2M12 8h2M-8-9h16M4-12l4 3-4 3"/>',
-  l2sw: '<rect x="-18" y="-3" width="36" height="16" rx="3"/><path d="M-12 8h2M-6 8h2M0 8h2M6 8h2M12 8h2M-9-12h18M-6-15l-3 3 3 3M6-15l3 3-3 3"/>',
-  fw: '<rect x="-17" y="-14" width="34" height="28" rx="2"/><path d="M-17-5H17M-17 4H17M0-14V-5M-8-5V4M8-5V4M0 4V14"/>',
-  lb: '<circle cx="-13" r="4"/><circle cx="13" cy="-11" r="4"/><circle cx="13" r="4"/><circle cx="13" cy="11" r="4"/><path d="M-9 0L9-10M-9 0H9M-9 0L9 10"/>',
-  ap: '<ellipse cy="12" rx="15" ry="4"/><path d="M-6 4a8.5 8.5 0 0 1 12 0M-11-1a15 15 0 0 1 22 0M-16-6a22 22 0 0 1 32 0"/>',
-  wlc: '<rect x="-17" y="2" width="34" height="12" rx="2"/><path d="M-6-1a8 8 0 0 1 12 0M-11-6a15 15 0 0 1 22 0M-10 8h2M-5 8h2"/>',
-  server: '<rect x="-15" y="-17" width="30" height="10" rx="2"/><rect x="-15" y="-5" width="30" height="10" rx="2"/><rect x="-15" y="7" width="30" height="10" rx="2"/><path d="M-10-12h2M-10 0h2M-10 12h2"/>',
-  nas: '<ellipse cy="-10" rx="13" ry="5"/><path d="M-13-10V10a13 5 0 0 0 26 0V-10M-13 0a13 5 0 0 0 26 0"/>',
-  pc: '<rect x="-16" y="-15" width="32" height="21" rx="2"/><path d="M-7 15H7M0 6V15"/>',
-  printer: '<path d="M-9-3V-14H9V-3M-15-3H15V9H-15zM-9 5H9V15H-9z"/>',
-  phone: '<rect x="-12" y="-15" width="24" height="30" rx="4"/><rect x="-8" y="-11" width="16" height="6" rx="1"/><path d="M-6 1h1M0 1h1M6 1h1M-6 7h1M0 7h1M6 7h1"/>',
-  cctv: '<path d="M-17-8H5V8H-17zM5-3L17-9V9L5 3M-9 8v7H0"/>',
-  cloud: '<path d="M-13 11a8 8 0 0 1 0-16 12 12 0 0 1 23-3 9.5 9.5 0 0 1 3 19z"/>',
-  generic: '<rect x="-14" y="-10" width="28" height="20" rx="3"/><circle r="4"/>'
-};
-function iconSvg(t, c) {
-  c = c || (TYPES[t] || TYPES.generic).c;
-  return `<rect x="-28" y="-28" width="56" height="56" rx="13" fill="var(--surface)" stroke="${c}" stroke-width="1.6"/><g fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${GLYPH[t] || GLYPH.generic}</g>`;
-}
-const LT = {
-  copper: { n: 'Copper (Ethernet)', c: '#9aa3af', d: '', w: 2 }, fiber: { n: 'Fiber / DAC', c: '#ffb86b', d: '', w: 2 },
-  trunk: { n: 'Trunk / LACP', c: '#a8b5ff', d: '', w: 3.5 }, wan: { n: 'WAN / VPN', c: '#7cd4f4', d: '7 5', w: 2 }, wireless: { n: 'Wireless', c: '#ffc857', d: '2 5', w: 2 }
-};
-const BOXC = ['#7cf4c7', '#a8b5ff', '#ffb86b', '#ff6478', '#ffc857', '#9aa3af'];
-
-/* ---------- state ---------- */
-const S = { doc: null, sel: new Set(), tool: 'select', view: { x: 0, y: 0, k: 1 }, hist: [], hi: -1, clip: null, pasteN: 0, lastLink: 'copper', lastRoute: 'orth',
-  prefs: { snap: true, grid: 20, showgrid: true, ports: true, details: true } };
-let RO = false, drag = null, spaceDown = false, rafQ = 0;
-const items = () => S.doc.items, links = () => S.doc.links;
-const getI = id => S.doc.items.find(i => i.id === id);
-const getL = id => S.doc.links.find(l => l.id === id);
-const get = id => getI(id) || getL(id);
-const sn = v => S.prefs.snap ? Math.round(v / S.prefs.grid) * S.prefs.grid : v;
-
-/* ---------- geometry ---------- */
-const devSubs = it => { if (!S.prefs.details) return []; const a = []; const m = [it.vendor, it.model].filter(Boolean).join(' '); if (m) a.push(m); if (it.ip) a.push(it.ip); return a; };
-function txtLines(it) { return String(it.text || '').split('\n'); }
-function bb(it) {
-  if (it.k === 'box') return { x: it.x, y: it.y, w: it.w, h: it.h };
-  if (it.k === 'txt') { const L = txtLines(it), sz = it.size || 16, w = Math.max.apply(null, L.map(l => l.length)) * sz * .58 + 6; return { x: it.x - 3, y: it.y - sz, w, h: L.length * sz * 1.25 + 6 }; }
-  const s = it.s || 1, hs = 28 * s, subs = devSubs(it);
-  const lw = Math.max((it.label || '').length * 7, ...subs.map(t => t.length * 6)) + 12, w = Math.max(2 * hs, lw);
-  return { x: it.x - w / 2, y: it.y - hs, w, h: 2 * hs + 8 + 16 + subs.length * 12 };
-}
-const inBB = (b, x, y) => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h;
-function devAt(x, y, skip) { const a = items(); for (let i = a.length - 1; i >= 0; i--) { const it = a[i]; if (it.k === 'dev' && it.id !== skip && inBB(bb(it), x, y)) return it; } return null; }
-function allBounds() {
-  const a = items(); if (!a.length) return null;
-  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-  a.forEach(it => { const b = bb(it); x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h); });
-  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
-}
-function lgeom(l, off) {
-  const A = getI(l.a), B = getI(l.b); if (!A || !B) return null;
-  const sa = 28 * (A.s || 1), sb = 28 * (B.s || 1), dx = B.x - A.x, dy = B.y - A.y, rt = l.route || 'orth';
-  let p1, p2, da, db, d, mid;
-  if (rt === 'straight') {
-    const len = Math.hypot(dx, dy) || 1, ux = dx / len, uy = dy / len, px = -uy, py = ux, sg = l.a > l.b ? -1 : 1, o = off * sg;
-    const tc = (h) => Math.min(ux ? h / Math.abs(ux) : 1e9, uy ? h / Math.abs(uy) : 1e9);
-    p1 = { x: A.x + ux * tc(sa) + px * o, y: A.y + uy * tc(sa) + py * o }; p2 = { x: B.x - ux * tc(sb) + px * o, y: B.y - uy * tc(sb) + py * o };
-    da = { x: ux, y: uy }; db = { x: -ux, y: -uy }; d = `M${p1.x} ${p1.y}L${p2.x} ${p2.y}`; mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
-  } else if (Math.abs(dx) >= Math.abs(dy)) {
-    const sx = dx >= 0 ? 1 : -1;
-    p1 = { x: A.x + sx * sa, y: A.y + off }; p2 = { x: B.x - sx * sb, y: B.y + off }; da = { x: sx, y: 0 }; db = { x: -sx, y: 0 };
-    const mx = (p1.x + p2.x) / 2; mid = { x: mx, y: (p1.y + p2.y) / 2 };
-    d = rt === 'curve' ? `M${p1.x} ${p1.y}C${mx} ${p1.y} ${mx} ${p2.y} ${p2.x} ${p2.y}` : (Math.abs(p1.y - p2.y) < .5 ? `M${p1.x} ${p1.y}L${p2.x} ${p2.y}` : `M${p1.x} ${p1.y}H${mx}V${p2.y}H${p2.x}`);
-  } else {
-    const sy = dy >= 0 ? 1 : -1;
-    const ext = it => { const q = bb(it); return q.y + q.h - it.y; };
-    p1 = { x: A.x + off, y: A.y + (sy > 0 ? ext(A) : -sa) }; p2 = { x: B.x + off, y: B.y + (sy > 0 ? -sb : ext(B)) }; da = { x: 0, y: sy }; db = { x: 0, y: -sy };
-    const my = (p1.y + p2.y) / 2; mid = { x: (p1.x + p2.x) / 2, y: my };
-    d = rt === 'curve' ? `M${p1.x} ${p1.y}C${p1.x} ${my} ${p2.x} ${my} ${p2.x} ${p2.y}` : (Math.abs(p1.x - p2.x) < .5 ? `M${p1.x} ${p1.y}L${p2.x} ${p2.y}` : `M${p1.x} ${p1.y}V${my}H${p2.x}V${p2.y}`);
-  }
-  return { d, p1, p2, da, db, mid };
-}
-function linkOffsets() {
-  const g = {}, o = {};
-  links().forEach(l => { const k = l.a < l.b ? l.a + '|' + l.b : l.b + '|' + l.a; (g[k] = g[k] || []).push(l); });
-  Object.keys(g).forEach(k => g[k].forEach((l, i) => { o[l.id] = (i - (g[k].length - 1) / 2) * 12; }));
-  return o;
-}
-
-/* ---------- drawing ---------- */
-const halo = 'paint-order="stroke" stroke="var(--bg)" stroke-width="4" stroke-linejoin="round"';
-function drawBox(it) {
-  const c = it.c || BOXC[0];
-  return `<g class="it" data-id="${it.id}" data-k="box"><rect x="${it.x}" y="${it.y}" width="${it.w}" height="${it.h}" rx="12" fill="${c}" fill-opacity=".07" stroke="${c}" stroke-opacity=".7" stroke-width="1.5" stroke-dasharray="7 5"/><text x="${it.x + 14}" y="${it.y + 22}" font-size="13" font-weight="600" fill="${c}" font-family="${F_SANS}">${esc(it.label || '')}</text></g>`;
-}
-function drawTxt(it) {
-  const L = txtLines(it), sz = it.size || 16, b = bb(it);
-  return `<g class="it" data-id="${it.id}" data-k="txt"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="transparent"/><text x="${it.x}" y="${it.y}" font-size="${sz}" fill="${it.c || 'var(--text)'}" font-family="${F_SANS}">${L.map((t, i) => `<tspan x="${it.x}" dy="${i ? sz * 1.25 : 0}">${esc(t) || '&#160;'}</tspan>`).join('')}</text></g>`;
-}
-function drawDev(it) {
-  const t = TYPES[it.t] || TYPES.generic, s = it.s || 1, hs = 28 * s, b = bb(it), subs = devSubs(it), col = it.c || t.c;
-  let o = `<g class="it" data-id="${it.id}" data-k="dev"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="transparent"/><g transform="translate(${it.x},${it.y}) scale(${s})">${iconSvg(it.t, col)}</g>`;
-  o += `<text x="${it.x}" y="${it.y + hs + 15}" text-anchor="middle" font-size="12" font-weight="600" fill="var(--text)" font-family="${F_SANS}" ${halo}>${esc(it.label || '')}</text>`;
-  subs.forEach((tx, i) => { o += `<text x="${it.x}" y="${it.y + hs + 27 + i * 12}" text-anchor="middle" font-size="9.5" fill="var(--text-dim)" font-family="${F_MONO}" ${halo}>${esc(tx)}</text>`; });
-  return o + '</g>';
-}
-function drawLink(l, off) {
-  const g = lgeom(l, off); if (!g) return '';
-  const T = LT[l.type] || LT.copper, col = l.c || T.c, w = l.wd || T.w;
-  let o = `<g class="it" data-id="${l.id}" data-k="link"><path d="${g.d}" fill="none" stroke="transparent" stroke-width="14"/>`;
-  o += `<path d="${g.d}" fill="none" stroke="${col}" stroke-width="${w}" ${T.d ? `stroke-dasharray="${T.d}"` : ''} stroke-linecap="round" stroke-linejoin="round"/>`;
-  const pl = (p, dir, tx) => {
-    if (!tx || !S.prefs.ports) return '';
-    const horiz = Math.abs(dir.x) >= Math.abs(dir.y);
-    const x = horiz ? p.x + dir.x * 5 : p.x + 6, y = horiz ? p.y - 5 : p.y + dir.y * 14 + 3;
-    return `<text x="${x}" y="${y}" text-anchor="${horiz ? (dir.x > 0 ? 'start' : 'end') : 'start'}" font-size="9.5" fill="var(--text-dim)" font-family="${F_MONO}" ${halo}>${esc(tx)}</text>`;
-  };
-  o += pl(g.p1, g.da, l.la) + pl(g.p2, g.db, l.lb);
-  if (l.label) o += `<text x="${g.mid.x}" y="${g.mid.y + 3.5}" text-anchor="middle" font-size="10.5" font-weight="600" fill="${col}" font-family="${F_MONO}" ${halo}>${esc(l.label)}</text>`;
-  return o + '</g>';
-}
-function sceneMarkup() {
-  const off = linkOffsets(), a = items();
-  return a.filter(i => i.k === 'box').map(drawBox).join('') + links().map(l => drawLink(l, off[l.id] || 0)).join('') + a.filter(i => i.k === 'dev').map(drawDev).join('') + a.filter(i => i.k === 'txt').map(drawTxt).join('');
-}
-function overlayMarkup() {
-  const k = S.view.k, r = 5.5 / k, sw = 1.5 / k; let o = '';
-  const acc = 'var(--accent)';
-  S.sel.forEach(id => {
-    const it = getI(id), l = it ? null : getL(id);
-    if (it) {
-      const b = bb(it), pad = 3 / k;
-      o += `<rect x="${b.x - pad}" y="${b.y - pad}" width="${b.w + 2 * pad}" height="${b.h + 2 * pad}" rx="${6 / k}" fill="none" stroke="${acc}" stroke-width="${sw}" stroke-dasharray="${4 / k} ${3 / k}" pointer-events="none"/>`;
-      if (S.sel.size === 1 && !RO) {
-        if (it.k === 'dev') { const hs = 28 * (it.s || 1); [['n', it.x, it.y - hs], ['s', it.x, it.y + hs], ['w', it.x - hs, it.y], ['e', it.x + hs, it.y]].forEach(h => { o += `<circle data-h="c" data-side="${h[0]}" cx="${h[1]}" cy="${h[2]}" r="${r}" fill="var(--bg)" stroke="${acc}" stroke-width="${sw * 1.4}" style="cursor:crosshair"/>`; }); }
-        if (it.k === 'box') { [['nw', it.x, it.y], ['n', it.x + it.w / 2, it.y], ['ne', it.x + it.w, it.y], ['e', it.x + it.w, it.y + it.h / 2], ['se', it.x + it.w, it.y + it.h], ['s', it.x + it.w / 2, it.y + it.h], ['sw', it.x, it.y + it.h], ['w', it.x, it.y + it.h / 2]].forEach(h => { const cur = { nw: 'nwse', se: 'nwse', ne: 'nesw', sw: 'nesw', n: 'ns', s: 'ns', e: 'ew', w: 'ew' }[h[0]]; o += `<rect data-h="r" data-side="${h[0]}" x="${h[1] - r}" y="${h[2] - r}" width="${2 * r}" height="${2 * r}" rx="${r / 3}" fill="var(--bg)" stroke="${acc}" stroke-width="${sw * 1.4}" style="cursor:${cur}-resize"/>`; }); }
-      }
-    } else if (l) {
-      const g = lgeom(l, linkOffsets()[l.id] || 0); if (!g) return;
-      o += `<path d="${g.d}" fill="none" stroke="${acc}" stroke-width="${(l.wd || (LT[l.type] || LT.copper).w) + 5 / k}" stroke-opacity=".28" pointer-events="none" stroke-linecap="round"/>`;
-      [g.p1, g.p2].forEach(p => { o += `<circle cx="${p.x}" cy="${p.y}" r="${r * .8}" fill="${acc}" pointer-events="none"/>`; });
-    }
-  });
-  if (drag && drag.t === 'link') { const A = getI(drag.from); if (A) { o += `<line x1="${A.x}" y1="${A.y}" x2="${drag.x}" y2="${drag.y}" stroke="${acc}" stroke-width="${2 / k}" stroke-dasharray="${6 / k} ${4 / k}" pointer-events="none"/>`; if (drag.over) { const b = bb(drag.over); o += `<rect x="${b.x - 4}" y="${b.y - 4}" width="${b.w + 8}" height="${b.h + 8}" rx="9" fill="${acc}" fill-opacity=".12" stroke="${acc}" stroke-width="${sw}" pointer-events="none"/>`; } } }
-  if (drag && drag.t === 'marquee') { const x = Math.min(drag.x0, drag.x), y = Math.min(drag.y0, drag.y); o += `<rect x="${x}" y="${y}" width="${Math.abs(drag.x - drag.x0)}" height="${Math.abs(drag.y - drag.y0)}" fill="${acc}" fill-opacity=".08" stroke="${acc}" stroke-width="${sw}" pointer-events="none"/>`; }
-  if (drag && drag.t === 'boxdraw') { const x = Math.min(drag.x0, drag.x), y = Math.min(drag.y0, drag.y); o += `<rect x="${x}" y="${y}" width="${Math.abs(drag.x - drag.x0)}" height="${Math.abs(drag.y - drag.y0)}" rx="12" fill="${acc}" fill-opacity=".06" stroke="${acc}" stroke-width="${sw}" stroke-dasharray="${6 / k} ${4 / k}" pointer-events="none"/>`; }
-  return o;
-}
-function render() {
-  $('sc').innerHTML = sceneMarkup(); $('ov').innerHTML = overlayMarkup();
-  $('welcome').style.display = (!items().length && !RO) ? 'flex' : 'none';
-  renderMini();
-}
-function rq() { if (rafQ) return; rafQ = requestAnimationFrame(() => { rafQ = 0; render(); }); }
-function renderOv() { $('ov').innerHTML = overlayMarkup(); }
-
-/* ---------- view ---------- */
-function applyView() {
-  const v = S.view; $('vp').setAttribute('transform', `translate(${v.x},${v.y}) scale(${v.k})`);
-  $('zl').textContent = Math.round(v.k * 100) + '%';
-  const st = $('stage'), g = S.prefs.grid * v.k;
-  if (S.prefs.showgrid && g > 5) { st.style.backgroundImage = 'radial-gradient(var(--border-strong) 1px,transparent 1px)'; st.style.backgroundSize = g + 'px ' + g + 'px'; st.style.backgroundPosition = (v.x - .5) + 'px ' + (v.y - .5) + 'px'; } else st.style.backgroundImage = 'none';
-  renderOv(); renderMini();
-}
-function stageSize() { const r = $('stage').getBoundingClientRect(); return { w: r.width, h: r.height, l: r.left, t: r.top }; }
-function zoomAt(f, sx, sy) { const v = S.view, nk = clamp(v.k * f, .1, 4), r = nk / v.k; v.x = sx - (sx - v.x) * r; v.y = sy - (sy - v.y) * r; v.k = nk; applyView(); }
-function fit() {
-  const z = stageSize(), b = allBounds();
-  if (!b) { S.view = { x: z.w / 2, y: z.h / 2, k: 1 }; applyView(); return; }
-  const k = clamp(Math.min((z.w - 110) / b.w, (z.h - 130) / b.h), .1, 1.4);
-  S.view = { k, x: z.w / 2 - (b.x + b.w / 2) * k, y: z.h / 2 - (b.y + b.h / 2) * k + 12 }; applyView();
-}
-function viewCenter() { const z = stageSize(), v = S.view; return { x: (z.w / 2 - v.x) / v.k, y: (z.h / 2 - v.y) / v.k }; }
-function ptr(e) { const z = stageSize(), v = S.view; return { x: (e.clientX - z.l - v.x) / v.k, y: (e.clientY - z.t - v.y) / v.k, sx: e.clientX - z.l, sy: e.clientY - z.t }; }
-function renderMini() {
-  const mm = $('mm'); if (!mm || getComputedStyle($('mini')).display === 'none') return;
-  const b = allBounds(), z = stageSize(), v = S.view;
-  const vx = -v.x / v.k, vy = -v.y / v.k, vw = z.w / v.k, vh = z.h / v.k;
-  let x0 = vx, y0 = vy, x1 = vx + vw, y1 = vy + vh;
-  if (b) { x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h); }
-  const p = 30; x0 -= p; y0 -= p; x1 += p; y1 += p; S._mm = { x0, y0, w: x1 - x0, h: y1 - y0 };
-  let o = `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="var(--bg)"/>`;
-  items().forEach(it => { const q = bb(it); o += it.k === 'box' ? `<rect x="${q.x}" y="${q.y}" width="${q.w}" height="${q.h}" fill="none" stroke="var(--text-muted)" stroke-width="${(x1 - x0) / 140}"/>` : `<rect x="${q.x}" y="${q.y}" width="${q.w}" height="${q.h}" fill="${it.k === 'dev' ? (it.c || (TYPES[it.t] || TYPES.generic).c) : 'var(--text-muted)'}" opacity=".7"/>`; });
-  o += `<rect x="${vx}" y="${vy}" width="${vw}" height="${vh}" fill="var(--accent)" fill-opacity=".1" stroke="var(--accent)" stroke-width="${(x1 - x0) / 110}"/>`;
-  mm.setAttribute('viewBox', `${x0} ${y0} ${x1 - x0} ${y1 - y0}`); mm.innerHTML = o;
-}
-/* ---------- toast / storage ---------- */
-let _tt; function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(_tt); _tt = setTimeout(() => t.classList.remove('show'), 2400); }
-const ls = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
-function loadPrefs() { try { Object.assign(S.prefs, JSON.parse(ls.get('cl_tg_prefs') || '{}')); } catch (e) {} }
-function savePrefs() { ls.set('cl_tg_prefs', JSON.stringify(S.prefs)); }
-function idx() { try { return JSON.parse(ls.get('cl_tg_idx') || '[]'); } catch (e) { return []; } }
-function saveIdx(a) { ls.set('cl_tg_idx', JSON.stringify(a)); }
-let _st; function scheduleSave() { clearTimeout(_st); _st = setTimeout(saveDoc, 500); }
-function saveDoc() {
-  const d = S.doc; if (!d) return;
-  const ok = ls.set('cl_tg_d_' + d.id, JSON.stringify({ id: d.id, name: d.name, items: d.items, links: d.links, view: S.view }));
-  if (!ok) { toast('Could not save (browser storage is full or blocked)'); return; }
-  const a = idx(); let e = a.find(x => x.id === d.id); if (!e) { e = { id: d.id }; a.unshift(e); }
-  e.name = d.name; e.updated = Date.now(); e.n = d.items.filter(i => i.k === 'dev').length; e.l = d.links.length; saveIdx(a); ls.set('cl_tg_last', d.id); renderDocs();
-}
-function cleanDoc(o) {
-  const d = { id: uid('d'), name: String((o && o.name) || 'Untitled diagram').slice(0, 80), items: [], links: [] };
-  const ids = new Set();
-  ((o && o.items) || []).forEach(i => {
-    if (!i || !['dev', 'box', 'txt'].includes(i.k) || !isFinite(+i.x) || !isFinite(+i.y)) return;
-    const n = { id: String(i.id || uid('i')), k: i.k, x: +i.x, y: +i.y };
-    if (ids.has(n.id)) n.id = uid('i'); ids.add(n.id);
-    if (i.k === 'dev') Object.assign(n, { t: TYPES[i.t] ? i.t : 'generic', label: String(i.label || ''), vendor: String(i.vendor || ''), model: String(i.model || ''), ip: String(i.ip || ''), note: String(i.note || ''), s: clamp(num(i.s, 1), .5, 2.5), c: i.c ? String(i.c) : '' });
-    if (i.k === 'box') Object.assign(n, { w: Math.max(40, num(i.w, 200)), h: Math.max(30, num(i.h, 140)), label: String(i.label || ''), c: i.c ? String(i.c) : BOXC[0] });
-    if (i.k === 'txt') Object.assign(n, { text: String(i.text || ''), size: clamp(num(i.size, 16), 8, 80), c: i.c ? String(i.c) : '' });
-    d.items.push(n);
-  });
-  const dv = new Set(d.items.filter(i => i.k === 'dev').map(i => i.id));
-  ((o && o.links) || []).forEach(l => { if (l && dv.has(l.a) && dv.has(l.b) && l.a !== l.b) d.links.push({ id: String(l.id || uid('l')), a: l.a, b: l.b, type: LT[l.type] ? l.type : 'copper', route: ['straight', 'orth', 'curve'].includes(l.route) ? l.route : 'orth', la: String(l.la || ''), lb: String(l.lb || ''), label: String(l.label || ''), c: l.c ? String(l.c) : '', wd: l.wd ? clamp(num(l.wd, 2), 1, 8) : 0 }); });
-  return d;
-}
-function openDoc(id, keepView) {
-  let o = null; try { o = JSON.parse(ls.get('cl_tg_d_' + id) || 'null'); } catch (e) {}
-  if (!o) { toast('Diagram not found'); return false; }
-  const d = cleanDoc(o); d.id = id; S.doc = d; S.sel.clear(); S.hist = [JSON.stringify({ items: d.items, links: d.links })]; S.hi = 0;
-  ls.set('cl_tg_last', id);
-  if (o.view && o.view.k && !keepView) { S.view = o.view; applyView(); } else fit();
-  render(); renderInsp(); renderDocs(); return true;
-}
-function newDoc(name, data, noFit) {
-  const d = cleanDoc(data || { name: name }); if (name && !(data && data.name)) d.name = name; S.doc = d; S.sel.clear();
-  S.hist = [JSON.stringify({ items: d.items, links: d.links })]; S.hi = 0; saveDoc(); fit(); render(); renderInsp(); renderDocs();
-}
-function delDoc(id) {
-  const a = idx().filter(x => x.id !== id); saveIdx(a); ls.del('cl_tg_d_' + id);
-  if (S.doc && S.doc.id === id) { if (a.length) openDoc(a[0].id); else newDoc('Untitled diagram'); } else renderDocs();
-}
-function renderDocs() {
-  const a = idx(), el = $('dlist'); if (!el) return;
-  el.innerHTML = a.length ? a.map(x => `<div class="dcard ${S.doc && S.doc.id === x.id ? 'on' : ''}" data-d="${esc(x.id)}"><b>${esc(x.name || 'Untitled')}</b><span>${x.n || 0} devices · ${x.l || 0} links</span><div class="acts"><button data-a="dup" title="Duplicate">⧉</button><button data-a="del" title="Delete">✕</button></div></div>`).join('') : '<div class="note">No saved diagrams yet.</div>';
-}
-
-/* ---------- history & mutations ---------- */
-function snap() { return JSON.stringify({ items: S.doc.items, links: S.doc.links }); }
-function commit() {
-  const j = snap(); if (j === S.hist[S.hi]) { scheduleSave(); return; }
-  S.hist = S.hist.slice(0, S.hi + 1); S.hist.push(j); if (S.hist.length > 150) S.hist.shift(); S.hi = S.hist.length - 1; scheduleSave(); updUndo();
-}
-function restore(j) { const o = JSON.parse(j); S.doc.items = o.items; S.doc.links = o.links; [...S.sel].forEach(id => { if (!get(id)) S.sel.delete(id); }); render(); renderInsp(); scheduleSave(); updUndo(); }
-function undo() { if (S.hi > 0) { S.hi--; restore(S.hist[S.hi]); } }
-function redo() { if (S.hi < S.hist.length - 1) { S.hi++; restore(S.hist[S.hi]); } }
-function updUndo() { $('b-un').style.opacity = S.hi > 0 ? 1 : .4; $('b-re').style.opacity = S.hi < S.hist.length - 1 ? 1 : .4; }
-function select(ids, add) { if (!add) S.sel.clear(); (Array.isArray(ids) ? ids : [ids]).forEach(i => i && S.sel.add(i)); renderOv(); renderInsp(); }
-function nextLabel(t) { const T = TYPES[t] || TYPES.generic; if (t === 'cloud') return items().some(i => i.k === 'dev' && i.t === 'cloud') ? 'Internet-' + (items().filter(i => i.t === 'cloud').length + 1) : 'Internet'; const n = items().filter(i => i.k === 'dev' && i.t === t).length + 1; return T.p + '-' + String(n).padStart(2, '0'); }
-function addDev(t, x, y) {
-  if (RO) return null; const it = { id: uid('n'), k: 'dev', t, x: sn(x), y: sn(y), label: nextLabel(t), vendor: '', model: '', ip: '', note: '', s: 1, c: '' };
-  items().push(it); select(it.id); render(); commit(); return it;
-}
-function addBox(x, y, w, h) { const it = { id: uid('b'), k: 'box', x: sn(x), y: sn(y), w: Math.max(60, w), h: Math.max(40, h), label: 'Zone', c: BOXC[items().filter(i => i.k === 'box').length % BOXC.length] }; items().unshift(it); select(it.id); render(); commit(); return it; }
-function addTxt(x, y) { const it = { id: uid('t'), k: 'txt', x: sn(x), y: sn(y), text: 'Text', size: 16, c: '' }; items().push(it); select(it.id); render(); commit(); return it; }
-function delSel() {
-  if (RO || !S.sel.size) return; const ids = new Set(S.sel);
-  S.doc.items = items().filter(i => !ids.has(i.id)); S.doc.links = links().filter(l => !ids.has(l.id) && !ids.has(l.a) && !ids.has(l.b));
-  S.sel.clear(); render(); renderInsp(); commit();
-}
-function copySel() {
-  const ids = new Set(S.sel), its = items().filter(i => ids.has(i.id)); if (!its.length) return;
-  const dv = new Set(its.map(i => i.id)); S.clip = JSON.parse(JSON.stringify({ items: its, links: links().filter(l => dv.has(l.a) && dv.has(l.b)) })); S.pasteN = 0; toast('Copied');
-}
-function pasteClip(dup) {
-  if (RO || !S.clip) return; const c = JSON.parse(JSON.stringify(S.clip)), m = {}; S.pasteN++; const o = 30 * S.pasteN;
-  c.items.forEach(i => { const n = uid(i.k[0]); m[i.id] = n; i.id = n; i.x += o; i.y += o; }); c.links.forEach(l => { l.id = uid('l'); l.a = m[l.a]; l.b = m[l.b]; });
-  c.items.forEach(i => { if (i.k === 'box') items().unshift(i); else items().push(i); }); links().push(...c.links); select(c.items.map(i => i.id)); render(); commit();
-}
-function dupSel() { copySel(); pasteClip(); }
-function nudge(dx, dy) { if (RO) return; let n = 0; S.sel.forEach(id => { const i = getI(id); if (i) { i.x += dx; i.y += dy; n++; } }); if (n) { render(); commit(); } }
-function align(m) {
-  const a = [...S.sel].map(getI).filter(Boolean); if (a.length < 2) return; const B = a.map(bb);
-  const x0 = Math.min(...B.map(b => b.x)), x1 = Math.max(...B.map(b => b.x + b.w)), y0 = Math.min(...B.map(b => b.y)), y1 = Math.max(...B.map(b => b.y + b.h));
-  if (m === 'dh' || m === 'dv') {
-    if (a.length < 3) { toast('Pick 3 or more items to distribute'); return; }
-    const h = m === 'dh', ord = a.map((it, i) => ({ it, b: B[i] })).sort((p, q) => h ? (p.b.x - q.b.x) : (p.b.y - q.b.y)), tot = ord.reduce((s, o) => s + (h ? o.b.w : o.b.h), 0), gap = ((h ? x1 - x0 : y1 - y0) - tot) / (ord.length - 1); let pos = h ? x0 : y0;
-    ord.forEach(o => { if (h) o.it.x += pos - o.b.x; else o.it.y += pos - o.b.y; pos += (h ? o.b.w : o.b.h) + gap; });
-  } else a.forEach((it, i) => { const b = B[i]; if (m === 'l') it.x += x0 - b.x; if (m === 'r') it.x += x1 - (b.x + b.w); if (m === 'c') it.x += (x0 + x1) / 2 - (b.x + b.w / 2); if (m === 't') it.y += y0 - b.y; if (m === 'b') it.y += y1 - (b.y + b.h); if (m === 'm') it.y += (y0 + y1) / 2 - (b.y + b.h / 2); });
-  render(); commit();
-}
-function addLink(a, b) {
-  const A = getI(a), B = getI(b); if (!A || !B || a === b) return null;
-  const type = (A.t === 'cloud' || B.t === 'cloud') ? 'wan' : (A.t === 'ap' || B.t === 'ap') && S.lastLink !== 'wireless' ? 'copper' : S.lastLink;
-  const l = { id: uid('l'), a, b, type, route: S.lastRoute, la: '', lb: '', label: '', c: '', wd: 0 }; links().push(l); select(l.id); render(); commit(); return l;
-}
-
-/* ---------- inline editor ---------- */
-function editAt(sx, sy, w, val, cb, multi) {
-  const i = document.createElement(multi ? 'textarea' : 'input'); i.className = 'ed'; i.value = val; i.style.left = (sx - w / 2) + 'px'; i.style.top = (sy - 14) + 'px'; i.style.width = w + 'px'; if (multi) { i.style.minHeight = '56px'; i.rows = 3; }
-  $('stage').appendChild(i); i.focus(); i.select(); let done = false;
-  const fin = ok => { if (done) return; done = true; const v = i.value; i.remove(); if (ok) cb(v); $('stage').focus(); };
-  i.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter' && !(multi && e.shiftKey)) { e.preventDefault(); fin(true); } else if (e.key === 'Escape') fin(false); });
-  i.addEventListener('blur', () => fin(true)); i.addEventListener('pointerdown', e => e.stopPropagation());
-}
-function editItem(id) {
-  if (RO) return; const v = S.view, it = getI(id), l = it ? null : getL(id);
-  if (it) {
-    const b = bb(it);
-    if (it.k === 'dev') editAt((it.x) * v.k + v.x, (b.y + b.h - 22) * v.k + v.y, 170, it.label || '', val => { it.label = val; render(); renderInsp(); commit(); });
-    else if (it.k === 'box') editAt((it.x + 90) * v.k + v.x, (it.y + 22) * v.k + v.y, 180, it.label || '', val => { it.label = val; render(); renderInsp(); commit(); });
-    else editAt((b.x + b.w / 2) * v.k + v.x, (b.y) * v.k + v.y, Math.max(160, b.w * v.k), it.text || '', val => { it.text = val || 'Text'; render(); renderInsp(); commit(); }, true);
-  } else if (l) {
-    const g = lgeom(l, linkOffsets()[l.id] || 0); if (!g) return;
-    editAt(g.mid.x * v.k + v.x, g.mid.y * v.k + v.y, 150, l.label || '', val => { l.label = val; render(); renderInsp(); commit(); });
-  }
-}
-
-/* ---------- pointer interaction ---------- */
-const ptrs = new Map();
-function bindCanvas() {
-  const cv = $('cv'), st = $('stage');
-  cv.addEventListener('wheel', e => { e.preventDefault(); const p = ptr(e); zoomAt(Math.exp(-e.deltaY * (e.ctrlKey ? .01 : .0016)), p.sx, p.sy); }, { passive: false });
-  cv.addEventListener('pointerdown', e => {
-    st.focus({ preventScroll: true }); cv.setPointerCapture && cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; drag = { t: 'pinch', d: Math.hypot(a.x - b.x, a.y - b.y), cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 }; return; }
-    const p = ptr(e);
-    if (e.button === 1 || spaceDown || S.tool === 'pan' || RO) { drag = { t: 'pan', sx: e.clientX, sy: e.clientY, vx: S.view.x, vy: S.view.y }; st.classList.add('panning'); return; }
-    if (e.button !== 0) return;
-    if (S.tool === 'box') { drag = { t: 'boxdraw', x0: sn(p.x), y0: sn(p.y), x: sn(p.x), y: sn(p.y) }; return; }
-    if (S.tool === 'text') { const t = addTxt(p.x, p.y); setTool('select'); setTimeout(() => editItem(t.id), 30); return; }
-    const h = e.target.closest('[data-h]');
-    if (h) {
-      const it = getI([...S.sel][0]); if (!it) return;
-      if (h.dataset.h === 'c') drag = { t: 'link', from: it.id, x: p.x, y: p.y, over: null };
-      else drag = { t: 'resize', id: it.id, side: h.dataset.side, o: { x: it.x, y: it.y, w: it.w, h: it.h }, moved: false };
-      renderOv(); return;
-    }
-    const el = e.target.closest('[data-id]'), id = el && el.dataset.id, it = id && getI(id);
-    { const now = Date.now(), lt = S._lt; if (id && lt && lt.id === id && now - lt.t < 420 && Math.hypot(e.clientX - lt.x, e.clientY - lt.y) < 8) { S._lt = null; select(id); setTimeout(() => editItem(id), 30); return; } S._lt = id ? { t: now, id, x: e.clientX, y: e.clientY } : null; }
-    if (S.tool === 'link' && it && it.k === 'dev') { select(id); drag = { t: 'link', from: id, x: p.x, y: p.y, over: null }; renderOv(); return; }
-    if (id) {
-      if (e.shiftKey) { if (S.sel.has(id)) S.sel.delete(id); else S.sel.add(id); renderOv(); renderInsp(); if (!S.sel.has(id)) return; }
-      else if (!S.sel.has(id)) select(id);
-      const o = {}; S.sel.forEach(i => { const q = getI(i); if (q) o[i] = { x: q.x, y: q.y }; });
-      if (Object.keys(o).length) drag = { t: 'move', x0: p.x, y0: p.y, o, prim: id, moved: false };
-      return;
-    }
-    if (!e.shiftKey && S.sel.size) { S.sel.clear(); renderOv(); renderInsp(); }
-    drag = { t: 'marquee', x0: p.x, y0: p.y, x: p.x, y: p.y, add: e.shiftKey, base: new Set(S.sel) };
-  });
-  cv.addEventListener('pointermove', e => {
-    if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (!drag) return; const p = ptr(e);
-    if (drag.t === 'pinch' && ptrs.size >= 2) { const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y), cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2, z = stageSize(); S.view.x += cx - drag.cx; S.view.y += cy - drag.cy; zoomAt(d / drag.d, cx - z.l, cy - z.t); drag.d = d; drag.cx = cx; drag.cy = cy; return; }
-    if (drag.t === 'pan') { S.view.x = drag.vx + e.clientX - drag.sx; S.view.y = drag.vy + e.clientY - drag.sy; applyView(); return; }
-    if (drag.t === 'move') {
-      let dx = p.x - drag.x0, dy = p.y - drag.y0; if (!drag.moved && Math.hypot(dx, dy) * S.view.k < 3) return; drag.moved = true;
-      const pr = drag.o[drag.prim]; if (pr) { dx = sn(pr.x + dx) - pr.x; dy = sn(pr.y + dy) - pr.y; }
-      Object.keys(drag.o).forEach(i => { const q = getI(i); q.x = drag.o[i].x + dx; q.y = drag.o[i].y + dy; }); rq(); return;
-    }
-    if (drag.t === 'link') { drag.x = p.x; drag.y = p.y; drag.over = devAt(p.x, p.y, drag.from); rq(); return; }
-    if (drag.t === 'marquee' || drag.t === 'boxdraw') { drag.x = drag.t === 'boxdraw' ? sn(p.x) : p.x; drag.y = drag.t === 'boxdraw' ? sn(p.y) : p.y; if (drag.t === 'marquee') { const x0 = Math.min(drag.x0, drag.x), x1 = Math.max(drag.x0, drag.x), y0 = Math.min(drag.y0, drag.y), y1 = Math.max(drag.y0, drag.y); S.sel = new Set(drag.base); items().forEach(i => { const b = bb(i); if (b.x >= x0 && b.x + b.w <= x1 && b.y >= y0 && b.y + b.h <= y1) S.sel.add(i.id); }); } rq(); return; }
-    if (drag.t === 'resize') {
-      const it = getI(drag.id), o = drag.o, s = drag.side; let x0 = o.x, y0 = o.y, x1 = o.x + o.w, y1 = o.y + o.h; const X = sn(p.x), Y = sn(p.y);
-      if (s.includes('w')) x0 = Math.min(X, x1 - 60); if (s.includes('e')) x1 = Math.max(X, x0 + 60); if (s.includes('n')) y0 = Math.min(Y, y1 - 40); if (s.includes('s')) y1 = Math.max(Y, y0 + 40);
-      it.x = x0; it.y = y0; it.w = x1 - x0; it.h = y1 - y0; drag.moved = true; rq();
-    }
-  });
-  const end = e => {
-    ptrs.delete(e.pointerId); st.classList.remove('panning'); if (!drag) return; const d = drag; drag = null;
-    if (d.t === 'pinch') { if (ptrs.size) { const q = [...ptrs.values()][0]; drag = { t: 'pan', sx: q.x, sy: q.y, vx: S.view.x, vy: S.view.y }; } return; }
-    if (d.t === 'move') { if (d.moved) commit(); render(); renderInsp(); }
-    else if (d.t === 'link') { const t = d.over || devAt(d.x, d.y, d.from); if (t) addLink(d.from, t.id); else { render(); toast('Drop on another device to connect'); } }
-    else if (d.t === 'marquee') { render(); renderInsp(); }
-    else if (d.t === 'boxdraw') { const w = Math.abs(d.x - d.x0), h = Math.abs(d.y - d.y0); if (w > 30 && h > 24) addBox(Math.min(d.x0, d.x), Math.min(d.y0, d.y), w, h); else render(); setTool('select'); }
-    else if (d.t === 'resize') { if (d.moved) commit(); render(); renderInsp(); }
-    else { renderOv(); }
-  };
-  cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
-  cv.addEventListener('dblclick', e => { const t = document.elementFromPoint(e.clientX, e.clientY), el = t && t.closest && t.closest('[data-id]'); if (el && !RO) { editItem(el.dataset.id); } });
-  st.addEventListener('dragover', e => { if (!RO && e.dataTransfer.types.includes('text/cl-dev')) e.preventDefault(); });
-  st.addEventListener('drop', e => { e.preventDefault(); const t = e.dataTransfer.getData('text/cl-dev'); if (!t || RO) return; const p = ptr(e); if (t === 'box') addBox(p.x - 120, p.y - 80, 240, 160); else if (t === 'txt') addTxt(p.x, p.y); else if (TYPES[t]) addDev(t, p.x, p.y); });
-  $('mini').addEventListener('pointerdown', e => { const m = S._mm; if (!m) return; const r = $('mini').getBoundingClientRect(), sc = Math.min(r.width / m.w, r.height / m.h), cx = m.x0 + m.w / 2 + (e.clientX - r.left - r.width / 2) / sc, cy = m.y0 + m.h / 2 + (e.clientY - r.top - r.height / 2) / sc, z = stageSize(); S.view.x = z.w / 2 - cx * S.view.k; S.view.y = z.h / 2 - cy * S.view.k; applyView(); });
-}
-function setTool(t) { S.tool = t; $('stage').dataset.tool = t; document.querySelectorAll('.tools [data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t)); }
-/* ---------- inspector ---------- */
-const fld = (l, h) => `<div class="fld"><label>${l}</label>${h}</div>`;
-const tin = (f, v, ph) => `<input type="text" data-f="${f}" value="${esc(v)}" placeholder="${esc(ph || '')}" ${RO ? 'disabled' : ''}>`;
-function renderInsp() {
-  const el = $('insp'), sel = [...S.sel], d = S.doc; if (!d) return;
-  if (!sel.length) {
-    const dv = items().filter(i => i.k === 'dev'), cnt = {}; dv.forEach(i => { cnt[i.t] = (cnt[i.t] || 0) + 1; });
-    el.innerHTML = `<div class="sec"><h4>Diagram</h4>${fld('Name', `<input type="text" id="dname" value="${esc(d.name)}" ${RO ? 'disabled' : ''}>`)}
-      <div class="stats"><div class="stat"><b>${dv.length}</b><span>Devices</span></div><div class="stat"><b>${links().length}</b><span>Links</span></div></div>
-      ${dv.length ? `<div style="margin-top:10px">${Object.keys(cnt).map(t => `<div class="lnk" style="cursor:default"><span>${esc(TYPES[t].n)}</span><span>${cnt[t]}</span></div>`).join('')}</div>` : ''}</div>
-    <div class="sec"><h4>Canvas</h4>
-      <label class="tgl">Snap to grid<input type="checkbox" data-p="snap" ${S.prefs.snap ? 'checked' : ''}><i></i></label>
-      <label class="tgl">Show grid<input type="checkbox" data-p="showgrid" ${S.prefs.showgrid ? 'checked' : ''}><i></i></label>
-      <label class="tgl">Port labels<input type="checkbox" data-p="ports" ${S.prefs.ports ? 'checked' : ''}><i></i></label>
-      <label class="tgl">Model and IP under devices<input type="checkbox" data-p="details" ${S.prefs.details ? 'checked' : ''}><i></i></label>
-      ${fld('Grid size', `<select data-p="grid">${[10, 20, 40].map(n => `<option ${S.prefs.grid === n ? 'selected' : ''}>${n}</option>`).join('')}</select>`)}</div>
-    <div class="sec"><h4>Cable types</h4><div class="lg">${Object.keys(LT).map(k => `<div><i style="border-color:${LT[k].c};${LT[k].d ? 'border-top-style:dashed' : ''}"></i>${LT[k].n}</div>`).join('')}</div></div>
-    <div class="sec"><h4>Shortcuts</h4><div class="sc"><span class="kbd">V L B T H</span><span>Select, link, box, text, pan</span><span class="kbd">Del</span><span>Delete</span><span class="kbd">Ctrl C V D</span><span>Copy, paste, duplicate</span><span class="kbd">Ctrl Z Y</span><span>Undo, redo</span><span class="kbd">Arrows</span><span>Nudge (Shift = 10)</span><span class="kbd">Dbl-click</span><span>Rename</span><span class="kbd">0</span><span>Fit to screen</span></div></div>`;
-    return;
-  }
-  if (sel.length > 1) {
-    el.innerHTML = `<div class="sec"><h4>${sel.length} selected</h4>
-      <div class="lbl">Align</div><div class="al" style="margin-bottom:10px"><button data-al="l" title="Left">⇤</button><button data-al="c" title="Center">↔</button><button data-al="r" title="Right">⇥</button><button data-al="t" title="Top">⤒</button><button data-al="m" title="Middle">↕</button><button data-al="b" title="Bottom">⤓</button></div>
-      <div class="lbl">Distribute</div><div class="grid2" style="margin-bottom:12px"><button class="btn sm" data-al="dh">Horizontally</button><button class="btn sm" data-al="dv">Vertically</button></div>
-      <div class="grid2"><button class="btn sm" data-act="dup">Duplicate</button><button class="btn sm" data-act="del" style="color:var(--danger)">Delete</button></div></div>`;
-    return;
-  }
-  const id = sel[0], it = getI(id), l = it ? null : getL(id);
-  if (it && it.k === 'dev') {
-    const lk = links().filter(x => x.a === id || x.b === id);
-    el.innerHTML = `<div class="sec"><h4>Device <small>${esc(TYPES[it.t].n)}</small></h4>
-      ${fld('Name', tin('label', it.label))}
-      ${fld('Type', `<select data-f="t" ${RO ? 'disabled' : ''}>${Object.keys(TYPES).map(t => `<option value="${t}" ${it.t === t ? 'selected' : ''}>${TYPES[t].n}</option>`).join('')}</select>`)}
-      <div class="grid2">${fld('Vendor', `<input type="text" data-f="vendor" list="vend" value="${esc(it.vendor)}" placeholder="H3C" ${RO ? 'disabled' : ''}><datalist id="vend">${['H3C', 'Cisco', 'Ruijie', 'Huawei', 'Aruba', 'TP-Link', 'Juniper', 'Fortinet', 'MikroTik', 'Palo Alto', 'Dell', 'HPE'].map(v => `<option>${v}</option>`).join('')}</datalist>`)}${fld('Model', tin('model', it.model, 'S5130S-28S'))}</div>
-      ${fld('IP / management', tin('ip', it.ip, '10.0.0.1/24'))}
-      ${fld('Notes', `<textarea data-f="note" ${RO ? 'disabled' : ''}>${esc(it.note)}</textarea>`)}
-      ${fld('Size', `<input type="range" data-f="s" data-n="1" min=".6" max="2" step=".1" value="${it.s || 1}" ${RO ? 'disabled' : ''}>`)}
-      ${fld('Accent colour', `<div class="row" style="gap:6px"><input type="color" data-f="c" value="${/^#[0-9a-f]{6}$/i.test(it.c) ? it.c : TYPES[it.t].c}" ${RO ? 'disabled' : ''}><button class="btn sm" data-act="resetc" style="flex:none">Reset</button></div>`)}
-      <div class="grid2" data-edit><button class="btn sm" data-act="dup">Duplicate</button><button class="btn sm" data-act="del" style="color:var(--danger)">Delete</button></div></div>
-    <div class="sec"><h4>Links <small>${lk.length}</small></h4>${lk.length ? lk.map(x => { const o = getI(x.a === id ? x.b : x.a); return `<div class="lnk" data-sl="${x.id}"><span>${esc(o ? o.label : '?')}</span><span>${esc((x.a === id ? x.la : x.lb) || LT[x.type].n)}</span></div>`; }).join('') : '<div class="note">No cables yet. Drag from a dot on this device to another device.</div>'}</div>`;
-  } else if (it && it.k === 'box') {
-    el.innerHTML = `<div class="sec"><h4>Zone / box</h4>${fld('Label', tin('label', it.label, 'VLAN 10 · Office'))}
-      ${fld('Colour', `<div class="sw">${BOXC.map(c => `<i data-bc="${c}" style="background:${c}" class="${it.c === c ? 'on' : ''}"></i>`).join('')}</div>`)}
-      <div class="grid2">${fld('Width', `<input type="number" data-f="w" data-n="1" value="${Math.round(it.w)}" min="60">`)}${fld('Height', `<input type="number" data-f="h" data-n="1" value="${Math.round(it.h)}" min="40">`)}</div>
-      <div class="grid2" data-edit><button class="btn sm" data-act="dup">Duplicate</button><button class="btn sm" data-act="del" style="color:var(--danger)">Delete</button></div>
-      <div class="note">Boxes sit behind devices. Use them for VLANs, floors, DMZ, data center and so on.</div></div>`;
-  } else if (it && it.k === 'txt') {
-    el.innerHTML = `<div class="sec"><h4>Text</h4>${fld('Text', `<textarea data-f="text" ${RO ? 'disabled' : ''}>${esc(it.text)}</textarea>`)}${fld('Size', `<input type="range" data-f="size" data-n="1" min="10" max="60" step="1" value="${it.size || 16}">`)}
-      <div class="grid2" data-edit><button class="btn sm" data-act="dup">Duplicate</button><button class="btn sm" data-act="del" style="color:var(--danger)">Delete</button></div></div>`;
-  } else if (l) {
-    const A = getI(l.a), B = getI(l.b);
-    el.innerHTML = `<div class="sec"><h4>Link</h4><div class="lnk" style="cursor:default"><span>${esc(A ? A.label : '?')}</span><span>to ${esc(B ? B.label : '?')}</span></div><div style="height:10px"></div>
-      ${fld('Type', `<select data-f="type" ${RO ? 'disabled' : ''}>${Object.keys(LT).map(t => `<option value="${t}" ${l.type === t ? 'selected' : ''}>${LT[t].n}</option>`).join('')}</select>`)}
-      ${fld('Route', `<div class="seg" id="seg-route"><button data-rt="orth" class="${(l.route || 'orth') === 'orth' ? 'on' : ''}">Elbow</button><button data-rt="straight" class="${l.route === 'straight' ? 'on' : ''}">Straight</button><button data-rt="curve" class="${l.route === 'curve' ? 'on' : ''}">Curve</button></div>`)}
-      <div class="grid2">${fld('Port at ' + esc(A ? A.label : 'A'), tin('la', l.la, 'XGE1/0/1'))}${fld('Port at ' + esc(B ? B.label : 'B'), tin('lb', l.lb, 'GE1/0/24'))}</div>
-      ${fld('Label', tin('label', l.label, '10G · VLAN 10,20'))}
-      <div class="grid2">${fld('Thickness', `<select data-f="wd" data-n="1" ${RO ? 'disabled' : ''}>${[[0, 'Default'], [1.5, 'Thin'], [3.5, 'Thick'], [5, 'Extra thick']].map(o => `<option value="${o[0]}" ${(l.wd || 0) === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}</select>`)}
-      ${fld('Colour', `<div class="row" style="gap:6px"><input type="color" data-f="c" value="${/^#[0-9a-f]{6}$/i.test(l.c) ? l.c : LT[l.type].c}" ${RO ? 'disabled' : ''}><button class="btn sm" data-act="resetc" style="flex:none">Reset</button></div>`)}</div>
-      <div class="grid2" data-edit><button class="btn sm" data-act="swap">⇄ Reverse</button><button class="btn sm" data-act="del" style="color:var(--danger)">Delete</button></div></div>`;
-  }
-}
-function bindInsp() {
-  const el = $('insp');
-  const cur = () => { const id = [...S.sel][0]; return id ? get(id) : null; };
-  el.addEventListener('input', e => {
-    const t = e.target;
-    if (t.id === 'dname') { S.doc.name = t.value; scheduleSave(); return; }
-    if (t.dataset.p) return;
-    if (!t.dataset.f || RO) return; const o = cur(); if (!o) return;
-    let v = t.value; if (t.dataset.n) v = num(v, 0); o[t.dataset.f] = v; if (t.dataset.f === 't' && !o.c) { }
-    if (o.k === 'box' && t.dataset.f === 'w') o.w = Math.max(60, v); if (o.k === 'box' && t.dataset.f === 'h') o.h = Math.max(40, v);
-    rq();
-  });
-  el.addEventListener('change', e => {
-    const t = e.target;
-    if (t.dataset.p) { const k = t.dataset.p; S.prefs[k] = t.type === 'checkbox' ? t.checked : num(t.value, 20); savePrefs(); applyView(); render(); return; }
-    if (t.dataset.f && !RO) { commit(); if (t.dataset.f === 't' || t.dataset.f === 'type') renderInsp(); }
-  });
-  el.addEventListener('click', e => {
-    const b = e.target.closest('button,[data-sl],[data-bc]'); if (!b) return;
-    if (b.dataset.al) { align(b.dataset.al); return; }
-    if (b.dataset.sl) { select(b.dataset.sl); return; }
-    if (RO) return; const o = cur();
-    if (b.dataset.bc && o) { o.c = b.dataset.bc; render(); renderInsp(); commit(); return; }
-    if (b.dataset.rt && o) { o.route = b.dataset.rt; S.lastRoute = o.route; render(); renderInsp(); commit(); return; }
-    const a = b.dataset.act; if (!a) return;
-    if (a === 'del') delSel(); else if (a === 'dup') dupSel(); else if (a === 'resetc' && o) { o.c = ''; render(); renderInsp(); commit(); }
-    else if (a === 'swap' && o) { const t = o.a; o.a = o.b; o.b = t; const p = o.la; o.la = o.lb; o.lb = p; render(); renderInsp(); commit(); }
-  });
-}
-
-/* ---------- palette & docs UI ---------- */
-function buildPalette() {
-  $('pal').innerHTML = PAL.map(([g, ts]) => `<h4>${g}</h4><div class="pal" style="margin-bottom:14px">${ts.map(t => `<div class="pt" draggable="true" data-t="${t}" title="${TYPES[t].n}"><svg viewBox="-32 -32 64 64">${iconSvg(t)}</svg>${TYPES[t].n}</div>`).join('')}</div>`).join('');
-  document.querySelectorAll('#p-dev .pt').forEach(p => p.addEventListener('dragstart', e => { const v = p.dataset.t || p.dataset.shape; e.dataTransfer.setData('text/cl-dev', v); e.dataTransfer.effectAllowed = 'copy'; }));
-  $('pal').addEventListener('click', e => { const p = e.target.closest('.pt'); if (!p || RO) return; const c = viewCenter(), n = S.doc.items.length % 6 * 24; addDev(p.dataset.t, c.x + n, c.y + n); });
-  document.querySelector('[data-shape=box]').onclick = () => { if (RO) return; const c = viewCenter(); addBox(c.x - 130, c.y - 90, 260, 180); };
-  document.querySelector('[data-shape=txt]').onclick = () => { if (RO) return; const c = viewCenter(); const t = addTxt(c.x, c.y); setTimeout(() => editItem(t.id), 30); };
-  document.querySelectorAll('[data-shape]').forEach(p => p.addEventListener('dragstart', e => { e.dataTransfer.setData('text/cl-dev', p.dataset.shape); }));
-  document.querySelectorAll('[data-shape]').forEach(p => p.setAttribute('draggable', 'true'));
-}
-function tab(w) { $('tb-dev').classList.toggle('on', w === 'dev'); $('tb-doc').classList.toggle('on', w === 'doc'); $('p-dev').style.display = w === 'dev' ? '' : 'none'; $('p-doc').style.display = w === 'doc' ? '' : 'none'; }
+/* Sample diagram used by the Topology pages */
+const TG_TYPES_OK = 1;
 function exampleDoc() {
   const D = (id, t, x, y, label, o) => Object.assign({ id, k: 'dev', t, x, y, label, vendor: '', model: '', ip: '', note: '', s: 1, c: '' }, o || {});
   const L = (a, b, type, la, lb, label) => ({ id: 'l_' + a + b, a, b, type, route: 'orth', la: la || '', lb: lb || '', label: label || '', c: '', wd: 0 });
@@ -748,79 +215,115 @@ function exampleDoc() {
     L('a1', 'ap1', 'copper', 'GE1/0/1'), L('a1', 'ap2', 'copper', 'GE1/0/2'), L('a1', 'pc1', 'copper', 'GE1/0/3'), L('a2', 'ap3', 'copper', 'GE1/0/1'), L('a2', 'ap4', 'copper', 'GE1/0/2'), L('a2', 'prn', 'copper', 'GE1/0/3'), L('srv', 'nas', 'copper', 'eth1', 'eth0')] };
 }
 
-/* ---------- export ---------- */
-const LIGHT = { '--bg': '#ffffff', '--surface': '#ffffff', '--surface-2': '#f1ede3', '--text': '#1a1a1a', '--text-dim': '#4a4a4a', '--text-muted': '#8a8a8a', '--border': '#e4dfd0', '--border-strong': '#cfc8b4', '--accent': '#0f766e' };
-function resolveVars(s, light) { const cs = getComputedStyle(document.body); return s.replace(/var\((--[a-z0-9-]+)\)/g, (m, n) => (light && LIGHT[n]) || cs.getPropertyValue(n).trim() || '#888'); }
-function exportSVG(light) {
-  const b = allBounds(); if (!b) return null; const pad = 48, usedT = [...new Set(links().map(l => l.type))], hdr = 40, ftr = usedT.length ? 46 : 28;
-  const W = Math.ceil(b.w + pad * 2), H = Math.ceil(b.h + pad * 2 + hdr + ftr), W2 = Math.max(W, 420);
-  let leg = ''; let lx = pad; usedT.forEach(t => { const T = LT[t]; leg += `<line x1="${lx}" y1="${H - 34}" x2="${lx + 26}" y2="${H - 34}" stroke="${T.c}" stroke-width="${T.w}" ${T.d ? `stroke-dasharray="${T.d}"` : ''} stroke-linecap="round"/><text x="${lx + 32}" y="${H - 30}" font-size="11" fill="var(--text-dim)" font-family="${F_SANS}">${T.n}</text>`; lx += 52 + T.n.length * 6.4; });
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W2}" height="${H}" viewBox="0 0 ${W2} ${H}"><rect width="${W2}" height="${H}" fill="var(--bg)"/><text x="${pad}" y="34" font-size="20" font-weight="700" fill="var(--text)" font-family="${F_SANS}">${esc(S.doc.name)}</text><g transform="translate(${pad - b.x},${pad + hdr - b.y})">${sceneMarkup()}</g>${leg}<text x="${W2 - pad}" y="${H - 14}" text-anchor="end" font-size="10" fill="var(--text-muted)" font-family="${F_MONO}">ConfigLabs.online · ${new Date().toISOString().slice(0, 10)}</text></svg>`;
-  return resolveVars(svg, light);
-}
-function download(name, blob) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800); }
-const safeName = () => (S.doc.name || 'diagram').replace(/[^\w\-]+/g, '_').slice(0, 50) || 'diagram';
-function doExport(kind) {
-  if (kind === 'json') { download(safeName() + '.json', new Blob([JSON.stringify({ app: 'configlabs-topology', v: 1, name: S.doc.name, items: S.doc.items, links: S.doc.links }, null, 1)], { type: 'application/json' })); toast('Diagram file saved'); return; }
-  if (!items().length) { toast('Nothing to export yet'); return; }
-  if (kind === 'svg') { download(safeName() + '.svg', new Blob([exportSVG()], { type: 'image/svg+xml' })); toast('SVG saved'); }
-  else if (kind === 'png') {
-    const svg = exportSVG(), m = /width="(\d+)" height="(\d+)"/.exec(svg), w = +m[1], h = +m[2], sc = Math.min(2, 8000 / Math.max(w, h)), img = new Image();
-    img.onload = () => { const c = document.createElement('canvas'); c.width = Math.round(w * sc); c.height = Math.round(h * sc); const x = c.getContext('2d'); x.scale(sc, sc); x.drawImage(img, 0, 0, w, h); c.toBlob(bl => { download(safeName() + '.png', bl); toast('PNG saved'); }, 'image/png'); };
-    img.onerror = () => toast('PNG export failed, try SVG'); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-  } else if (kind === 'print') { $('printbox').innerHTML = exportSVG(true); setTimeout(() => { window.print(); }, 60); }
-}
-window.addEventListener('afterprint', () => { $('printbox').innerHTML = ''; });
 
-/* ---------- init ---------- */
-function bindUI() {
-  document.querySelectorAll('.tools [data-tool]').forEach(b => b.onclick = () => setTool(b.dataset.tool));
-  $('b-un').onclick = undo; $('b-re').onclick = redo;
-  $('b-zo').onclick = () => { const z = stageSize(); zoomAt(1 / 1.25, z.w / 2, z.h / 2); }; $('b-zi').onclick = () => { const z = stageSize(); zoomAt(1.25, z.w / 2, z.h / 2); }; $('b-fit').onclick = fit;
-  $('b-exp').onclick = e => { e.stopPropagation(); $('exp').classList.toggle('open'); }; document.addEventListener('click', () => $('exp').classList.remove('open'));
-  $('exp').querySelector('.dd').addEventListener('click', e => { const b = e.target.closest('[data-x]'); if (b) { $('exp').classList.remove('open'); doExport(b.dataset.x); } });
-  $('tb-dev').onclick = () => tab('dev'); $('tb-doc').onclick = () => tab('doc');
-  $('d-new').onclick = () => { newDoc('Untitled diagram'); tab('dev'); }; $('d-ex').onclick = () => { newDoc(null, exampleDoc()); tab('dev'); }; $('w-ex').onclick = () => { newDoc(null, exampleDoc()); };
-  $('d-imp').onclick = () => $('d-file').click();
-  $('d-file').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; const r = new FileReader(); r.onload = () => { try { const o = JSON.parse(r.result); if (!o || !Array.isArray(o.items)) throw 0; newDoc(null, o); toast('Imported ' + S.doc.name); tab('dev'); } catch (x) { toast('That file is not a ConfigLabs diagram'); } }; r.readAsText(f); };
-  $('dlist').addEventListener('click', e => {
-    const c = e.target.closest('[data-d]'); if (!c) return; const id = c.dataset.d, a = e.target.closest('[data-a]');
-    if (a && a.dataset.a === 'del') { if (confirm('Delete this diagram? This cannot be undone.')) delDoc(id); return; }
-    if (a && a.dataset.a === 'dup') { saveDoc(); let o = null; try { o = JSON.parse(ls.get('cl_tg_d_' + id)); } catch (x) {} if (o) { o.name = (o.name || 'Diagram') + ' (copy)'; newDoc(null, o); } return; }
-    saveDoc(); openDoc(id);
-  });
-  const lt = $('b-lt'), rt = $('b-rt'); lt.onclick = () => { $('left').classList.toggle('open'); $('right').classList.remove('open'); }; rt.onclick = () => { $('right').classList.toggle('open'); $('left').classList.remove('open'); };
-  $('stage').addEventListener('pointerdown', () => { $('left').classList.remove('open'); $('right').classList.remove('open'); });
-  bindInsp();
-  document.addEventListener('keydown', e => {
-    const tg = e.target.tagName; if (tg === 'INPUT' || tg === 'TEXTAREA' || tg === 'SELECT') return;
-    const c = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
-    if (e.code === 'Space') { spaceDown = true; e.preventDefault(); return; }
-    if (c && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); } else if (c && k === 'y') { e.preventDefault(); redo(); }
-    else if (c && k === 'c') { copySel(); } else if (c && k === 'v') { pasteClip(); } else if (c && k === 'd') { e.preventDefault(); dupSel(); }
-    else if (c && k === 'a') { e.preventDefault(); select(items().map(i => i.id).concat(links().map(l => l.id))); }
-    else if (c && k === 's') { e.preventDefault(); saveDoc(); toast('Saved in this browser'); }
-    else if (k === 'delete' || k === 'backspace') { e.preventDefault(); delSel(); }
-    else if (k === 'escape') { if (S.tool !== 'select') setTool('select'); else select([]); }
-    else if (k.startsWith('arrow')) { e.preventDefault(); const s = e.shiftKey ? 10 : 1; nudge(k === 'arrowleft' ? -s : k === 'arrowright' ? s : 0, k === 'arrowup' ? -s : k === 'arrowdown' ? s : 0); }
-    else if (!c) { const m = { v: 'select', l: 'link', b: 'box', t: 'text', h: 'pan' }[k]; if (m && !(RO && ['link', 'box', 'text'].includes(m))) setTool(m); else if (k === '0') fit(); else if (k === '+' || k === '=') $('b-zi').click(); else if (k === '-') $('b-zo').click(); else if (k === '1') { const z = stageSize(); zoomAt(1 / S.view.k, z.w / 2, z.h / 2); } }
-  });
-  document.addEventListener('keyup', e => { if (e.code === 'Space') spaceDown = false; });
-  window.addEventListener('beforeunload', () => { try { saveDoc(); } catch (e) {} });
-  window.addEventListener('resize', () => { checkRO(); renderMini(); });
+'use strict';
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const ls = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
+let _tt; function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(_tt); _tt = setTimeout(() => t.classList.remove('show'), 2600); }
+let _u = 0; const uid = () => 'd' + Date.now().toString(36) + (++_u).toString(36) + Math.floor(Math.random() * 1296).toString(36);
+const idx = () => { try { const a = JSON.parse(ls.get('cl_tg_idx') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } };
+const saveIdx = a => ls.set('cl_tg_idx', JSON.stringify(a));
+const P = { q: '', sort: 'upd', view: ls.get('cl_tg_view') || 'grid' };
+function ago(t) {
+  if (!t) return 'never'; const s = Math.max(0, (Date.now() - t) / 1000);
+  if (s < 60) return 'just now'; if (s < 3600) return Math.floor(s / 60) + ' min ago'; if (s < 86400) return Math.floor(s / 3600) + ' h ago';
+  if (s < 86400 * 7) return Math.floor(s / 86400) + ' d ago'; return new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 }
-function checkRO() { const r = window.matchMedia('(max-width:760px)').matches; if (r !== RO) { RO = r; document.body.classList.toggle('ro', RO); if (RO) setTool('select'); render(); renderInsp(); } $('hint').textContent = RO ? 'View only on small screens' : 'Scroll to zoom · drag empty space to select · Space + drag to pan'; }
-function setTheme(t) { document.body.dataset.theme = t; $('theme-btn').textContent = t === 'dark' ? '🌙' : '☀️'; ls.set('clab_theme', t); const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = t === 'dark' ? '#0b0d10' : '#f8f6f1'; }
-function toggleTheme() { setTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'); render(); }
-(function init() {
-  setTheme(ls.get('clab_theme') || 'dark'); loadPrefs(); buildPalette(); bindCanvas(); bindUI();
-  RO = window.matchMedia('(max-width:760px)').matches; document.body.classList.toggle('ro', RO);
-  const qs = new URLSearchParams(location.search); let done = false;
-  if (qs.get('import')) { try { const o = JSON.parse(ls.get('cl_tg_import') || 'null'); ls.del('cl_tg_import'); if (o) { newDoc(null, o); done = true; setTimeout(() => toast('Imported from the WiFi Planner view. Everything is editable now.'), 400); } } catch (e) {} history.replaceState(null, '', '/topology.html'); }
-  if (!done) { const last = ls.get('cl_tg_last'); if (!(last && openDoc(last))) { const a = idx(); if (!(a.length && openDoc(a[0].id))) newDoc('Untitled diagram'); } }
-  checkRO(); updUndo(); renderDocs(); if (RO) tab('doc');
-  setTimeout(fit, 0);
-})();
+function render() {
+  document.body.classList.toggle('list', P.view === 'list');
+  document.querySelectorAll('#vw button').forEach(b => b.classList.toggle('on', b.dataset.v === P.view));
+  let a = idx(); const all = a.length, q = P.q.trim().toLowerCase();
+  if (q) a = a.filter(x => (x.name || '').toLowerCase().includes(q) || (x.desc || '').toLowerCase().includes(q));
+  a.sort((p, r) => P.sort === 'name' ? (p.name || '').localeCompare(r.name || '') : P.sort === 'cre' ? (r.created || 0) - (p.created || 0) : (r.updated || 0) - (p.updated || 0));
+  $('bar').style.display = all ? '' : 'none';
+  if (!all) {
+    $('area').innerHTML = '<div class="empty"><h2>No diagrams <em>yet</em></h2><p>Create your first network topology. It is saved automatically, so you can come back and keep editing.</p><div class="row"><button class="btn pri" id="e-new">+ New diagram</button><button class="btn" id="e-ex">Open the campus example</button><a class="btn" href="/topology-auto.html">Build from a WiFi Planner project</a></div></div>';
+    $('e-new').onclick = () => newDlg(); $('e-ex').onclick = () => create({ name: 'Campus example', tpl: 'example' });
+  } else {
+    $('area').innerHTML = '<div class="grid"><button class="dc new" id="g-new"><i>+</i>New diagram</button>' + a.map(x => { const th = ls.get('cl_tg_t_' + x.id); return `<div class="dc" data-id="${esc(x.id)}"><div class="th">${th || '<span class="ph">no preview yet</span>'}</div><div class="mt"><b>${esc(x.name || 'Untitled')}</b>${x.desc ? `<span class="ds">${esc(x.desc)}</span>` : ''}<span>${x.n || 0} devices · ${x.l || 0} links</span><span>Edited ${ago(x.updated)}</span></div><button class="dots" data-m="${esc(x.id)}" title="More">⋯</button></div>`; }).join('') + '</div>' + (q && !a.length ? '<div class="empty"><p>No diagram matches your search.</p></div>' : '');
+    $('g-new').onclick = () => newDlg();
+  }
+  $('foot').textContent = all ? all + ' diagram' + (all === 1 ? '' : 's') + ' · saved in this browser only. Export a file to back one up.' : '';
+}
+function open(id) { location.href = '/topology-editor.html?d=' + encodeURIComponent(id); }
+function put(doc) {
+  const id = uid(), now = Date.now(); doc.id = id;
+  const ok = ls.set('cl_tg_d_' + id, JSON.stringify({ id, name: doc.name, items: doc.items || [], links: doc.links || [] }));
+  if (!ok) { toast('Browser storage is full or blocked, could not save'); return null; }
+  const a = idx(); a.unshift({ id, name: doc.name, desc: doc.desc || '', created: now, updated: now, n: (doc.items || []).filter(i => i.k === 'dev').length, l: (doc.links || []).length }); saveIdx(a); return id;
+}
+function create(o) {
+  const ex = o.tpl === 'example' ? exampleDoc() : null;
+  const id = put({ name: ((o.name || '').trim() === 'Untitled diagram' && ex ? '' : (o.name || '').trim()) || (ex ? ex.name : 'Untitled diagram'), desc: o.desc || '', items: ex ? ex.items : [], links: ex ? ex.links : [] });
+  if (id) open(id);
+}
+/* modal helpers */
+function modal(html, onReady) { $('md').innerHTML = html; $('ov').classList.add('on'); if (onReady) onReady(); }
+function closeM() { $('ov').classList.remove('on'); }
+$('ov').addEventListener('pointerdown', e => { if (e.target === $('ov')) closeM(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeM(); hidePop(); } });
+function newDlg() {
+  let tpl = 'blank';
+  modal(`<h3>New diagram</h3><div class="fld"><label class="l">Name</label><input type="text" id="n-name" value="Untitled diagram" maxlength="80"></div><div class="fld"><label class="l">Client or note (optional)</label><input type="text" id="n-desc" maxlength="120" placeholder="e.g. Gedung Rektorat, phase 1"></div><div class="fld"><label class="l">Start from</label><div class="tpl" id="n-tpl"><div data-t="blank" class="on"><b>Blank canvas</b><span>Draw everything yourself</span></div><div data-t="example"><b>Campus example</b><span>Firewall, core, 2 floors, APs</span></div></div></div><div class="note" style="font-size:11.5px;color:var(--text-muted)">Want it generated from APs? Use <a href="/topology-auto.html" style="color:var(--accent)">the WiFi Planner view</a>, then Edit as diagram.</div><div class="ft"><button class="btn" id="n-cancel">Cancel</button><button class="btn pri" id="n-ok">Create and open</button></div>`, () => {
+    const nm = $('n-name'); nm.focus(); nm.select();
+    $('n-tpl').onclick = e => { const d = e.target.closest('[data-t]'); if (!d) return; tpl = d.dataset.t; document.querySelectorAll('#n-tpl [data-t]').forEach(x => x.classList.toggle('on', x === d)); };
+    $('n-cancel').onclick = closeM; const go = () => create({ name: nm.value, desc: $('n-desc').value.trim(), tpl }); $('n-ok').onclick = go;
+    ['n-name', 'n-desc'].forEach(i => $(i).addEventListener('keydown', e => { if (e.key === 'Enter') go(); }));
+  });
+}
+function renameDlg(id) {
+  const e = idx().find(x => x.id === id); if (!e) return;
+  modal(`<h3>Rename diagram</h3><div class="fld"><label class="l">Name</label><input type="text" id="r-name" value="${esc(e.name)}" maxlength="80"></div><div class="fld"><label class="l">Client or note</label><input type="text" id="r-desc" value="${esc(e.desc || '')}" maxlength="120"></div><div class="ft"><button class="btn" id="r-cancel">Cancel</button><button class="btn pri" id="r-ok">Save</button></div>`, () => {
+    $('r-name').focus(); $('r-name').select(); $('r-cancel').onclick = closeM;
+    const go = () => { const a = idx(), x = a.find(y => y.id === id); if (!x) return; x.name = $('r-name').value.trim() || 'Untitled diagram'; x.desc = $('r-desc').value.trim(); x.updated = Date.now(); saveIdx(a);
+      try { const d = JSON.parse(ls.get('cl_tg_d_' + id)); d.name = x.name; ls.set('cl_tg_d_' + id, JSON.stringify(d)); } catch (er) {} closeM(); render(); };
+    $('r-ok').onclick = go; ['r-name', 'r-desc'].forEach(i => $(i).addEventListener('keydown', ev => { if (ev.key === 'Enter') go(); }));
+  });
+}
+function delDlg(id) {
+  const e = idx().find(x => x.id === id); if (!e) return;
+  modal(`<h3>Delete this diagram?</h3><p style="color:var(--text-dim);font-size:13.5px">“${esc(e.name)}” will be removed from this browser. This cannot be undone, so export a file first if you might need it.</p><div class="ft"><button class="btn" id="x-cancel">Cancel</button><button class="btn" id="x-exp">Export first</button><button class="btn" id="x-ok" style="background:var(--danger);border-color:var(--danger);color:#fff">Delete</button></div>`, () => {
+    $('x-cancel').onclick = closeM; $('x-exp').onclick = () => exportDoc(id);
+    $('x-ok').onclick = () => { saveIdx(idx().filter(x => x.id !== id)); ls.del('cl_tg_d_' + id); ls.del('cl_tg_t_' + id); closeM(); render(); toast('Deleted'); };
+  });
+}
+function dup(id) {
+  let d = null; try { d = JSON.parse(ls.get('cl_tg_d_' + id)); } catch (e) {} const x = idx().find(y => y.id === id); if (!d || !x) return;
+  const nid = put({ name: (x.name || 'Diagram') + ' (copy)', desc: x.desc, items: d.items, links: d.links }); if (nid) { const t = ls.get('cl_tg_t_' + id); if (t) ls.set('cl_tg_t_' + nid, t); render(); toast('Duplicated'); }
+}
+function exportDoc(id) {
+  let d = null; try { d = JSON.parse(ls.get('cl_tg_d_' + id)); } catch (e) {} if (!d) return toast('Could not read that diagram');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ app: 'configlabs-topology', v: 1, name: d.name, items: d.items, links: d.links }, null, 1)], { type: 'application/json' }));
+  a.download = (d.name || 'diagram').replace(/[^\w\-]+/g, '_').slice(0, 50) + '.json'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800); toast('Diagram file saved');
+}
+function importFiles(files) {
+  let n = 0, bad = 0, left = files.length; if (!left) return;
+  [...files].forEach(f => { const r = new FileReader(); r.onload = () => { try { const o = JSON.parse(r.result); if (!o || !Array.isArray(o.items)) throw 0; if (put({ name: String(o.name || f.name.replace(/\.json$/i, '') || 'Imported').slice(0, 80), items: o.items, links: Array.isArray(o.links) ? o.links : [] })) n++; } catch (e) { bad++; } if (!--left) { render(); toast(n ? 'Imported ' + n + ' diagram' + (n > 1 ? 's' : '') + (bad ? ', ' + bad + ' skipped' : '') : 'That is not a ConfigLabs diagram file'); } }; r.readAsText(f); });
+}
+/* context menu */
+function hidePop() { $('pop').style.display = 'none'; }
+function showPop(id, btn) {
+  const p = $('pop'); p.innerHTML = `<button data-a="open">Open</button><button data-a="ren">Rename</button><button data-a="dup">Duplicate</button><button data-a="exp">Export file (.json)</button><button data-a="del" class="dng">Delete</button>`; p.dataset.id = id; p.style.display = 'block';
+  const r = btn.getBoundingClientRect(); p.style.left = Math.min(innerWidth - 190, Math.max(8, r.right - 175)) + 'px'; p.style.top = Math.min(innerHeight - 190, r.bottom + 4) + 'px';
+}
+$('pop').addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (!b) return; const id = $('pop').dataset.id; hidePop(); ({ open: () => open(id), ren: () => renameDlg(id), dup: () => dup(id), exp: () => exportDoc(id), del: () => delDlg(id) })[b.dataset.a](); });
+document.addEventListener('pointerdown', e => { if (!e.target.closest('#pop') && !e.target.closest('.dots')) hidePop(); });
+$('area').addEventListener('click', e => { const m = e.target.closest('[data-m]'); if (m) { e.stopPropagation(); showPop(m.dataset.m, m); return; } const c = e.target.closest('.dc[data-id]'); if (c) open(c.dataset.id); });
+addEventListener('scroll', hidePop, true);
+/* toolbar */
+$('b-new').onclick = () => newDlg(); $('b-imp').onclick = () => $('file').click();
+$('file').onchange = e => { importFiles(e.target.files); e.target.value = ''; };
+$('q').addEventListener('input', e => { P.q = e.target.value; render(); });
+$('sort').addEventListener('change', e => { P.sort = e.target.value; render(); });
+$('vw').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { P.view = b.dataset.v; ls.set('cl_tg_view', P.view); render(); } });
+let dc = 0; addEventListener('dragenter', e => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) { dc++; $('drop').classList.add('on'); } });
+addEventListener('dragleave', () => { if (--dc <= 0) { dc = 0; $('drop').classList.remove('on'); } });
+addEventListener('dragover', e => e.preventDefault());
+addEventListener('drop', e => { e.preventDefault(); dc = 0; $('drop').classList.remove('on'); if (e.dataTransfer.files.length) importFiles(e.dataTransfer.files); });
+function setTheme(t) { document.body.dataset.theme = t; $('theme-btn').textContent = t === 'dark' ? '🌙' : '☀️'; ls.set('clab_theme', t); }
+function toggleTheme() { setTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'); }
+setTheme(ls.get('clab_theme') || 'dark'); $('sort').value = P.sort; render();
 </script>
 </body>
 </html>
