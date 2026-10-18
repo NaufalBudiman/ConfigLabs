@@ -13,12 +13,15 @@
 
   /* ---------- defaults ---------- */
   RC.defaults = () => ({ units: 'metric', powerBasis: 'max', warn: 80, crit: 100, floorRating: 1220, clearFront: 1200, clearRear: 900 });
+  RC.defaultRoom = () => ({ w: 8000, l: 6000, h: 3000, objs: [] });
+  RC.OBJ = { door: 'Door', crac: 'Cooling unit', col: 'Column', box: 'Other equipment', text: 'Label' };
+  RC.OBJ_DEF = { door: { w: 900, d: 120 }, crac: { w: 900, d: 900 }, col: { w: 400, d: 400 }, box: { w: 800, d: 800 }, text: { w: 1200, d: 300 } };
   RC.newRack = function (label, u) {
-    return { id: RC.uid('r'), label: str(label || 'Rack 1', 40), u: u || 42, w: 600, d: 1000, numbering: 'bottom-up', frame: 'cabinet', emptyKg: 90, loadRating: 1000, pdus: { A: { cap: 7360 }, B: { cap: 7360 } } };
+    return { id: RC.uid('r'), label: str(label || 'Rack 1', 40), u: u || 42, w: 600, d: 1000, numbering: 'bottom-up', frame: 'cabinet', x: null, y: null, rot: 0, emptyKg: 90, loadRating: 1000, pdus: { A: { cap: 7360 }, B: { cap: 7360 } } };
   };
   RC.newProject = function (name) {
     const r = RC.newRack('Rack 1', 42);
-    return { schemaVersion: RK.SCHEMA, id: RC.uid('p'), name: str(name || 'Untitled rack project', 80), site: '', settings: RC.defaults(), racks: [r], devices: [], models: {}, ack: {} };
+    return { schemaVersion: RK.SCHEMA, id: RC.uid('p'), name: str(name || 'Untitled rack project', 80), site: '', settings: RC.defaults(), room: RC.defaultRoom(), racks: [r], devices: [], models: {}, ack: {} };
   };
 
   /* ---------- sanitiser: every loaded or imported project goes through here ---------- */
@@ -28,16 +31,24 @@
     const P = { schemaVersion: RK.SCHEMA, id: idOk(raw.id) || RC.uid('p'), name: str(raw.name, 80) || 'Untitled rack project', site: str(raw.site, 80),
       settings: { units: oneOf(s.units, ['metric', 'imperial'], d.units), powerBasis: oneOf(s.powerBasis, ['max', 'typ'], d.powerBasis), warn: num(s.warn, d.warn, 10, 100), crit: num(s.crit, d.crit, 10, 150),
         floorRating: num(s.floorRating, d.floorRating, 100, 20000), clearFront: num(s.clearFront, d.clearFront, 0, 5000), clearRear: num(s.clearRear, d.clearRear, 0, 5000) },
-      racks: [], devices: [], models: {}, ack: {} };
+      room: RC.defaultRoom(), racks: [], devices: [], models: {}, ack: {} };
     if (P.settings.warn > P.settings.crit) P.settings.warn = P.settings.crit;
     const rids = {};
     (Array.isArray(raw.racks) ? raw.racks : []).slice(0, 40).forEach(r => {
       if (!r || typeof r !== 'object') return; let id = idOk(r.id); if (!id || rids[id]) id = RC.uid('r'); rids[id] = 1;
       const pd = r.pdus || {}, pc = k => ({ cap: num(pd[k] && pd[k].cap, 0, 0, 100000) });
       P.racks.push({ id, label: str(r.label, 40) || 'Rack', u: num(r.u, 42, 1, 60) | 0, w: oneOf(+r.w, [482, 600, 700, 800], 600), d: num(r.d, 1000, 300, 2000), numbering: oneOf(r.numbering, ['bottom-up', 'top-down'], 'bottom-up'),
-        frame: oneOf(r.frame, ['cabinet', 'open', 'wall'], 'cabinet'), emptyKg: num(r.emptyKg, 90, 0, 1000), loadRating: num(r.loadRating, 1000, 10, 5000), pdus: { A: pc('A'), B: pc('B') } });
+        frame: oneOf(r.frame, ['cabinet', 'open', 'wall'], 'cabinet'), x: r.x == null || r.x === '' ? null : num(r.x, 0, -1e5, 1e5), y: r.y == null || r.y === '' ? null : num(r.y, 0, -1e5, 1e5), rot: oneOf(+r.rot, [0, 90, 180, 270], 0), emptyKg: num(r.emptyKg, 90, 0, 1000), loadRating: num(r.loadRating, 1000, 10, 5000), pdus: { A: pc('A'), B: pc('B') } });
     });
     if (!P.racks.length) P.racks.push(RC.newRack('Rack 1', 42));
+    P.racks.forEach(r => { if (r.x == null || r.y == null) { r.x = null; r.y = null; } });
+    const rm0 = raw.room && typeof raw.room === 'object' ? raw.room : {};
+    P.room = { w: num(rm0.w, 8000, 1500, 60000), l: num(rm0.l, 6000, 1500, 60000), h: num(rm0.h, 3000, 2000, 10000), objs: [] };
+    const oids = {};
+    (Array.isArray(rm0.objs) ? rm0.objs : []).slice(0, 300).forEach(o => {
+      if (!o || typeof o !== 'object' || !RC.OBJ[o.type]) return; let id = idOk(o.id); if (!id || oids[id]) id = RC.uid('o'); oids[id] = 1;
+      P.room.objs.push({ id, type: o.type, x: num(o.x, 0, -1e5, 1e5), y: num(o.y, 0, -1e5, 1e5), w: num(o.w, RC.OBJ_DEF[o.type].w, 50, 20000), d: num(o.d, RC.OBJ_DEF[o.type].d, 50, 20000), rot: oneOf(+o.rot, [0, 90, 180, 270], 0), label: str(o.label, 60), cap: num(o.cap, 0, 0, 5000) });
+    });
     const rm = {}; P.racks.forEach(r => rm[r.id] = r);
     const mids = {};
     if (raw.models && typeof raw.models === 'object') Object.keys(raw.models).slice(0, 200).forEach(k => { const m = RK.cleanModel(raw.models[k]); if (m && m.id === k) { delete m.custom; P.models[k] = m; } });
@@ -98,10 +109,10 @@
   };
 
   /* ---------- validation ---------- */
-  RC.RULES = { collision: 'Overlap', range: 'Out of rack', gap: 'Open gap', host: 'Duplicate hostname', ipdup: 'IP conflict', ipbad: 'Invalid IP', pwr: 'Power', redund: 'Feed redundancy', single: 'Single-fed', nofeed: 'No feed', weight: 'Rack weight', floor: 'Floor loading', depth: 'Depth', missing: 'Unknown model' };
+  RC.RULES = { collision: 'Overlap', range: 'Out of rack', gap: 'Open gap', host: 'Duplicate hostname', ipdup: 'IP conflict', ipbad: 'Invalid IP', pwr: 'Power', redund: 'Feed redundancy', single: 'Single-fed', nofeed: 'No feed', weight: 'Rack weight', floor: 'Floor loading', depth: 'Depth', missing: 'Unknown model', rwall: 'Outside room', rhit: 'Overlap (room)', rclear: 'Clearance', rair: 'Airflow', rdoor: 'Door', rcool: 'Cooling', runpl: 'Not placed' };
   RC.validate = function (P) {
     const out = [], S = P.settings;
-    const add = (rule, sev, rackId, devId, msg) => { const key = rule + ':' + (devId || rackId); out.push({ key, rule, sev, rackId, devId: devId || null, msg, ack: !!P.ack[key] }); };
+    const add = (rule, sev, rackId, devId, msg, objId) => { const key = rule + ':' + (objId || devId || rackId); out.push({ key, rule, sev, rackId, devId: devId || null, objId: objId || null, msg, ack: !!P.ack[key] }); };
     const hosts = {}, ips = {};
     P.racks.forEach(rack => {
       const ds = RC.devsOf(P, rack.id), name = rack.label;
@@ -143,8 +154,99 @@
     });
     Object.keys(hosts).forEach(k => { const a = hosts[k]; if (a.length > 1) a.forEach(d => add('host', 'warn', d.rackId, d.id, 'Hostname "' + d.hostname + '" is used ' + a.length + ' times in this project.')); });
     Object.keys(ips).forEach(k => { const a = ips[k]; if (a.length > 1) a.forEach(d => add('ipdup', 'crit', d.rackId, d.id, 'IP ' + k + ' is used by ' + a.length + ' devices.')); });
+    RC.validateRoom(P, add);
     const ord = { crit: 0, warn: 1, info: 2 }; out.sort((a, b) => ord[a.sev] - ord[b.sev]);
     return out;
+  };
+
+
+  /* ---------- room plan geometry (all mm; x east, y south; rot = direction the rack front faces: 0 south, 90 west, 180 north, 270 east) ---------- */
+  RC.DIR = { 0: [0, 1], 90: [-1, 0], 180: [0, -1], 270: [1, 0] };
+  const swapRot = r => r === 90 || r === 270;
+  RC.rackRect = function (rack) { if (rack.x == null) return null; const sw = swapRot(rack.rot); return { kind: 'rack', id: rack.id, solid: true, x: rack.x, y: rack.y, w: sw ? rack.d : rack.w, h: sw ? rack.w : rack.d, rot: rack.rot, rack }; };
+  RC.objRect = function (o) { const sw = swapRot(o.rot); return { kind: 'obj', id: o.id, type: o.type, solid: o.type !== 'door' && o.type !== 'text', x: o.x, y: o.y, w: sw ? o.d : o.w, h: sw ? o.w : o.d, rot: o.rot, obj: o }; };
+  RC.rects = P => P.racks.map(RC.rackRect).filter(Boolean).concat(P.room.objs.map(RC.objRect));
+  const hit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  RC.hit = hit;
+  /* free distance from an item's edge to the nearest solid thing (or wall) in direction (dx,dy) */
+  RC.gap = function (P, R, dx, dy) {
+    let best = dx > 0 ? P.room.w - (R.x + R.w) : dx < 0 ? R.x : dy > 0 ? P.room.l - (R.y + R.h) : R.y, who = null;
+    RC.rects(P).forEach(o => {
+      if (o.id === R.id || !o.solid) return; let g = null;
+      if (dy !== 0) { if (o.x < R.x + R.w && o.x + o.w > R.x) g = dy > 0 ? o.y - (R.y + R.h) : R.y - (o.y + o.h); }
+      else if (o.y < R.y + R.h && o.y + o.h > R.y) g = dx > 0 ? o.x - (R.x + R.w) : R.x - (o.x + o.w);
+      if (g != null && g >= -1 && g < best) { best = g; who = o; }
+    });
+    return { gap: Math.max(0, best), who };
+  };
+  RC.firstFree = function (P, w, h) {
+    const rects = RC.rects(P), M = 900;
+    for (let y = M; y + h <= P.room.l - M + 1; y += 300) for (let x = M; x + w <= P.room.w - M + 1; x += 300) { const r = { x: x - 300, y: y - 300, w: w + 600, h: h + 600 }; if (!rects.some(o => o.solid && hit(r, o))) return { x, y }; }
+    for (let y = 0; y + h <= P.room.l; y += 300) for (let x = 0; x + w <= P.room.w; x += 300) { const r = { x, y, w, h }; if (!rects.some(o => o.solid && hit(r, o))) return { x, y }; }
+    return null;
+  };
+  /* cold aisles (fronts facing) and hot aisles (backs facing) as rectangles for the plan */
+  RC.aisles = function (P) {
+    const out = [], seen = {};
+    P.racks.map(RC.rackRect).filter(Boolean).forEach(A => {
+      [1, -1].forEach(sgn => {
+        const f = RC.DIR[A.rot], dx = f[0] * sgn, dy = f[1] * sgn, g = RC.gap(P, A, dx, dy), B = g.who; if (!B || B.kind !== 'rack' || g.gap > 3000 || g.gap < 1) return;
+        const fb = RC.DIR[B.rot]; if (fb[0] !== -f[0] || fb[1] !== -f[1]) return; const key = [A.id, B.id].sort().join('|'); if (seen[key]) return; seen[key] = 1;
+        let r; if (dy !== 0) { const x0 = Math.max(A.x, B.x), x1 = Math.min(A.x + A.w, B.x + B.w); r = { x: x0, y: dy > 0 ? A.y + A.h : B.y + B.h, w: x1 - x0, h: g.gap }; }
+        else { const y0 = Math.max(A.y, B.y), y1 = Math.min(A.y + A.h, B.y + B.h); r = { y: y0, x: dx > 0 ? A.x + A.w : B.x + B.w, h: y1 - y0, w: g.gap }; }
+        r.kind = sgn === 1 ? 'cold' : 'hot'; out.push(r);
+      });
+    });
+    return out;
+  };
+  /* arrange all racks in paired rows: fronts face each other (cold aisle), backs face the next pair (hot aisle) */
+  RC.autoLayout = function (P) {
+    const s = P.settings, room = P.room, M = 900, rd = Math.max(...P.racks.map(r => r.d)); let col = 0, x = M, y = M, bandW = 0, endY = 0;
+    const pairs = []; for (let i = 0; i < P.racks.length; i += 2) pairs.push([P.racks[i], P.racks[i + 1]]);
+    pairs.forEach(pr => {
+      const w = Math.max(pr[0].w, pr[1] ? pr[1].w : 0);
+      if (x + w > room.w - M && x > M) { x = M; y += rd + s.clearFront + rd + s.clearRear; }
+      pr[0].x = x; pr[0].y = y; pr[0].rot = 0; if (pr[1]) { pr[1].x = x; pr[1].y = y + rd + s.clearFront; pr[1].rot = 180; }
+      endY = Math.max(endY, (pr[1] ? y + rd + s.clearFront + rd : y + rd)); x += w + 100; room.w = Math.max(room.w, x - 100 + M);
+    });
+    room.l = Math.max(room.l, endY + M); room.w = Math.min(60000, Math.ceil(room.w / 100) * 100); room.l = Math.min(60000, Math.ceil(room.l / 100) * 100);
+  };
+  RC.roomStats = function (P) {
+    const placed = P.racks.filter(r => r.x != null); let w = 0, kg = 0; P.racks.forEach(r => { const st = RC.stats(P, r); w += st.watts; kg += st.kg; });
+    const cool = P.room.objs.filter(o => o.type === 'crac').reduce((t, o) => t + o.cap, 0);
+    return { placed: placed.length, total: P.racks.length, watts: w, btu: w * 3.412, kg, coolKw: cool, coolUnits: P.room.objs.filter(o => o.type === 'crac').length, area: P.room.w / 1000 * P.room.l / 1000, aisles: RC.aisles(P) };
+  };
+  RC.validateRoom = function (P, add) {
+    const S = P.settings, rooms = P.room, rs = RC.rects(P), racks = P.racks.map(RC.rackRect).filter(Boolean), nm = r => r.rack ? r.rack.label : (RC.OBJ[r.obj.type] + (r.obj.label ? ' "' + r.obj.label + '"' : ''));
+    if (!racks.length && !rooms.objs.length) return;
+    P.racks.forEach(r => { if (r.x == null && racks.length) add('runpl', 'info', r.id, null, r.label + ' is not placed in the room plan.', r.id); });
+    rs.forEach((A, i) => {
+      if (A.kind === 'obj' && A.obj.type === 'text') return;
+      if (A.x < 0 || A.y < 0 || A.x + A.w > rooms.w || A.y + A.h > rooms.l) add('rwall', 'crit', null, null, nm(A) + ' extends outside the room walls.', A.id);
+      if (A.solid) rs.forEach((B, j) => { if (j > i && B.solid && hit(A, B)) add('rhit', 'crit', null, null, nm(A) + ' overlaps ' + nm(B) + '.', A.id + '+' + B.id); });
+      if (A.kind === 'rack') {
+        const f = RC.DIR[A.rot], fr = RC.gap(P, A, f[0], f[1]), rr = RC.gap(P, A, -f[0], -f[1]);
+        if (fr.gap < S.clearFront) add('rclear', fr.gap < 600 ? 'crit' : 'warn', null, null, nm(A) + ': front has ' + Math.round(fr.gap) + ' mm clear, ' + S.clearFront + ' mm planned for opening doors and moving equipment' + (fr.who ? ' (' + nm(fr.who) + ' is in the way).' : ' (wall).'), A.id + ':f');
+        if (rr.gap < S.clearRear) add('rclear', rr.gap < 600 ? 'crit' : 'warn', null, null, nm(A) + ': rear has ' + Math.round(rr.gap) + ' mm clear, ' + S.clearRear + ' mm planned for cabling and service' + (rr.who ? ' (' + nm(rr.who) + ' is in the way).' : ' (wall).'), A.id + ':r');
+        if (fr.who && fr.who.kind === 'rack' && fr.gap < 3000) { const fb = RC.DIR[fr.who.rot]; if (fb[0] === f[0] && fb[1] === f[1]) add('rair', 'warn', null, null, nm(A) + ' faces the back of ' + nm(fr.who) + ': that rack blows hot exhaust into its intake. Turn one row around to form hot and cold aisles.', A.id); }
+      }
+      if (A.kind === 'obj' && A.obj.type === 'door') {
+        const f = RC.DIR[A.rot], L = Math.max(A.obj.w, A.obj.d); let z;
+        if (f[1] !== 0) z = { x: A.x, w: A.w, y: f[1] > 0 ? A.y + A.h : A.y - L, h: L }; else z = { y: A.y, h: A.h, x: f[0] > 0 ? A.x + A.w : A.x - L, w: L };
+        const b = rs.find(o => o.solid && hit(z, o)); if (b) add('rdoor', 'warn', null, null, nm(A) + ' swing area is blocked by ' + nm(b) + '.', A.id);
+      }
+    });
+    const st = RC.roomStats(P);
+    if (st.watts > 0 && racks.length) {
+      if (!st.coolUnits) add('rcool', 'info', null, null, 'No cooling unit is placed in the room plan. Add one (Objects) and set its capacity in kW to check the heat load.', 'room');
+      else {
+        const cap = st.coolKw, pct = cap ? st.watts / 1000 / cap * 100 : 999, caps = P.room.objs.filter(o => o.type === 'crac').map(o => o.cap);
+        if (pct > 100) add('rcool', 'crit', null, null, 'Heat load ' + (st.watts / 1000).toFixed(1) + ' kW is above the ' + cap + ' kW of cooling in the room.', 'room');
+        else if (pct > 80) add('rcool', 'warn', null, null, 'Cooling is at ' + Math.round(pct) + '% (' + (st.watts / 1000).toFixed(1) + ' of ' + cap + ' kW). Leave headroom for growth.', 'room');
+        if (caps.length > 1 && cap - Math.max.apply(null, caps) < st.watts / 1000) add('rcool', 'warn', null, null, 'No cooling redundancy: if the largest unit fails, ' + (cap - Math.max.apply(null, caps)) + ' kW is left for ' + (st.watts / 1000).toFixed(1) + ' kW of heat.', 'room-n1');
+        else if (caps.length === 1) add('rcool', 'info', null, null, 'Only one cooling unit: if it stops there is no cooling at all (no N+1).', 'room-n1');
+      }
+    }
   };
 
   /* ---------- blanking panels ---------- */

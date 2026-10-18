@@ -514,14 +514,15 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
           <circle cx="22" cy="12" r="1.8" fill="#ffb86b"/><circle cx="22" cy="24" r="1.8" fill="#ffb86b"/><circle cx="22" cy="36" r="1.8" fill="#ffb86b"/><circle cx="22" cy="50" r="1.8" fill="#ffb86b"/>
         </svg>
       </div>
-      <div class="feature-status beta"><span class="dot"></span>Beta · <span data-cl-rack>v1.0</span></div>
+      <div class="feature-status beta"><span class="dot"></span>Beta · <span data-cl-rack>v1.1</span></div>
       <h2>Rack Builder</h2>
       <div class="subtitle">Plan racks to scale</div>
-      <p>Drag H3C, Cisco and generic equipment into a true-scale 19-inch rack. Power per feed, loss-of-feed and weight are checked as you go, and problems are listed so you can fix them before install day.</p>
+      <p>Drag H3C, Cisco and generic equipment into a true-scale 19-inch rack, then place the racks in a room with hot and cold aisles. Power, weight, clearance and cooling are checked as you go, and problems are listed so you can fix them before install day.</p>
       <ul class="feature-benefits">
         <li>Drag-and-drop rack elevation, front and rear</li>
         <li>Power A/B, weight and floor loading checks</li>
         <li>Issue list: overlaps, gaps, duplicate names and IPs</li>
+        <li>Room plan and 3D view with aisle and clearance checks</li>
         <li>Export PNG, PDF, SVG, BOM CSV or a project file</li>
       </ul>
       <span class="feature-cta">Open Rack Builder</span>
@@ -562,9 +563,9 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
         <p>Active development with regular releases. Here's what shipped recently:</p>
       </div>
       <div class="changelog">
-        <div class="cl-item"><span class="cl-version"><span data-cl-version>v7.0.0</span></span><div class="cl-content"><h4>Rack Builder (beta)</h4><p>A new tool for planning server racks to scale: drag H3C, Cisco and generic equipment into a 19-inch rack, see the front and rear, and check power per feed, loss of a feed, rack weight and floor loading. Open gaps, overlaps and duplicate names or IPs are listed as issues. Export PNG, PDF, SVG, a bill of materials (CSV) or a project file. Values marked Typical are placeholders: check them against the datasheet.</p></div></div>
+        <div class="cl-item"><span class="cl-version"><span data-cl-version>v7.1.0</span></span><div class="cl-content"><h4>Rack Builder: Room plan and 3D</h4><p>Rack Builder now has a Room mode. Set the room size, place racks and objects (doors, cooling units, columns) on a to-scale plan, and drag them with snapping. Racks arrange into hot and cold aisles with one click, and the plan checks clearance in front and behind each rack, door swing, racks facing the wrong way, and the room heat load against your cooling capacity. A 3D view lets you orbit the room. Export the plan or the 3D view as PNG, PDF or SVG.</p></div></div>
+        <div class="cl-item"><span class="cl-version">v7.0.0</span><div class="cl-content"><h4>Rack Builder (beta)</h4><p>A new tool for planning server racks to scale: drag H3C, Cisco and generic equipment into a 19-inch rack, see the front and rear, and check power per feed, loss of a feed, rack weight and floor loading. Open gaps, overlaps and duplicate names or IPs are listed as issues. Export PNG, PDF, SVG, a bill of materials (CSV) or a project file. Values marked Typical are placeholders: check them against the datasheet.</p></div></div>
         <div class="cl-item"><span class="cl-version">v6.3.5</span><div class="cl-content"><h4>H3C config accuracy</h4><p>H3C output now follows the official Comware 7 command reference: DHCP forbidden-ip moved to system view, banner delimiters, common DHCP pools no longer emit an extended-pool apply command, and VLAN templates fill both Name and Description.</p></div></div>
-        <div class="cl-item"><span class="cl-version">v6.3.4</span><div class="cl-content"><h4>Security hardening</h4><p>Safer handling of imported diagrams and of text typed into Config Builder fields, stricter account-menu rendering, request size limits, hostname validation in the linter, and standard security headers.</p></div></div>
         <div class="cl-item"><span class="cl-version">v6.3.3</span><div class="cl-content"><h4>Topology: Export Everywhere</h4><p>JPEG, WebP and PDF downloads are now also in the WiFi Planner view, and every diagram on the My diagrams page has an Export image / PDF option in its menu that opens the export dialog directly.</p></div></div>
         <div class="cl-item"><span class="cl-version">v6.3.2</span><div class="cl-content"><h4>Topology (beta): Export</h4><p>The Topology editor is now labelled Beta. Export has its own dialog with a live preview: PNG, JPEG, WebP, SVG, PDF (A4, A3, Letter or fit-to-diagram), draw.io for editing in diagrams.net, and a .json backup. Choose resolution, theme, transparent background and whether to include the title and legend.</p></div></div>
       </div>

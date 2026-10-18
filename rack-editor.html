@@ -163,16 +163,16 @@ html,body{height:100%}body{display:flex;flex-direction:column;overflow:hidden;mi
 #app{grid-template-columns:304px minmax(0,1fr) 344px}
 #stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
 #docbar{flex:none;height:46px;display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--bg-2);border-bottom:1px solid var(--border)}
-#docbar input{width:auto;flex:0 1 320px;background:transparent;border-color:transparent;font-family:var(--sans);font-size:14px;font-weight:600}
+#docbar .btn,#docbar .seg button{white-space:nowrap}#docbar input{width:auto;flex:0 1 260px;min-width:120px;background:transparent;border-color:transparent;font-family:var(--sans);font-size:14px;font-weight:600}
 #docbar input:hover{border-color:var(--border)}#docbar input:focus{background:var(--bg)}
 #docbar .sp{flex:1}#sv{font:11px var(--mono);color:var(--text-muted);white-space:nowrap}
 #rtabs{flex:none;display:flex;gap:4px;padding:8px 14px 0;background:var(--bg-2);border-bottom:1px solid var(--border);overflow-x:auto;align-items:flex-end}
 #rtabs button{padding:7px 14px;border:1px solid var(--border);border-bottom:none;border-radius:9px 9px 0 0;background:var(--bg);color:var(--text-dim);font:500 12.5px var(--sans);cursor:pointer;white-space:nowrap}
 #rtabs button.on{background:var(--surface);color:var(--accent);border-color:var(--border-strong);position:relative;top:1px}
 #rtabs .add{color:var(--accent);border-style:dashed}
-#bar2{flex:none;display:flex;gap:8px;align-items:center;padding:8px 14px;background:var(--bg-2);border-bottom:1px solid var(--border);flex-wrap:wrap}
-#bar2 .zl{font:11px var(--mono);color:var(--text-muted);min-width:42px;text-align:center}
-#bar2 .sp{flex:1}
+#bar2,#bar3{flex:none;display:flex;gap:8px;align-items:center;padding:8px 14px;background:var(--bg-2);border-bottom:1px solid var(--border);flex-wrap:wrap}
+#bar2 .zl,#bar3 .zl{font:11px var(--mono);color:var(--text-muted);min-width:42px;text-align:center}
+#bar2 .sp,#bar3 .sp{flex:1}
 #cv{flex:1;min-height:0;overflow:auto;display:flex;padding:20px;background:var(--bg);background-image:radial-gradient(var(--border) 1px,transparent 1px);background-size:18px 18px;touch-action:pan-x pan-y}
 #cv svg{margin:auto;display:block;flex:none;user-select:none;-webkit-user-select:none}
 #cv svg [data-dev]{cursor:grab}
@@ -191,6 +191,8 @@ html,body{height:100%}body{display:flex;flex-direction:column;overflow:hidden;mi
 .mi .add{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:7px;border:1px solid var(--border-strong);background:var(--bg);color:var(--accent);cursor:pointer;font-size:16px;line-height:1}
 .mi .add:hover{background:var(--accent);color:#0b0d10}
 #chip{position:fixed;z-index:99;pointer-events:none;padding:6px 10px;border-radius:8px;background:var(--surface);border:1px solid var(--accent);font:12px var(--mono);box-shadow:0 10px 26px rgba(0,0,0,.4);display:none}
+.rr{display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:6px;border:1px solid var(--border);border-radius:10px;background:var(--surface);cursor:pointer}.rr.on{border-color:var(--accent)}.rr b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px}.rr small{color:var(--text-muted);font:10.5px var(--mono)}
+#modeseg{min-width:150px}#r3d{touch-action:none;cursor:grab}
 .f2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .f{margin-bottom:10px}.f.full{grid-column:1/-1}
 textarea{width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;resize:vertical;min-height:54px}
@@ -239,7 +241,7 @@ table.bom td{padding:7px 4px;border-bottom:1px solid var(--border);vertical-alig
 <div id="app">
   <aside class="panel" id="left"></aside>
   <section id="stage">
-    <div id="docbar"><a class="btn sm" href="/rack.html" title="Back to all rack projects">← Projects</a><input type="text" id="docname" maxlength="80" placeholder="Project name" spellcheck="false"><span class="beta">BETA</span><span class="sp"></span><span id="sv"></span>
+    <div id="docbar"><a class="btn sm" href="/rack.html" title="Back to all rack projects">← Projects</a><input type="text" id="docname" maxlength="80" placeholder="Project name" spellcheck="false"><span class="beta">BETA</span><div class="seg" id="modeseg"><button data-md="rack" class="on">Rack</button><button data-md="room">Room</button></div><span class="sp"></span><span id="sv"></span>
       <button class="btn sm" id="b-undo" title="Undo (Ctrl+Z)">↶</button><button class="btn sm" id="b-redo" title="Redo (Ctrl+Y)">↷</button><button class="btn sm pri" id="b-exp">Export</button></div>
     <div id="rtabs"></div>
     <div id="bar2">
@@ -248,6 +250,13 @@ table.bom td{padding:7px 4px;border-bottom:1px solid var(--border);vertical-alig
       <label class="tgl" style="gap:8px;padding:0 4px"><span>Show gaps</span><input type="checkbox" id="t-gaps" checked><i></i></label>
       <span class="sp"></span>
       <button class="btn sm" id="b-blank" title="Fit blanking panels in every open gap between equipment">Fill gaps with blanking</button>
+    </div>
+    <div id="bar3" style="display:none">
+      <div class="seg" id="viewseg" style="min-width:140px"><button data-v="2d" class="on">2D plan</button><button data-v="3d">3D</button></div>
+      <button class="btn sm" id="rz-out" title="Zoom out">−</button><span class="zl" id="zl3" style="min-width:64px">100%</span><button class="btn sm" id="rz-in" title="Zoom in">+</button><button class="btn sm" id="rz-fit">Fit</button>
+      <label class="lbl" style="margin:0 0 0 6px">Colour by</label><select id="r-col" style="width:auto"><option value="plain">Plain</option><option value="power">Power load</option><option value="fill">Space used</option><option value="weight">Weight</option></select>
+      <label class="tgl" style="gap:8px;padding:0 4px"><span>Clearance zones</span><input type="checkbox" id="b-clr"><i></i></label>
+      <span class="sp"></span><button class="btn sm" id="b-rot" title="Rotate selected (R)">Rotate ↻</button>
     </div>
     <div id="cv"></div>
     <div id="stat"></div>
@@ -305,17 +314,18 @@ function undo(redo) {
 }
 
 /* ---------- rendering ---------- */
-function render() { S.issues = RC.validate(S.P); renderTabs(); renderCanvas(); renderLeft(); renderRight(); renderStat(); $('docname').value !== S.P.name && document.activeElement !== $('docname') && ($('docname').value = S.P.name); $('b-undo').disabled = !S.undo.length; $('b-redo').disabled = !S.redo.length; }
+function render() { S.issues = RC.validate(S.P); renderTabs(); renderCanvas(); renderLeft(); renderRight(); S.mode === 'room' ? statRoom() : renderStat(); $('docname').value !== S.P.name && document.activeElement !== $('docname') && ($('docname').value = S.P.name); $('b-undo').disabled = !S.undo.length; $('b-redo').disabled = !S.redo.length; }
 function renderTabs() {
   $('rtabs').innerHTML = S.P.racks.map(r => `<button data-r="${esc(r.id)}" class="${r.id === S.rackId ? 'on' : ''}">${esc(r.label)} <small style="color:var(--text-muted)">${r.u}U</small></button>`).join('') + '<button class="add" data-add="1" title="Add a rack">+ Rack</button>';
   document.querySelectorAll('#faceseg button').forEach(b => b.classList.toggle('on', b.dataset.f === S.face));
 }
 function renderCanvas() {
+  if (S.mode === 'room') return renderRoom();
   const r = rack(), o = RR.rackSVG(S.P, r.id, { face: S.face, sel: S.sel, pal: pal(), gaps: S.gaps, pid: 'c' }); S.geo = o;
   $('cv').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" id="rsvg" width="${Math.round(o.w * S.zoom)}" height="${Math.round(o.h * S.zoom)}" viewBox="0 0 ${o.w} ${o.h}">${o.svg}<g id="gh" pointer-events="none"></g></svg>`;
   $('zl').textContent = Math.round(S.zoom * 100) + '%';
 }
-function fit(strict) { const r = rack(), h = r.u * UMM + 60; let z = Math.min(2.5, ($('cv').clientHeight - 44) / h); S.zoom = Math.max(strict ? 0.2 : 0.55, z); renderCanvas(); }
+function fit(strict) { if (S.mode === 'room') return fitRoom(); const r = rack(), h = r.u * UMM + 60; let z = Math.min(2.5, ($('cv').clientHeight - 44) / h); S.zoom = Math.max(strict ? 0.2 : 0.55, z); renderCanvas(); }
 function renderStat() {
   const r = rack(), st = RC.stats(S.P, r), live = S.issues.filter(i => !i.ack), c = live.filter(i => i.sev === 'crit').length, w = live.filter(i => i.sev === 'warn').length;
   $('stat').innerHTML = `<span>${esc(r.label)}</span><span>Space <b>${st.usedU}/${r.u}U</b> (${st.pct}%)</span><span>Power <b>${fW(st.watts)}</b></span><span>Weight <b>${fKg(st.kg)}</b></span><span class="sp"></span><span>${c ? '<b style="color:var(--danger)">' + c + ' critical</b> · ' : ''}${w ? '<b style="color:var(--warning)">' + w + ' warnings</b>' : (c ? '' : '<b style="color:var(--accent)">No problems found</b>')}</span>`;
@@ -325,6 +335,7 @@ function modelLine(m) { const w = S.P.settings.powerBasis === 'typ' && m.w.typ !
 
 /* ---------- left panel ---------- */
 function renderLeft() {
+  if (S.mode === 'room') { $('left').innerHTML = leftRoom(); return; }
   const L = $('left'); const keepQ = document.activeElement && document.activeElement.id === 'lq';
   let h = `<div class="tabs"><button data-tl="lib" class="${S.tabL === 'lib' ? 'on' : ''}">Equipment</button><button data-tl="rack" class="${S.tabL === 'rack' ? 'on' : ''}">Rack &amp; project</button></div>`;
   if (S.tabL === 'lib') {
@@ -356,6 +367,7 @@ function renderLeft() {
 /* ---------- right panel ---------- */
 const bar = (v, cap, warn, crit) => { const p = cap ? v / cap * 100 : (v > 0 ? 999 : 0); return `<div class="meter"><i class="${p >= crit ? 'bad' : p >= warn ? 'warn' : ''}" style="width:${Math.min(100, p)}%"></i></div>`; };
 function renderRight() {
+  if (S.mode === 'room') { const R = $('right'), st = R.scrollTop; R.innerHTML = rightRoom(); R.scrollTop = st; return; }
   const live = S.issues.filter(i => !i.ack), c = live.filter(i => i.sev === 'crit').length, w = live.filter(i => i.sev === 'warn').length;
   let h = `<div class="tabs"><button data-tr="dev" class="${S.tabR === 'dev' ? 'on' : ''}">Device</button><button data-tr="sum" class="${S.tabR === 'sum' ? 'on' : ''}">Power &amp; weight</button><button data-tr="iss" class="${S.tabR === 'iss' ? 'on' : ''}">Issues${c ? `<span class="n">${c}</span>` : w ? `<span class="n w">${w}</span>` : ''}</button><button data-tr="bom" class="${S.tabR === 'bom' ? 'on' : ''}">BOM</button></div>`;
   if (S.tabR === 'dev') h += devPanel(); else if (S.tabR === 'sum') h += sumPanel(); else if (S.tabR === 'iss') h += issPanel(); else h += bomPanel();
@@ -392,7 +404,7 @@ ${both ? `<div class="kv" style="margin-top:8px">If feed A fails: B carries <b>$
 }
 function issPanel() {
   const a = S.issues; if (!a.length) return '<div class="empt"><b style="color:var(--accent)">No problems found.</b><br>Checked: overlaps, open gaps, duplicate names and IPs, power per feed, loss of a feed, weight and floor loading.</div>';
-  return '<div class="sec"><p class="note" style="margin:0 0 10px">Click an issue to jump to it. Mark one as accepted if it is intentional: it stays listed but stops counting.</p>' + a.map(i => `<div class="is ${i.sev}${i.ack ? ' ack' : ''}" data-ik="${esc(i.key)}" data-ir="${esc(i.rackId)}" data-id="${esc(i.devId || '')}"><button class="btn sm ak" data-ack="${esc(i.key)}">${i.ack ? 'Undo accept' : 'Accept'}</button><b>${esc(RC.RULES[i.rule] || i.rule)} · ${esc(i.sev)}</b>${esc(i.msg)}</div>`).join('') + '</div>';
+  return '<div class="sec"><p class="note" style="margin:0 0 10px">Click an issue to jump to it. Mark one as accepted if it is intentional: it stays listed but stops counting.</p>' + a.map(i => `<div class="is ${i.sev}${i.ack ? ' ack' : ''}" data-ik="${esc(i.key)}" data-ir="${esc(i.rackId || '')}" data-id="${esc(i.devId || '')}" data-io="${esc(i.objId || '')}"><button class="btn sm ak" data-ack="${esc(i.key)}">${i.ack ? 'Undo accept' : 'Accept'}</button><b>${esc(RC.RULES[i.rule] || i.rule)} · ${esc(i.sev)}</b>${esc(i.msg)}</div>`).join('') + '</div>';
 }
 function bomPanel() {
   const rows = RC.bom(S.P), tw = rows.reduce((t, r) => t + r.w, 0), tk = rows.reduce((t, r) => t + r.kg, 0), tq = rows.reduce((t, r) => t + r.qty, 0);
@@ -450,6 +462,7 @@ $('left').addEventListener('pointerdown', e => {
   startDrag('new', { modelId: m.id, h: m.u, off: m.u * UMM / 2, label: (m.vendor ? m.vendor + ' ' : '') + m.name + ' · ' + m.u + 'U' }, e);
 });
 $('cv').addEventListener('pointerdown', e => {
+  if (S.mode === 'room') return roomDown(e);
   if (e.button) return; const g = e.target.closest('[data-dev]');
   if (!g) { if (S.sel) { S.sel = null; render(); } return; }
   const id = g.dataset.dev, d = RC.dev(S.P, id); if (!d) return; const svg = $('rsvg'), b = svg.getBoundingClientRect(), h = RC.h(S.P, d), top = RR.slotTop(rack(), d.u, h, S.geo.topY), off = (e.clientY - b.top) / S.zoom - top;
@@ -475,9 +488,10 @@ $('left').addEventListener('change', e => {
 });
 $('right').addEventListener('click', e => {
   const t = e.target.closest('[data-tr]'); if (t) { S.tabR = t.dataset.tr; return renderRight(); }
+  if (S.mode === 'room' && !e.target.closest('[data-ik]')) return;
   const da = e.target.closest('[data-da]'); if (da && S.sel) return da.dataset.da === 'dup' ? dupDevice(S.sel) : delDevice(S.sel);
   const ak = e.target.closest('[data-ack]'); if (ak) { e.stopPropagation(); const k = ak.dataset.ack; return mutate(() => { if (S.P.ack[k]) delete S.P.ack[k]; else S.P.ack[k] = 1; }); }
-  const is = e.target.closest('[data-ik]'); if (is) { if (is.dataset.ir && RC.rack(S.P, is.dataset.ir)) S.rackId = is.dataset.ir; S.sel = is.dataset.id && RC.dev(S.P, is.dataset.id) ? is.dataset.id : null; if (S.sel) S.tabR = 'dev'; render(); return; }
+  const is = e.target.closest('[data-ik]'); if (is) return issueGo(is);
   if (e.target.closest('#b-csv')) download(fileBase() + '-bom.csv', new Blob(['﻿' + RC.bomCSV(S.P)], { type: 'text/csv' }));
 });
 $('right').addEventListener('change', e => {
@@ -501,11 +515,12 @@ $('z-in').onclick = () => { S.zoom = Math.min(3, S.zoom * 1.2); renderCanvas(); 
 $('t-gaps').onchange = e => { S.gaps = e.target.checked; renderCanvas(); };
 $('b-blank').onclick = () => { const n = RC.freeRuns(S.P, rack(), true).length; if (!n) return toast('No open gaps between equipment'); let c = 0; mutate(() => { c = RC.autoBlank(S.P, S.rackId, false); }); toast(c + ' blanking panel' + (c === 1 ? '' : 's') + ' added'); };
 $('b-undo').onclick = () => undo(false); $('b-redo').onclick = () => undo(true); $('b-exp').onclick = () => exportDlg();
-$('cv').addEventListener('wheel', e => { if (e.ctrlKey || e.metaKey) { e.preventDefault(); S.zoom = Math.max(0.2, Math.min(3, S.zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1))); renderCanvas(); } }, { passive: false });
+$('cv').addEventListener('wheel', e => { if (S.mode === 'room') { if (S.view === '3d') { e.preventDefault(); S.cam.zoom = Math.max(0.3, Math.min(4, S.cam.zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1))); renderRoom(); } else if (e.ctrlKey || e.metaKey) { e.preventDefault(); S.pz = Math.max(0.01, Math.min(1, S.pz * (e.deltaY < 0 ? 1.1 : 1 / 1.1))); renderRoom(); } return; } if (e.ctrlKey || e.metaKey) { e.preventDefault(); S.zoom = Math.max(0.2, Math.min(3, S.zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1))); renderCanvas(); } }, { passive: false });
 document.addEventListener('keydown', e => {
-  const tg = e.target.tagName; if (e.key === 'Escape') { if ($('ov').classList.contains('on')) closeM(); else if (S.sel) { S.sel = null; render(); } return; }
+  const tg = e.target.tagName; if (e.key === 'Escape') { if ($('ov').classList.contains('on')) closeM(); else if (S.mode === 'room' && S.rsel) { S.rsel = null; render(); } else if (S.sel) { S.sel = null; render(); } return; }
   if (tg === 'INPUT' || tg === 'TEXTAREA' || tg === 'SELECT' || $('ov').classList.contains('on')) return;
   const mod = e.ctrlKey || e.metaKey;
+  if (S.mode === 'room') { if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(e.shiftKey); } else if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); undo(true); } else if (!mod) roomKey(e); return; }
   if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(e.shiftKey); } else if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); undo(true); }
   else if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); if (S.sel) dupDevice(S.sel); }
   else if ((e.key === 'Delete' || e.key === 'Backspace') && S.sel) { e.preventDefault(); delDevice(S.sel); }
@@ -547,16 +562,17 @@ function customDlg() {
     };
   });
 }
-const XS = { fmt: 'png', faces: 'front', scope: 'current', theme: 'light', scale: 2, page: 'a4' };
+const XS = { what: 'racks', fmt: 'png', faces: 'front', scope: 'current', theme: 'light', scale: 2, page: 'a4' };
 function fileBase() { return (S.P.name || 'rack').replace(/[^\w\-]+/g, '_').slice(0, 50) || 'rack'; }
 function download(name, blob) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800); }
 function exportDlg() {
+  XS.what = S.mode === 'room' ? (S.view === '3d' ? '3d' : 'plan') : 'racks';
   const seg = (k, a) => `<div class="opts" data-x="${k}">${a.map(x => `<button data-v="${esc(x[0])}" class="${String(XS[k]) === String(x[0]) ? 'on' : ''}">${esc(x[1])}</button>`).join('')}</div>`;
   modal(`<h3>Export</h3><div class="f"><label class="lbl">Format</label>${seg('fmt', [['png', 'PNG image'], ['pdf', 'PDF'], ['svg', 'SVG'], ['csv', 'BOM (CSV)'], ['json', 'Project file (.json)']])}</div>
-<div id="x-img"><div class="f"><label class="lbl">Show</label>${seg('faces', [['front', 'Front'], ['rear', 'Rear'], ['both', 'Front and rear']])}</div><div class="f"><label class="lbl">Racks</label>${seg('scope', [['current', 'This rack'], ['all', 'All racks']])}</div>
+<div id="x-img"><div class="f"><label class="lbl">Content</label>${seg('what', [['racks', 'Rack elevations'], ['plan', 'Room plan'], ['3d', '3D view']])}</div><div id="x-fr"><div class="f"><label class="lbl">Show</label>${seg('faces', [['front', 'Front'], ['rear', 'Rear'], ['both', 'Front and rear']])}</div><div class="f"><label class="lbl">Racks</label>${seg('scope', [['current', 'This rack'], ['all', 'All racks']])}</div></div>
 <div class="f"><label class="lbl">Theme</label>${seg('theme', [['light', 'Light (for print)'], ['dark', 'Dark']])}</div><div class="f" id="x-sc"><label class="lbl">Resolution</label>${seg('scale', [[1, '1×'], [2, '2×'], [3, '3×']])}</div><div class="f" id="x-pg"><label class="lbl">PDF page</label>${seg('page', [['auto', 'Fit drawing'], ['a4', 'A4'], ['a3', 'A3'], ['letter', 'Letter']])}</div></div>
 <div class="ft"><button class="btn" id="x-c">Close</button><button class="btn pri" id="x-go">Download</button></div>`, () => {
-    const sync = () => { const f = XS.fmt; $('x-img').style.display = f === 'csv' || f === 'json' ? 'none' : ''; $('x-sc').style.display = f === 'png' || f === 'pdf' ? '' : 'none'; $('x-pg').style.display = f === 'pdf' ? '' : 'none'; };
+    const sync = () => { const f = XS.fmt; $('x-fr').style.display = XS.what === 'racks' ? '' : 'none'; $('x-img').style.display = f === 'csv' || f === 'json' ? 'none' : ''; $('x-sc').style.display = f === 'png' || f === 'pdf' ? '' : 'none'; $('x-pg').style.display = f === 'pdf' ? '' : 'none'; };
     $('md').onclick = e => { const b = e.target.closest('[data-x] button'); if (!b) return; const k = b.parentNode.dataset.x; XS[k] = k === 'scale' ? +b.dataset.v : b.dataset.v; b.parentNode.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); sync(); };
     sync(); $('x-c').onclick = closeM; $('x-go').onclick = doExport;
   });
@@ -568,7 +584,7 @@ async function doExport() {
     if (f === 'json') download(base + '.json', new Blob([JSON.stringify({ app: 'configlabs-rack', v: 1, project: S.P }, null, 1)], { type: 'application/json' }));
     else if (f === 'csv') download(base + '-bom.csv', new Blob(['﻿' + RC.bomCSV(S.P)], { type: 'text/csv' }));
     else {
-      const svg = RR.sheetSVG(S.P, { ids: XS.scope === 'all' ? null : [S.rackId], faces: XS.faces === 'both' ? ['front', 'rear'] : [XS.faces], pal: XS.theme, gaps: false, scale: 0.9 });
+      const svg = XS.what === 'plan' ? RR.planSheetSVG(S.P, { pal: XS.theme, color: S.rcolor, clear: S.rclear, scale: 0.12 }) : XS.what === '3d' ? RR.room3D(S.P, { pal: XS.theme, yaw: S.cam.yaw, pitch: S.cam.pitch, zoom: S.cam.zoom, w: 1400, h: 900, color: S.rcolor }) : RR.sheetSVG(S.P, { ids: XS.scope === 'all' ? null : [S.rackId], faces: XS.faces === 'both' ? ['front', 'rear'] : [XS.faces], pal: XS.theme, gaps: false, scale: 0.9 });
       if (f === 'svg') download(base + '.svg', new Blob([svg], { type: 'image/svg+xml' }));
       else {
         const fill = XS.theme === 'light' ? '#ffffff' : RR.PAL.dark.bg, c = await svgToCanvas(svg, XS.scale, fill);
@@ -582,6 +598,121 @@ async function doExport() {
     }
     toast('Export saved'); closeM();
   } catch (e) { toast('Export failed. Try SVG, or a lower resolution'); btn.disabled = false; btn.textContent = 'Download'; }
+}
+
+/* ================= ROOM MODE (v7.1) ================= */
+Object.assign(S, { mode: 'rack', view: '2d', rsel: null, pz: 0.1, cam: { yaw: -35, pitch: 42, zoom: 1 }, rcolor: 'plain', rclear: false, tabRR: 'item', rg: null });
+const ROOMRULES = { rwall: 1, rhit: 1, rclear: 1, rair: 1, rdoor: 1, rcool: 1, runpl: 1 };
+const DIRN = { 0: 'south', 90: 'west', 180: 'north', 270: 'east' };
+function setMode(m) {
+  S.mode = m; document.querySelectorAll('#modeseg button').forEach(b => b.classList.toggle('on', b.dataset.md === m));
+  $('rtabs').style.display = $('bar2').style.display = m === 'rack' ? '' : 'none'; $('bar3').style.display = m === 'room' ? '' : 'none';
+  render(); if (m === 'room') fitRoom(); else fit();
+}
+function rItem() { const s = S.rsel; if (!s) return null; if (s.t === 'rack') { const r = RC.rack(S.P, s.id); return r && r.x != null ? { t: 'rack', it: r, rc: RC.rackRect(r) } : null; } const o = S.P.room.objs.find(x => x.id === s.id); return o ? { t: 'obj', it: o, rc: RC.objRect(o) } : null; }
+function renderRoom() {
+  const cv = $('cv');
+  if (S.view === '3d') { const W = Math.max(520, cv.clientWidth - 40), H = Math.max(380, cv.clientHeight - 40); cv.innerHTML = RR.room3D(S.P, { pal: pal(), yaw: S.cam.yaw, pitch: S.cam.pitch, zoom: S.cam.zoom, w: W, h: H, color: S.rcolor, sel: S.rsel }); $('zl3').textContent = Math.round(S.cam.zoom * 100) + '%'; return; }
+  const o = RR.roomSVG(S.P, { pal: pal(), color: S.rcolor, clear: S.rclear, sel: S.rsel }); S.rg = o;
+  cv.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" id="rsvg2" width="${Math.round(o.w * S.pz)}" height="${Math.round(o.h * S.pz)}" viewBox="0 0 ${o.w} ${o.h}">${o.svg}</svg>`; $('zl3').textContent = Math.round(S.pz * 1000) / 10 + ' px/cm';
+}
+function fitRoom() { if (S.view === '3d') { S.cam.zoom = 1; return renderRoom(); } const R = S.P.room; S.pz = Math.max(0.02, Math.min(0.5, Math.min(($('cv').clientWidth - 44) / (R.w + 1800), ($('cv').clientHeight - 44) / (R.l + 1800)))); renderRoom(); }
+function statRoom() {
+  const st = RC.roomStats(S.P), live = S.issues.filter(i => !i.ack), c = live.filter(i => i.sev === 'crit').length, w = live.filter(i => i.sev === 'warn').length;
+  $('stat').innerHTML = `<span>Room <b>${S.P.room.w} × ${S.P.room.l} mm</b></span><span>Racks placed <b>${st.placed}/${st.total}</b></span><span>IT load <b>${fW(st.watts)}</b></span><span>Cooling <b>${st.coolUnits ? st.coolKw + ' kW' : 'none'}</b></span><span class="sp"></span><span>${c ? '<b style="color:var(--danger)">' + c + ' critical</b> · ' : ''}${w ? '<b style="color:var(--warning)">' + w + ' warnings</b>' : (c ? '' : '<b style="color:var(--accent)">No problems found</b>')}</span>`;
+}
+function leftRoom() {
+  const P = S.P, R = P.room, s = P.settings, fld = (l, a, v) => `<div class="f"><label class="lbl">${l}</label><input type="text" inputmode="numeric" ${a} value="${v}"></div>`;
+  let h = `<div class="sec"><h4>Room</h4><div class="f2">${fld('Width (mm)', 'data-rm="w"', R.w)}${fld('Length (mm)', 'data-rm="l"', R.l)}${fld('Ceiling (mm)', 'data-rm="h"', R.h)}<div class="f"></div>${fld('Front clearance (mm)', 'data-ps="clearFront"', s.clearFront)}${fld('Rear clearance (mm)', 'data-ps="clearRear"', s.clearRear)}</div><p class="note">Clearance is the free floor you want in front of and behind every rack. 1200 mm front and 900 mm rear are common planning values: use your own standard if it differs.</p></div>`;
+  h += `<div class="sec"><h4>Racks <small>${RC.roomStats(P).placed}/${P.racks.length} placed</small></h4>` + P.racks.map(r => { const on = S.rsel && S.rsel.t === 'rack' && S.rsel.id === r.id, pl = r.x != null; return `<div class="rr${on ? ' on' : ''}" data-rr="${esc(r.id)}"><b>${esc(r.label)}</b><small>${r.u}U · ${r.w}×${r.d}</small><button class="btn sm" data-rpl="${esc(r.id)}">${pl ? 'Remove' : 'Place'}</button></div>`; }).join('').replace(/margin:0 12px 6px;/g, '') + `<div class="row" style="margin-top:10px"><button class="btn sm pri" id="b-auto" title="Arrange all racks in paired rows: fronts face each other (cold aisle), backs face the next pair (hot aisle)">Auto-arrange aisles</button></div><p class="note">Drag a rack on the plan to move it. R rotates it. Green edge = front. Edges snap to walls and neighbours: hold Alt for free placement.</p></div>`;
+  h += `<div class="sec"><h4>Add to room</h4><div class="f2">${['door', 'crac', 'col', 'box', 'text'].map(k => `<button class="btn sm" data-ro="${k}">+ ${esc(RC.OBJ[k])}</button>`).join('')}</div><p class="note">Cooling units count toward the heat check. Set their capacity in kW after adding.</p></div><div style="height:20px"></div>`;
+  return h;
+}
+function rightRoom() {
+  const live = S.issues.filter(i => !i.ack), c = live.filter(i => i.sev === 'crit').length, w = live.filter(i => i.sev === 'warn').length, P = S.P;
+  let h = `<div class="tabs"><button data-trr="item" class="${S.tabRR === 'item' ? 'on' : ''}">Selected</button><button data-trr="sum" class="${S.tabRR === 'sum' ? 'on' : ''}">Room summary</button><button data-trr="iss" class="${S.tabRR === 'iss' ? 'on' : ''}">Issues${c ? `<span class="n">${c}</span>` : w ? `<span class="n w">${w}</span>` : ''}</button></div>`;
+  if (S.tabRR === 'iss') return h + issPanel();
+  if (S.tabRR === 'sum') {
+    const st = RC.roomStats(P), kw = st.watts / 1000, pct = st.coolKw ? kw / st.coolKw * 100 : null, fl = st.kg / st.area, s = P.settings;
+    return h + `<div class="sec"><h4>Heat and cooling</h4><div class="mrow"><span>IT load = heat</span><span><b>${fW(st.watts)}</b> · ${Math.round(st.btu)} BTU/h</span></div><div class="mrow"><span>Cooling in room</span><span><b>${st.coolUnits ? st.coolKw + ' kW' : 'none placed'}</b>${pct != null ? ' · ' + Math.round(pct) + '%' : ''}</span></div>${pct != null ? bar(kw, st.coolKw, 80, 100) : ''}<p class="note">Counts all racks in the project, placed or not. Cooling capacity is what you enter on each unit: use the vendor's sensible cooling figure, not its electrical rating.</p></div>
+<div class="sec"><h4>Floor</h4><div class="mrow"><span>Room area</span><span><b>${st.area.toFixed(1)} m²</b></span></div><div class="mrow"><span>Average load</span><span><b>${Math.round(fl)} kg/m²</b> of ${s.floorRating}</span></div>${bar(fl, s.floorRating, 90, 100)}<p class="note">Average over the whole room. Under each rack the load is much higher: see Power &amp; weight in rack mode.</p></div>
+<div class="sec"><h4>Layout</h4><div class="kv">Racks placed <b>${st.placed} of ${st.total}</b><br>Cold aisles <b>${st.aisles.filter(a => a.kind === 'cold').length}</b> · hot aisles <b>${st.aisles.filter(a => a.kind === 'hot').length}</b><br>Total weight <b>${fKg(st.kg)}</b></div></div>`;
+  }
+  const r = rItem();
+  if (!r) return h + `<div class="sec"><h4>Room plan</h4><div class="kv">Click a rack or object to edit it. Use <b>Place</b> in the left panel to put a rack in the room.</div></div><div class="sec"><h4>Shortcuts</h4><div class="kv">R: rotate · Delete: remove from room<br>Arrow keys: nudge 100 mm (Shift 600 mm)<br>Drag: move · Alt+drag: no snapping<br>3D: drag to orbit, mouse wheel to zoom</div></div>`;
+  const nf = (l, k, v) => `<div class="f"><label class="lbl">${l}</label><input type="text" inputmode="numeric" data-ri="${k}" value="${v}"></div>`;
+  if (r.t === 'rack') { const rk = r.it, st = RC.stats(P, rk); return h + `<div class="sec"><h4>Rack</h4><div style="font-weight:600;font-size:14px">${esc(rk.label)}</div><div class="kv" style="margin-top:6px">${rk.u}U · ${rk.w} × ${rk.d} mm<br>Power <b>${fW(st.watts)}</b> · Weight <b>${fKg(st.kg)}</b><br>Front faces <b>${DIRN[rk.rot]}</b></div></div><div class="sec"><h4>Position</h4><div class="f2">${nf('X (mm)', 'x', Math.round(rk.x))}${nf('Y (mm)', 'y', Math.round(rk.y))}</div><div class="row"><button class="btn sm" data-rb="rot">Rotate 90° ↻</button><button class="btn sm" data-rb="edit">Edit equipment</button></div><div class="row" style="margin-top:8px"><button class="btn sm" data-rb="del" style="color:var(--danger)">Remove from room</button></div></div>`; }
+  const o = r.it; return h + `<div class="sec"><h4>${esc(RC.OBJ[o.type])}</h4><div class="f"><label class="lbl">Label</label><input type="text" data-ri="label" maxlength="60" value="${esc(o.label)}"></div>${o.type === 'crac' ? nf('Cooling capacity (kW)', 'cap', o.cap) : ''}</div><div class="sec"><h4>Position and size</h4><div class="f2">${nf('X (mm)', 'x', Math.round(o.x))}${nf('Y (mm)', 'y', Math.round(o.y))}${nf('Width (mm)', 'w', Math.round(o.w))}${nf('Depth (mm)', 'd', Math.round(o.d))}</div>${o.type === 'door' || o.type === 'crac' ? `<p class="note">${o.type === 'door' ? 'Put a door on a wall. Rotate so the swing opens into the room.' : ''}</p>` : ''}<div class="row"><button class="btn sm" data-rb="rot">Rotate 90° ↻</button><button class="btn sm" data-rb="del" style="color:var(--danger)">Delete</button></div></div>`;
+}
+function rotItem(it, isRack) { const a = isRack ? RC.rackRect(it) : RC.objRect(it), cx = a.x + a.w / 2, cy = a.y + a.h / 2; it.rot = (it.rot + 90) % 360; const b = isRack ? RC.rackRect(it) : RC.objRect(it); it.x = Math.round((cx - b.w / 2) / 50) * 50; it.y = Math.round((cy - b.h / 2) / 50) * 50; }
+function rotSel() { const r = rItem(); if (r) mutate(() => rotItem(r.it, r.t === 'rack')); }
+function delSel() { const r = rItem(); if (!r) return; mutate(() => { if (r.t === 'rack') { r.it.x = null; r.it.y = null; } else S.P.room.objs = S.P.room.objs.filter(o => o !== r.it); S.rsel = null; }); }
+function placeRack(id) {
+  const r = RC.rack(S.P, id); if (!r) return; if (r.x != null) { S.rsel = { t: 'rack', id }; return delSel(); }
+  const sw = r.rot === 90 || r.rot === 270, pos = RC.firstFree(S.P, sw ? r.d : r.w, sw ? r.w : r.d); if (!pos) return toast('No free floor space: make the room bigger');
+  mutate(() => { r.x = pos.x; r.y = pos.y; S.rsel = { t: 'rack', id }; S.rackId = id; S.tabRR = 'item'; });
+}
+function addObj(type) {
+  const d = RC.OBJ_DEF[type], pos = type === 'door' ? { x: 1000, y: 0 } : (RC.firstFree(S.P, d.w, d.d) || { x: 300, y: 300 }), id = RC.uid('o');
+  mutate(() => { S.P.room.objs.push({ id, type, x: pos.x, y: pos.y, w: d.w, d: d.d, rot: 0, label: type === 'text' ? 'Label' : '', cap: type === 'crac' ? 10 : 0 }); S.rsel = { t: 'obj', id }; S.tabRR = 'item'; });
+}
+function nudge(dx, dy) { const r = rItem(); if (!r) return; mutate(() => { r.it.x += dx; r.it.y += dy; }); }
+function roomKey(e) {
+  const k = e.key; if (k === 'r' || k === 'R') { e.preventDefault(); rotSel(); } else if (k === 'Delete' || k === 'Backspace') { e.preventDefault(); delSel(); }
+  else if (k.indexOf('Arrow') === 0 && rItem()) { e.preventDefault(); const st = e.shiftKey ? 600 : 100; nudge(k === 'ArrowLeft' ? -st : k === 'ArrowRight' ? st : 0, k === 'ArrowUp' ? -st : k === 'ArrowDown' ? st : 0); }
+}
+function pickRoom(g) {
+  if (g.dataset.rack) { S.rsel = { t: 'rack', id: g.dataset.rack }; S.rackId = g.dataset.rack; } else S.rsel = { t: 'obj', id: g.dataset.obj }; S.tabRR = 'item'; render();
+}
+const snap1 = (v, c, tol) => { let b = v, bd = tol + 1; c.forEach(x => { const d = Math.abs(x - v); if (d < bd) { bd = d; b = x; } }); return bd <= tol ? b : v; };
+function planPt(e) { const svg = $('rsvg2'), b = svg.getBoundingClientRect(), k = b.width / S.rg.w; return [(e.clientX - b.left) / k - S.rg.ox, (e.clientY - b.top) / k - S.rg.oy, k]; }
+function roomDown(e) {
+  if (e.button) return; const g = e.target.closest('[data-rack],[data-obj]');
+  if (S.view === '3d') {
+    if (g) return pickRoom(g); let lx = e.clientX, ly = e.clientY;
+    const mv = ev => { S.cam.yaw += (ev.clientX - lx) * 0.4; S.cam.pitch = Math.max(10, Math.min(90, S.cam.pitch + (ev.clientY - ly) * 0.3)); lx = ev.clientX; ly = ev.clientY; renderRoom(); }, up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); };
+    addEventListener('pointermove', mv); addEventListener('pointerup', up); return;
+  }
+  if (!g) { if (S.rsel) { S.rsel = null; render(); } return; }
+  pickRoom(g); const r = rItem(); if (!r) return; const it = r.it, isRack = r.t === 'rack', p0 = planPt(e), x0 = it.x, y0 = it.y; let moved = false;
+  const mv = ev => {
+    const p = planPt(ev), dx = p[0] - p0[0], dy = p[1] - p0[1]; if (!moved) { if (Math.hypot(dx, dy) * p[2] < 4) return; moved = true; const cur = JSON.stringify(S.P); it.x = x0; it.y = y0; S.undo.push(JSON.stringify(S.P)); if (S.undo.length > 80) S.undo.shift(); S.redo = []; void cur; }
+    let nx = x0 + dx, ny = y0 + dy; const st = ev.shiftKey ? 600 : ev.altKey ? 1 : 100; nx = Math.round(nx / st) * st; ny = Math.round(ny / st) * st;
+    if (!ev.altKey) { const me = isRack ? RC.rackRect(it) : RC.objRect(it), w = me.w, h = me.h, R = S.P.room, cx = [0, R.w - w], cy = [0, R.l - h];
+      RC.rects(S.P).forEach(o => { if (o.id === it.id) return; cx.push(o.x + o.w, o.x - w, o.x, o.x + o.w - w); cy.push(o.y + o.h, o.y - h, o.y, o.y + o.h - h); }); nx = snap1(nx, cx, 140); ny = snap1(ny, cy, 140); }
+    it.x = nx; it.y = ny; renderRoom();
+  };
+  const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up); if (!moved) return; const c = RC.cleanProject(S.P); if (c) S.P = c; touch(); render(); };
+  addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up);
+}
+$('modeseg').onclick = e => { const b = e.target.closest('[data-md]'); if (b && b.dataset.md !== S.mode) setMode(b.dataset.md); };
+$('viewseg').onclick = e => { const b = e.target.closest('[data-v]'); if (!b) return; S.view = b.dataset.v; document.querySelectorAll('#viewseg button').forEach(x => x.classList.toggle('on', x === b)); $('b-clr').parentNode.style.display = S.view === '3d' ? 'none' : ''; fitRoom(); };
+$('rz-in').onclick = () => { if (S.view === '3d') S.cam.zoom = Math.min(4, S.cam.zoom * 1.2); else S.pz = Math.min(1, S.pz * 1.2); renderRoom(); };
+$('rz-out').onclick = () => { if (S.view === '3d') S.cam.zoom = Math.max(0.3, S.cam.zoom / 1.2); else S.pz = Math.max(0.01, S.pz / 1.2); renderRoom(); };
+$('rz-fit').onclick = fitRoom;
+$('r-col').onchange = e => { S.rcolor = e.target.value; renderRoom(); };
+$('b-clr').onchange = e => { S.rclear = e.target.checked; renderRoom(); };
+$('b-rot').onclick = rotSel;
+$('left').addEventListener('click', e => {
+  if (S.mode !== 'room') return; const pl = e.target.closest('[data-rpl]'); if (pl) return placeRack(pl.dataset.rpl);
+  const rr = e.target.closest('[data-rr]'); if (rr) { const r = RC.rack(S.P, rr.dataset.rr); if (r && r.x != null) { S.rsel = { t: 'rack', id: r.id }; S.rackId = r.id; S.tabRR = 'item'; render(); } return; }
+  const ro = e.target.closest('[data-ro]'); if (ro) return addObj(ro.dataset.ro);
+  if (e.target.closest('#b-auto')) { mutate(() => { RC.autoLayout(S.P); }); fitRoom(); toast('Racks arranged in cold and hot aisles'); }
+});
+$('left').addEventListener('change', e => { const k = e.target.dataset.rm; if (!k || S.mode !== 'room') return; mutate(() => { S.P.room[k] = num(e.target.value, S.P.room[k], k === 'h' ? 2000 : 1500, k === 'h' ? 10000 : 60000); }); fitRoom(); });
+$('right').addEventListener('click', e => {
+  if (S.mode !== 'room') return; const t = e.target.closest('[data-trr]'); if (t) { S.tabRR = t.dataset.trr; return renderRight(); }
+  const b = e.target.closest('[data-rb]'); if (!b) return; if (b.dataset.rb === 'rot') rotSel(); else if (b.dataset.rb === 'del') delSel(); else if (b.dataset.rb === 'edit' && S.rsel) { S.rackId = S.rsel.id; setMode('rack'); }
+});
+$('right').addEventListener('change', e => {
+  const k = e.target.dataset.ri; if (!k || S.mode !== 'room') return; const r = rItem(); if (!r) return; const v = e.target.value;
+  mutate(() => { if (k === 'label') r.it.label = v.slice(0, 60); else if (k === 'cap') r.it.cap = num(v, r.it.cap, 0, 5000); else r.it[k] = num(v, r.it[k], (k === 'x' || k === 'y') ? -1e5 : 50, 1e5); });
+});
+function issueGo(is) {
+  const rule = is.dataset.ik.split(':')[0], io = (is.dataset.io || '').split(/[+:]/)[0];
+  if (ROOMRULES[rule]) { if (S.mode !== 'room') setMode('room'); let t = null; if (io) { if (RC.rack(S.P, io)) t = { t: 'rack', id: io }; else if (S.P.room.objs.some(o => o.id === io)) t = { t: 'obj', id: io }; } S.rsel = t; S.tabRR = 'item'; if (t && t.t === 'rack') S.rackId = io; return render(); }
+  if (S.mode === 'room') setMode('rack');
+  if (is.dataset.ir && RC.rack(S.P, is.dataset.ir)) S.rackId = is.dataset.ir; S.sel = is.dataset.id && RC.dev(S.P, is.dataset.id) ? is.dataset.id : null; if (S.sel) S.tabR = 'dev'; render(); fit();
 }
 
 /* ---------- theme and start ---------- */
