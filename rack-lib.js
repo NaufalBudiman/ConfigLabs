@@ -69,6 +69,28 @@
   L.forEach(m => { if (m.ver === 'datasheet' || m.ver === 'partial') m.verified = '2026-10'; });
   RK.BUILTIN = L;
 
+
+  /* ---- rack types (typical sizes, check your cabinet's datasheet) ---- */
+  RK.RACK_TYPES = [
+    { id: 'cab42', name: 'Server cabinet 42U', kind: 'cabinet', u: 42, w: 600, d: 1000, emptyKg: 90, loadRating: 1000, note: 'Most common size for network and small compute rooms.' },
+    { id: 'cab42w', name: 'Server cabinet 42U wide and deep', kind: 'cabinet', u: 42, w: 800, d: 1200, emptyKg: 140, loadRating: 1300, note: 'Room for deep servers and heavy cable bundles.' },
+    { id: 'cab45', name: 'Server cabinet 45U', kind: 'cabinet', u: 45, w: 600, d: 1000, emptyKg: 100, loadRating: 1000, note: '' },
+    { id: 'cab47', name: 'Server cabinet 47U', kind: 'cabinet', u: 47, w: 800, d: 1200, emptyKg: 150, loadRating: 1300, note: 'Tall: check the ceiling height and door heights.' },
+    { id: 'cab48', name: 'Server cabinet 48U', kind: 'cabinet', u: 48, w: 600, d: 1200, emptyKg: 130, loadRating: 1300, note: '' },
+    { id: 'cab36', name: 'Network cabinet 36U', kind: 'cabinet', u: 36, w: 600, d: 800, emptyKg: 70, loadRating: 800, note: '' },
+    { id: 'cab32', name: 'Network cabinet 32U', kind: 'cabinet', u: 32, w: 600, d: 800, emptyKg: 65, loadRating: 800, note: '' },
+    { id: 'cab27', name: 'Network cabinet 27U', kind: 'cabinet', u: 27, w: 600, d: 800, emptyKg: 55, loadRating: 600, note: '' },
+    { id: 'cab24', name: 'Network cabinet 24U', kind: 'cabinet', u: 24, w: 600, d: 600, emptyKg: 50, loadRating: 600, note: 'Shallow: most servers will not fit.' },
+    { id: 'cab22', name: 'Network cabinet 22U', kind: 'cabinet', u: 22, w: 600, d: 600, emptyKg: 45, loadRating: 500, note: 'Shallow: most servers will not fit.' },
+    { id: 'open42', name: 'Open frame rack 42U', kind: 'open', u: 42, w: 600, d: 1000, emptyKg: 45, loadRating: 900, note: 'No doors or side panels: easy access, no airflow separation.' },
+    { id: 'open24', name: 'Open frame rack 24U', kind: 'open', u: 24, w: 600, d: 800, emptyKg: 30, loadRating: 600, note: '' },
+    { id: 'open12', name: 'Open frame rack 12U', kind: 'open', u: 12, w: 482, d: 600, emptyKg: 15, loadRating: 300, note: 'Two-post style for patch panels and switches.' },
+    { id: 'wall12', name: 'Wall-mount cabinet 12U', kind: 'wall', u: 12, w: 600, d: 600, emptyKg: 25, loadRating: 60, note: 'Wall rated load is low: check the wall.' },
+    { id: 'wall9', name: 'Wall-mount cabinet 9U', kind: 'wall', u: 9, w: 600, d: 450, emptyKg: 18, loadRating: 60, note: '' },
+    { id: 'wall6', name: 'Wall-mount cabinet 6U', kind: 'wall', u: 6, w: 600, d: 450, emptyKg: 14, loadRating: 50, note: '' }
+  ];
+  RK.RACK_KINDS = { cabinet: 'Floor cabinet', open: 'Open frame', wall: 'Wall mount' };
+
   /* ---- custom models (this browser, synced with the account later) ---- */
   const ls = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } } };
   const num = (v, d, lo, hi) => { v = parseFloat(v); if (!isFinite(v)) v = d; return Math.min(hi, Math.max(lo, v)); };

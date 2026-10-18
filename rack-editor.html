@@ -189,6 +189,7 @@ html,body{height:100%}body{display:flex;flex-direction:column;overflow:hidden;mi
 .mi .t{display:flex;gap:6px;align-items:center;justify-content:space-between}.mi b{font-size:12.5px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mi .s{font:10.5px var(--mono);color:var(--text-muted);margin-top:2px}
 .mi .add{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:7px;border:1px solid var(--border-strong);background:var(--bg);color:var(--accent);cursor:pointer;font-size:16px;line-height:1}
+.mi .cx{position:absolute;right:38px;bottom:5px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:2px 4px}.mi .cx:hover{color:var(--danger)}
 .mi .add:hover{background:var(--accent);color:#0b0d10}
 #chip{position:fixed;z-index:99;pointer-events:none;padding:6px 10px;border-radius:8px;background:var(--surface);border:1px solid var(--accent);font:12px var(--mono);box-shadow:0 10px 26px rgba(0,0,0,.4);display:none}
 .rr{display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:6px;border:1px solid var(--border);border-radius:10px;background:var(--surface);cursor:pointer}.rr.on{border-color:var(--accent)}.rr b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px}.rr small{color:var(--text-muted);font:10.5px var(--mono)}
@@ -211,7 +212,8 @@ table.bom td{padding:7px 4px;border-bottom:1px solid var(--border);vertical-alig
 .empt{padding:26px 18px;color:var(--text-dim);font-size:13px;text-align:center}
 .md{width:min(560px,100%);max-height:92vh;overflow:auto}
 .opts{display:flex;gap:6px;flex-wrap:wrap}.opts button{padding:6px 11px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg);color:var(--text-dim);font:12px var(--sans);cursor:pointer}.opts button.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--bg))}
-@media (max-width:1000px){body{overflow:auto}#app{grid-template-columns:1fr;grid-auto-rows:auto}.panel{max-height:46vh;border:none;border-bottom:1px solid var(--border)}#cv{min-height:70vh}}
+@media (max-width:700px){#docbar{height:auto;flex-wrap:wrap;padding:8px 12px;gap:8px}#docbar input{flex:1 1 140px;min-width:100px}#docbar .sp,.beta{display:none}#docbar .btn.sm{padding:6px 9px}}
+@media (max-width:1000px){html,body{height:auto}body{display:block;overflow:auto;min-height:100%}#app{display:flex;flex-direction:column;flex:none;min-height:0}#stage{order:1;display:flex;flex-direction:column;min-width:0}#right{order:2}#left{order:3}.panel{max-height:none;overflow:visible;border:none;border-bottom:1px solid var(--border)}#cv{flex:none;height:70vh;min-height:360px}.tabs{position:static}}
 </style>
 </head>
 <body data-theme="dark">
@@ -249,12 +251,14 @@ table.bom td{padding:7px 4px;border-bottom:1px solid var(--border);vertical-alig
       <button class="btn sm" id="z-out" title="Zoom out">−</button><span class="zl" id="zl">100%</span><button class="btn sm" id="z-in" title="Zoom in">+</button><button class="btn sm" id="z-fit">Fit</button>
       <label class="tgl" style="gap:8px;padding:0 4px"><span>Show gaps</span><input type="checkbox" id="t-gaps" checked><i></i></label>
       <span class="sp"></span>
+      <button class="btn sm" id="b-rename" title="Rename this rack (or double-click its tab)">Rename rack</button>
       <button class="btn sm" id="b-blank" title="Fit blanking panels in every open gap between equipment">Fill gaps with blanking</button>
     </div>
     <div id="bar3" style="display:none">
       <div class="seg" id="viewseg" style="min-width:140px"><button data-v="2d" class="on">2D plan</button><button data-v="3d">3D</button></div>
       <button class="btn sm" id="rz-out" title="Zoom out">−</button><span class="zl" id="zl3" style="min-width:64px">100%</span><button class="btn sm" id="rz-in" title="Zoom in">+</button><button class="btn sm" id="rz-fit">Fit</button>
       <label class="lbl" style="margin:0 0 0 6px">Colour by</label><select id="r-col" style="width:auto"><option value="plain">Plain</option><option value="power">Power load</option><option value="fill">Space used</option><option value="weight">Weight</option></select>
+      <label class="lbl" style="margin:0 0 0 6px">Snap</label><select id="r-snap" style="width:auto"><option value="tile">Tile (600 mm)</option><option value="100">100 mm</option><option value="free">Free</option></select>
       <label class="tgl" style="gap:8px;padding:0 4px"><span>Clearance zones</span><input type="checkbox" id="b-clr"><i></i></label>
       <span class="sp"></span><button class="btn sm" id="b-rot" title="Rotate selected (R)">Rotate ↻</button>
     </div>
@@ -313,10 +317,29 @@ function undo(redo) {
   if (!RC.rack(S.P, S.rackId)) S.rackId = S.P.racks[0].id; if (S.sel && !RC.dev(S.P, S.sel)) S.sel = null; touch(); render();
 }
 
+/* ---------- keep the DOM stable when panels refresh (so a click is never lost to a re-render) ---------- */
+function morph(el, html) { const t = document.createElement('div'); t.innerHTML = html; mSync(el, t); }
+function mSync(a, b) {
+  const bc = [...b.childNodes];
+  bc.forEach((y, i) => {
+    const x = a.childNodes[i];
+    if (!x) { a.appendChild(y.cloneNode(true)); return; }
+    if (x.nodeType !== y.nodeType || (x.nodeType === 1 && x.tagName !== y.tagName)) { a.replaceChild(y.cloneNode(true), x); return; }
+    if (x.nodeType !== 1) { if (x.nodeValue !== y.nodeValue) x.nodeValue = y.nodeValue; return; }
+    [...x.attributes].forEach(at => { if (!y.hasAttribute(at.name)) x.removeAttribute(at.name); });
+    [...y.attributes].forEach(at => { if (x.getAttribute(at.name) !== at.value) x.setAttribute(at.name, at.value); });
+    const tg = x.tagName;
+    if (tg === 'INPUT') { if (x.type === 'checkbox') x.checked = y.hasAttribute('checked'); else { const v = y.getAttribute('value') || ''; if (x.value !== v) x.value = v; } }
+    else if (tg === 'TEXTAREA') { if (x.value !== y.textContent) x.value = y.textContent; }
+    else { mSync(x, y); if (tg === 'SELECT') x.selectedIndex = Math.max(0, [...y.options].findIndex(o => o.hasAttribute('selected'))); }
+  });
+  while (a.childNodes.length > bc.length) a.removeChild(a.lastChild);
+}
+
 /* ---------- rendering ---------- */
 function render() { S.issues = RC.validate(S.P); renderTabs(); renderCanvas(); renderLeft(); renderRight(); S.mode === 'room' ? statRoom() : renderStat(); $('docname').value !== S.P.name && document.activeElement !== $('docname') && ($('docname').value = S.P.name); $('b-undo').disabled = !S.undo.length; $('b-redo').disabled = !S.redo.length; }
 function renderTabs() {
-  $('rtabs').innerHTML = S.P.racks.map(r => `<button data-r="${esc(r.id)}" class="${r.id === S.rackId ? 'on' : ''}">${esc(r.label)} <small style="color:var(--text-muted)">${r.u}U</small></button>`).join('') + '<button class="add" data-add="1" title="Add a rack">+ Rack</button>';
+  $('rtabs').innerHTML = S.P.racks.map(r => `<button data-r="${esc(r.id)}" class="${r.id === S.rackId ? 'on' : ''}">${esc(r.label)} <small style="color:var(--text-muted)">${r.u}U${RC.summary(S.P, r.id).servers ? ' · ' + RC.summary(S.P, r.id).servers + ' srv' : ''}</small></button>`).join('') + '<button class="add" data-add="1" title="Add a rack">+ Rack</button>';
   document.querySelectorAll('#faceseg button').forEach(b => b.classList.toggle('on', b.dataset.f === S.face));
 }
 function renderCanvas() {
@@ -335,21 +358,21 @@ function modelLine(m) { const w = S.P.settings.powerBasis === 'typ' && m.w.typ !
 
 /* ---------- left panel ---------- */
 function renderLeft() {
-  if (S.mode === 'room') { $('left').innerHTML = leftRoom(); return; }
+  if (S.mode === 'room') { morph($('left'), leftRoom()); return; }
   const L = $('left'); const keepQ = document.activeElement && document.activeElement.id === 'lq';
   let h = `<div class="tabs"><button data-tl="lib" class="${S.tabL === 'lib' ? 'on' : ''}">Equipment</button><button data-tl="rack" class="${S.tabL === 'rack' ? 'on' : ''}">Rack &amp; project</button></div>`;
   if (S.tabL === 'lib') {
     const all = RK.all(), vs = [...new Set(all.map(m => m.vendor || 'Generic'))];
     h += `<div class="sec"><input type="text" id="lq" placeholder="Search equipment" value="${esc(S.q)}" autocomplete="off"><div class="row" style="margin-top:8px"><select id="lv"><option value="all">All vendors</option>${vs.map(v => `<option${v === S.vendor ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select><button class="btn sm" id="b-cust">+ Custom device</button></div><p class="note">Drag into the rack, or press + to add at the first free slot. <b>Typical</b> means a placeholder value: check it against your datasheet.</p></div>`;
     const q = S.q.trim().toLowerCase(), f = all.filter(m => (S.vendor === 'all' || (m.vendor || 'Generic') === S.vendor) && (!q || (m.vendor + ' ' + m.name + ' ' + RK.CATS[m.cat]).toLowerCase().includes(q)));
-    RK.GROUPS.forEach(g => { const it = f.filter(m => g[2].indexOf(m.cat) >= 0); if (!it.length) return; h += `<div class="grp"><span>${esc(g[1])}</span><span>${it.length}</span></div>` + it.map(m => `<div class="mi" data-m="${esc(m.id)}"><div class="t"><b>${esc((m.vendor ? m.vendor + ' ' : '') + m.name)}</b>${verPill(m)}</div><div class="s">${esc(modelLine(m))}</div><button class="add" data-add="${esc(m.id)}" title="Add to rack">+</button></div>`).join(''); });
+    RK.GROUPS.forEach(g => { const it = f.filter(m => g[2].indexOf(m.cat) >= 0); if (!it.length) return; h += `<div class="grp"><span>${esc(g[1])}</span><span>${it.length}</span></div>` + it.map(m => `<div class="mi" data-m="${esc(m.id)}"><div class="t"><b>${esc((m.vendor ? m.vendor + ' ' : '') + m.name)}</b>${verPill(m)}</div><div class="s">${esc(modelLine(m))}</div>${m.custom ? `<button class="cx" data-cdel="${esc(m.id)}" title="Delete from my library">✕</button>` : ''}<button class="add" data-add="${esc(m.id)}" title="Add to rack">+</button></div>`).join(''); });
     if (!f.length) h += '<div class="empt">Nothing matches. Clear the search, or add a custom device.</div>';
     h += '<div style="height:20px"></div>';
   } else {
     const r = rack(), P = S.P, s = P.settings, o = (v, a) => a.map(x => `<option value="${esc(x[0])}"${String(x[0]) === String(v) ? ' selected' : ''}>${esc(x[1])}</option>`).join('');
-    h += `<div class="sec"><h4>${esc(r.label)}</h4><div class="f"><label class="lbl">Label</label><input type="text" data-rk="label" value="${esc(r.label)}" maxlength="40"></div>
-<div class="f2"><div class="f"><label class="lbl">Height (U)</label><input type="text" inputmode="numeric" data-rk="u" value="${r.u}" list="ul"><datalist id="ul">${RK.PRESETS_U.map(x => `<option value="${x}">`).join('')}</datalist></div><div class="f"><label class="lbl">Numbering</label><select data-rk="numbering">${o(r.numbering, [['bottom-up', 'U1 at bottom'], ['top-down', 'U1 at top']])}</select></div>
-<div class="f"><label class="lbl">Width (mm)</label><select data-rk="w">${o(r.w, [[482, '482 (open frame)'], [600, '600'], [700, '700'], [800, '800']])}</select></div><div class="f"><label class="lbl">Depth (mm)</label><input type="text" inputmode="numeric" data-rk="d" value="${r.d}"></div>
+    h += `<div class="sec"><h4>${esc(r.label)}</h4><div class="row" style="margin-bottom:10px"><button class="btn sm" id="b-rtype">Browse rack types…</button></div><div class="f"><label class="lbl">Rack name</label><input type="text" data-rk="label" value="${esc(r.label)}" maxlength="40"></div>
+<div class="f2"><div class="f"><label class="lbl">Height (U)</label><select data-rk="u">${o(r.u, Array.from({ length: 60 }, (_, i) => [i + 1, (i + 1) + 'U' + (RK.PRESETS_U.indexOf(i + 1) >= 0 ? ' (common)' : '')]))}</select></div><div class="f"><label class="lbl">Numbering</label><select data-rk="numbering">${o(r.numbering, [['bottom-up', 'U1 at bottom'], ['top-down', 'U1 at top']])}</select></div>
+<div class="f"><label class="lbl">Width (mm)</label><select data-rk="w">${o(r.w, [[482, '482 (open frame)'], [600, '600'], [700, '700'], [750, '750'], [800, '800']])}</select></div><div class="f"><label class="lbl">Depth (mm)</label><input type="text" inputmode="numeric" data-rk="d" value="${r.d}"></div>
 <div class="f"><label class="lbl">Frame</label><select data-rk="frame">${o(r.frame, [['cabinet', 'Closed cabinet'], ['open', 'Open frame'], ['wall', 'Wall mount']])}</select></div><div class="f"><label class="lbl">Empty weight (kg)</label><input type="text" inputmode="decimal" data-rk="emptyKg" value="${r.emptyKg}"></div>
 <div class="f"><label class="lbl">Load rating (kg)</label><input type="text" inputmode="decimal" data-rk="loadRating" value="${r.loadRating}"></div><div class="f"></div>
 <div class="f"><label class="lbl">PDU feed A (W)</label><input type="text" inputmode="numeric" data-rk="pduA" value="${r.pdus.A.cap}" list="pl"></div><div class="f"><label class="lbl">PDU feed B (W)</label><input type="text" inputmode="numeric" data-rk="pduB" value="${r.pdus.B.cap}" list="pl"></div></div>
@@ -361,17 +384,17 @@ function renderLeft() {
 <div class="f"><label class="lbl">Floor rating (kg/m²)</label><input type="text" inputmode="numeric" data-ps="floorRating" value="${s.floorRating}"></div><div class="f"></div></div>
 <p class="note">Planning on <b>maximum</b> watts is the safe choice. Units only change how weights and depths are shown. Inputs stay in kg and mm. Floor rating is your building's limit: ask the facilities team.</p></div><div style="height:20px"></div>`;
   }
-  L.innerHTML = h; if (keepQ) { const q = $('lq'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
+  morph(L, h);
 }
 
 /* ---------- right panel ---------- */
 const bar = (v, cap, warn, crit) => { const p = cap ? v / cap * 100 : (v > 0 ? 999 : 0); return `<div class="meter"><i class="${p >= crit ? 'bad' : p >= warn ? 'warn' : ''}" style="width:${Math.min(100, p)}%"></i></div>`; };
 function renderRight() {
-  if (S.mode === 'room') { const R = $('right'), st = R.scrollTop; R.innerHTML = rightRoom(); R.scrollTop = st; return; }
+  if (S.mode === 'room') { morph($('right'), rightRoom()); return; }
   const live = S.issues.filter(i => !i.ack), c = live.filter(i => i.sev === 'crit').length, w = live.filter(i => i.sev === 'warn').length;
-  let h = `<div class="tabs"><button data-tr="dev" class="${S.tabR === 'dev' ? 'on' : ''}">Device</button><button data-tr="sum" class="${S.tabR === 'sum' ? 'on' : ''}">Power &amp; weight</button><button data-tr="iss" class="${S.tabR === 'iss' ? 'on' : ''}">Issues${c ? `<span class="n">${c}</span>` : w ? `<span class="n w">${w}</span>` : ''}</button><button data-tr="bom" class="${S.tabR === 'bom' ? 'on' : ''}">BOM</button></div>`;
+  let h = `<div class="tabs"><button data-tr="dev" class="${S.tabR === 'dev' ? 'on' : ''}">Device</button><button data-tr="sum" class="${S.tabR === 'sum' ? 'on' : ''}">Summary</button><button data-tr="iss" class="${S.tabR === 'iss' ? 'on' : ''}">Issues${c ? `<span class="n">${c}</span>` : w ? `<span class="n w">${w}</span>` : ''}</button><button data-tr="bom" class="${S.tabR === 'bom' ? 'on' : ''}">BOM</button></div>`;
   if (S.tabR === 'dev') h += devPanel(); else if (S.tabR === 'sum') h += sumPanel(); else if (S.tabR === 'iss') h += issPanel(); else h += bomPanel();
-  const R = $('right'), st = R.scrollTop, ae = document.activeElement; R.innerHTML = h; R.scrollTop = st;
+  morph($('right'), h);
 }
 function devPanel() {
   const d = selDev(), r = rack(); if (!d) {
@@ -394,12 +417,14 @@ function sumPanel() {
   const P = S.P, s = P.settings, r = rack(), st = RC.stats(P, r), fl = st.kg / st.footprint;
   const feed = f => { const cap = r.pdus[f].cap, l = st.feed[f]; return `<div class="mrow"><span>Feed ${f}</span><span><b>${fW(l)}</b> of ${cap ? fW(cap) : 'none'}${cap ? ' · ' + Math.round(l / cap * 100) + '%' : ''}</span></div>${bar(l, cap, s.warn, s.crit)}`; };
   const la = st.solo.A + st.dual, lb = st.solo.B + st.dual, both = r.pdus.A.cap && r.pdus.B.cap;
-  let h = `<div class="sec"><h4>${esc(r.label)} · power <small>${s.powerBasis === 'max' ? 'maximum watts' : 'typical watts'}</small></h4>${feed('A')}${feed('B')}
+  const sm = RC.summary(P, r.id), rows = RC.SUM_GROUPS.filter(g => sm.groups[g[0]]).map(g => `<div class="mrow"><span>${esc(g[1])}</span><span><b>${sm.groups[g[0]]}</b></span></div>`).join('');
+  let h = `<div class="sec"><h4>${esc(r.label)} · equipment</h4><div class="mrow" style="font-size:13px"><span>Servers</span><span><b>${sm.servers}</b></span></div>${rows.replace(/<div class="mrow"><span>Servers<\/span>.*?<\/div>/, '')}<div class="mrow" style="margin-top:4px;border-top:1px solid var(--border);padding-top:4px"><span>All devices</span><span><b>${sm.total}</b></span></div>${sm.names.length ? `<p class="note">Servers: ${esc(sm.names.slice(0, 16).join(', '))}${sm.names.length > 16 ? ' and ' + (sm.names.length - 16) + ' more' : ''}</p>` : ''}</div>
+<div class="sec"><h4>${esc(r.label)} · power <small>${s.powerBasis === 'max' ? 'maximum watts' : 'typical watts'}</small></h4>${feed('A')}${feed('B')}
 <div class="kv" style="margin-top:8px">Total <b>${fW(st.watts)}</b> · ${(st.watts * 3.412).toFixed(0)} BTU/h of heat to remove${st.feed.none ? `<br><span style="color:var(--warning)">${fW(st.feed.none)} is not assigned to any feed</span>` : ''}</div>
 ${both ? `<div class="kv" style="margin-top:8px">If feed A fails: B carries <b>${fW(lb)}</b> (${Math.round(lb / r.pdus.B.cap * 100)}%)<br>If feed B fails: A carries <b>${fW(la)}</b> (${Math.round(la / r.pdus.A.cap * 100)}%)</div>` : '<p class="note">Set both feed capacities under Rack &amp; project to check what happens when one feed is lost.</p>'}</div>
 <div class="sec"><h4>Weight</h4><div class="mrow"><span>Rack load</span><span><b>${fKg(st.kg)}</b> of ${fKg(r.loadRating)}</span></div>${bar(st.kg, r.loadRating, 90, 100)}<div class="mrow" style="margin-top:6px"><span>Floor loading</span><span><b>${imp() ? (fl * 0.2048).toFixed(0) + ' lb/ft²' : Math.round(fl) + ' kg/m²'}</b> of ${imp() ? (s.floorRating * 0.2048).toFixed(0) + ' lb/ft²' : s.floorRating + ' kg/m²'}</span></div>${bar(fl, s.floorRating, 90, 100)}<p class="note">Floor loading divides the full rack weight over its own footprint (${r.w} × ${r.d} mm). Real floors also depend on how the load is spread: ask a structural engineer for heavy rows.</p></div>
 <div class="sec"><h4>Space</h4><div class="mrow"><span>Used</span><span><b>${st.usedU} of ${r.u}U</b> · ${st.pct}%</span></div>${bar(st.usedU, r.u, 90, 101)}<div class="kv" style="margin-top:6px">Clearance to plan: <b>${fLen(s.clearFront)}</b> front, <b>${fLen(s.clearRear)}</b> rear.</div></div>`;
-  if (P.racks.length > 1) { h += `<div class="sec"><h4>All racks</h4><table class="bom"><tr><th>Rack</th><th class="r">U</th><th class="r">Power</th><th class="r">Weight</th></tr>`; let tw = 0, tk = 0; P.racks.forEach(x => { const q = RC.stats(P, x); tw += q.watts; tk += q.kg; h += `<tr><td>${esc(x.label)}</td><td class="r">${q.usedU}/${x.u}</td><td class="r">${fW(q.watts)}</td><td class="r">${fKg(q.kg)}</td></tr>`; }); h += `<tr><td><b>Total</b></td><td></td><td class="r"><b>${fW(tw)}</b></td><td class="r"><b>${fKg(tk)}</b></td></tr></table></div>`; }
+  if (P.racks.length > 1) { const T = RC.summary(P, null); h += `<div class="sec"><h4>All racks · ${P.racks.length} racks, ${T.servers} servers</h4><table class="bom"><tr><th>Rack</th><th class="r">Srv</th><th class="r">Dev</th><th class="r">U</th><th class="r">Power</th><th class="r">Weight</th></tr>`; let tw = 0, tk = 0; P.racks.forEach(x => { const q = RC.stats(P, x), y = RC.summary(P, x.id); tw += q.watts; tk += q.kg; h += `<tr><td>${esc(x.label)}</td><td class="r">${y.servers}</td><td class="r">${y.total}</td><td class="r">${q.usedU}/${x.u}</td><td class="r">${fW(q.watts)}</td><td class="r">${fKg(q.kg)}</td></tr>`; }); h += `<tr><td><b>Total</b></td><td class="r"><b>${T.servers}</b></td><td class="r"><b>${T.total}</b></td><td></td><td class="r"><b>${fW(tw)}</b></td><td class="r"><b>${fKg(tk)}</b></td></tr></table></div>`; }
   return h + '<div style="height:20px"></div>';
 }
 function issPanel() {
@@ -509,7 +534,8 @@ $('right').addEventListener('change', e => {
   });
 });
 $('docname').addEventListener('change', e => mutate(() => { S.P.name = e.target.value.trim().slice(0, 80) || 'Untitled rack project'; }));
-$('rtabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.add) return addRack(); S.rackId = b.dataset.r; S.sel = null; render(); fit(); });
+let _tabT=0,_tabId=null;
+$('rtabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.add) return addRack(); const now=Date.now(); if (_tabId===b.dataset.r && now-_tabT<450) { _tabT=0; return renameRack(b.dataset.r); } _tabT=now; _tabId=b.dataset.r; S.rackId = b.dataset.r; S.sel = null; render(); fit(); });
 $('faceseg').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if (b) { S.face = b.dataset.f; render(); } });
 $('z-in').onclick = () => { S.zoom = Math.min(3, S.zoom * 1.2); renderCanvas(); }; $('z-out').onclick = () => { S.zoom = Math.max(0.2, S.zoom / 1.2); renderCanvas(); }; $('z-fit').onclick = () => fit(true);
 $('t-gaps').onchange = e => { S.gaps = e.target.checked; renderCanvas(); };
@@ -528,9 +554,9 @@ document.addEventListener('keydown', e => {
 });
 
 /* ---------- racks ---------- */
-function addRack() { const r = RC.newRack('Rack ' + (S.P.racks.length + 1), rack().u); r.pdus = JSON.parse(JSON.stringify(rack().pdus)); mutate(() => { S.P.racks.push(r); S.rackId = r.id; S.sel = null; }); fit(); }
+function addRack() { rackTypeDlg('new'); }
 function dupRack() {
-  const src = rack(), r = JSON.parse(JSON.stringify(src)); r.id = RC.uid('r'); r.label = (src.label + ' copy').slice(0, 40);
+  const src = rack(), r = JSON.parse(JSON.stringify(src)); r.id = RC.uid('r'); r.label = (src.label + ' copy').slice(0, 40); r.x = null; r.y = null;
   mutate(() => { S.P.racks.push(r); RC.devsOf(S.P, src.id).forEach(d => { const n = JSON.parse(JSON.stringify(d)); n.id = RC.uid('d'); n.rackId = r.id; n.hostname = ''; n.serial = ''; n.asset = ''; n.mgmtIp = ''; n.ips = []; S.P.devices.push(n); }); S.rackId = r.id; S.sel = null; }); toast('Rack duplicated. Hostnames, IPs and serials were cleared.');
 }
 function delRack() {
@@ -538,6 +564,43 @@ function delRack() {
   const r = rack(), n = RC.devsOf(S.P, r.id).length;
   modal(`<h3>Delete ${esc(r.label)}?</h3><p style="color:var(--text-dim);font-size:13.5px">${n ? n + ' device' + (n === 1 ? '' : 's') + ' in it will be removed too. ' : ''}You can undo this with Ctrl+Z until you leave the page.</p><div class="ft"><button class="btn" id="x-c">Cancel</button><button class="btn" id="x-ok" style="background:var(--danger);border-color:var(--danger);color:#fff">Delete rack</button></div>`, () => { $('x-c').onclick = closeM; $('x-ok').onclick = () => { closeM(); mutate(() => { S.P.devices = S.P.devices.filter(d => d.rackId !== r.id); S.P.racks = S.P.racks.filter(x => x.id !== r.id); S.rackId = S.P.racks[0].id; S.sel = null; }); fit(); }; });
 }
+
+
+/* ---------- rack types and naming ---------- */
+const RT = { kind: 'all', pick: 'cab42' };
+function rackTypeDlg(mode) {
+  const cur = rack(), t0 = RK.RACK_TYPES.find(t => t.u === cur.u && t.w === cur.w && t.d === cur.d && t.kind === cur.frame); RT.pick = mode === 'apply' && t0 ? t0.id : 'cab42'; RT.kind = 'all';
+  const list = () => RK.RACK_TYPES.filter(t => RT.kind === 'all' || t.kind === RT.kind).map(t => `<div data-t="${esc(t.id)}"${t.id === RT.pick ? ' class="on"' : ''}><b>${esc(t.name)}</b><span>${t.u}U · ${t.w} × ${t.d} mm · ${t.emptyKg} kg · load ${t.loadRating} kg${t.note ? '<br>' + esc(t.note) : ''}</span></div>`).join('');
+  const base = mode === 'new' ? 'Rack' : cur.label;
+  modal(`<h3>${mode === 'new' ? 'Add racks' : 'Change rack type'}</h3><div class="opts" id="rt-k">${[['all', 'All'], ['cabinet', 'Floor cabinet'], ['open', 'Open frame'], ['wall', 'Wall mount']].map(k => `<button data-k="${k[0]}" class="${RT.kind === k[0] ? 'on' : ''}">${k[1]}</button>`).join('')}</div>
+<div class="tpl" id="rt-list" style="margin:12px 0;max-height:40vh;overflow:auto">${list()}</div><p class="note" style="margin:-4px 0 10px">Typical sizes. Check them against the cabinet you actually buy, then adjust height, depth and load rating under Rack &amp; project.</p>
+<div class="f2"><div class="f"><label class="lbl">Height (U): pick any number</label><select id="rt-u" style="width:100%">${Array.from({ length: 60 }, (_, i) => `<option value="${i + 1}">${i + 1}U</option>`).join('')}</select></div><div class="f"><label class="lbl">Name</label><input type="text" id="rt-n" maxlength="40" value="${esc(base)}"></div>${mode === 'new' ? '<div class="f"><label class="lbl">How many racks</label><input type="text" inputmode="numeric" id="rt-c" value="1"></div>' : ''}</div>
+<div class="ft"><button class="btn" id="rt-x">Cancel</button><button class="btn pri" id="rt-ok">${mode === 'new' ? 'Add' : 'Apply'}</button></div>`, () => {
+    const setU = () => { const t = RK.RACK_TYPES.find(x => x.id === RT.pick); if (t) $('rt-u').value = t.u; }; setU(); if (mode === 'apply' && !t0) $('rt-u').value = cur.u;
+    $('rt-k').onclick = e => { const b = e.target.closest('[data-k]'); if (!b) return; RT.kind = b.dataset.k; $('rt-k').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); $('rt-list').innerHTML = list(); };
+    $('rt-list').onclick = e => { const d = e.target.closest('[data-t]'); if (!d) return; RT.pick = d.dataset.t; $('rt-list').querySelectorAll('[data-t]').forEach(x => x.classList.toggle('on', x === d)); setU(); };
+    $('rt-x').onclick = closeM;
+    $('rt-ok').onclick = () => {
+      const t = RK.RACK_TYPES.find(x => x.id === RT.pick), u = num($('rt-u').value, 42, 1, 60) | 0, nm = $('rt-n').value.trim().slice(0, 36) || 'Rack';
+      if (mode === 'new') { const n = Math.max(1, Math.min(30, num($('rt-c').value, 1, 1, 30) | 0)); let first = null;
+        mutate(() => { for (let i = 0; i < n; i++) { const r = RC.newRack(n === 1 ? nm : nm + ' ' + (i + 1), u); r.w = t.w; r.d = t.d; r.frame = t.kind; r.emptyKg = t.emptyKg; r.loadRating = t.loadRating; r.pdus = JSON.parse(JSON.stringify(cur.pdus)); S.P.racks.push(r); if (!first) first = r.id; } S.rackId = first; S.sel = null; });
+        closeM(); fit(); toast(n + ' rack' + (n === 1 ? '' : 's') + ' added'); }
+      else { mutate(() => { const r = rack(); r.u = u; r.w = t.w; r.d = t.d; r.frame = t.kind; r.emptyKg = t.emptyKg; r.loadRating = t.loadRating; r.label = nm; }); closeM(); fit(); }
+    };
+  });
+}
+function renameRack(id) {
+  const r = RC.rack(S.P, id); if (!r) return;
+  modal(`<h3>Rename rack</h3><div class="fld"><label class="l">Name</label><input type="text" id="rn-n" maxlength="40" value="${esc(r.label)}"></div><div class="ft"><button class="btn" id="rn-x">Cancel</button><button class="btn pri" id="rn-ok">Save</button></div>`, () => {
+    $('rn-n').focus(); $('rn-n').select(); $('rn-x').onclick = closeM; const go = () => { const v = $('rn-n').value.trim().slice(0, 40); if (!v) return; closeM(); mutate(() => { RC.rack(S.P, id).label = v; }); }; $('rn-ok').onclick = go; $('rn-n').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+  });
+}
+$('b-rename').onclick = () => renameRack(S.rackId);
+$('left').addEventListener('click', e => {
+  if (e.target.closest('#b-rtype')) return rackTypeDlg('apply');
+  const cd = e.target.closest('[data-cdel]'); if (cd) { const id = cd.dataset.cdel, m = RK.custom().find(x => x.id === id); if (!m) return;
+    modal(`<h3>Delete “${esc(m.name)}” from your library?</h3><p style="color:var(--text-dim);font-size:13.5px">Racks that already use it keep their copy. This only removes it from the list.</p><div class="ft"><button class="btn" id="cd-x">Cancel</button><button class="btn" id="cd-ok" style="background:var(--danger);border-color:var(--danger);color:#fff">Delete</button></div>`, () => { $('cd-x').onclick = closeM; $('cd-ok').onclick = () => { RK.saveCustom(RK.custom().filter(x => x.id !== id)); closeM(); renderLeft(); }; }); }
+});
 
 /* ---------- dialogs ---------- */
 function modal(html, ready) { $('md').innerHTML = html; $('ov').classList.add('on'); if (ready) ready(); }
@@ -601,7 +664,7 @@ async function doExport() {
 }
 
 /* ================= ROOM MODE (v7.1) ================= */
-Object.assign(S, { mode: 'rack', view: '2d', rsel: null, pz: 0.1, cam: { yaw: -35, pitch: 42, zoom: 1 }, rcolor: 'plain', rclear: false, tabRR: 'item', rg: null });
+Object.assign(S, { snap: 'tile', mode: 'rack', view: '2d', rsel: null, pz: 0.1, cam: { yaw: -35, pitch: 42, zoom: 1 }, rcolor: 'plain', rclear: false, tabRR: 'item', rg: null });
 const ROOMRULES = { rwall: 1, rhit: 1, rclear: 1, rair: 1, rdoor: 1, rcool: 1, runpl: 1 };
 const DIRN = { 0: 'south', 90: 'west', 180: 'north', 270: 'east' };
 function setMode(m) {
@@ -613,7 +676,7 @@ function rItem() { const s = S.rsel; if (!s) return null; if (s.t === 'rack') { 
 function renderRoom() {
   const cv = $('cv');
   if (S.view === '3d') { const W = Math.max(520, cv.clientWidth - 40), H = Math.max(380, cv.clientHeight - 40); cv.innerHTML = RR.room3D(S.P, { pal: pal(), yaw: S.cam.yaw, pitch: S.cam.pitch, zoom: S.cam.zoom, w: W, h: H, color: S.rcolor, sel: S.rsel }); $('zl3').textContent = Math.round(S.cam.zoom * 100) + '%'; return; }
-  const o = RR.roomSVG(S.P, { pal: pal(), color: S.rcolor, clear: S.rclear, sel: S.rsel }); S.rg = o;
+  const o = RR.roomSVG(S.P, { pal: pal(), color: S.rcolor, clear: S.rclear, sel: S.rsel, hl: S.hl }); S.rg = o;
   cv.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" id="rsvg2" width="${Math.round(o.w * S.pz)}" height="${Math.round(o.h * S.pz)}" viewBox="0 0 ${o.w} ${o.h}">${o.svg}</svg>`; $('zl3').textContent = Math.round(S.pz * 1000) / 10 + ' px/cm';
 }
 function fitRoom() { if (S.view === '3d') { S.cam.zoom = 1; return renderRoom(); } const R = S.P.room; S.pz = Math.max(0.02, Math.min(0.5, Math.min(($('cv').clientWidth - 44) / (R.w + 1800), ($('cv').clientHeight - 44) / (R.l + 1800)))); renderRoom(); }
@@ -624,7 +687,7 @@ function statRoom() {
 function leftRoom() {
   const P = S.P, R = P.room, s = P.settings, fld = (l, a, v) => `<div class="f"><label class="lbl">${l}</label><input type="text" inputmode="numeric" ${a} value="${v}"></div>`;
   let h = `<div class="sec"><h4>Room</h4><div class="f2">${fld('Width (mm)', 'data-rm="w"', R.w)}${fld('Length (mm)', 'data-rm="l"', R.l)}${fld('Ceiling (mm)', 'data-rm="h"', R.h)}<div class="f"></div>${fld('Front clearance (mm)', 'data-ps="clearFront"', s.clearFront)}${fld('Rear clearance (mm)', 'data-ps="clearRear"', s.clearRear)}</div><p class="note">Clearance is the free floor you want in front of and behind every rack. 1200 mm front and 900 mm rear are common planning values: use your own standard if it differs.</p></div>`;
-  h += `<div class="sec"><h4>Racks <small>${RC.roomStats(P).placed}/${P.racks.length} placed</small></h4>` + P.racks.map(r => { const on = S.rsel && S.rsel.t === 'rack' && S.rsel.id === r.id, pl = r.x != null; return `<div class="rr${on ? ' on' : ''}" data-rr="${esc(r.id)}"><b>${esc(r.label)}</b><small>${r.u}U · ${r.w}×${r.d}</small><button class="btn sm" data-rpl="${esc(r.id)}">${pl ? 'Remove' : 'Place'}</button></div>`; }).join('').replace(/margin:0 12px 6px;/g, '') + `<div class="row" style="margin-top:10px"><button class="btn sm pri" id="b-auto" title="Arrange all racks in paired rows: fronts face each other (cold aisle), backs face the next pair (hot aisle)">Auto-arrange aisles</button></div><p class="note">Drag a rack on the plan to move it. R rotates it. Green edge = front. Edges snap to walls and neighbours: hold Alt for free placement.</p></div>`;
+  h += `<div class="sec"><h4>Racks <small>${RC.roomStats(P).placed}/${P.racks.length} placed</small></h4>` + P.racks.map(r => { const on = S.rsel && S.rsel.t === 'rack' && S.rsel.id === r.id, pl = r.x != null; return `<div class="rr${on ? ' on' : ''}" data-rr="${esc(r.id)}"><b>${esc(r.label)}</b><small>${r.u}U · ${RC.summary(P, r.id).servers} srv</small><button class="btn sm" data-rpl="${esc(r.id)}">${pl ? 'Remove' : 'Place'}</button></div>`; }).join('').replace(/margin:0 12px 6px;/g, '') + `<div class="row" style="margin-top:10px"><button class="btn sm pri" id="b-auto" title="Arrange all racks in paired rows: fronts face each other (cold aisle), backs face the next pair (hot aisle)">Auto-arrange aisles</button></div><p class="note">Drag a rack on the plan to move it. R rotates it. Green edge = front. Everything stays inside the room walls and snaps to the floor tiles (change Snap above, or hold Alt for free placement).</p></div>`;
   h += `<div class="sec"><h4>Add to room</h4><div class="f2">${['door', 'crac', 'col', 'box', 'text'].map(k => `<button class="btn sm" data-ro="${k}">+ ${esc(RC.OBJ[k])}</button>`).join('')}</div><p class="note">Cooling units count toward the heat check. Set their capacity in kW after adding.</p></div><div style="height:20px"></div>`;
   return h;
 }
@@ -635,31 +698,33 @@ function rightRoom() {
   if (S.tabRR === 'sum') {
     const st = RC.roomStats(P), kw = st.watts / 1000, pct = st.coolKw ? kw / st.coolKw * 100 : null, fl = st.kg / st.area, s = P.settings;
     return h + `<div class="sec"><h4>Heat and cooling</h4><div class="mrow"><span>IT load = heat</span><span><b>${fW(st.watts)}</b> · ${Math.round(st.btu)} BTU/h</span></div><div class="mrow"><span>Cooling in room</span><span><b>${st.coolUnits ? st.coolKw + ' kW' : 'none placed'}</b>${pct != null ? ' · ' + Math.round(pct) + '%' : ''}</span></div>${pct != null ? bar(kw, st.coolKw, 80, 100) : ''}<p class="note">Counts all racks in the project, placed or not. Cooling capacity is what you enter on each unit: use the vendor's sensible cooling figure, not its electrical rating.</p></div>
-<div class="sec"><h4>Floor</h4><div class="mrow"><span>Room area</span><span><b>${st.area.toFixed(1)} m²</b></span></div><div class="mrow"><span>Average load</span><span><b>${Math.round(fl)} kg/m²</b> of ${s.floorRating}</span></div>${bar(fl, s.floorRating, 90, 100)}<p class="note">Average over the whole room. Under each rack the load is much higher: see Power &amp; weight in rack mode.</p></div>
-<div class="sec"><h4>Layout</h4><div class="kv">Racks placed <b>${st.placed} of ${st.total}</b><br>Cold aisles <b>${st.aisles.filter(a => a.kind === 'cold').length}</b> · hot aisles <b>${st.aisles.filter(a => a.kind === 'hot').length}</b><br>Total weight <b>${fKg(st.kg)}</b></div></div>`;
+<div class="sec"><h4>Floor</h4><div class="mrow"><span>Room area</span><span><b>${st.area.toFixed(1)} m²</b></span></div><div class="mrow"><span>Average load</span><span><b>${Math.round(fl)} kg/m²</b> of ${s.floorRating}</span></div>${bar(fl, s.floorRating, 90, 100)}<p class="note">Average over the whole room. Under each rack the load is much higher: see Summary in rack mode.</p></div>
+<div class="sec"><h4>Layout</h4><div class="kv">Racks placed <b>${st.placed} of ${st.total}</b><br>Servers in all racks <b>${RC.summary(P, null).servers}</b> · devices <b>${RC.summary(P, null).total}</b><br>Cold aisles <b>${st.aisles.filter(a => a.kind === 'cold').length}</b> · hot aisles <b>${st.aisles.filter(a => a.kind === 'hot').length}</b><br>Total weight <b>${fKg(st.kg)}</b></div></div>`;
   }
   const r = rItem();
-  if (!r) return h + `<div class="sec"><h4>Room plan</h4><div class="kv">Click a rack or object to edit it. Use <b>Place</b> in the left panel to put a rack in the room.</div></div><div class="sec"><h4>Shortcuts</h4><div class="kv">R: rotate · Delete: remove from room<br>Arrow keys: nudge 100 mm (Shift 600 mm)<br>Drag: move · Alt+drag: no snapping<br>3D: drag to orbit, mouse wheel to zoom</div></div>`;
+  if (!r) return h + `<div class="sec"><h4>Room plan</h4><div class="kv">Click a rack or object to edit it. Use <b>Place</b> in the left panel to put a rack in the room.</div></div><div class="sec"><h4>Shortcuts</h4><div class="kv">R: rotate · Delete: remove from room<br>Arrow keys: move one snap step (Shift: one tile)<br>Drag: move, snaps to the floor tiles · Alt+drag: free<br>3D: drag to orbit, mouse wheel to zoom</div></div>`;
   const nf = (l, k, v) => `<div class="f"><label class="lbl">${l}</label><input type="text" inputmode="numeric" data-ri="${k}" value="${v}"></div>`;
-  if (r.t === 'rack') { const rk = r.it, st = RC.stats(P, rk); return h + `<div class="sec"><h4>Rack</h4><div style="font-weight:600;font-size:14px">${esc(rk.label)}</div><div class="kv" style="margin-top:6px">${rk.u}U · ${rk.w} × ${rk.d} mm<br>Power <b>${fW(st.watts)}</b> · Weight <b>${fKg(st.kg)}</b><br>Front faces <b>${DIRN[rk.rot]}</b></div></div><div class="sec"><h4>Position</h4><div class="f2">${nf('X (mm)', 'x', Math.round(rk.x))}${nf('Y (mm)', 'y', Math.round(rk.y))}</div><div class="row"><button class="btn sm" data-rb="rot">Rotate 90° ↻</button><button class="btn sm" data-rb="edit">Edit equipment</button></div><div class="row" style="margin-top:8px"><button class="btn sm" data-rb="del" style="color:var(--danger)">Remove from room</button></div></div>`; }
-  const o = r.it; return h + `<div class="sec"><h4>${esc(RC.OBJ[o.type])}</h4><div class="f"><label class="lbl">Label</label><input type="text" data-ri="label" maxlength="60" value="${esc(o.label)}"></div>${o.type === 'crac' ? nf('Cooling capacity (kW)', 'cap', o.cap) : ''}</div><div class="sec"><h4>Position and size</h4><div class="f2">${nf('X (mm)', 'x', Math.round(o.x))}${nf('Y (mm)', 'y', Math.round(o.y))}${nf('Width (mm)', 'w', Math.round(o.w))}${nf('Depth (mm)', 'd', Math.round(o.d))}</div>${o.type === 'door' || o.type === 'crac' ? `<p class="note">${o.type === 'door' ? 'Put a door on a wall. Rotate so the swing opens into the room.' : ''}</p>` : ''}<div class="row"><button class="btn sm" data-rb="rot">Rotate 90° ↻</button><button class="btn sm" data-rb="del" style="color:var(--danger)">Delete</button></div></div>`;
+  if (r.t === 'rack') { const rk = r.it, st = RC.stats(P, rk); return h + `<div class="sec"><h4>Rack</h4><div class="f"><label class="lbl">Rack name</label><input type="text" data-ri="label" maxlength="40" value="${esc(rk.label)}"></div><div class="kv" style="margin-top:6px">${rk.u}U · ${rk.w} × ${rk.d} mm · ${RC.summary(P, rk.id).servers} servers, ${RC.summary(P, rk.id).total} devices<br>Power <b>${fW(st.watts)}</b> · Weight <b>${fKg(st.kg)}</b><br>Front faces <b>${DIRN[rk.rot]}</b></div></div><div class="sec"><h4>Position</h4><div class="kv" style="margin-bottom:8px">Floor tile <b>${RR.tileRef(rk.x, rk.y)}</b> (top-left corner of the rack)</div><div class="f2">${nf('X (mm)', 'x', Math.round(rk.x))}${nf('Y (mm)', 'y', Math.round(rk.y))}</div><div class="row"><button class="btn sm" data-rb="rot">Rotate 90° ↻</button><button class="btn sm" data-rb="edit">Edit equipment</button></div><div class="row" style="margin-top:8px"><button class="btn sm" data-rb="del" style="color:var(--danger)">Remove from room</button></div></div>`; }
+  const o = r.it; return h + `<div class="sec"><h4>${esc(RC.OBJ[o.type])}</h4><div class="f"><label class="lbl">Label</label><input type="text" data-ri="label" maxlength="60" value="${esc(o.label)}"></div>${o.type === 'crac' ? nf('Cooling capacity (kW)', 'cap', o.cap) : ''}</div><div class="sec"><h4>Position and size</h4><div class="kv" style="margin-bottom:8px">Floor tile <b>${RR.tileRef(o.x, o.y)}</b></div><div class="f2">${nf('X (mm)', 'x', Math.round(o.x))}${nf('Y (mm)', 'y', Math.round(o.y))}${nf('Width (mm)', 'w', Math.round(o.w))}${nf('Depth (mm)', 'd', Math.round(o.d))}</div>${o.type === 'door' || o.type === 'crac' ? `<p class="note">${o.type === 'door' ? 'Put a door on a wall. Rotate so the swing opens into the room.' : ''}</p>` : ''}<div class="row"><button class="btn sm" data-rb="rot">Rotate 90° ↻</button><button class="btn sm" data-rb="del" style="color:var(--danger)">Delete</button></div></div>`;
 }
-function rotItem(it, isRack) { const a = isRack ? RC.rackRect(it) : RC.objRect(it), cx = a.x + a.w / 2, cy = a.y + a.h / 2; it.rot = (it.rot + 90) % 360; const b = isRack ? RC.rackRect(it) : RC.objRect(it); it.x = Math.round((cx - b.w / 2) / 50) * 50; it.y = Math.round((cy - b.h / 2) / 50) * 50; }
+const snapStep = () => S.snap === 'tile' ? RR.TILE : S.snap === '100' ? 100 : 50;
+function clampIn(it, isRack) { const R = S.P.room, rc = isRack ? RC.rackRect(it) : RC.objRect(it); it.x = Math.max(0, Math.min(R.w - rc.w, it.x)); it.y = Math.max(0, Math.min(R.l - rc.h, it.y)); }
+function rotItem(it, isRack) { const a = isRack ? RC.rackRect(it) : RC.objRect(it), cx = a.x + a.w / 2, cy = a.y + a.h / 2; it.rot = (it.rot + 90) % 360; const b = isRack ? RC.rackRect(it) : RC.objRect(it); const st = snapStep(); it.x = Math.round((cx - b.w / 2) / st) * st; it.y = Math.round((cy - b.h / 2) / st) * st; clampIn(it, isRack); }
 function rotSel() { const r = rItem(); if (r) mutate(() => rotItem(r.it, r.t === 'rack')); }
 function delSel() { const r = rItem(); if (!r) return; mutate(() => { if (r.t === 'rack') { r.it.x = null; r.it.y = null; } else S.P.room.objs = S.P.room.objs.filter(o => o !== r.it); S.rsel = null; }); }
 function placeRack(id) {
   const r = RC.rack(S.P, id); if (!r) return; if (r.x != null) { S.rsel = { t: 'rack', id }; return delSel(); }
-  const sw = r.rot === 90 || r.rot === 270, pos = RC.firstFree(S.P, sw ? r.d : r.w, sw ? r.w : r.d); if (!pos) return toast('No free floor space: make the room bigger');
+  const sw = r.rot === 90 || r.rot === 270, pos = RC.firstFree(S.P, sw ? r.d : r.w, sw ? r.w : r.d, snapStep()); if (!pos) return toast('No free floor space: make the room bigger');
   mutate(() => { r.x = pos.x; r.y = pos.y; S.rsel = { t: 'rack', id }; S.rackId = id; S.tabRR = 'item'; });
 }
 function addObj(type) {
-  const d = RC.OBJ_DEF[type], pos = type === 'door' ? { x: 1000, y: 0 } : (RC.firstFree(S.P, d.w, d.d) || { x: 300, y: 300 }), id = RC.uid('o');
-  mutate(() => { S.P.room.objs.push({ id, type, x: pos.x, y: pos.y, w: d.w, d: d.d, rot: 0, label: type === 'text' ? 'Label' : '', cap: type === 'crac' ? 10 : 0 }); S.rsel = { t: 'obj', id }; S.tabRR = 'item'; });
+  const d = RC.OBJ_DEF[type], pos = type === 'door' ? { x: 1000, y: 0 } : (RC.firstFree(S.P, d.w, d.d, snapStep()) || { x: 300, y: 300 }), id = RC.uid('o');
+  mutate(() => { const o = { id, type, x: pos.x, y: pos.y, w: d.w, d: d.d, rot: 0, label: type === 'text' ? 'Label' : '', cap: type === 'crac' ? 10 : 0 }; S.P.room.objs.push(o); clampIn(o, false); S.rsel = { t: 'obj', id }; S.tabRR = 'item'; });
 }
-function nudge(dx, dy) { const r = rItem(); if (!r) return; mutate(() => { r.it.x += dx; r.it.y += dy; }); }
+function nudge(dx, dy) { const r = rItem(); if (!r) return; mutate(() => { r.it.x += dx; r.it.y += dy; clampIn(r.it, r.t === 'rack'); }); }
 function roomKey(e) {
   const k = e.key; if (k === 'r' || k === 'R') { e.preventDefault(); rotSel(); } else if (k === 'Delete' || k === 'Backspace') { e.preventDefault(); delSel(); }
-  else if (k.indexOf('Arrow') === 0 && rItem()) { e.preventDefault(); const st = e.shiftKey ? 600 : 100; nudge(k === 'ArrowLeft' ? -st : k === 'ArrowRight' ? st : 0, k === 'ArrowUp' ? -st : k === 'ArrowDown' ? st : 0); }
+  else if (k.indexOf('Arrow') === 0 && rItem()) { e.preventDefault(); const st = e.shiftKey ? RR.TILE : snapStep() === 50 ? 100 : snapStep(); nudge(k === 'ArrowLeft' ? -st : k === 'ArrowRight' ? st : 0, k === 'ArrowUp' ? -st : k === 'ArrowDown' ? st : 0); }
 }
 function pickRoom(g) {
   if (g.dataset.rack) { S.rsel = { t: 'rack', id: g.dataset.rack }; S.rackId = g.dataset.rack; } else S.rsel = { t: 'obj', id: g.dataset.obj }; S.tabRR = 'item'; render();
@@ -677,12 +742,12 @@ function roomDown(e) {
   pickRoom(g); const r = rItem(); if (!r) return; const it = r.it, isRack = r.t === 'rack', p0 = planPt(e), x0 = it.x, y0 = it.y; let moved = false;
   const mv = ev => {
     const p = planPt(ev), dx = p[0] - p0[0], dy = p[1] - p0[1]; if (!moved) { if (Math.hypot(dx, dy) * p[2] < 4) return; moved = true; const cur = JSON.stringify(S.P); it.x = x0; it.y = y0; S.undo.push(JSON.stringify(S.P)); if (S.undo.length > 80) S.undo.shift(); S.redo = []; void cur; }
-    let nx = x0 + dx, ny = y0 + dy; const st = ev.shiftKey ? 600 : ev.altKey ? 1 : 100; nx = Math.round(nx / st) * st; ny = Math.round(ny / st) * st;
-    if (!ev.altKey) { const me = isRack ? RC.rackRect(it) : RC.objRect(it), w = me.w, h = me.h, R = S.P.room, cx = [0, R.w - w], cy = [0, R.l - h];
+    let nx = x0 + dx, ny = y0 + dy; const md = ev.altKey ? 'free' : ev.shiftKey ? 'tile' : S.snap, st = md === 'tile' ? RR.TILE : md === 'free' ? 1 : 100; nx = Math.round(nx / st) * st; ny = Math.round(ny / st) * st;
+    if (md === '100') { const me = isRack ? RC.rackRect(it) : RC.objRect(it), w = me.w, h = me.h, R = S.P.room, cx = [0, R.w - w], cy = [0, R.l - h];
       RC.rects(S.P).forEach(o => { if (o.id === it.id) return; cx.push(o.x + o.w, o.x - w, o.x, o.x + o.w - w); cy.push(o.y + o.h, o.y - h, o.y, o.y + o.h - h); }); nx = snap1(nx, cx, 140); ny = snap1(ny, cy, 140); }
-    it.x = nx; it.y = ny; renderRoom();
+    it.x = nx; it.y = ny; clampIn(it, isRack); { const q = isRack ? RC.rackRect(it) : RC.objRect(it); S.hl = { x: q.x, y: q.y, w: q.w, h: q.h }; } renderRoom();
   };
-  const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up); if (!moved) return; const c = RC.cleanProject(S.P); if (c) S.P = c; touch(); render(); };
+  const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up); S.hl = null; if (!moved) return renderRoom(); const c = RC.cleanProject(S.P); if (c) S.P = c; touch(); render(); };
   addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up);
 }
 $('modeseg').onclick = e => { const b = e.target.closest('[data-md]'); if (b && b.dataset.md !== S.mode) setMode(b.dataset.md); };
@@ -690,6 +755,7 @@ $('viewseg').onclick = e => { const b = e.target.closest('[data-v]'); if (!b) re
 $('rz-in').onclick = () => { if (S.view === '3d') S.cam.zoom = Math.min(4, S.cam.zoom * 1.2); else S.pz = Math.min(1, S.pz * 1.2); renderRoom(); };
 $('rz-out').onclick = () => { if (S.view === '3d') S.cam.zoom = Math.max(0.3, S.cam.zoom / 1.2); else S.pz = Math.max(0.01, S.pz / 1.2); renderRoom(); };
 $('rz-fit').onclick = fitRoom;
+$('r-snap').onchange = e => { S.snap = e.target.value; };
 $('r-col').onchange = e => { S.rcolor = e.target.value; renderRoom(); };
 $('b-clr').onchange = e => { S.rclear = e.target.checked; renderRoom(); };
 $('b-rot').onclick = rotSel;
@@ -706,7 +772,7 @@ $('right').addEventListener('click', e => {
 });
 $('right').addEventListener('change', e => {
   const k = e.target.dataset.ri; if (!k || S.mode !== 'room') return; const r = rItem(); if (!r) return; const v = e.target.value;
-  mutate(() => { if (k === 'label') r.it.label = v.slice(0, 60); else if (k === 'cap') r.it.cap = num(v, r.it.cap, 0, 5000); else r.it[k] = num(v, r.it[k], (k === 'x' || k === 'y') ? -1e5 : 50, 1e5); });
+  mutate(() => { if (k === 'label') r.it.label = r.t === 'rack' ? (v.trim().slice(0, 40) || r.it.label) : v.slice(0, 60); else if (k === 'cap') r.it.cap = num(v, r.it.cap, 0, 5000); else { r.it[k] = num(v, r.it[k], (k === 'x' || k === 'y') ? -1e5 : 50, 1e5); clampIn(r.it, r.t === 'rack'); } });
 });
 function issueGo(is) {
   const rule = is.dataset.ik.split(':')[0], io = (is.dataset.io || '').split(/[+:]/)[0];

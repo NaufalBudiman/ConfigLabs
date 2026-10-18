@@ -129,6 +129,9 @@
   };
 
   /* ================= ROOM PLAN (2D) ================= */
+  RR.TILE = 600;
+  RR.rowName = j => { let n = '', k = j; do { n = String.fromCharCode(65 + k % 26) + n; k = Math.floor(k / 26) - 1; } while (k >= 0); return n; };
+  RR.tileRef = (x, y) => RR.rowName(Math.max(0, Math.floor(y / RR.TILE))) + (Math.max(0, Math.floor(x / RR.TILE)) + 1);
   RR.rackLoad = function (P, rack, mode) {
     const st = RC.stats(P, rack), S = P.settings; let pct = null;
     if (mode === 'power') { const a = rack.pdus.A.cap, b = rack.pdus.B.cap, c = Math.max(st.feed.A / (a || Infinity), st.feed.B / (b || Infinity)); pct = isFinite(c) && (a || b) ? c * 100 : null; }
@@ -144,7 +147,14 @@
     opts = opts || {}; const pal = RR.pal(opts.pal), R = P.room, S = P.settings, MG = 900, TOP = opts.title ? 700 : 0, W = R.w + 2 * MG, H = R.l + 2 * MG + TOP; let s = '';
     const sel = opts.sel || {}, mono = 'JetBrains Mono,Consolas,monospace';
     s += `<g transform="translate(${MG},${MG + TOP})"><rect x="0" y="0" width="${R.w}" height="${R.l}" fill="${pal.bg}"/>`;
-    if (opts.grid !== false) { let g = ''; for (let x = 600; x < R.w; x += 600) g += `M${x} 0V${R.l}`; for (let y = 600; y < R.l; y += 600) g += `M0 ${y}H${R.w}`; s += `<path d="${g}" stroke="${pal.hole}" stroke-width="6" opacity=".45" fill="none"/>`; }
+    if (opts.grid !== false) {
+      const T = RR.TILE, nx = Math.ceil(R.w / T), ny = Math.ceil(R.l / T); let ck = '', g = '';
+      if (nx * ny <= 2500) for (let j = 0; j < ny; j++) for (let i = (j % 2); i < nx; i += 2) { const w = Math.min(T, R.w - i * T), h = Math.min(T, R.l - j * T); ck += `M${i * T} ${j * T}h${w}v${h}h${-w}z`; }
+      s += `<path d="${ck}" fill="${pal.hole}" opacity=".16"/>`;
+      if (opts.hl) { const h = opts.hl, i0 = Math.floor(h.x / T + 1e-6), i1 = Math.ceil((h.x + h.w) / T - 1e-6), j0 = Math.floor(h.y / T + 1e-6), j1 = Math.ceil((h.y + h.h) / T - 1e-6); s += `<rect x="${i0 * T}" y="${j0 * T}" width="${(i1 - i0) * T}" height="${(j1 - j0) * T}" fill="${pal.acc}" fill-opacity=".16" stroke="${pal.acc}" stroke-width="10" stroke-dasharray="60 40"/>`; }
+      for (let x = T; x < R.w; x += T) g += `M${x} 0V${R.l}`; for (let y = T; y < R.l; y += T) g += `M0 ${y}H${R.w}`; s += `<path d="${g}" stroke="${pal.sub}" stroke-width="8" opacity=".5" fill="none"/>`;
+      if (nx <= 40 && ny <= 40) { for (let i = 0; i < nx; i++) s += `<text x="${i * T + T / 2}" y="-100" text-anchor="middle" font-family="JetBrains Mono,Consolas,monospace" font-size="120" fill="${pal.sub}">${i + 1}</text>`; for (let j = 0; j < ny; j++) s += `<text x="-110" y="${j * T + T / 2 + 42}" text-anchor="end" font-family="JetBrains Mono,Consolas,monospace" font-size="120" fill="${pal.sub}">${RR.rowName(j)}</text>`; }
+    }
     RC.aisles(P).forEach(a => { const c = a.kind === 'cold' ? pal.cold : pal.hot; s += `<rect x="${a.x}" y="${a.y}" width="${a.w}" height="${a.h}" fill="${c}" opacity=".14"/><text x="${a.x + a.w / 2}" y="${a.y + a.h / 2 + 45}" text-anchor="middle" font-family="${mono}" font-size="110" fill="${c}" opacity=".8">${a.w > 900 || a.h > 900 ? (a.kind === 'cold' ? 'COLD AISLE' : 'HOT AISLE') : ''}</text>`; });
     s += `<rect x="-60" y="-60" width="${R.w + 120}" height="${R.l + 120}" fill="none" stroke="${pal.edge}" stroke-width="120"/>`;
     /* clearance zones */
@@ -181,7 +191,7 @@
       s += g + '</g>';
     });
     /* dimensions */
-    s += `<text x="${R.w / 2}" y="-210" text-anchor="middle" font-family="${mono}" font-size="170" fill="${pal.sub}">${R.w} mm</text><text transform="translate(-230 ${R.l / 2}) rotate(-90)" text-anchor="middle" font-family="${mono}" font-size="170" fill="${pal.sub}">${R.l} mm</text>`;
+    s += `<text x="${R.w / 2}" y="-330" text-anchor="middle" font-family="${mono}" font-size="170" fill="${pal.sub}">${R.w} mm</text><text transform="translate(-420 ${R.l / 2}) rotate(-90)" text-anchor="middle" font-family="${mono}" font-size="170" fill="${pal.sub}">${R.l} mm</text>`;
     s += `<g id="rgh" pointer-events="none"></g></g>`;
     if (opts.title) s += `<text x="${MG}" y="330" font-family="Geist,Segoe UI,sans-serif" font-size="300" font-weight="700" fill="${pal.ink}">${esc(P.name)}</text><text x="${MG}" y="560" font-family="${mono}" font-size="150" fill="${pal.sub}">${esc(P.site ? P.site + ' · ' : '')}Room plan ${R.w} × ${R.l} mm · ${P.racks.filter(r => r.x != null).length} of ${P.racks.length} racks placed</text>`;
     return { svg: s, w: W, h: H, ox: MG, oy: MG + TOP };
@@ -207,6 +217,7 @@
     /* floor + grid */
     s += poly([pr(0, 0, 0), pr(R.w, 0, 0), pr(R.w, R.l, 0), pr(0, R.l, 0)], pal.slot, `stroke="${pal.edge}" stroke-width="1.2"`);
     const step = Math.max(600, Math.ceil(Math.max(R.w, R.l) / 24 / 600) * 600); let gl = ''; for (let x = step; x < R.w; x += step) { const a = pr(x, 0, 0), b = pr(x, R.l, 0); gl += `M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}`; } for (let y = step; y < R.l; y += step) { const a = pr(0, y, 0), b = pr(R.w, y, 0); gl += `M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}`; }
+    { const T = RR.TILE; if (Math.ceil(R.w / T) * Math.ceil(R.l / T) <= 900) for (let j = 0; j * T < R.l; j++) for (let i = j % 2; i * T < R.w; i += 2) { const x0 = i * T, y0 = j * T, x1 = Math.min(R.w, x0 + T), y1 = Math.min(R.l, y0 + T); s += poly([pr(x0, y0, 0), pr(x1, y0, 0), pr(x1, y1, 0), pr(x0, y1, 0)], pal.hole, 'opacity=".18"'); } }
     s += `<path d="${gl}" stroke="${pal.hole}" stroke-width=".6" opacity=".6" fill="none"/>`;
     RC.aisles(P).forEach(a => { s += poly([pr(a.x, a.y, 1), pr(a.x + a.w, a.y, 1), pr(a.x + a.w, a.y + a.h, 1), pr(a.x, a.y + a.h, 1)], a.kind === 'cold' ? pal.cold : pal.hot, 'opacity=".22"'); });
     /* back walls: outward normal faces away from camera */

@@ -37,7 +37,7 @@
     (Array.isArray(raw.racks) ? raw.racks : []).slice(0, 40).forEach(r => {
       if (!r || typeof r !== 'object') return; let id = idOk(r.id); if (!id || rids[id]) id = RC.uid('r'); rids[id] = 1;
       const pd = r.pdus || {}, pc = k => ({ cap: num(pd[k] && pd[k].cap, 0, 0, 100000) });
-      P.racks.push({ id, label: str(r.label, 40) || 'Rack', u: num(r.u, 42, 1, 60) | 0, w: oneOf(+r.w, [482, 600, 700, 800], 600), d: num(r.d, 1000, 300, 2000), numbering: oneOf(r.numbering, ['bottom-up', 'top-down'], 'bottom-up'),
+      P.racks.push({ id, label: str(r.label, 40) || 'Rack', u: num(r.u, 42, 1, 60) | 0, w: oneOf(+r.w, [482, 600, 700, 750, 800], 600), d: num(r.d, 1000, 300, 2000), numbering: oneOf(r.numbering, ['bottom-up', 'top-down'], 'bottom-up'),
         frame: oneOf(r.frame, ['cabinet', 'open', 'wall'], 'cabinet'), x: r.x == null || r.x === '' ? null : num(r.x, 0, -1e5, 1e5), y: r.y == null || r.y === '' ? null : num(r.y, 0, -1e5, 1e5), rot: oneOf(+r.rot, [0, 90, 180, 270], 0), emptyKg: num(r.emptyKg, 90, 0, 1000), loadRating: num(r.loadRating, 1000, 10, 5000), pdus: { A: pc('A'), B: pc('B') } });
     });
     if (!P.racks.length) P.racks.push(RC.newRack('Rack 1', 42));
@@ -179,10 +179,10 @@
     });
     return { gap: Math.max(0, best), who };
   };
-  RC.firstFree = function (P, w, h) {
-    const rects = RC.rects(P), M = 900;
-    for (let y = M; y + h <= P.room.l - M + 1; y += 300) for (let x = M; x + w <= P.room.w - M + 1; x += 300) { const r = { x: x - 300, y: y - 300, w: w + 600, h: h + 600 }; if (!rects.some(o => o.solid && hit(r, o))) return { x, y }; }
-    for (let y = 0; y + h <= P.room.l; y += 300) for (let x = 0; x + w <= P.room.w; x += 300) { const r = { x, y, w, h }; if (!rects.some(o => o.solid && hit(r, o))) return { x, y }; }
+  RC.firstFree = function (P, w, h, step) {
+    step = step || 300; const rects = RC.rects(P), M = Math.ceil(900 / step) * step, G = step;
+    for (let y = M; y + h <= P.room.l - M + 1; y += step) for (let x = M; x + w <= P.room.w - M + 1; x += step) { const r = { x: x - G, y: y - G, w: w + 2 * G, h: h + 2 * G }; if (!rects.some(o => o.solid && hit(r, o))) return { x, y }; }
+    for (let y = 0; y + h <= P.room.l; y += step) for (let x = 0; x + w <= P.room.w; x += step) { const r = { x, y, w, h }; if (!rects.some(o => o.solid && hit(r, o))) return { x, y }; }
     return null;
   };
   /* cold aisles (fronts facing) and hot aisles (backs facing) as rectangles for the plan */
@@ -201,15 +201,16 @@
   };
   /* arrange all racks in paired rows: fronts face each other (cold aisle), backs face the next pair (hot aisle) */
   RC.autoLayout = function (P) {
-    const s = P.settings, room = P.room, M = 900, rd = Math.max(...P.racks.map(r => r.d)); let col = 0, x = M, y = M, bandW = 0, endY = 0;
+    const s = P.settings, room = P.room, T = 600, up = v => Math.ceil(v / T) * T, M = 1200, rd = Math.max(...P.racks.map(r => r.d)), aisleF = up(rd + s.clearFront);
+    let x = M, y = M, endY = 0, maxX = 0;
     const pairs = []; for (let i = 0; i < P.racks.length; i += 2) pairs.push([P.racks[i], P.racks[i + 1]]);
     pairs.forEach(pr => {
-      const w = Math.max(pr[0].w, pr[1] ? pr[1].w : 0);
-      if (x + w > room.w - M && x > M) { x = M; y += rd + s.clearFront + rd + s.clearRear; }
-      pr[0].x = x; pr[0].y = y; pr[0].rot = 0; if (pr[1]) { pr[1].x = x; pr[1].y = y + rd + s.clearFront; pr[1].rot = 180; }
-      endY = Math.max(endY, (pr[1] ? y + rd + s.clearFront + rd : y + rd)); x += w + 100; room.w = Math.max(room.w, x - 100 + M);
+      const w = up(Math.max(pr[0].w, pr[1] ? pr[1].w : 0));
+      if (x + w > room.w - M && x > M) { x = M; y += aisleF + up(rd) + up(s.clearRear); }
+      pr[0].x = x; pr[0].y = y; pr[0].rot = 0; if (pr[1]) { pr[1].x = x; pr[1].y = y + aisleF; pr[1].rot = 180; }
+      endY = Math.max(endY, pr[1] ? y + aisleF + pr[1].d : y + pr[0].d); x += w; maxX = Math.max(maxX, x);
     });
-    room.l = Math.max(room.l, endY + M); room.w = Math.min(60000, Math.ceil(room.w / 100) * 100); room.l = Math.min(60000, Math.ceil(room.l / 100) * 100);
+    room.w = Math.min(60000, Math.max(room.w, up(maxX + M))); room.l = Math.min(60000, Math.max(room.l, up(endY + M)));
   };
   RC.roomStats = function (P) {
     const placed = P.racks.filter(r => r.x != null); let w = 0, kg = 0; P.racks.forEach(r => { const st = RC.stats(P, r); w += st.watts; kg += st.kg; });
@@ -247,6 +248,15 @@
         else if (caps.length === 1) add('rcool', 'info', null, null, 'Only one cooling unit: if it stops there is no cooling at all (no N+1).', 'room-n1');
       }
     }
+  };
+
+
+  /* ---------- equipment summary ---------- */
+  RC.SUM_GROUPS = [['server', 'Servers', ['server']], ['storage', 'Storage', ['storage']], ['network', 'Network', ['switch', 'router', 'firewall']], ['passive', 'Patching and blanking', ['patch', 'manager', 'blank']], ['power', 'Power', ['pdu', 'ups']], ['other', 'Other', ['kvm']]];
+  RC.summary = function (P, rackId) {
+    const out = { total: 0, groups: {}, names: [] }; RC.SUM_GROUPS.forEach(g => out.groups[g[0]] = 0);
+    P.devices.forEach(d => { if (rackId && d.rackId !== rackId) return; const m = RC.model(P, d.modelId), g = RC.SUM_GROUPS.find(x => x[2].indexOf(m.cat) >= 0) || RC.SUM_GROUPS[5]; out.groups[g[0]]++; out.total++; if (g[0] === 'server') out.names.push(d.hostname || m.name); });
+    out.servers = out.groups.server; return out;
   };
 
   /* ---------- blanking panels ---------- */
