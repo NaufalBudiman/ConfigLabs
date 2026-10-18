@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Rack Editor — ConfigLabs</title>
+<meta name="description" content="Design server racks to scale: drag H3C, Cisco and generic equipment into a 19-inch rack, check power and weight, and export PNG, PDF or a bill of materials. Free, no login."/>
+<meta name="author" content="ConfigLabs"/>
+<meta name="robots" content="noindex"/>
+<meta property="og:title" content="Rack Editor — ConfigLabs"/>
+<meta property="og:description" content="A free rack elevation builder with power and weight checks. No account needed."/>
+<meta property="og:type" content="website"/>
+<link rel="canonical" href="https://configlabs.online/rack-editor.html"/>
+<meta property="og:url" content="https://configlabs.online/rack-editor.html"/>
+
+<meta name="theme-color" content="#0b0d10"/>
+<link rel="icon" type="image/x-icon" href="/favicon.ico"/>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/>
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png"/>
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/>
+<link rel="manifest" href="/site.webmanifest"/>
+<meta property="og:image" content="https://configlabs.online/og-image.png"/>
+<script src="/site.js" defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===== Rack Builder: projects ===== */
+:root{--bg:#0b0d10;--bg-2:#111418;--surface:#15191f;--surface-2:#1b2027;--surface-hover:#222831;--border:#232a34;--border-strong:#2e3744;--text:#e6e9ee;--text-dim:#9aa3af;--text-muted:#5b6472;--accent:#7cf4c7;--accent-2:#a8b5ff;--accent-3:#ffb86b;--danger:#ff6478;--success:#7cf4c7;--warning:#ffc857;--sans:'Geist',system-ui,sans-serif;--serif:'Instrument Serif',Georgia,serif;--mono:'JetBrains Mono',monospace;--ease:cubic-bezier(.22,1,.36,1)}
+[data-theme="light"]{--bg:#f8f6f1;--bg-2:#fff;--surface:#fff;--surface-2:#f1ede3;--surface-hover:#ebe6d8;--border:#e4dfd0;--border-strong:#d0c9b5;--text:#1a1a1a;--text-dim:#5a5a5a;--text-muted:#8a8a8a;--accent:#0f766e;--accent-2:#4f46e5;--accent-3:#ea580c;--danger:#e11d48;--warning:#b7791f}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{display:flex;flex-direction:column;overflow:hidden}
+nav{flex:none;z-index:60;padding:12px 24px;background:color-mix(in srgb,var(--bg) 80%,transparent);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:12px;font-weight:600;font-size:17px;letter-spacing:-.3px;text-decoration:none;color:var(--text)}
+.brand-logo{width:32px;height:32px;border-radius:8px;background:conic-gradient(from 180deg,var(--accent),var(--accent-2),var(--accent-3),var(--accent));display:grid;place-items:center;position:relative}
+.brand-logo::after{content:'';position:absolute;inset:2px;border-radius:6px;background:var(--bg)}
+.brand-logo svg{position:relative;z-index:1;width:18px;height:18px;color:var(--text)}
+.brand em{font-family:var(--serif);font-style:italic;color:var(--accent);font-weight:400}
+.nav-links{display:flex;gap:2px;flex-wrap:wrap}
+.nav-link{padding:8px 14px;color:var(--text-dim);text-decoration:none;font-size:13px;font-weight:500;border-radius:8px;transition:all .2s}
+.nav-link:hover{color:var(--text);background:var(--surface)}
+.nav-link.active{color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+.nav-actions{display:flex;gap:8px;align-items:center}
+.chip{font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:999px;border:1px solid var(--border-strong);color:var(--text-dim);display:inline-flex;align-items:center;gap:6px}
+.chip .dot{width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success)}
+.icon-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);width:36px;height:36px;border-radius:10px;cursor:pointer;display:grid;place-items:center;transition:all .2s var(--ease);font-size:15px}
+.icon-btn:hover{background:var(--surface-hover);color:var(--text);border-color:var(--border-strong)}
+#app{flex:1;min-height:0;display:grid;grid-template-columns:292px 1fr 324px;position:relative}
+.panel{background:var(--bg-2);border-right:1px solid var(--border);overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;z-index:5}
+#right.panel{border-right:none;border-left:1px solid var(--border)}
+.panel::-webkit-scrollbar{width:8px}.panel::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:8px}
+.sec{padding:16px 18px;border-bottom:1px solid var(--border)}
+.sec h4{font-size:10.5px;font-family:var(--mono);letter-spacing:1.2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.sec h4 small{font-size:10px;letter-spacing:0;text-transform:none;color:var(--text-muted);font-weight:400}
+.lbl{font-size:11.5px;color:var(--text-dim);margin-bottom:4px;display:block}
+select,input[type=text],input[type=number]{width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;transition:all .15s var(--ease)}
+select:focus,input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:1;min-width:0}
+.seg{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px}
+.seg button{flex:1;padding:6px 8px;border:none;background:none;color:var(--text-dim);font-size:12px;font-weight:500;border-radius:6px;cursor:pointer;font-family:var(--sans);transition:all .15s}
+.seg button.on{background:color-mix(in srgb,var(--accent) 16%,var(--surface));color:var(--accent);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 35%,transparent)}
+.tgl{display:flex;align-items:center;justify-content:space-between;padding:6px 0;font-size:12.5px;color:var(--text-dim);cursor:pointer;user-select:none}
+.tgl input{display:none}
+.tgl i{width:32px;height:18px;border-radius:99px;background:var(--border-strong);position:relative;transition:background .2s;flex:none}
+.tgl i::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .2s var(--ease)}
+.tgl input:checked+i{background:var(--accent)}
+.tgl input:checked+i::after{transform:translateX(14px)}
+.btn{padding:8px 12px;border-radius:9px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);font-size:12.5px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:all .15s;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn:hover{background:var(--surface-hover);border-color:var(--accent)}
+.btn.pri{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#0b0d10;border-color:transparent;font-weight:600}
+.btn.sm{padding:5px 9px;font-size:11.5px}
+.note{font-size:11px;color:var(--text-muted);line-height:1.55;margin-top:8px}
+.pill{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:99px;border:1px solid var(--border-strong);color:var(--text-dim);white-space:nowrap}
+.pill.ok{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
+.pill.warn{color:var(--warning);border-color:color-mix(in srgb,var(--warning) 45%,transparent)}
+.pill.bad{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,transparent)}
+.tools{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;gap:4px;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(14px);border:1px solid var(--border-strong);border-radius:12px;padding:5px;box-shadow:0 12px 30px rgba(0,0,0,.28);z-index:6;max-width:calc(100% - 20px);flex-wrap:wrap;justify-content:center}
+.tools button{background:none;border:none;color:var(--text-dim);min-width:34px;height:32px;padding:0 9px;border-radius:8px;cursor:pointer;font-size:12.5px;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:var(--sans);font-weight:500;transition:all .15s}
+.tools button:hover{background:var(--surface-hover);color:var(--text)}
+.tools button.on{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.tools .sep{width:1px;background:var(--border-strong);margin:5px 3px}
+.tools .zl{font-family:var(--mono);font-size:11px;color:var(--text-muted);min-width:44px;text-align:center;align-self:center}
+.menu{position:relative}
+.menu .dd{position:absolute;top:38px;right:0;min-width:210px;background:var(--surface);border:1px solid var(--border-strong);border-radius:11px;box-shadow:0 18px 40px rgba(0,0,0,.35);padding:5px;display:none;z-index:9}
+.menu.open .dd{display:block}
+.dd button{width:100%;justify-content:flex-start;height:auto;padding:8px 10px;text-align:left;white-space:nowrap}
+.dd small{display:block;font-size:10.5px;color:var(--text-muted);font-weight:400}
+#mini{position:absolute;right:14px;bottom:14px;width:210px;height:140px;background:color-mix(in srgb,var(--surface) 92%,transparent);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.28);z-index:6;cursor:pointer}
+#mini svg{width:100%;height:100%;display:block}
+#hint{position:absolute;left:14px;bottom:14px;font-size:11px;color:var(--text-muted);font-family:var(--mono);background:color-mix(in srgb,var(--surface) 85%,transparent);padding:6px 10px;border-radius:8px;border:1px solid var(--border);z-index:6;pointer-events:none}
+#toast{position:fixed;bottom:22px;left:50%;transform:translate(-50%,90px);background:var(--surface);border:1px solid var(--border-strong);padding:10px 16px;border-radius:999px;font-size:12.5px;z-index:99;transition:transform .3s var(--ease);box-shadow:0 14px 34px rgba(0,0,0,.4)}
+#toast.show{transform:translate(-50%,0)}
+#printbox{display:none}
+body{display:block;overflow:auto;height:auto;min-height:100%}
+nav{position:sticky;top:0}
+.beta{font:700 9px var(--mono);letter-spacing:1px;padding:2px 6px;border-radius:99px;background:color-mix(in srgb,var(--accent-3) 18%,transparent);color:var(--accent-3);border:1px solid color-mix(in srgb,var(--accent-3) 45%,transparent);margin-left:6px;vertical-align:2px}
+a.btn{text-decoration:none}
+.bnote{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;color:var(--text-dim);background:color-mix(in srgb,var(--accent-3) 8%,var(--surface));border:1px solid color-mix(in srgb,var(--accent-3) 30%,transparent);border-radius:10px;padding:9px 12px;margin-bottom:16px}
+.wrap{max-width:1240px;margin:0 auto;padding:34px 24px 80px}
+.hd{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.hd h1{font-family:var(--serif);font-weight:400;font-size:42px;letter-spacing:-.5px;line-height:1.05}
+.hd h1 em{color:var(--accent)}
+.hd p{color:var(--text-dim);margin-top:6px;font-size:13.5px}
+.hd .acts{display:flex;gap:8px;flex-wrap:wrap}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.bar input[type=text]{max-width:300px;flex:1;min-width:160px}
+.bar select{width:auto}
+.bar .sp{flex:1}
+.seg{display:flex;background:var(--bg-2);border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px}
+.seg button{padding:6px 10px;border:none;background:none;color:var(--text-dim);font-size:12px;border-radius:6px;cursor:pointer;font-family:var(--sans)}
+.seg button.on{background:color-mix(in srgb,var(--accent) 16%,var(--surface));color:var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.dc{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;position:relative;transition:all .2s var(--ease)}
+.dc:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 14px 34px rgba(0,0,0,.25)}
+.dc .th{aspect-ratio:16/10;background:var(--bg);background-image:radial-gradient(var(--border) 1px,transparent 1px);background-size:16px 16px;display:grid;place-items:center;border-bottom:1px solid var(--border);overflow:hidden}
+.dc .th svg{width:100%;height:100%;display:block}
+.dc .th .ph{color:var(--text-muted);font-size:12px;font-family:var(--mono)}
+.dc .mt{padding:12px 14px 13px}
+.dc .mt b{display:block;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:30px}
+.dc .mt span{display:block;font-size:11.5px;color:var(--text-muted);font-family:var(--mono);margin-top:2px}
+.dc .mt .ds{font-family:var(--sans);color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dots{position:absolute;right:8px;bottom:10px;width:30px;height:30px;border-radius:8px;border:1px solid transparent;background:none;color:var(--text-dim);cursor:pointer;font-size:18px;line-height:1}
+.dots:hover{background:var(--surface-hover);border-color:var(--border-strong);color:var(--text)}
+.pop{position:fixed;z-index:80;min-width:170px;background:var(--surface);border:1px solid var(--border-strong);border-radius:11px;box-shadow:0 18px 40px rgba(0,0,0,.4);padding:5px;display:none}
+.pop button{display:block;width:100%;text-align:left;padding:8px 10px;background:none;border:none;border-radius:7px;color:var(--text);font-size:12.5px;cursor:pointer;font-family:var(--sans)}
+.pop button:hover{background:var(--surface-hover)}
+.pop button.dng{color:var(--danger)}
+.new{border:2px dashed var(--border-strong);background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:230px;color:var(--text-dim);font-size:13px}
+.new:hover{color:var(--accent);background:color-mix(in srgb,var(--accent) 5%,transparent)}
+.new i{font-style:normal;font-size:34px;line-height:1;color:var(--accent)}
+.list .grid{grid-template-columns:1fr;gap:8px}
+.list .dc{display:flex;align-items:center}
+.list .dc .th{width:120px;aspect-ratio:16/10;border-bottom:none;border-right:1px solid var(--border);flex:none}
+.list .dc .mt{flex:1;min-width:0}
+.list .dots{bottom:auto;top:50%;transform:translateY(-50%)}
+.list .new{min-height:70px;flex-direction:row}
+.empty{text-align:center;padding:60px 20px;color:var(--text-dim)}
+.empty h2{font-family:var(--serif);font-weight:400;font-size:34px;color:var(--text);margin-bottom:8px}
+.empty h2 em{color:var(--accent)}
+.empty .row{justify-content:center;margin-top:16px;flex-wrap:wrap}
+.empty .row>*{flex:none}
+.foot{margin-top:26px;font-size:11.5px;color:var(--text-muted);font-family:var(--mono)}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:90;display:none;align-items:center;justify-content:center;padding:20px}
+.ov.on{display:flex}
+.md{background:var(--surface);border:1px solid var(--border-strong);border-radius:16px;width:min(460px,100%);padding:22px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.md h3{font-size:18px;margin-bottom:14px;font-weight:600}
+.md .fld{margin-bottom:12px}
+.md label.l{font-size:11.5px;color:var(--text-dim);display:block;margin-bottom:4px}
+.md .ft{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.tpl{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tpl div{padding:10px 12px;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:12.5px;background:var(--bg)}
+.tpl div b{display:block;font-size:13px;margin-bottom:2px}
+.tpl div span{color:var(--text-muted);font-size:11.5px}
+.tpl div.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--bg))}
+.drop{position:fixed;inset:0;z-index:95;background:color-mix(in srgb,var(--accent) 12%,rgba(0,0,0,.6));display:none;align-items:center;justify-content:center;font-size:22px;font-family:var(--serif);color:var(--text);pointer-events:none;border:3px dashed var(--accent)}
+.drop.on{display:flex}
+@media (max-width:1100px){nav{flex-wrap:wrap;padding:8px 14px}.nav-links{order:3;width:100%;flex-wrap:nowrap;overflow-x:auto;gap:0}.nav-link{padding:6px 10px;white-space:nowrap}.nav-link svg{display:none}}
+@media (max-width:640px){.wrap{padding:22px 16px 60px}.hd h1{font-size:32px}.grid{grid-template-columns:1fr 1fr;gap:10px}.chip{display:none}}
+/* ===== Rack editor ===== */
+html,body{height:100%}body{display:flex;flex-direction:column;overflow:hidden;min-height:0}nav{position:relative}
+#app{grid-template-columns:304px minmax(0,1fr) 344px}
+#stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+#docbar{flex:none;height:46px;display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--bg-2);border-bottom:1px solid var(--border)}
+#docbar input{width:auto;flex:0 1 320px;background:transparent;border-color:transparent;font-family:var(--sans);font-size:14px;font-weight:600}
+#docbar input:hover{border-color:var(--border)}#docbar input:focus{background:var(--bg)}
+#docbar .sp{flex:1}#sv{font:11px var(--mono);color:var(--text-muted);white-space:nowrap}
+#rtabs{flex:none;display:flex;gap:4px;padding:8px 14px 0;background:var(--bg-2);border-bottom:1px solid var(--border);overflow-x:auto;align-items:flex-end}
+#rtabs button{padding:7px 14px;border:1px solid var(--border);border-bottom:none;border-radius:9px 9px 0 0;background:var(--bg);color:var(--text-dim);font:500 12.5px var(--sans);cursor:pointer;white-space:nowrap}
+#rtabs button.on{background:var(--surface);color:var(--accent);border-color:var(--border-strong);position:relative;top:1px}
+#rtabs .add{color:var(--accent);border-style:dashed}
+#bar2{flex:none;display:flex;gap:8px;align-items:center;padding:8px 14px;background:var(--bg-2);border-bottom:1px solid var(--border);flex-wrap:wrap}
+#bar2 .zl{font:11px var(--mono);color:var(--text-muted);min-width:42px;text-align:center}
+#bar2 .sp{flex:1}
+#cv{flex:1;min-height:0;overflow:auto;display:flex;padding:20px;background:var(--bg);background-image:radial-gradient(var(--border) 1px,transparent 1px);background-size:18px 18px;touch-action:pan-x pan-y}
+#cv svg{margin:auto;display:block;flex:none;user-select:none;-webkit-user-select:none}
+#cv svg [data-dev]{cursor:grab}
+#stat{flex:none;display:flex;gap:18px;flex-wrap:wrap;align-items:center;padding:7px 14px;border-top:1px solid var(--border);background:var(--bg-2);font:11.5px var(--mono);color:var(--text-dim)}
+#stat b{color:var(--text);font-weight:600}#stat .sp{flex:1}
+.tabs{display:flex;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg-2);z-index:2;flex:none}
+.tabs button{flex:1;padding:11px 6px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-dim);font:500 12.5px var(--sans);cursor:pointer;position:relative}
+.tabs button.on{color:var(--accent);border-bottom-color:var(--accent)}
+.tabs .n{font:700 9.5px var(--mono);background:var(--danger);color:#fff;border-radius:99px;padding:1px 5px;margin-left:4px}
+.tabs .n.w{background:var(--warning);color:#1a1a1a}
+.grp{font:600 10.5px var(--mono);letter-spacing:1.1px;text-transform:uppercase;color:var(--text-muted);padding:12px 18px 6px;display:flex;justify-content:space-between}
+.mi{position:relative;margin:0 12px 6px;padding:9px 38px 9px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);cursor:grab;touch-action:none;user-select:none}
+.mi:hover{border-color:var(--accent);background:var(--surface-hover)}
+.mi .t{display:flex;gap:6px;align-items:center;justify-content:space-between}.mi b{font-size:12.5px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mi .s{font:10.5px var(--mono);color:var(--text-muted);margin-top:2px}
+.mi .add{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:7px;border:1px solid var(--border-strong);background:var(--bg);color:var(--accent);cursor:pointer;font-size:16px;line-height:1}
+.mi .add:hover{background:var(--accent);color:#0b0d10}
+#chip{position:fixed;z-index:99;pointer-events:none;padding:6px 10px;border-radius:8px;background:var(--surface);border:1px solid var(--accent);font:12px var(--mono);box-shadow:0 10px 26px rgba(0,0,0,.4);display:none}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.f{margin-bottom:10px}.f.full{grid-column:1/-1}
+textarea{width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;resize:vertical;min-height:54px}
+textarea:focus{border-color:var(--accent)}
+.chk{display:flex;gap:14px;font-size:12.5px;color:var(--text-dim)}.chk label{display:flex;gap:6px;align-items:center;cursor:pointer}.chk input{width:auto}
+.meter{height:8px;border-radius:99px;background:var(--bg);border:1px solid var(--border);overflow:hidden;margin:4px 0 2px}
+.meter i{display:block;height:100%;background:var(--accent);border-radius:99px}.meter i.warn{background:var(--warning)}.meter i.bad{background:var(--danger)}
+.mrow{display:flex;justify-content:space-between;font:11.5px var(--mono);color:var(--text-dim)}.mrow b{color:var(--text);font-weight:600}
+.is{padding:10px 12px;border:1px solid var(--border);border-left-width:3px;border-radius:9px;margin-bottom:8px;font-size:12.5px;background:var(--surface);cursor:pointer}
+.is.crit{border-left-color:var(--danger)}.is.warn{border-left-color:var(--warning)}.is.info{border-left-color:var(--accent-2)}
+.is.ack{opacity:.5}.is b{display:block;font:600 10.5px var(--mono);letter-spacing:.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:3px}
+.is .ak{float:right;font-size:11px}
+table.bom{width:100%;border-collapse:collapse;font-size:12px}table.bom th{font:600 10px var(--mono);letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);text-align:left;padding:6px 4px;border-bottom:1px solid var(--border)}
+table.bom td{padding:7px 4px;border-bottom:1px solid var(--border);vertical-align:top}table.bom td.r,table.bom th.r{text-align:right;font-family:var(--mono)}
+.kv{font-size:12px;color:var(--text-dim);line-height:1.7}.kv b{color:var(--text);font-weight:600}
+.empt{padding:26px 18px;color:var(--text-dim);font-size:13px;text-align:center}
+.md{width:min(560px,100%);max-height:92vh;overflow:auto}
+.opts{display:flex;gap:6px;flex-wrap:wrap}.opts button{padding:6px 11px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg);color:var(--text-dim);font:12px var(--sans);cursor:pointer}.opts button.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--bg))}
+@media (max-width:1000px){body{overflow:auto}#app{grid-template-columns:1fr;grid-auto-rows:auto}.panel{max-height:46vh;border:none;border-bottom:1px solid var(--border)}#cv{min-height:70vh}}
+</style>
+</head>
+<body data-theme="dark">
+<nav>
+  <a href="/" class="brand">
+    <div class="brand-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/>
+        <path d="M8.5 2h7"/><path d="M7 16h10"/>
+      </svg>
+    </div>
+    <div>Config<em>Labs</em></div>
+  </a>
+  <div class="nav-links">
+    <a href="/" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M3 12L12 3l9 9M5 10v10h14V10"/></svg>Home</a>
+    <a href="/builder.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>Builder</a>
+    <a href="/wifi.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>WiFi Planner </a>
+    <a href="/topology.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/></svg>Topology</a>
+    <a href="/rack.html" class="nav-link active"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="5" y="2" width="14" height="20" rx="1.5"/><path d="M5 7h14M5 12h14M5 17h14"/></svg>Rack Builder</a>
+    <a href="/about.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>About</a>
+  </div>
+  <div class="nav-actions">
+    <div class="chip"><span class="dot"></span><span>Rack builder</span><span class="beta">BETA</span></div>
+    <button class="icon-btn" onclick="toggleTheme()" title="Theme" id="theme-btn">🌙</button>
+  </div>
+</nav>
+<div id="app">
+  <aside class="panel" id="left"></aside>
+  <section id="stage">
+    <div id="docbar"><a class="btn sm" href="/rack.html" title="Back to all rack projects">← Projects</a><input type="text" id="docname" maxlength="80" placeholder="Project name" spellcheck="false"><span class="beta">BETA</span><span class="sp"></span><span id="sv"></span>
+      <button class="btn sm" id="b-undo" title="Undo (Ctrl+Z)">↶</button><button class="btn sm" id="b-redo" title="Redo (Ctrl+Y)">↷</button><button class="btn sm pri" id="b-exp">Export</button></div>
+    <div id="rtabs"></div>
+    <div id="bar2">
+      <div class="seg" id="faceseg" style="min-width:150px"><button data-f="front" class="on">Front</button><button data-f="rear">Rear</button></div>
+      <button class="btn sm" id="z-out" title="Zoom out">−</button><span class="zl" id="zl">100%</span><button class="btn sm" id="z-in" title="Zoom in">+</button><button class="btn sm" id="z-fit">Fit</button>
+      <label class="tgl" style="gap:8px;padding:0 4px"><span>Show gaps</span><input type="checkbox" id="t-gaps" checked><i></i></label>
+      <span class="sp"></span>
+      <button class="btn sm" id="b-blank" title="Fit blanking panels in every open gap between equipment">Fill gaps with blanking</button>
+    </div>
+    <div id="cv"></div>
+    <div id="stat"></div>
+  </section>
+  <aside class="panel" id="right"></aside>
+</div>
+<div id="chip"></div>
+<div class="ov" id="ov"><div class="md" id="md"></div></div>
+<div id="toast"></div>
+<script src="/rack-lib.js"></script>
+<script src="/rack-calc.js"></script>
+<script src="/rack-render.js"></script>
+<script src="/topology-raster.js"></script>
+<script>
+'use strict';
+const $ = id => document.getElementById(id), esc = RR.esc, UMM = RK.UMM;
+const ls = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
+let _tt; function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(_tt); _tt = setTimeout(() => t.classList.remove('show'), 2800); }
+const qs = new URLSearchParams(location.search), PID = /^[\w.\-]{1,60}$/.test(qs.get('p') || '') ? qs.get('p') : '';
+const S = { P: null, rackId: null, face: 'front', sel: null, zoom: 1, gaps: true, tabL: 'lib', tabR: 'dev', q: '', vendor: 'all', undo: [], redo: [], geo: null, drag: null, issues: [] };
+const pal = () => document.body.dataset.theme === 'light' ? 'light' : 'dark';
+const rack = () => RC.rack(S.P, S.rackId) || S.P.racks[0];
+const selDev = () => S.sel ? RC.dev(S.P, S.sel) : null;
+const num = (v, d, lo, hi) => { v = parseFloat(v); if (!isFinite(v)) v = d; return Math.min(hi, Math.max(lo, v)); };
+const imp = () => S.P.settings.units === 'imperial';
+const fKg = v => imp() ? (v * 2.20462).toFixed(1) + ' lb' : (+v.toFixed(1)) + ' kg';
+const fLen = v => imp() ? (v / 25.4).toFixed(1) + ' in' : Math.round(v) + ' mm';
+const fW = v => v >= 10000 ? (v / 1000).toFixed(1) + ' kW' : Math.round(v) + ' W';
+
+/* ---------- load / save ---------- */
+function load() {
+  let P = null; try { P = RC.cleanProject(JSON.parse(ls.get('cl_rk_d_' + PID))); } catch (e) {}
+  if (!PID || !P) { document.getElementById('app').innerHTML = '<div class="empt" style="grid-column:1/-1;padding:80px 20px"><h2 style="font-family:var(--serif);font-weight:400;font-size:34px;margin-bottom:8px">Project not found</h2><p>It may have been deleted, or it was saved in a different browser.</p><p style="margin-top:14px"><a class="btn pri" href="/rack.html">Back to projects</a></p></div>'; return false; }
+  S.P = P; S.rackId = P.racks[0].id; return true;
+}
+let _sv; function touch() { $('sv').textContent = 'Saving…'; clearTimeout(_sv); _sv = setTimeout(save, 350); }
+function save() {
+  const P = S.P, used = {}; P.devices.forEach(d => used[d.modelId] = 1); Object.keys(P.models).forEach(k => { if (!used[k]) delete P.models[k]; });
+  if (!ls.set('cl_rk_d_' + PID, JSON.stringify(P))) { $('sv').textContent = 'Not saved'; toast('Browser storage is full or blocked: export a file now so you do not lose work'); return; }
+  let a = []; try { a = JSON.parse(ls.get('cl_rk_idx') || '[]'); } catch (e) {} if (!Array.isArray(a)) a = [];
+  const x = a.find(y => y && y.id === PID); if (x) { x.name = P.name; x.desc = P.site || x.desc || ''; x.updated = Date.now(); x.n = P.racks.length; x.d = P.devices.length; ls.set('cl_rk_idx', JSON.stringify(a)); }
+  $('sv').textContent = 'Saved ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+addEventListener('beforeunload', () => { if (S.P) save(); });
+function mutate(fn, keep) {
+  if (!keep) { S.undo.push(JSON.stringify(S.P)); if (S.undo.length > 80) S.undo.shift(); S.redo = []; }
+  fn(); const c = RC.cleanProject(S.P); if (c) S.P = c;
+  if (!RC.rack(S.P, S.rackId)) S.rackId = S.P.racks[0].id; if (S.sel && !RC.dev(S.P, S.sel)) S.sel = null;
+  touch(); render();
+}
+function undo(redo) {
+  const from = redo ? S.redo : S.undo, to = redo ? S.undo : S.redo; if (!from.length) return;
+  to.push(JSON.stringify(S.P)); const c = RC.cleanProject(JSON.parse(from.pop())); if (!c) return; S.P = c;
+  if (!RC.rack(S.P, S.rackId)) S.rackId = S.P.racks[0].id; if (S.sel && !RC.dev(S.P, S.sel)) S.sel = null; touch(); render();
+}
+
+/* ---------- rendering ---------- */
+function render() { S.issues = RC.validate(S.P); renderTabs(); renderCanvas(); renderLeft(); renderRight(); renderStat(); $('docname').value !== S.P.name && document.activeElement !== $('docname') && ($('docname').value = S.P.name); $('b-undo').disabled = !S.undo.length; $('b-redo').disabled = !S.redo.length; }
+function renderTabs() {
+  $('rtabs').innerHTML = S.P.racks.map(r => `<button data-r="${esc(r.id)}" class="${r.id === S.rackId ? 'on' : ''}">${esc(r.label)} <small style="color:var(--text-muted)">${r.u}U</small></button>`).join('') + '<button class="add" data-add="1" title="Add a rack">+ Rack</button>';
+  document.querySelectorAll('#faceseg button').forEach(b => b.classList.toggle('on', b.dataset.f === S.face));
+}
+function renderCanvas() {
+  const r = rack(), o = RR.rackSVG(S.P, r.id, { face: S.face, sel: S.sel, pal: pal(), gaps: S.gaps, pid: 'c' }); S.geo = o;
+  $('cv').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" id="rsvg" width="${Math.round(o.w * S.zoom)}" height="${Math.round(o.h * S.zoom)}" viewBox="0 0 ${o.w} ${o.h}">${o.svg}<g id="gh" pointer-events="none"></g></svg>`;
+  $('zl').textContent = Math.round(S.zoom * 100) + '%';
+}
+function fit(strict) { const r = rack(), h = r.u * UMM + 60; let z = Math.min(2.5, ($('cv').clientHeight - 44) / h); S.zoom = Math.max(strict ? 0.2 : 0.55, z); renderCanvas(); }
+function renderStat() {
+  const r = rack(), st = RC.stats(S.P, r), live = S.issues.filter(i => !i.ack), c = live.filter(i => i.sev === 'crit').length, w = live.filter(i => i.sev === 'warn').length;
+  $('stat').innerHTML = `<span>${esc(r.label)}</span><span>Space <b>${st.usedU}/${r.u}U</b> (${st.pct}%)</span><span>Power <b>${fW(st.watts)}</b></span><span>Weight <b>${fKg(st.kg)}</b></span><span class="sp"></span><span>${c ? '<b style="color:var(--danger)">' + c + ' critical</b> · ' : ''}${w ? '<b style="color:var(--warning)">' + w + ' warnings</b>' : (c ? '' : '<b style="color:var(--accent)">No problems found</b>')}</span>`;
+}
+const verPill = m => `<span class="pill ${m.ver === 'datasheet' ? 'ok' : m.ver === 'typical' ? 'warn' : ''}" title="${esc(m.ver === 'typical' ? 'Placeholder values: check against the datasheet' : m.ver === 'partial' ? 'Some values are estimates' : 'Values from the vendor datasheet or hardware guide')}">${esc(RK.VER[m.ver])}</span>`;
+function modelLine(m) { const w = S.P.settings.powerBasis === 'typ' && m.w.typ != null ? m.w.typ : m.w.max; return [m.vendor, m.u + 'U', fLen(m.d), m.cat === 'blank' ? '' : (w ? fW(w) : '')].filter(Boolean).join(' · '); }
+
+/* ---------- left panel ---------- */
+function renderLeft() {
+  const L = $('left'); const keepQ = document.activeElement && document.activeElement.id === 'lq';
+  let h = `<div class="tabs"><button data-tl="lib" class="${S.tabL === 'lib' ? 'on' : ''}">Equipment</button><button data-tl="rack" class="${S.tabL === 'rack' ? 'on' : ''}">Rack &amp; project</button></div>`;
+  if (S.tabL === 'lib') {
+    const all = RK.all(), vs = [...new Set(all.map(m => m.vendor || 'Generic'))];
+    h += `<div class="sec"><input type="text" id="lq" placeholder="Search equipment" value="${esc(S.q)}" autocomplete="off"><div class="row" style="margin-top:8px"><select id="lv"><option value="all">All vendors</option>${vs.map(v => `<option${v === S.vendor ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select><button class="btn sm" id="b-cust">+ Custom device</button></div><p class="note">Drag into the rack, or press + to add at the first free slot. <b>Typical</b> means a placeholder value: check it against your datasheet.</p></div>`;
+    const q = S.q.trim().toLowerCase(), f = all.filter(m => (S.vendor === 'all' || (m.vendor || 'Generic') === S.vendor) && (!q || (m.vendor + ' ' + m.name + ' ' + RK.CATS[m.cat]).toLowerCase().includes(q)));
+    RK.GROUPS.forEach(g => { const it = f.filter(m => g[2].indexOf(m.cat) >= 0); if (!it.length) return; h += `<div class="grp"><span>${esc(g[1])}</span><span>${it.length}</span></div>` + it.map(m => `<div class="mi" data-m="${esc(m.id)}"><div class="t"><b>${esc((m.vendor ? m.vendor + ' ' : '') + m.name)}</b>${verPill(m)}</div><div class="s">${esc(modelLine(m))}</div><button class="add" data-add="${esc(m.id)}" title="Add to rack">+</button></div>`).join(''); });
+    if (!f.length) h += '<div class="empt">Nothing matches. Clear the search, or add a custom device.</div>';
+    h += '<div style="height:20px"></div>';
+  } else {
+    const r = rack(), P = S.P, s = P.settings, o = (v, a) => a.map(x => `<option value="${esc(x[0])}"${String(x[0]) === String(v) ? ' selected' : ''}>${esc(x[1])}</option>`).join('');
+    h += `<div class="sec"><h4>${esc(r.label)}</h4><div class="f"><label class="lbl">Label</label><input type="text" data-rk="label" value="${esc(r.label)}" maxlength="40"></div>
+<div class="f2"><div class="f"><label class="lbl">Height (U)</label><input type="text" inputmode="numeric" data-rk="u" value="${r.u}" list="ul"><datalist id="ul">${RK.PRESETS_U.map(x => `<option value="${x}">`).join('')}</datalist></div><div class="f"><label class="lbl">Numbering</label><select data-rk="numbering">${o(r.numbering, [['bottom-up', 'U1 at bottom'], ['top-down', 'U1 at top']])}</select></div>
+<div class="f"><label class="lbl">Width (mm)</label><select data-rk="w">${o(r.w, [[482, '482 (open frame)'], [600, '600'], [700, '700'], [800, '800']])}</select></div><div class="f"><label class="lbl">Depth (mm)</label><input type="text" inputmode="numeric" data-rk="d" value="${r.d}"></div>
+<div class="f"><label class="lbl">Frame</label><select data-rk="frame">${o(r.frame, [['cabinet', 'Closed cabinet'], ['open', 'Open frame'], ['wall', 'Wall mount']])}</select></div><div class="f"><label class="lbl">Empty weight (kg)</label><input type="text" inputmode="decimal" data-rk="emptyKg" value="${r.emptyKg}"></div>
+<div class="f"><label class="lbl">Load rating (kg)</label><input type="text" inputmode="decimal" data-rk="loadRating" value="${r.loadRating}"></div><div class="f"></div>
+<div class="f"><label class="lbl">PDU feed A (W)</label><input type="text" inputmode="numeric" data-rk="pduA" value="${r.pdus.A.cap}" list="pl"></div><div class="f"><label class="lbl">PDU feed B (W)</label><input type="text" inputmode="numeric" data-rk="pduB" value="${r.pdus.B.cap}" list="pl"></div></div>
+<datalist id="pl">${RK.PDU_PRESETS.map(x => `<option value="${x[0]}" label="${esc(x[1])}">`).join('')}</datalist><p class="note">Feed capacity is the real circuit or PDU rating in watts. 0 means that feed is not installed. Presets: 3680 (16 A), 7360 (32 A), 11040 and 22170 (three phase).</p>
+<div class="row" style="margin-top:6px"><button class="btn sm" data-ra="dup">Duplicate rack</button><button class="btn sm" data-ra="del" style="color:var(--danger)">Delete rack</button></div></div>
+<div class="sec"><h4>Project</h4><div class="f"><label class="lbl">Site or client</label><input type="text" data-ps="site" value="${esc(P.site)}" maxlength="80"></div>
+<div class="f2"><div class="f"><label class="lbl">Units shown</label><select data-ps="units">${o(s.units, [['metric', 'Metric (kg, mm)'], ['imperial', 'Imperial (lb, in)']])}</select></div><div class="f"><label class="lbl">Power basis</label><select data-ps="powerBasis">${o(s.powerBasis, [['max', 'Maximum watts'], ['typ', 'Typical watts']])}</select></div>
+<div class="f"><label class="lbl">Warn at (%)</label><input type="text" inputmode="numeric" data-ps="warn" value="${s.warn}"></div><div class="f"><label class="lbl">Critical at (%)</label><input type="text" inputmode="numeric" data-ps="crit" value="${s.crit}"></div>
+<div class="f"><label class="lbl">Floor rating (kg/m²)</label><input type="text" inputmode="numeric" data-ps="floorRating" value="${s.floorRating}"></div><div class="f"></div></div>
+<p class="note">Planning on <b>maximum</b> watts is the safe choice. Units only change how weights and depths are shown. Inputs stay in kg and mm. Floor rating is your building's limit: ask the facilities team.</p></div><div style="height:20px"></div>`;
+  }
+  L.innerHTML = h; if (keepQ) { const q = $('lq'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
+}
+
+/* ---------- right panel ---------- */
+const bar = (v, cap, warn, crit) => { const p = cap ? v / cap * 100 : (v > 0 ? 999 : 0); return `<div class="meter"><i class="${p >= crit ? 'bad' : p >= warn ? 'warn' : ''}" style="width:${Math.min(100, p)}%"></i></div>`; };
+function renderRight() {
+  const live = S.issues.filter(i => !i.ack), c = live.filter(i => i.sev === 'crit').length, w = live.filter(i => i.sev === 'warn').length;
+  let h = `<div class="tabs"><button data-tr="dev" class="${S.tabR === 'dev' ? 'on' : ''}">Device</button><button data-tr="sum" class="${S.tabR === 'sum' ? 'on' : ''}">Power &amp; weight</button><button data-tr="iss" class="${S.tabR === 'iss' ? 'on' : ''}">Issues${c ? `<span class="n">${c}</span>` : w ? `<span class="n w">${w}</span>` : ''}</button><button data-tr="bom" class="${S.tabR === 'bom' ? 'on' : ''}">BOM</button></div>`;
+  if (S.tabR === 'dev') h += devPanel(); else if (S.tabR === 'sum') h += sumPanel(); else if (S.tabR === 'iss') h += issPanel(); else h += bomPanel();
+  const R = $('right'), st = R.scrollTop, ae = document.activeElement; R.innerHTML = h; R.scrollTop = st;
+}
+function devPanel() {
+  const d = selDev(), r = rack(); if (!d) {
+    const s = RC.stats(S.P, r); return `<div class="sec"><h4>${esc(r.label)}</h4><div class="kv">Space used <b>${s.usedU} of ${r.u}U</b> · ${s.freeU}U free<br>Devices <b>${s.devices}</b><br>Power <b>${fW(s.watts)}</b> · Weight <b>${fKg(s.kg)}</b></div><p class="note">Click a device in the rack to edit its name, address, power feeds and notes. Drag it up or down to move it.</p></div><div class="sec"><h4>Shortcuts</h4><div class="kv">Delete: remove device<br>Arrow up / down: move one U<br>Ctrl+D: duplicate · Ctrl+Z / Y: undo / redo<br>Esc: deselect</div></div>`;
+  }
+  const m = RC.model(S.P, d.modelId), nf = d.feeds, op = (v, a) => a.map(x => `<option value="${esc(x[0])}"${x[0] === v ? ' selected' : ''}>${esc(x[1])}</option>`).join('');
+  const link = m.src ? `<a href="${esc(m.src)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">source</a>` : '';
+  return `<div class="sec"><h4>${esc(RK.CATS[m.cat])} ${verPill(m)}</h4><div style="font-weight:600;font-size:14px">${esc((m.vendor ? m.vendor + ' ' : '') + m.name)}</div>
+<div class="kv" style="margin-top:6px">${m.u}U · depth <b>${fLen(m.d)}</b> · <b>${fKg(RC.kg(S.P, d))}</b> · <b>${fW(RC.watts(S.P, d))}</b> · ${m.psu} PSU<br>Airflow: ${esc(RK.AIR[m.air])}</div>${m.note ? `<p class="note">${esc(m.note)} ${link}</p>` : (link ? `<p class="note">${link}</p>` : '')}</div>
+<div class="sec"><h4>Identity</h4><div class="f2"><div class="f full"><label class="lbl">Hostname</label><input type="text" data-df="hostname" value="${esc(d.hostname)}" maxlength="63" placeholder="e.g. CORE-01"></div><div class="f"><label class="lbl">Role</label><input type="text" data-df="role" value="${esc(d.role)}" maxlength="40"></div><div class="f"><label class="lbl">Status</label><select data-df="status">${op(d.status, [['planned', 'Planned'], ['installed', 'Installed']])}</select></div>
+<div class="f"><label class="lbl">Management IP</label><input type="text" data-df="mgmtIp" value="${esc(d.mgmtIp)}" maxlength="45" placeholder="10.0.0.1"></div><div class="f"><label class="lbl">VLAN</label><input type="text" data-df="vlan" value="${esc(d.vlan)}" maxlength="40"></div>
+<div class="f full"><label class="lbl">Other IPs (comma separated)</label><input type="text" data-df="ips" value="${esc(d.ips.join(', '))}"></div><div class="f"><label class="lbl">Serial</label><input type="text" data-df="serial" value="${esc(d.serial)}" maxlength="60"></div><div class="f"><label class="lbl">Asset tag</label><input type="text" data-df="asset" value="${esc(d.asset)}" maxlength="60"></div></div></div>
+<div class="sec"><h4>Position</h4><div class="f2"><div class="f"><label class="lbl">Lowest U</label><input type="text" inputmode="numeric" data-df="u" value="${d.u}"></div><div class="f"><label class="lbl">Rack</label><select data-df="rackId">${S.P.racks.map(x => `<option value="${esc(x.id)}"${x.id === d.rackId ? ' selected' : ''}>${esc(x.label)}</option>`).join('')}</select></div>
+<div class="f"><label class="lbl">Mounting</label><select data-df="side">${op(d.side, [['full', 'Full depth'], ['front', 'Front half only'], ['rear', 'Rear half only']])}</select></div><div class="f"><label class="lbl">Orientation</label><select data-df="rev">${op(d.rev ? '1' : '0', [['0', 'Normal'], ['1', 'Reversed (rear forward)']])}</select></div></div></div>
+<div class="sec"><h4>Power</h4><div class="chk" style="margin-bottom:10px"><label><input type="checkbox" data-df="feedA"${nf.indexOf('A') >= 0 ? ' checked' : ''}> Feed A</label><label><input type="checkbox" data-df="feedB"${nf.indexOf('B') >= 0 ? ' checked' : ''}> Feed B</label></div>
+<div class="f2"><div class="f"><label class="lbl">Watts override</label><input type="text" inputmode="decimal" data-df="watts" value="${d.watts != null ? d.watts : ''}" placeholder="${Math.round(RC.watts(Object.assign({}, S.P, { devices: [] }), { modelId: d.modelId, feeds: [] }))}"></div><div class="f"><label class="lbl">Weight override (kg)</label><input type="text" inputmode="decimal" data-df="kg" value="${d.kg != null ? d.kg : ''}" placeholder="${+m.kg.toFixed(1)}"></div></div><p class="note">Leave blank to use the model's value. A dual-supply device on A and B draws half from each.</p></div>
+<div class="sec"><h4>Notes</h4><textarea data-df="notes" maxlength="500">${esc(d.notes)}</textarea><div class="row" style="margin-top:10px"><button class="btn sm" data-da="dup">Duplicate</button><button class="btn sm" data-da="del" style="color:var(--danger)">Remove</button></div></div><div style="height:20px"></div>`;
+}
+function sumPanel() {
+  const P = S.P, s = P.settings, r = rack(), st = RC.stats(P, r), fl = st.kg / st.footprint;
+  const feed = f => { const cap = r.pdus[f].cap, l = st.feed[f]; return `<div class="mrow"><span>Feed ${f}</span><span><b>${fW(l)}</b> of ${cap ? fW(cap) : 'none'}${cap ? ' · ' + Math.round(l / cap * 100) + '%' : ''}</span></div>${bar(l, cap, s.warn, s.crit)}`; };
+  const la = st.solo.A + st.dual, lb = st.solo.B + st.dual, both = r.pdus.A.cap && r.pdus.B.cap;
+  let h = `<div class="sec"><h4>${esc(r.label)} · power <small>${s.powerBasis === 'max' ? 'maximum watts' : 'typical watts'}</small></h4>${feed('A')}${feed('B')}
+<div class="kv" style="margin-top:8px">Total <b>${fW(st.watts)}</b> · ${(st.watts * 3.412).toFixed(0)} BTU/h of heat to remove${st.feed.none ? `<br><span style="color:var(--warning)">${fW(st.feed.none)} is not assigned to any feed</span>` : ''}</div>
+${both ? `<div class="kv" style="margin-top:8px">If feed A fails: B carries <b>${fW(lb)}</b> (${Math.round(lb / r.pdus.B.cap * 100)}%)<br>If feed B fails: A carries <b>${fW(la)}</b> (${Math.round(la / r.pdus.A.cap * 100)}%)</div>` : '<p class="note">Set both feed capacities under Rack &amp; project to check what happens when one feed is lost.</p>'}</div>
+<div class="sec"><h4>Weight</h4><div class="mrow"><span>Rack load</span><span><b>${fKg(st.kg)}</b> of ${fKg(r.loadRating)}</span></div>${bar(st.kg, r.loadRating, 90, 100)}<div class="mrow" style="margin-top:6px"><span>Floor loading</span><span><b>${imp() ? (fl * 0.2048).toFixed(0) + ' lb/ft²' : Math.round(fl) + ' kg/m²'}</b> of ${imp() ? (s.floorRating * 0.2048).toFixed(0) + ' lb/ft²' : s.floorRating + ' kg/m²'}</span></div>${bar(fl, s.floorRating, 90, 100)}<p class="note">Floor loading divides the full rack weight over its own footprint (${r.w} × ${r.d} mm). Real floors also depend on how the load is spread: ask a structural engineer for heavy rows.</p></div>
+<div class="sec"><h4>Space</h4><div class="mrow"><span>Used</span><span><b>${st.usedU} of ${r.u}U</b> · ${st.pct}%</span></div>${bar(st.usedU, r.u, 90, 101)}<div class="kv" style="margin-top:6px">Clearance to plan: <b>${fLen(s.clearFront)}</b> front, <b>${fLen(s.clearRear)}</b> rear.</div></div>`;
+  if (P.racks.length > 1) { h += `<div class="sec"><h4>All racks</h4><table class="bom"><tr><th>Rack</th><th class="r">U</th><th class="r">Power</th><th class="r">Weight</th></tr>`; let tw = 0, tk = 0; P.racks.forEach(x => { const q = RC.stats(P, x); tw += q.watts; tk += q.kg; h += `<tr><td>${esc(x.label)}</td><td class="r">${q.usedU}/${x.u}</td><td class="r">${fW(q.watts)}</td><td class="r">${fKg(q.kg)}</td></tr>`; }); h += `<tr><td><b>Total</b></td><td></td><td class="r"><b>${fW(tw)}</b></td><td class="r"><b>${fKg(tk)}</b></td></tr></table></div>`; }
+  return h + '<div style="height:20px"></div>';
+}
+function issPanel() {
+  const a = S.issues; if (!a.length) return '<div class="empt"><b style="color:var(--accent)">No problems found.</b><br>Checked: overlaps, open gaps, duplicate names and IPs, power per feed, loss of a feed, weight and floor loading.</div>';
+  return '<div class="sec"><p class="note" style="margin:0 0 10px">Click an issue to jump to it. Mark one as accepted if it is intentional: it stays listed but stops counting.</p>' + a.map(i => `<div class="is ${i.sev}${i.ack ? ' ack' : ''}" data-ik="${esc(i.key)}" data-ir="${esc(i.rackId)}" data-id="${esc(i.devId || '')}"><button class="btn sm ak" data-ack="${esc(i.key)}">${i.ack ? 'Undo accept' : 'Accept'}</button><b>${esc(RC.RULES[i.rule] || i.rule)} · ${esc(i.sev)}</b>${esc(i.msg)}</div>`).join('') + '</div>';
+}
+function bomPanel() {
+  const rows = RC.bom(S.P), tw = rows.reduce((t, r) => t + r.w, 0), tk = rows.reduce((t, r) => t + r.kg, 0), tq = rows.reduce((t, r) => t + r.qty, 0);
+  if (!rows.length) return '<div class="empt">Nothing in the project yet. Add equipment and the bill of materials builds itself.</div>';
+  return `<div class="sec"><table class="bom"><tr><th>Item</th><th class="r">Qty</th><th class="r">U</th><th class="r">Power</th></tr>${rows.map(r => `<tr><td>${esc((r.model.vendor ? r.model.vendor + ' ' : '') + r.model.name)}<br><span style="color:var(--text-muted);font-size:11px">${esc(RK.CATS[r.model.cat])} · ${esc(RK.VER[r.model.ver])}</span></td><td class="r">${r.qty}</td><td class="r">${r.u}</td><td class="r">${fW(r.w)}</td></tr>`).join('')}<tr><td><b>Total</b></td><td class="r"><b>${tq}</b></td><td class="r"></td><td class="r"><b>${fW(tw)}</b></td></tr></table><p class="note">Total weight ${fKg(tk)} (equipment only). Racks and PDUs are not in this list.</p><div class="row" style="margin-top:10px"><button class="btn sm" id="b-csv">Download CSV</button></div></div>`;
+}
+
+/* ---------- editing actions ---------- */
+function snapModel(m) { if (!S.P.models[m.id]) { const c = JSON.parse(JSON.stringify(m)); delete c.custom; S.P.models[m.id] = c; } }
+const blankDev = (rackId, modelId, u) => ({ id: RC.uid('d'), rackId, modelId, u, side: 'full', rev: false, hostname: '', role: '', ips: [], mgmtIp: '', vlan: '', serial: '', asset: '', status: 'planned', feeds: [], notes: '' });
+function addDevice(modelId, u) {
+  const m = RK.find(modelId, S.P); if (!m) return; const r = rack(); let at = u;
+  if (at == null) { at = null; for (let row = 0; row < r.u; row++) { const c = RR.uFromRow(r, row, m.u); if (RC.fits(S.P, r, c, m.u) && !RC.collides(S.P, r.id, null, c, m.u, 'full')) { at = c; break; } } }
+  if (at == null) return toast('No free ' + m.u + 'U slot left in ' + r.label);
+  const id = RC.uid('d');
+  mutate(() => { snapModel(m); const d = blankDev(r.id, m.id, at); d.id = id; if (m.psu > 0) d.feeds = ['A', 'B'].filter((f, i) => i < Math.min(2, m.psu) && r.pdus[f].cap > 0); S.P.devices.push(d); S.sel = id; S.tabR = 'dev'; });
+}
+function delDevice(id) { mutate(() => { S.P.devices = S.P.devices.filter(d => d.id !== id); S.sel = null; }); }
+function dupDevice(id) {
+  const d = RC.dev(S.P, id); if (!d) return; const r = RC.rack(S.P, d.rackId), h = RC.h(S.P, d), u = RC.nearestFree(S.P, r, null, d.u + h, h, d.side); if (u == null) return toast('No room to duplicate here');
+  const n = JSON.parse(JSON.stringify(d)); n.id = RC.uid('d'); n.u = u; n.hostname = ''; n.serial = ''; n.asset = ''; n.mgmtIp = ''; n.ips = []; mutate(() => { S.P.devices.push(n); S.sel = n.id; });
+}
+function moveSel(delta) { const d = selDev(); if (!d) return; const r = RC.rack(S.P, d.rackId), h = RC.h(S.P, d), u = d.u + delta; if (!RC.fits(S.P, r, u, h) || RC.collides(S.P, r.id, d.id, u, h, d.side)) return; mutate(() => { d.u = u; }); }
+
+/* ---------- drag and drop (pointer events) ---------- */
+function slotAt(cx, cy, h, offMm, ex, side) {
+  const svg = $('rsvg'); if (!svg || !S.geo) return null; const b = svg.getBoundingClientRect();
+  if (cx < b.left - 40 || cx > b.right + 40 || cy < b.top - 40 || cy > b.bottom + 40) return null;
+  const r = rack(), y = (cy - b.top) / S.zoom - offMm + h * UMM / 2; let u = RR.uFromRow(r, RR.rowOf(r, y, S.geo.topY, h), h); u = Math.max(1, Math.min(r.u - h + 1, u));
+  return { u, h, ok: !RC.collides(S.P, r.id, ex, u, h, side || 'full') };
+}
+function setGhost(s) {
+  const g = $('gh'); if (!g) return; if (!s) { g.innerHTML = ''; return; } const p = RR.pal(pal()), c = s.ok ? p.acc : p.bad, y = RR.slotTop(rack(), s.u, s.h, S.geo.topY);
+  g.innerHTML = `<rect x="${S.geo.x0}" y="${y}" width="${RK.RACKW}" height="${s.h * UMM}" rx="2" fill="${c}" fill-opacity=".24" stroke="${c}" stroke-width="2.4" stroke-dasharray="8 5"/><text x="${S.geo.x0 + 18}" y="${y + s.h * UMM / 2 + 4}" font-family="JetBrains Mono,monospace" font-size="12" font-weight="700" fill="${c}">U${s.u}${s.h > 1 ? '–' + (s.u + s.h - 1) : ''}${s.ok ? '' : ' · occupied'}</text>`;
+}
+function startDrag(kind, o, e) {
+  const sx = e.clientX, sy = e.clientY; let on = false, slot = null;
+  const chip = $('chip');
+  const mv = ev => {
+    if (!on) { if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 5) return; on = true; S.drag = o; chip.textContent = o.label; chip.style.display = 'block'; document.body.style.cursor = 'grabbing'; if (kind === 'move') { const el = document.querySelector('#rsvg [data-dev="' + CSS.escape(o.id) + '"]'); if (el) el.setAttribute('opacity', '.3'); } }
+    chip.style.left = (ev.clientX + 14) + 'px'; chip.style.top = (ev.clientY + 12) + 'px';
+    slot = slotAt(ev.clientX, ev.clientY, o.h, o.off, kind === 'move' ? o.id : null, o.side); setGhost(slot);
+  };
+  const up = ev => {
+    removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up); chip.style.display = 'none'; document.body.style.cursor = ''; S.drag = null; setGhost(null);
+    if (!on) { if (kind === 'move') { /* plain click: already selected */ } return; }
+    if (ev.type === 'pointercancel') return render(); if (!slot) return render();
+    if (!slot.ok) { toast('That slot is taken'); return render(); }
+    if (kind === 'new') addDevice(o.modelId, slot.u); else { const d = RC.dev(S.P, o.id); if (d && d.u !== slot.u) mutate(() => { d.u = slot.u; }); else render(); }
+  };
+  addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up);
+}
+$('left').addEventListener('pointerdown', e => {
+  const mi = e.target.closest('.mi'); if (!mi || e.target.closest('.add') || e.button) return; const m = RK.find(mi.dataset.m, S.P); if (!m) return;
+  startDrag('new', { modelId: m.id, h: m.u, off: m.u * UMM / 2, label: (m.vendor ? m.vendor + ' ' : '') + m.name + ' · ' + m.u + 'U' }, e);
+});
+$('cv').addEventListener('pointerdown', e => {
+  if (e.button) return; const g = e.target.closest('[data-dev]');
+  if (!g) { if (S.sel) { S.sel = null; render(); } return; }
+  const id = g.dataset.dev, d = RC.dev(S.P, id); if (!d) return; const svg = $('rsvg'), b = svg.getBoundingClientRect(), h = RC.h(S.P, d), top = RR.slotTop(rack(), d.u, h, S.geo.topY), off = (e.clientY - b.top) / S.zoom - top;
+  const was = S.sel === id; if (!was) { S.sel = id; S.tabR = 'dev'; render(); }
+  startDrag('move', { id, h, off, side: d.side, label: d.hostname || RC.model(S.P, d.modelId).name }, e);
+});
+
+/* ---------- events ---------- */
+$('left').addEventListener('click', e => {
+  const t = e.target.closest('[data-tl]'); if (t) { S.tabL = t.dataset.tl; return renderLeft(); }
+  const a = e.target.closest('[data-add]'); if (a) return addDevice(a.dataset.add);
+  if (e.target.closest('#b-cust')) return customDlg();
+  const ra = e.target.closest('[data-ra]'); if (ra) { if (ra.dataset.ra === 'dup') dupRack(); else delRack(); }
+});
+$('left').addEventListener('input', e => { if (e.target.id === 'lq') { S.q = e.target.value; renderLeft(); } });
+$('left').addEventListener('change', e => {
+  const t = e.target; if (t.id === 'lv') { S.vendor = t.value; return renderLeft(); }
+  if (t.dataset.rk) { const k = t.dataset.rk, r = rack(), v = t.value; mutate(() => {
+    if (k === 'label') r.label = v.trim().slice(0, 40) || 'Rack'; else if (k === 'u') { const top = Math.max(0, ...RC.devsOf(S.P, r.id).map(d => RC.top(S.P, d))); const n = num(v, r.u, 1, 60) | 0; r.u = n; if (n < top) toast('Some equipment now sits above the top of the rack: see Issues'); }
+    else if (k === 'numbering' || k === 'frame') r[k] = v; else if (k === 'w') r.w = +v; else if (k === 'd') r.d = num(v, r.d, 300, 2000); else if (k === 'emptyKg') r.emptyKg = num(v, r.emptyKg, 0, 1000); else if (k === 'loadRating') r.loadRating = num(v, r.loadRating, 10, 5000);
+    else if (k === 'pduA') r.pdus.A.cap = num(v, 0, 0, 100000); else if (k === 'pduB') r.pdus.B.cap = num(v, 0, 0, 100000); }); if (k === 'u') fit(); return; }
+  if (t.dataset.ps) { const k = t.dataset.ps, v = t.value; mutate(() => { const s = S.P.settings; if (k === 'site') S.P.site = v.slice(0, 80); else if (k === 'units' || k === 'powerBasis') s[k] = v; else s[k] = num(v, s[k], 0, 100000); }); }
+});
+$('right').addEventListener('click', e => {
+  const t = e.target.closest('[data-tr]'); if (t) { S.tabR = t.dataset.tr; return renderRight(); }
+  const da = e.target.closest('[data-da]'); if (da && S.sel) return da.dataset.da === 'dup' ? dupDevice(S.sel) : delDevice(S.sel);
+  const ak = e.target.closest('[data-ack]'); if (ak) { e.stopPropagation(); const k = ak.dataset.ack; return mutate(() => { if (S.P.ack[k]) delete S.P.ack[k]; else S.P.ack[k] = 1; }); }
+  const is = e.target.closest('[data-ik]'); if (is) { if (is.dataset.ir && RC.rack(S.P, is.dataset.ir)) S.rackId = is.dataset.ir; S.sel = is.dataset.id && RC.dev(S.P, is.dataset.id) ? is.dataset.id : null; if (S.sel) S.tabR = 'dev'; render(); return; }
+  if (e.target.closest('#b-csv')) download(fileBase() + '-bom.csv', new Blob(['﻿' + RC.bomCSV(S.P)], { type: 'text/csv' }));
+});
+$('right').addEventListener('change', e => {
+  const t = e.target, k = t.dataset.df, d = selDev(); if (!k || !d) return; const v = t.value;
+  mutate(() => {
+    const r = RC.rack(S.P, d.rackId), h = RC.h(S.P, d);
+    if (['hostname', 'role', 'vlan', 'serial', 'asset', 'notes', 'mgmtIp'].indexOf(k) >= 0) d[k] = v.trim(); else if (k === 'status') d.status = v;
+    else if (k === 'ips') d.ips = v.split(/[,\s]+/).filter(Boolean).slice(0, 8);
+    else if (k === 'feedA' || k === 'feedB') { const f = k === 'feedA' ? 'A' : 'B'; d.feeds = d.feeds.filter(x => x !== f); if (t.checked) d.feeds.push(f); d.feeds.sort(); }
+    else if (k === 'watts' || k === 'kg') { if (v.trim() === '') delete d[k]; else d[k] = num(v, 0, 0, k === 'kg' ? 500 : 30000); }
+    else if (k === 'rev') d.rev = v === '1';
+    else if (k === 'u') { const u = num(v, d.u, 1, 60) | 0; if (RC.fits(S.P, r, u, h) && !RC.collides(S.P, r.id, d.id, u, h, d.side)) d.u = u; else { const n = RC.nearestFree(S.P, r, d.id, u, h, d.side); if (n != null) { d.u = n; toast('Slot taken, moved to U' + n); } else toast('No room there'); } }
+    else if (k === 'side') { if (!RC.collides(S.P, r.id, d.id, d.u, h, v)) d.side = v; else toast('Another device shares that U, so it cannot change to ' + v); }
+    else if (k === 'rackId') { const nr = RC.rack(S.P, v); if (!nr) return; const u = RC.nearestFree(S.P, nr, d.id, Math.min(d.u, nr.u), h, d.side); if (u == null) return toast('No room in ' + nr.label); d.rackId = nr.id; d.u = u; S.rackId = nr.id; }
+  });
+});
+$('docname').addEventListener('change', e => mutate(() => { S.P.name = e.target.value.trim().slice(0, 80) || 'Untitled rack project'; }));
+$('rtabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.add) return addRack(); S.rackId = b.dataset.r; S.sel = null; render(); fit(); });
+$('faceseg').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if (b) { S.face = b.dataset.f; render(); } });
+$('z-in').onclick = () => { S.zoom = Math.min(3, S.zoom * 1.2); renderCanvas(); }; $('z-out').onclick = () => { S.zoom = Math.max(0.2, S.zoom / 1.2); renderCanvas(); }; $('z-fit').onclick = () => fit(true);
+$('t-gaps').onchange = e => { S.gaps = e.target.checked; renderCanvas(); };
+$('b-blank').onclick = () => { const n = RC.freeRuns(S.P, rack(), true).length; if (!n) return toast('No open gaps between equipment'); let c = 0; mutate(() => { c = RC.autoBlank(S.P, S.rackId, false); }); toast(c + ' blanking panel' + (c === 1 ? '' : 's') + ' added'); };
+$('b-undo').onclick = () => undo(false); $('b-redo').onclick = () => undo(true); $('b-exp').onclick = () => exportDlg();
+$('cv').addEventListener('wheel', e => { if (e.ctrlKey || e.metaKey) { e.preventDefault(); S.zoom = Math.max(0.2, Math.min(3, S.zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1))); renderCanvas(); } }, { passive: false });
+document.addEventListener('keydown', e => {
+  const tg = e.target.tagName; if (e.key === 'Escape') { if ($('ov').classList.contains('on')) closeM(); else if (S.sel) { S.sel = null; render(); } return; }
+  if (tg === 'INPUT' || tg === 'TEXTAREA' || tg === 'SELECT' || $('ov').classList.contains('on')) return;
+  const mod = e.ctrlKey || e.metaKey;
+  if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(e.shiftKey); } else if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); undo(true); }
+  else if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); if (S.sel) dupDevice(S.sel); }
+  else if ((e.key === 'Delete' || e.key === 'Backspace') && S.sel) { e.preventDefault(); delDevice(S.sel); }
+  else if (e.key === 'ArrowUp' && S.sel) { e.preventDefault(); moveSel(rack().numbering === 'top-down' ? -1 : 1); } else if (e.key === 'ArrowDown' && S.sel) { e.preventDefault(); moveSel(rack().numbering === 'top-down' ? 1 : -1); }
+});
+
+/* ---------- racks ---------- */
+function addRack() { const r = RC.newRack('Rack ' + (S.P.racks.length + 1), rack().u); r.pdus = JSON.parse(JSON.stringify(rack().pdus)); mutate(() => { S.P.racks.push(r); S.rackId = r.id; S.sel = null; }); fit(); }
+function dupRack() {
+  const src = rack(), r = JSON.parse(JSON.stringify(src)); r.id = RC.uid('r'); r.label = (src.label + ' copy').slice(0, 40);
+  mutate(() => { S.P.racks.push(r); RC.devsOf(S.P, src.id).forEach(d => { const n = JSON.parse(JSON.stringify(d)); n.id = RC.uid('d'); n.rackId = r.id; n.hostname = ''; n.serial = ''; n.asset = ''; n.mgmtIp = ''; n.ips = []; S.P.devices.push(n); }); S.rackId = r.id; S.sel = null; }); toast('Rack duplicated. Hostnames, IPs and serials were cleared.');
+}
+function delRack() {
+  if (S.P.racks.length < 2) return toast('A project needs at least one rack');
+  const r = rack(), n = RC.devsOf(S.P, r.id).length;
+  modal(`<h3>Delete ${esc(r.label)}?</h3><p style="color:var(--text-dim);font-size:13.5px">${n ? n + ' device' + (n === 1 ? '' : 's') + ' in it will be removed too. ' : ''}You can undo this with Ctrl+Z until you leave the page.</p><div class="ft"><button class="btn" id="x-c">Cancel</button><button class="btn" id="x-ok" style="background:var(--danger);border-color:var(--danger);color:#fff">Delete rack</button></div>`, () => { $('x-c').onclick = closeM; $('x-ok').onclick = () => { closeM(); mutate(() => { S.P.devices = S.P.devices.filter(d => d.rackId !== r.id); S.P.racks = S.P.racks.filter(x => x.id !== r.id); S.rackId = S.P.racks[0].id; S.sel = null; }); fit(); }; });
+}
+
+/* ---------- dialogs ---------- */
+function modal(html, ready) { $('md').innerHTML = html; $('ov').classList.add('on'); if (ready) ready(); }
+function closeM() { $('ov').classList.remove('on'); }
+$('ov').addEventListener('pointerdown', e => { if (e.target === $('ov')) closeM(); });
+const FP = { none: [], '24rj': [{ k: 'p', t: 'rj45', n: 24, r: 2 }], '48rj': [{ k: 'p', t: 'rj45', n: 48, r: 2 }, { k: 'p', t: 'sfp+', n: 4, r: 1 }], '24x': [{ k: 'p', t: 'sfp+', n: 24, r: 2 }], '48x': [{ k: 'p', t: 'sfp+', n: 48, r: 2 }, { k: 'p', t: 'qsfp', n: 6, r: 1 }], bay8: [{ k: 'bay', n: 8, c: 4 }], bay24: [{ k: 'bay', n: 24, c: 8 }] };
+function customDlg() {
+  const opt = (a, f) => Object.keys(a).map(k => `<option value="${esc(k)}">${esc(f ? f(a[k]) : a[k])}</option>`).join('');
+  modal(`<h3>Add your own device</h3><p class="note" style="margin:-6px 0 12px">Saved in this browser's equipment list. Use the values from the vendor's datasheet.</p><div class="f2"><div class="f"><label class="lbl">Vendor</label><input type="text" id="c-v" maxlength="40"></div><div class="f"><label class="lbl">Model name</label><input type="text" id="c-n" maxlength="60"></div>
+<div class="f"><label class="lbl">Type</label><select id="c-c">${opt(RK.CATS)}</select></div><div class="f"><label class="lbl">Height (U)</label><input type="text" inputmode="numeric" id="c-u" value="1"></div>
+<div class="f"><label class="lbl">Depth (mm)</label><input type="text" inputmode="numeric" id="c-d" value="450"></div><div class="f"><label class="lbl">Weight (kg)</label><input type="text" inputmode="decimal" id="c-k" value="6"></div>
+<div class="f"><label class="lbl">Typical power (W, optional)</label><input type="text" inputmode="decimal" id="c-wt"></div><div class="f"><label class="lbl">Maximum power (W)</label><input type="text" inputmode="decimal" id="c-wm" value="100"></div>
+<div class="f"><label class="lbl">Power supplies</label><input type="text" inputmode="numeric" id="c-p" value="1"></div><div class="f"><label class="lbl">Airflow</label><select id="c-a">${opt(RK.AIR)}</select></div>
+<div class="f full"><label class="lbl">Front panel picture</label><select id="c-f"><option value="none">Plain panel</option><option value="24rj">24 × RJ45</option><option value="48rj">48 × RJ45 + 4 × SFP+</option><option value="24x">24 × SFP+</option><option value="48x">48 × SFP+ + 6 × QSFP</option><option value="bay8">8 drive bays</option><option value="bay24">24 drive bays</option></select></div>
+<div class="f full"><label class="lbl">Datasheet link (optional)</label><input type="text" id="c-s" maxlength="300" placeholder="https://"></div></div>
+<div class="ft"><button class="btn" id="c-x">Cancel</button><button class="btn pri" id="c-ok">Save device</button></div>`, () => {
+    $('c-n').focus(); $('c-x').onclick = closeM;
+    $('c-ok').onclick = () => {
+      const name = $('c-n').value.trim(); if (!name) return toast('Give the device a model name');
+      const m = RK.cleanModel({ id: 'cx-' + RC.uid(''), vendor: $('c-v').value, name, cat: $('c-c').value, u: $('c-u').value, d: $('c-d').value, kg: $('c-k').value, w: { typ: $('c-wt').value, max: $('c-wm').value }, psu: $('c-p').value, air: $('c-a').value, front: FP[$('c-f').value], ver: 'typical', src: $('c-s').value.trim(), note: 'Custom device: values entered by you.' });
+      if (!m) return toast('Could not save that device'); const list = RK.custom(); list.push(m); if (!RK.saveCustom(list)) return toast('Browser storage is blocked, could not save'); closeM(); S.tabL = 'lib'; S.q = name; renderLeft(); toast('Saved. It is at the top of the list.');
+    };
+  });
+}
+const XS = { fmt: 'png', faces: 'front', scope: 'current', theme: 'light', scale: 2, page: 'a4' };
+function fileBase() { return (S.P.name || 'rack').replace(/[^\w\-]+/g, '_').slice(0, 50) || 'rack'; }
+function download(name, blob) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800); }
+function exportDlg() {
+  const seg = (k, a) => `<div class="opts" data-x="${k}">${a.map(x => `<button data-v="${esc(x[0])}" class="${String(XS[k]) === String(x[0]) ? 'on' : ''}">${esc(x[1])}</button>`).join('')}</div>`;
+  modal(`<h3>Export</h3><div class="f"><label class="lbl">Format</label>${seg('fmt', [['png', 'PNG image'], ['pdf', 'PDF'], ['svg', 'SVG'], ['csv', 'BOM (CSV)'], ['json', 'Project file (.json)']])}</div>
+<div id="x-img"><div class="f"><label class="lbl">Show</label>${seg('faces', [['front', 'Front'], ['rear', 'Rear'], ['both', 'Front and rear']])}</div><div class="f"><label class="lbl">Racks</label>${seg('scope', [['current', 'This rack'], ['all', 'All racks']])}</div>
+<div class="f"><label class="lbl">Theme</label>${seg('theme', [['light', 'Light (for print)'], ['dark', 'Dark']])}</div><div class="f" id="x-sc"><label class="lbl">Resolution</label>${seg('scale', [[1, '1×'], [2, '2×'], [3, '3×']])}</div><div class="f" id="x-pg"><label class="lbl">PDF page</label>${seg('page', [['auto', 'Fit drawing'], ['a4', 'A4'], ['a3', 'A3'], ['letter', 'Letter']])}</div></div>
+<div class="ft"><button class="btn" id="x-c">Close</button><button class="btn pri" id="x-go">Download</button></div>`, () => {
+    const sync = () => { const f = XS.fmt; $('x-img').style.display = f === 'csv' || f === 'json' ? 'none' : ''; $('x-sc').style.display = f === 'png' || f === 'pdf' ? '' : 'none'; $('x-pg').style.display = f === 'pdf' ? '' : 'none'; };
+    $('md').onclick = e => { const b = e.target.closest('[data-x] button'); if (!b) return; const k = b.parentNode.dataset.x; XS[k] = k === 'scale' ? +b.dataset.v : b.dataset.v; b.parentNode.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); sync(); };
+    sync(); $('x-c').onclick = closeM; $('x-go').onclick = doExport;
+  });
+}
+async function doExport() {
+  const f = XS.fmt, btn = $('x-go'), base = fileBase();
+  try {
+    btn.disabled = true; btn.textContent = 'Working…';
+    if (f === 'json') download(base + '.json', new Blob([JSON.stringify({ app: 'configlabs-rack', v: 1, project: S.P }, null, 1)], { type: 'application/json' }));
+    else if (f === 'csv') download(base + '-bom.csv', new Blob(['﻿' + RC.bomCSV(S.P)], { type: 'text/csv' }));
+    else {
+      const svg = RR.sheetSVG(S.P, { ids: XS.scope === 'all' ? null : [S.rackId], faces: XS.faces === 'both' ? ['front', 'rear'] : [XS.faces], pal: XS.theme, gaps: false, scale: 0.9 });
+      if (f === 'svg') download(base + '.svg', new Blob([svg], { type: 'image/svg+xml' }));
+      else {
+        const fill = XS.theme === 'light' ? '#ffffff' : RR.PAL.dark.bg, c = await svgToCanvas(svg, XS.scale, fill);
+        if (f === 'png') download(base + '.png', await canvasBlob(c, 'image/png'));
+        else {
+          const jb = await canvasBlob(c, 'image/jpeg', .92), jpeg = new Uint8Array(await jb.arrayBuffer()); let pw, ph, m = 0; const z = svgSize(svg);
+          if (XS.page === 'auto') { pw = z.w * .75; ph = z.h * .75; } else { const Pg = PAGES[XS.page], land = c.width >= c.height; pw = land ? Pg[1] : Pg[0]; ph = land ? Pg[0] : Pg[1]; m = 28; }
+          download(base + '.pdf', new Blob([makePDF(jpeg, c.width, c.height, pw, ph, m, S.P.name)], { type: 'application/pdf' }));
+        }
+      }
+    }
+    toast('Export saved'); closeM();
+  } catch (e) { toast('Export failed. Try SVG, or a lower resolution'); btn.disabled = false; btn.textContent = 'Download'; }
+}
+
+/* ---------- theme and start ---------- */
+function setTheme(t) { document.body.dataset.theme = t; $('theme-btn').textContent = t === 'dark' ? '🌙' : '☀️'; ls.set('clab_theme', t); if (S.P) { renderCanvas(); } }
+function toggleTheme() { setTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'); }
+setTheme(ls.get('clab_theme') === 'light' ? 'light' : 'dark');
+if (load()) { render(); fit(); addEventListener('resize', () => { if (S.P && !S.drag) renderCanvas(); }); if (qs.get('export') === '1') exportDlg(); }
+</script>
+</body>
+</html>

@@ -24,6 +24,11 @@
       "source": "/topology",
       "destination": "/topology.html",
       "permanent": false
+    },
+    {
+      "source": "/rack",
+      "destination": "/rack.html",
+      "permanent": false
     }
   ],
   "rewrites": [

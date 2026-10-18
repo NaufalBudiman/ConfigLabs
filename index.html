@@ -123,6 +123,11 @@ nav{position:sticky;top:0;z-index:50;padding:16px 32px;background:color-mix(in s
 .feature-card:hover{transform:translateY(-6px);background:var(--surface-2);box-shadow:0 20px 60px rgba(0,0,0,.4)}
 .feature-card.builder:hover{border-color:var(--accent-2)}
 .feature-card.wifi:hover{border-color:var(--accent)}
+.feature-card.rack:hover{border-color:var(--accent-3)}
+.feature-card.rack .feature-icon{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent-3) 30%,transparent)}
+.feature-card.rack .feature-cta{color:var(--accent-3)}
+.feature-card.rack .feature-benefits li::before{background:color-mix(in srgb,var(--accent-3) 15%,transparent);border-color:var(--accent-3)}
+.feature-card.rack .feature-benefits li::after{border-color:var(--accent-3)}
 .feature-card.topo:hover{border-color:var(--accent-2)}
 .feature-card.topo .feature-icon{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent-2) 30%,transparent)}
 .feature-card.topo .feature-cta{color:var(--accent-2)}
@@ -353,6 +358,7 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
     <a href="/builder.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>Builder</a>
     <a href="/wifi.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>WiFi Planner </a>
     <a href="/topology.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/></svg>Topology</a>
+    <a href="/rack.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="5" y="2" width="14" height="20" rx="1.5"/><path d="M5 7h14M5 12h14M5 17h14"/></svg>Rack Builder</a>
     <a href="/about.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>About</a>
   </div>
   <div class="nav-actions">
@@ -499,6 +505,29 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
       <span class="desk-only">Laptop / tablet only</span>
     </a>
 
+    <!-- RACK BUILDER -->
+    <a href="/rack.html" class="feature-card rack">
+      <div class="feature-icon">
+        <svg viewBox="0 0 64 64" fill="none">
+          <rect x="14" y="6" width="36" height="52" rx="3" stroke="#ffb86b" stroke-width="2.5"/>
+          <path d="M14 18h36M14 30h36M14 42h36" stroke="#ffb86b" stroke-width="2.5"/>
+          <circle cx="22" cy="12" r="1.8" fill="#ffb86b"/><circle cx="22" cy="24" r="1.8" fill="#ffb86b"/><circle cx="22" cy="36" r="1.8" fill="#ffb86b"/><circle cx="22" cy="50" r="1.8" fill="#ffb86b"/>
+        </svg>
+      </div>
+      <div class="feature-status beta"><span class="dot"></span>Beta · <span data-cl-rack>v1.0</span></div>
+      <h2>Rack Builder</h2>
+      <div class="subtitle">Plan racks to scale</div>
+      <p>Drag H3C, Cisco and generic equipment into a true-scale 19-inch rack. Power per feed, loss-of-feed and weight are checked as you go, and problems are listed so you can fix them before install day.</p>
+      <ul class="feature-benefits">
+        <li>Drag-and-drop rack elevation, front and rear</li>
+        <li>Power A/B, weight and floor loading checks</li>
+        <li>Issue list: overlaps, gaps, duplicate names and IPs</li>
+        <li>Export PNG, PDF, SVG, BOM CSV or a project file</li>
+      </ul>
+      <span class="feature-cta">Open Rack Builder</span>
+      <span class="desk-only">Laptop / tablet only</span>
+    </a>
+
     <!-- ABOUT - Opens GitHub -->
     <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" rel="noopener noreferrer" class="feature-card about">
       <div class="feature-icon">
@@ -533,11 +562,11 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
         <p>Active development with regular releases. Here's what shipped recently:</p>
       </div>
       <div class="changelog">
-        <div class="cl-item"><span class="cl-version"><span data-cl-version>v6.3.5</span></span><div class="cl-content"><h4>H3C config accuracy</h4><p>H3C output now follows the official Comware 7 command reference: DHCP forbidden-ip moved to system view, banner delimiters, common DHCP pools no longer emit an extended-pool apply command, and VLAN templates fill both Name and Description.</p></div></div>
+        <div class="cl-item"><span class="cl-version"><span data-cl-version>v7.0.0</span></span><div class="cl-content"><h4>Rack Builder (beta)</h4><p>A new tool for planning server racks to scale: drag H3C, Cisco and generic equipment into a 19-inch rack, see the front and rear, and check power per feed, loss of a feed, rack weight and floor loading. Open gaps, overlaps and duplicate names or IPs are listed as issues. Export PNG, PDF, SVG, a bill of materials (CSV) or a project file. Values marked Typical are placeholders: check them against the datasheet.</p></div></div>
+        <div class="cl-item"><span class="cl-version">v6.3.5</span><div class="cl-content"><h4>H3C config accuracy</h4><p>H3C output now follows the official Comware 7 command reference: DHCP forbidden-ip moved to system view, banner delimiters, common DHCP pools no longer emit an extended-pool apply command, and VLAN templates fill both Name and Description.</p></div></div>
         <div class="cl-item"><span class="cl-version">v6.3.4</span><div class="cl-content"><h4>Security hardening</h4><p>Safer handling of imported diagrams and of text typed into Config Builder fields, stricter account-menu rendering, request size limits, hostname validation in the linter, and standard security headers.</p></div></div>
         <div class="cl-item"><span class="cl-version">v6.3.3</span><div class="cl-content"><h4>Topology: Export Everywhere</h4><p>JPEG, WebP and PDF downloads are now also in the WiFi Planner view, and every diagram on the My diagrams page has an Export image / PDF option in its menu that opens the export dialog directly.</p></div></div>
         <div class="cl-item"><span class="cl-version">v6.3.2</span><div class="cl-content"><h4>Topology (beta): Export</h4><p>The Topology editor is now labelled Beta. Export has its own dialog with a live preview: PNG, JPEG, WebP, SVG, PDF (A4, A3, Letter or fit-to-diagram), draw.io for editing in diagrams.net, and a .json backup. Choose resolution, theme, transparent background and whether to include the title and legend.</p></div></div>
-        <div class="cl-item"><span class="cl-version">v6.3.1</span><div class="cl-content"><h4>My Diagrams</h4><p>The Topology page now opens on a file page: create a diagram (blank or from the campus example), see all your saved diagrams with previews, then rename, duplicate, export, import or delete them. Open any diagram again to keep editing, and use the Diagrams button in the editor to come back.</p></div></div>
       </div>
     </div>
   </section>
@@ -648,6 +677,7 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
       <a href="/builder.html">Builder</a>
       <a href="/wifi.html">WiFi Planner</a>
       <a href="/topology.html">Topology</a>
+      <a href="/rack.html">Rack Builder</a>
       <a href="/builder.html">Templates</a>
       <a href="#roadmap">Roadmap</a>
     </div>
