@@ -911,6 +911,22 @@ function addIntf(data = {}) {
   updateBadges();
 }
 
+/* DHCP pool size info (display only; does not change generated config) */
+const _ip2n = v => { const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(v); if (!m || m.slice(1).some(n => +n > 255)) return null; return ((+m[1] << 24) >>> 0) + (+m[2] << 16) + (+m[3] << 8) + +m[4]; };
+function dhcpInfo(el) {
+  const out = el.querySelector('.d-info'); if (!out) return;
+  const c = el.querySelector('.d-cidr').value.trim().replace(/^\//, '');
+  if (!/^\d{1,2}$/.test(c) || +c > 32) { out.textContent = ''; return; }
+  const p = +c, size = Math.pow(2, 32 - p), usable = p === 32 ? 1 : p === 31 ? 2 : Math.max(size - 2, 0);
+  let txt = '/' + p + ' = ' + usable.toLocaleString('en-US') + (p === 32 ? ' host' : ' usable hosts') + (p === 31 ? ' (point-to-point)' : '');
+  const raw = el.querySelector('.d-forbidden').value.trim();
+  if (raw && usable > 0) {
+    const net = _ip2n(el.querySelector('.d-net').value.trim()), seen = new Set();
+    raw.replace(/,/g, ' ').split(/\s+/).forEach(t => { const n = _ip2n(t); if (n === null) return; if (net !== null) { const base = Math.floor(net / size) * size; if (n < base || n >= base + size) return; } seen.add(n); });
+    if (seen.size) txt += '  |  ' + seen.size + ' excluded = ' + Math.max(usable - seen.size, 0).toLocaleString('en-US') + ' users';
+  }
+  out.textContent = txt;
+}
 function addDhcp(data = {}) {
   let forbidden = data.forbidden_ips;
   if (Array.isArray(forbidden)) forbidden = forbidden.join(' ');
@@ -920,16 +936,17 @@ function addDhcp(data = {}) {
     <div class="field"><label>Lease Days</label><input class="d-lease" value="${escA(data.lease_days||'7')}" placeholder="7"></div>
   </div>
   <div class="field-row-3">
-    <div class="field"><label>Network</label><input class="d-net" value="${escA(data.network||'')}" placeholder="10.10.10.0"></div>
-    <div class="field"><label>CIDR</label><input class="d-cidr" value="${escA(data.cidr||'')}" placeholder="24"></div>
+    <div class="field"><label>Network</label><input class="d-net" value="${escA(data.network||'')}" placeholder="10.10.10.0" oninput="dhcpInfo(this.closest('.repeater-item'))"></div>
+    <div class="field"><label>CIDR</label><input class="d-cidr" value="${escA(data.cidr||'')}" placeholder="24" oninput="dhcpInfo(this.closest('.repeater-item'))"></div>
     <div class="field"><label>Gateway</label><input class="d-gw" value="${escA(data.gateway||'')}" placeholder="10.10.10.1"></div>
   </div>
   <div class="field-row">
     <div class="field"><label>DNS Servers</label><input class="d-dns" value="${escA(data.dns||'8.8.8.8 1.1.1.1')}" placeholder="8.8.8.8"></div>
     <div class="field"><label>Domain</label><input class="d-domain" value="${escA(data.domain||'')}" placeholder="company.local"></div>
   </div>
-  <div class="field"><label>Excluded IPs <span class="hint">space-separated</span></label><input class="d-forbidden" value="${forbidden}" placeholder="10.10.10.1 10.10.10.2"></div>`;
-  document.getElementById('rep-dhcp').appendChild(makeItem('DHCP Pool', html));
+  <div class="field"><label>Excluded IPs <span class="hint">space-separated</span></label><input class="d-forbidden" value="${forbidden}" placeholder="10.10.10.1 10.10.10.2" oninput="dhcpInfo(this.closest('.repeater-item'))"></div>
+  <div class="d-info" style="font-family:var(--mono);font-size:12px;color:var(--accent);min-height:18px;margin-top:2px"></div>`;
+  { const it = makeItem('DHCP Pool', html); document.getElementById('rep-dhcp').appendChild(it); dhcpInfo(it); }
   updateBadges(); refreshSviDropdowns();
 }
 
