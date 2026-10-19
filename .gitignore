@@ -6,3 +6,16 @@ __pycache__/
 *.db
 .vercel/
 node_modules/
+
+# local archive and working folders (not part of the website)
+Patch */
+Claude outputs/
+Test Map/
+Video Instagram/
+File Upload Github/
+deploy/
+Google/
+text-fix/
+v6.3.5/
+*.docx
+install.cmd
