@@ -339,7 +339,7 @@ function mSync(a, b) {
 /* ---------- rendering ---------- */
 function render() { S.issues = RC.validate(S.P); renderTabs(); renderCanvas(); renderLeft(); renderRight(); S.mode === 'room' ? statRoom() : renderStat(); $('docname').value !== S.P.name && document.activeElement !== $('docname') && ($('docname').value = S.P.name); $('b-undo').disabled = !S.undo.length; $('b-redo').disabled = !S.redo.length; }
 function renderTabs() {
-  $('rtabs').innerHTML = S.P.racks.map(r => `<button data-r="${esc(r.id)}" class="${r.id === S.rackId ? 'on' : ''}">${esc(r.label)} <small style="color:var(--text-muted)">${r.u}U${RC.summary(S.P, r.id).servers ? ' · ' + RC.summary(S.P, r.id).servers + ' srv' : ''}</small></button>`).join('') + '<button class="add" data-add="1" title="Add a rack">+ Rack</button>';
+  $('rtabs').innerHTML = S.P.racks.map(r => `<button data-r="${esc(r.id)}" title="Double-click to rename" class="${r.id === S.rackId ? 'on' : ''}">${esc(r.label)} <small style="color:var(--text-muted)">${r.u}U${RC.summary(S.P, r.id).servers ? ' · ' + RC.summary(S.P, r.id).servers + ' srv' : ''}</small></button>`).join('') + '<button class="add" data-add="1" title="Add a rack">+ Rack</button>';
   document.querySelectorAll('#faceseg button').forEach(b => b.classList.toggle('on', b.dataset.f === S.face));
 }
 function renderCanvas() {
