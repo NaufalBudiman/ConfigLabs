@@ -911,12 +911,21 @@ function addIntf(data = {}) {
   updateBadges();
 }
 
+function cidrOptions(sel) {
+  sel = String(sel == null ? '' : sel).trim().replace(/^\//, '');
+  const hosts = p => p === 32 ? '1 host' : p === 31 ? '2 hosts (p2p)' : (Math.pow(2, 32 - p) - 2).toLocaleString('en-US') + ' hosts';
+  let h = '<option value="">- select -</option>', found = !sel;
+  for (let p = 8; p <= 32; p++) { const on = String(p) === sel; if (on) found = true; h += `<option value="${p}"${on ? ' selected' : ''}>/${p}  -  ${hosts(p)}</option>`; }
+  if (!found && /^\d{1,2}$/.test(sel) && +sel <= 32) h += `<option value="${sel}" selected>/${sel}  -  ${hosts(+sel)}</option>`;
+  return h;
+}
 /* DHCP pool size info (display only; does not change generated config) */
 const _ip2n = v => { const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(v); if (!m || m.slice(1).some(n => +n > 255)) return null; return ((+m[1] << 24) >>> 0) + (+m[2] << 16) + (+m[3] << 8) + +m[4]; };
 function dhcpInfo(el) {
   const out = el.querySelector('.d-info'); if (!out) return;
   const c = el.querySelector('.d-cidr').value.trim().replace(/^\//, '');
-  if (!/^\d{1,2}$/.test(c) || +c > 32) { out.textContent = ''; return; }
+  if (!/^\d{1,2}$/.test(c) || +c > 32) { out.textContent = c ? 'CIDR must be 0-32' : 'Pick a CIDR to see max users'; out.style.color = 'var(--text-muted)'; return; }
+  out.style.color = 'var(--accent)';
   const p = +c, size = Math.pow(2, 32 - p), usable = p === 32 ? 1 : p === 31 ? 2 : Math.max(size - 2, 0);
   let txt = '/' + p + ' = ' + usable.toLocaleString('en-US') + (p === 32 ? ' host' : ' usable hosts') + (p === 31 ? ' (point-to-point)' : '');
   const raw = el.querySelector('.d-forbidden').value.trim();
@@ -937,7 +946,7 @@ function addDhcp(data = {}) {
   </div>
   <div class="field-row-3">
     <div class="field"><label>Network</label><input class="d-net" value="${escA(data.network||'')}" placeholder="10.10.10.0" oninput="dhcpInfo(this.closest('.repeater-item'))"></div>
-    <div class="field"><label>CIDR</label><input class="d-cidr" value="${escA(data.cidr||'')}" placeholder="24" oninput="dhcpInfo(this.closest('.repeater-item'))"></div>
+    <div class="field"><label>CIDR</label><select class="d-cidr" onchange="dhcpInfo(this.closest('.repeater-item'))">${cidrOptions(data.cidr)}</select></div>
     <div class="field"><label>Gateway</label><input class="d-gw" value="${escA(data.gateway||'')}" placeholder="10.10.10.1"></div>
   </div>
   <div class="field-row">
