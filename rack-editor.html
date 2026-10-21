@@ -193,7 +193,10 @@ html,body{height:100%}body{display:flex;flex-direction:column;overflow:hidden;mi
 .mi .add:hover{background:var(--accent);color:#0b0d10}
 #chip{position:fixed;z-index:99;pointer-events:none;padding:6px 10px;border-radius:8px;background:var(--surface);border:1px solid var(--accent);font:12px var(--mono);box-shadow:0 10px 26px rgba(0,0,0,.4);display:none}
 .rr{display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:6px;border:1px solid var(--border);border-radius:10px;background:var(--surface);cursor:pointer}.rr.on{border-color:var(--accent)}.rr b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px}.rr small{color:var(--text-muted);font:10.5px var(--mono)}
-#modeseg{min-width:150px}#r3d{touch-action:none;cursor:grab}
+#modeseg{min-width:150px}
+.cabrow{display:flex;gap:8px;align-items:center;padding:7px 9px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;cursor:pointer;font-size:12px;background:var(--surface)}.cabrow:hover{background:var(--surface-hover)}.cabrow.on{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 22%,transparent)}.cabrow i{width:11px;height:11px;border-radius:50%;flex:none;box-shadow:0 0 0 1px #0007}.cabrow span{flex:1;min-width:0;overflow-wrap:anywhere}.cabrow small{color:var(--text-muted);font:11px var(--mono);white-space:nowrap}
+.swc{display:flex;gap:6px;flex-wrap:wrap}.swc button{width:24px;height:24px;border-radius:7px;border:2px solid transparent;cursor:pointer;box-shadow:0 0 0 1px #0006}.swc button.on{border-color:var(--text)}
+.cabmsg{font-size:12px;padding:6px 9px;border-radius:7px;margin-top:6px;border:1px solid var(--border)}.cabmsg.warn{border-color:var(--warning);color:var(--warning)}.cabmsg.info{color:var(--text-dim)}#r3d{touch-action:none;cursor:grab}
 .f2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .f{margin-bottom:10px}.f.full{grid-column:1/-1}
 textarea{width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;resize:vertical;min-height:54px}
@@ -250,6 +253,7 @@ table.bom td{padding:7px 4px;border-bottom:1px solid var(--border);vertical-alig
       <div class="seg" id="faceseg" style="min-width:150px"><button data-f="front" class="on">Front</button><button data-f="rear">Rear</button></div>
       <button class="btn sm" id="z-out" title="Zoom out">−</button><span class="zl" id="zl">100%</span><button class="btn sm" id="z-in" title="Zoom in">+</button><button class="btn sm" id="z-fit">Fit</button>
       <label class="tgl" style="gap:8px;padding:0 4px"><span>Show gaps</span><input type="checkbox" id="t-gaps" checked><i></i></label>
+      <button class="btn sm" id="b-cab" title="Cable tool (C): click a port, then another port to connect them. Esc to stop.">Cable tool</button><label class="tgl" style="gap:8px;padding:0 4px"><span>Cables</span><input type="checkbox" id="t-cab" checked><i></i></label>
       <span class="sp"></span>
       <button class="btn sm" id="b-rename" title="Rename this rack (or double-click its tab)">Rename rack</button>
       <button class="btn sm" id="b-blank" title="Fit blanking panels in every open gap between equipment">Fill gaps with blanking</button>
@@ -274,6 +278,7 @@ table.bom td{padding:7px 4px;border-bottom:1px solid var(--border);vertical-alig
 <script src="/rack-calc.js"></script>
 <script src="/rack-render.js"></script>
 <script src="/rack-art.js"></script>
+<script src="/rack-cable.js"></script>
 <script src="/topology-raster.js"></script>
 <script>
 'use strict';
@@ -343,10 +348,29 @@ function renderTabs() {
   $('rtabs').innerHTML = S.P.racks.map(r => `<button data-r="${esc(r.id)}" title="Double-click to rename" class="${r.id === S.rackId ? 'on' : ''}">${esc(r.label)} <small style="color:var(--text-muted)">${r.u}U${RC.summary(S.P, r.id).servers ? ' · ' + RC.summary(S.P, r.id).servers + ' srv' : ''}</small></button>`).join('') + '<button class="add" data-add="1" title="Add a rack">+ Rack</button>';
   document.querySelectorAll('#faceseg button').forEach(b => b.classList.toggle('on', b.dataset.f === S.face));
 }
+function cabOverlay() { if (!S.geo || S.mode === 'room') return ''; return RCB.overlay(S.P, rack(), S.geo, S.face, { pal: pal(), sel: S.cabSel, show: S.cabShow, pending: S.cabA, hover: S.cabHover }); }
+function paintCab() { const g = $('cabw'); if (g) g.innerHTML = cabOverlay(); }
+function cabPoint(e) { const b = $('rsvg').getBoundingClientRect(); return [(e.clientX - b.left) / S.zoom, (e.clientY - b.top) / S.zoom]; }
+function defType(ta, tb, same) {
+  const fb = { sfp: 1, 'sfp+': 1, qsfp: 1, lc: 1 };
+  if (ta === 'rj45' && tb === 'rj45') return 'cat6'; if (ta === 'con' || tb === 'con') return 'console'; if ((ta === 'psu' || tb === 'psu') && (ta === 'out' || tb === 'out')) return 'power';
+  if (fb[ta] && fb[tb]) return (ta === 'lc' || tb === 'lc') ? 'om4' : (ta === tb && same ? 'dac' : 'om4'); if (ta === 'usb' || tb === 'usb' || ta === 'usbc' || tb === 'usbc') return 'usb'; return 'cat6';
+}
+function setCabTool(on) { S.cabTool = on; S.cabA = null; S.cabHover = null; $('b-cab').classList.toggle('pri', on); $('cv').style.cursor = on ? 'crosshair' : ''; if (on && !S.cabShow) { S.cabShow = true; $('t-cab').checked = true; } renderCanvas(); renderStat(); }
+function cabClick(e) {
+  if (!S.geo) return; const [x, y] = cabPoint(e), h = RCB.hit(S.P, rack(), S.geo, S.face, x, y); if (!h) return false;
+  const here = { d: h.d.id, p: h.p.id };
+  if (!S.cabA) { S.cabA = here; paintCab(); renderStat(); return; }
+  if (S.cabA.d === here.d && S.cabA.p === here.p) { S.cabA = null; paintCab(); renderStat(); return; }
+  if (S.cabA.d === here.d) return toast('Pick a port on a different device');
+  const A = RCB.end(S.P, S.cabA), B = { d: h.d, m: h.m, port: h.p }, same = A.d.rackId === h.d.rackId, type = defType(A.port && A.port.t, h.p.t, same);
+  const c = { id: RC.uid('c'), a: S.cabA, b: here, type, color: RC.CABLES[type].col, len: null, label: '', note: '', status: 'planned' }; c.len = RCB.estimate(Object.assign({}, S.P, { cables: [] }), c);
+  mutate(() => { S.P.cables.push(c); S.cabSel = c.id; S.tabR = 'cab'; S.cabA = null; });
+}
 function renderCanvas() {
   if (S.mode === 'room') return renderRoom();
   const r = rack(), o = RR.rackSVG(S.P, r.id, { face: S.face, sel: S.sel, pal: pal(), gaps: S.gaps, pid: 'c' }); S.geo = o;
-  $('cv').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" id="rsvg" width="${Math.round(o.w * S.zoom)}" height="${Math.round(o.h * S.zoom)}" viewBox="0 0 ${o.w} ${o.h}">${o.svg}<g id="gh" pointer-events="none"></g></svg>`;
+  $('cv').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" id="rsvg" width="${Math.round(o.w * S.zoom)}" height="${Math.round(o.h * S.zoom)}" viewBox="0 0 ${o.w} ${o.h}">${o.svg}<g id="cabw">${cabOverlay()}</g><g id="gh" pointer-events="none"></g></svg>`;
   $('zl').textContent = Math.round(S.zoom * 100) + '%';
 }
 function fit(strict) { if (S.mode === 'room') return fitRoom(); const r = rack(), h = r.u * UMM + 60; let z = Math.min(2.5, ($('cv').clientHeight - 44) / h); S.zoom = Math.max(strict ? 0.2 : 0.55, z); renderCanvas(); }
@@ -393,15 +417,15 @@ const bar = (v, cap, warn, crit) => { const p = cap ? v / cap * 100 : (v > 0 ? 9
 function renderRight() {
   if (S.mode === 'room') { morph($('right'), rightRoom()); return; }
   const live = S.issues.filter(i => !i.ack), c = live.filter(i => i.sev === 'crit').length, w = live.filter(i => i.sev === 'warn').length;
-  let h = `<div class="tabs"><button data-tr="dev" class="${S.tabR === 'dev' ? 'on' : ''}">Device</button><button data-tr="sum" class="${S.tabR === 'sum' ? 'on' : ''}">Summary</button><button data-tr="iss" class="${S.tabR === 'iss' ? 'on' : ''}">Issues${c ? `<span class="n">${c}</span>` : w ? `<span class="n w">${w}</span>` : ''}</button><button data-tr="bom" class="${S.tabR === 'bom' ? 'on' : ''}">BOM</button></div>`;
-  if (S.tabR === 'dev') h += devPanel(); else if (S.tabR === 'sum') h += sumPanel(); else if (S.tabR === 'iss') h += issPanel(); else h += bomPanel();
+  let h = `<div class="tabs"><button data-tr="dev" class="${S.tabR === 'dev' ? 'on' : ''}">Device</button><button data-tr="sum" class="${S.tabR === 'sum' ? 'on' : ''}">Summary</button><button data-tr="iss" class="${S.tabR === 'iss' ? 'on' : ''}">Issues${c ? `<span class="n">${c}</span>` : w ? `<span class="n w">${w}</span>` : ''}</button><button data-tr="cab" class="${S.tabR === 'cab' ? 'on' : ''}">Cables${S.P.cables.length ? `<span class="n" style="background:var(--surface-2);color:var(--text)">${S.P.cables.length}</span>` : ''}</button><button data-tr="bom" class="${S.tabR === 'bom' ? 'on' : ''}">BOM</button></div>`;
+  if (S.tabR === 'dev') h += devPanel(); else if (S.tabR === 'sum') h += sumPanel(); else if (S.tabR === 'iss') h += issPanel(); else if (S.tabR === 'cab') h += cabPanel(); else h += bomPanel();
   morph($('right'), h);
 }
 function devPanel() {
   const d = selDev(), r = rack(); if (!d) {
-    const s = RC.stats(S.P, r); return `<div class="sec"><h4>${esc(r.label)}</h4><div class="kv">Space used <b>${s.usedU} of ${r.u}U</b> · ${s.freeU}U free<br>Devices <b>${s.devices}</b><br>Power <b>${fW(s.watts)}</b> · Weight <b>${fKg(s.kg)}</b></div><p class="note">Click a device in the rack to edit its name, address, power feeds and notes. Drag it up or down to move it.</p></div><div class="sec"><h4>Shortcuts</h4><div class="kv">Delete: remove device<br>Arrow up / down: move one U<br>Ctrl+D: duplicate · Ctrl+Z / Y: undo / redo<br>Esc: deselect</div></div>`;
+    const s = RC.stats(S.P, r); return `<div class="sec"><h4>${esc(r.label)}</h4><div class="kv">Space used <b>${s.usedU} of ${r.u}U</b> · ${s.freeU}U free<br>Devices <b>${s.devices}</b><br>Power <b>${fW(s.watts)}</b> · Weight <b>${fKg(s.kg)}</b></div><p class="note">Click a device in the rack to edit its name, address, power feeds and notes. Drag it up or down to move it.</p></div><div class="sec"><h4>Shortcuts</h4><div class="kv">Delete: remove device<br>Arrow up / down: move one U<br>Ctrl+D: duplicate · Ctrl+Z / Y: undo / redo<br>Esc: deselect<br>C: cable tool · F: fit · V: front/rear · ?: all shortcuts</div></div>`;
   }
-  const m = RC.model(S.P, d.modelId), nf = d.feeds, op = (v, a) => a.map(x => `<option value="${esc(x[0])}"${x[0] === v ? ' selected' : ''}>${esc(x[1])}</option>`).join('');
+  const m = RC.model(S.P, d.modelId), der = RC.derive(S.P, d), nf = der.length ? der : d.feeds, op = (v, a) => a.map(x => `<option value="${esc(x[0])}"${x[0] === v ? ' selected' : ''}>${esc(x[1])}</option>`).join('');
   const link = m.src ? `<a href="${esc(m.src)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">source</a>` : '';
   return `<div class="sec"><h4>${esc(RK.CATS[m.cat])} ${verPill(m)}</h4><div style="font-weight:600;font-size:14px">${esc((m.vendor ? m.vendor + ' ' : '') + m.name)}</div>
 <div class="kv" style="margin-top:6px">${m.u}U · depth <b>${fLen(m.d)}</b> · <b>${fKg(RC.kg(S.P, d))}</b> · <b>${fW(RC.watts(S.P, d))}</b> · ${m.psu} PSU<br>Airflow: ${esc(RK.AIR[m.air])}</div>${m.note ? `<p class="note">${esc(m.note)} ${link}</p>` : (link ? `<p class="note">${link}</p>` : '')}<div class="pvbig"><div class="l">Front</div>${RR.devicePreview(m, 'front', pal(), { label: d.hostname || m.name })}${m.cat === 'patch' || m.cat === 'blank' ? '' : `<div class="l">Rear</div>${RR.devicePreview(m, 'rear', pal(), { label: d.hostname || m.name })}`}<p class="note" style="margin-top:6px">Port counts and types follow the model. LED, console and fan positions are illustrative.</p></div></div>
@@ -410,9 +434,53 @@ function devPanel() {
 <div class="f full"><label class="lbl">Other IPs (comma separated)</label><input type="text" data-df="ips" value="${esc(d.ips.join(', '))}"></div><div class="f"><label class="lbl">Serial</label><input type="text" data-df="serial" value="${esc(d.serial)}" maxlength="60"></div><div class="f"><label class="lbl">Asset tag</label><input type="text" data-df="asset" value="${esc(d.asset)}" maxlength="60"></div></div></div>
 <div class="sec"><h4>Position</h4><div class="f2"><div class="f"><label class="lbl">Lowest U</label><input type="text" inputmode="numeric" data-df="u" value="${d.u}"></div><div class="f"><label class="lbl">Rack</label><select data-df="rackId">${S.P.racks.map(x => `<option value="${esc(x.id)}"${x.id === d.rackId ? ' selected' : ''}>${esc(x.label)}</option>`).join('')}</select></div>
 <div class="f"><label class="lbl">Mounting</label><select data-df="side">${op(d.side, [['full', 'Full depth'], ['front', 'Front half only'], ['rear', 'Rear half only']])}</select></div><div class="f"><label class="lbl">Orientation</label><select data-df="rev">${op(d.rev ? '1' : '0', [['0', 'Normal'], ['1', 'Reversed (rear forward)']])}</select></div></div></div>
-<div class="sec"><h4>Power</h4><div class="chk" style="margin-bottom:10px"><label><input type="checkbox" data-df="feedA"${nf.indexOf('A') >= 0 ? ' checked' : ''}> Feed A</label><label><input type="checkbox" data-df="feedB"${nf.indexOf('B') >= 0 ? ' checked' : ''}> Feed B</label></div>
-<div class="f2"><div class="f"><label class="lbl">Watts override</label><input type="text" inputmode="decimal" data-df="watts" value="${d.watts != null ? d.watts : ''}" placeholder="${Math.round(RC.watts(Object.assign({}, S.P, { devices: [] }), { modelId: d.modelId, feeds: [] }))}"></div><div class="f"><label class="lbl">Weight override (kg)</label><input type="text" inputmode="decimal" data-df="kg" value="${d.kg != null ? d.kg : ''}" placeholder="${+m.kg.toFixed(1)}"></div></div><p class="note">Leave blank to use the model's value. A dual-supply device on A and B draws half from each.</p></div>
+${devCabs(d, m)}<div class="sec"><h4>Power</h4><div class="chk" style="margin-bottom:10px"><label><input type="checkbox" data-df="feedA"${nf.indexOf('A') >= 0 ? ' checked' : ''}${der.length ? ' disabled' : ''}> Feed A</label><label><input type="checkbox" data-df="feedB"${nf.indexOf('B') >= 0 ? ' checked' : ''}${der.length ? ' disabled' : ''}> Feed B</label></div>${der.length ? '<p class="note" style="margin-top:-4px">Feeds follow the power cords drawn to PDUs (Cables tab). Remove the cords to set them by hand.</p>' : ''}
+<div class="f2"><div class="f"><label class="lbl">Watts override</label><input type="text" inputmode="decimal" data-df="watts" value="${d.watts != null ? d.watts : ''}" placeholder="${Math.round(RC.watts(Object.assign({}, S.P, { devices: [] }), { modelId: d.modelId, feeds: [] }))}"></div><div class="f"><label class="lbl">Weight override (kg)</label><input type="text" inputmode="decimal" data-df="kg" value="${d.kg != null ? d.kg : ''}" placeholder="${+m.kg.toFixed(1)}"></div></div><p class="note">Leave blank to use the model's value. A dual-supply device on A and B draws half from each.</p>${m.cat === 'pdu' || m.cat === 'ups' ? `<div class="f2" style="margin-top:8px"><div class="f"><label class="lbl">This ${m.cat === 'ups' ? 'UPS' : 'PDU'} is on feed</label><select data-df="pduFeed">${op(d.pduFeed || '', [['', 'Not set'], ['A', 'Feed A'], ['B', 'Feed B']])}</select></div><div class="f"><label class="lbl">Capacity (W)</label><input type="text" inputmode="decimal" data-df="pduCap" value="${d.pduCap || ''}" placeholder="rack feed"></div></div><p class="note">Draw a power cord from a device PSU to an outlet here (Cable tool, rear view). The device then takes this feed, and this ${m.cat === 'ups' ? 'UPS' : 'PDU'} is checked against its capacity.</p>` : ''}</div>
 <div class="sec"><h4>Notes</h4><textarea data-df="notes" maxlength="500">${esc(d.notes)}</textarea><div class="row" style="margin-top:10px"><button class="btn sm" data-da="dup">Duplicate</button><button class="btn sm" data-da="del" style="color:var(--danger)">Remove</button></div></div><div style="height:20px"></div>`;
+}
+function devCabs(d, m) {
+  const P = S.P, cs = P.cables.filter(c => c.a.d === d.id || c.b.d === d.id), net = m.cat === 'switch' || m.cat === 'router' || m.cat === 'firewall';
+  let h = `<div class="sec"><h4>Connections <small style="color:var(--text-muted)">${cs.length}</small></h4>`;
+  if (!cs.length) h += '<p class="note">No cables yet. Press C (or the Cable tool button), click a port on this device, then a port on another device.</p>';
+  else h += cs.map(c => { const mine = c.a.d === d.id ? c.a : c.b, oth = c.a.d === d.id ? c.b : c.a, x = RCB.end(P, mine); return `<div class="cabrow${S.cabSel === c.id ? ' on' : ''}" data-cs="${esc(c.id)}"><i style="background:${esc(c.color)}"></i><span>${esc(x ? RCB.portName(x.m, x.face, x.port) : '?')} → ${esc(RCB.endText(P, oth))}</span><small>${esc(RC.CABLES[c.type].n.replace(/ \(.*/, ''))}${c.len != null ? ' · ' + c.len + ' m' : ''}</small></div>`; }).join('');
+  if (net) h += '<div class="row" style="margin-top:8px"><button class="btn sm" data-ca="builder" title="Open the Config Builder with this device\'s hostname and interface descriptions from its cables">Open in Config Builder</button></div>';
+  return h + '</div>';
+}
+function cabPanel() {
+  const P = S.P, r = rack(), rows = RCB.rows(P), sel = S.cabSel && P.cables.find(c => c.id === S.cabSel);
+  let h = '';
+  h += `<div class="sec"><div class="row"><button class="btn sm${S.cabTool ? ' pri' : ''}" data-ca="tool">${S.cabTool ? 'Stop cabling' : 'Cable tool'}</button><button class="btn sm" data-ca="estall" title="Fill in the length of every cable that has none">Estimate lengths</button><button class="btn sm" data-ca="autopwr" title="Draw a power cord from every PSU to the PDUs in this rack (PSU 1 to the first PDU, PSU 2 to the second)">Auto power cords</button></div><p class="note" style="margin-top:8px">${S.cabTool ? (S.cabA ? 'From <b>' + esc(RCB.endText(P, S.cabA)) + '</b>. Now click the other port. You can change rack or Front/Rear first. Esc cancels.' : 'Click a port to start a cable.') : 'Press C, then click a port and another port to connect them. Click a cable to edit it.'}</p></div>`;
+  if (sel) {
+    const T = RC.CABLES[sel.type], probs = RCB.check(P, sel), grp = [['Copper', ['cat5e', 'cat6', 'cat6a']], ['Direct attach / active optical', ['dac', 'aoc']], ['Fiber', ['om3', 'om4', 'os2']], ['Other', ['console', 'usb', 'power']]];
+    h += `<div class="sec"><h4>${esc(sel.label || 'Selected cable')}</h4><div class="kv">${esc(RCB.endText(P, sel.a))}<br>↕<br>${esc(RCB.endText(P, sel.b))}</div><div class="row" style="margin:6px 0"><button class="btn sm" data-ca="goA">Show end A</button><button class="btn sm" data-ca="goB">Show end B</button></div>
+<div class="f2"><div class="f full"><label class="lbl">Cable type</label><select data-cf="type">${grp.map(g => `<optgroup label="${g[0]}">${g[1].map(k => `<option value="${k}"${k === sel.type ? ' selected' : ''}>${esc(RC.CABLES[k].n)}</option>`).join('')}</optgroup>`).join('')}</select></div>
+<div class="f"><label class="lbl">Length (m)</label><input type="text" inputmode="decimal" data-cf="len" value="${sel.len != null ? sel.len : ''}" placeholder="not set"></div><div class="f"><label class="lbl">&nbsp;</label><button class="btn sm" data-ca="est" style="width:100%">Estimate</button></div>
+<div class="f full"><label class="lbl">Label (printed on the cable)</label><input type="text" data-cf="label" value="${esc(sel.label)}" maxlength="60" placeholder="e.g. SW01-G24 to CORE-G1"></div>
+<div class="f"><label class="lbl">Status</label><select data-cf="status"><option value="planned"${sel.status === 'planned' ? ' selected' : ''}>Planned</option><option value="installed"${sel.status === 'installed' ? ' selected' : ''}>Installed</option></select></div></div>
+<label class="lbl" style="margin-top:8px">Colour</label><div class="swc">${RC.CCOL.map(c => `<button data-cc="${c[0]}" title="${c[1]}" class="${c[0] === sel.color ? 'on' : ''}" style="background:${c[0]}"></button>`).join('')}</div>
+<div class="f" style="margin-top:8px"><label class="lbl">Note</label><input type="text" data-cf="note" value="${esc(sel.note)}" maxlength="200"></div>
+${probs.map(x => `<div class="cabmsg ${x.sev === 'info' ? 'info' : 'warn'}">${esc(x.msg.charAt(0).toUpperCase() + x.msg.slice(1))}</div>`).join('')}
+<div class="row" style="margin-top:10px"><button class="btn sm" data-ca="del" style="color:var(--danger)">Delete cable</button></div></div>`;
+  }
+  h += `<div class="sec"><h4>All cables <small style="color:var(--text-muted)">${rows.length}</small></h4>`;
+  if (!rows.length) h += '<div class="empt" style="padding:10px 0">No cables yet.</div>';
+  else h += rows.map(x => `<div class="cabrow${S.cabSel === x.c.id ? ' on' : ''}" data-cs="${esc(x.c.id)}"><i style="background:${esc(x.c.color)}"></i><span><b>${x.no}</b> ${esc(x.c.label ? x.c.label + ' · ' : '')}${esc((x.A.d.hostname || x.A.m.name) + ' ' + RCB.portName(x.A.m, x.A.face, x.A.port).replace(/^(Front|Rear) /, m => m[0] + ':'))} → ${esc((x.B.d.hostname || x.B.m.name) + ' ' + RCB.portName(x.B.m, x.B.face, x.B.port).replace(/^(Front|Rear) /, m => m[0] + ':'))}${x.ra.id !== r.id && x.rb.id !== r.id ? '' : ''}</span><small>${x.c.len != null ? x.c.len + ' m' : ''}</small></div>`).join('');
+  h += '</div>';
+  if (rows.length) h += `<div class="sec"><h4>Purchase list</h4>${RCB.bom(P).map(b => `<div class="mrow"><span>${esc(RC.CABLES[b.type].n.replace(/ \(.*/, ''))}${b.len != null ? ', ' + b.len + ' m' : ', length not set'}</span><span><b>${b.qty}</b></span></div>`).join('')}<div class="row" style="margin-top:10px"><button class="btn sm" data-ca="csv">Schedule (CSV)</button><button class="btn sm" data-ca="topo" title="Create a diagram in the Topology editor from these devices and cables">Send to Topology</button></div></div>`;
+  return h + '<div style="height:20px"></div>';
+}
+function cabGo(e) { const x = RCB.end(S.P, e); if (!x) return; S.rackId = x.d.rackId; S.face = (x.face === 'front') !== !!x.d.rev ? 'front' : 'rear'; S.sel = null; document.querySelectorAll('#faceseg button').forEach(b => b.classList.toggle('on', b.dataset.f === S.face)); render(); fit(); }
+function cabAction(a) {
+  const c = S.cabSel && S.P.cables.find(x => x.id === S.cabSel);
+  if (a === 'autopwr') { let n = 0; mutate(() => { n = RC.autoPower(S.P, S.rackId); }); return toast(n ? n + ' power cord' + (n === 1 ? '' : 's') + ' added (see the rear view)' : 'Nothing to add: this rack needs a PDU, or every device already has power cords'); }
+  if (a === 'tool') return setCabTool(!S.cabTool); if (a === 'csv') return download(fileBase() + '-cables.csv', new Blob(['\ufeff' + RCB.csv(S.P)], { type: 'text/csv' }));
+  if (a === 'estall') { let n = 0; mutate(() => { S.P.cables.forEach(x => { if (x.len == null) { const v = RCB.estimate(S.P, x); if (v != null) { x.len = v; n++; } } }); }); return toast(n ? n + ' length' + (n === 1 ? '' : 's') + ' estimated' : 'Every cable already has a length'); }
+  if (a === 'topo') { try { const r = RCB.sendToTopology(S.P); toast('Diagram created in Topology: ' + r.doc.items.filter(i => i.k === 'dev').length + ' devices, ' + r.doc.links.length + ' links'); setTimeout(() => { location.href = '/topology-editor.html?d=' + encodeURIComponent(r.id); }, 700); } catch (e) { toast('Could not write to the browser storage'); } return; }
+  if (a === 'builder') { const d = selDev(); const o = d && RCB.toBuilder(S.P, d.id); if (!o) return toast('Select a switch, router or firewall'); try { localStorage.setItem('clab_rack_handoff', JSON.stringify(o)); location.href = '/builder.html?from=rack'; } catch (e) { toast('Could not write to the browser storage'); } return; }
+  if (!c) return;
+  if (a === 'del') return mutate(() => { S.P.cables = S.P.cables.filter(x => x.id !== c.id); S.cabSel = null; });
+  if (a === 'est') { const v = RCB.estimate(S.P, c); return mutate(() => { c.len = v; }); }
+  if (a === 'goA') return cabGo(c.a); if (a === 'goB') return cabGo(c.b);
 }
 function sumPanel() {
   const P = S.P, s = P.settings, r = rack(), st = RC.stats(P, r), fl = st.kg / st.footprint;
@@ -421,7 +489,7 @@ function sumPanel() {
   const sm = RC.summary(P, r.id), rows = RC.SUM_GROUPS.filter(g => sm.groups[g[0]]).map(g => `<div class="mrow"><span>${esc(g[1])}</span><span><b>${sm.groups[g[0]]}</b></span></div>`).join('');
   let h = `<div class="sec"><h4>${esc(r.label)} · equipment</h4><div class="mrow" style="font-size:13px"><span>Servers</span><span><b>${sm.servers}</b></span></div>${rows.replace(/<div class="mrow"><span>Servers<\/span>.*?<\/div>/, '')}<div class="mrow" style="margin-top:4px;border-top:1px solid var(--border);padding-top:4px"><span>All devices</span><span><b>${sm.total}</b></span></div>${sm.names.length ? `<p class="note">Servers: ${esc(sm.names.slice(0, 16).join(', '))}${sm.names.length > 16 ? ' and ' + (sm.names.length - 16) + ' more' : ''}</p>` : ''}</div>
 <div class="sec"><h4>${esc(r.label)} · power <small>${s.powerBasis === 'max' ? 'maximum watts' : 'typical watts'}</small></h4>${feed('A')}${feed('B')}
-<div class="kv" style="margin-top:8px">Total <b>${fW(st.watts)}</b> · ${(st.watts * 3.412).toFixed(0)} BTU/h of heat to remove${st.feed.none ? `<br><span style="color:var(--warning)">${fW(st.feed.none)} is not assigned to any feed</span>` : ''}</div>
+<div class="kv" style="margin-top:8px">Total <b>${fW(st.watts)}</b> · ${(st.watts * 3.412).toFixed(0)} BTU/h of heat to remove (${(st.watts / 1000).toFixed(2)} kW, about ${Math.round(st.watts * 0.158)} CFM / ${Math.round(st.watts * 0.158 * 1.699)} m³/h of air at an 11 K rise)${st.feed.none ? `<br><span style="color:var(--warning)">${fW(st.feed.none)} is not assigned to any feed</span>` : ''}</div>
 ${both ? `<div class="kv" style="margin-top:8px">If feed A fails: B carries <b>${fW(lb)}</b> (${Math.round(lb / r.pdus.B.cap * 100)}%)<br>If feed B fails: A carries <b>${fW(la)}</b> (${Math.round(la / r.pdus.A.cap * 100)}%)</div>` : '<p class="note">Set both feed capacities under Rack &amp; project to check what happens when one feed is lost.</p>'}</div>
 <div class="sec"><h4>Weight</h4><div class="mrow"><span>Rack load</span><span><b>${fKg(st.kg)}</b> of ${fKg(r.loadRating)}</span></div>${bar(st.kg, r.loadRating, 90, 100)}<div class="mrow" style="margin-top:6px"><span>Floor loading</span><span><b>${imp() ? (fl * 0.2048).toFixed(0) + ' lb/ft²' : Math.round(fl) + ' kg/m²'}</b> of ${imp() ? (s.floorRating * 0.2048).toFixed(0) + ' lb/ft²' : s.floorRating + ' kg/m²'}</span></div>${bar(fl, s.floorRating, 90, 100)}<p class="note">Floor loading divides the full rack weight over its own footprint (${r.w} × ${r.d} mm). Real floors also depend on how the load is spread: ask a structural engineer for heavy rows.</p></div>
 <div class="sec"><h4>Space</h4><div class="mrow"><span>Used</span><span><b>${st.usedU} of ${r.u}U</b> · ${st.pct}%</span></div>${bar(st.usedU, r.u, 90, 101)}<div class="kv" style="margin-top:6px">Clearance to plan: <b>${fLen(s.clearFront)}</b> front, <b>${fLen(s.clearRear)}</b> rear.</div></div>`;
@@ -435,7 +503,7 @@ function issPanel() {
 function bomPanel() {
   const rows = RC.bom(S.P), tw = rows.reduce((t, r) => t + r.w, 0), tk = rows.reduce((t, r) => t + r.kg, 0), tq = rows.reduce((t, r) => t + r.qty, 0);
   if (!rows.length) return '<div class="empt">Nothing in the project yet. Add equipment and the bill of materials builds itself.</div>';
-  return `<div class="sec"><table class="bom"><tr><th>Item</th><th class="r">Qty</th><th class="r">U</th><th class="r">Power</th></tr>${rows.map(r => `<tr><td>${esc((r.model.vendor ? r.model.vendor + ' ' : '') + r.model.name)}<br><span style="color:var(--text-muted);font-size:11px">${esc(RK.CATS[r.model.cat])} · ${esc(RK.VER[r.model.ver])}</span></td><td class="r">${r.qty}</td><td class="r">${r.u}</td><td class="r">${fW(r.w)}</td></tr>`).join('')}<tr><td><b>Total</b></td><td class="r"><b>${tq}</b></td><td class="r"></td><td class="r"><b>${fW(tw)}</b></td></tr></table><p class="note">Total weight ${fKg(tk)} (equipment only). Racks and PDUs are not in this list.</p><div class="row" style="margin-top:10px"><button class="btn sm" id="b-csv">Download CSV</button></div></div>`;
+  return `<div class="sec"><table class="bom"><tr><th>Item</th><th class="r">Qty</th><th class="r">U</th><th class="r">Power</th></tr>${rows.map(r => `<tr><td>${esc((r.model.vendor ? r.model.vendor + ' ' : '') + r.model.name)}<br><span style="color:var(--text-muted);font-size:11px">${esc(RK.CATS[r.model.cat])} · ${esc(RK.VER[r.model.ver])}</span></td><td class="r">${r.qty}</td><td class="r">${r.u}</td><td class="r">${fW(r.w)}</td></tr>`).join('')}<tr><td><b>Total</b></td><td class="r"><b>${tq}</b></td><td class="r"></td><td class="r"><b>${fW(tw)}</b></td></tr></table><p class="note">Total weight ${fKg(tk)} (equipment only). Racks and PDUs are not in this list.</p>${S.P.cables.length ? '<table class="bom" style="margin-top:10px"><tr><th>Cable</th><th class="r">Qty</th></tr>' + RCB.bom(S.P).map(b => `<tr><td>${esc(RC.CABLES[b.type].n.replace(/ \(.*/, ''))}${b.len != null ? ', ' + b.len + ' m' : ', length not set'}</td><td class="r">${b.qty}</td></tr>`).join('') + '</table>' : ''}<div class="row" style="margin-top:10px"><button class="btn sm" id="b-csv">Download CSV</button></div></div>`;
 }
 
 /* ---------- editing actions ---------- */
@@ -489,13 +557,17 @@ $('left').addEventListener('pointerdown', e => {
 });
 $('cv').addEventListener('pointerdown', e => {
   if (S.mode === 'room') return roomDown(e);
-  if (e.button) return; const g = e.target.closest('[data-dev]');
+  if (e.button) return; const cb = e.target.closest('[data-cable]');
+  if (S.cabTool) { if (cabClick(e) !== false) return; if (!cb) { if (S.cabA) { S.cabA = null; paintCab(); renderStat(); } return; } }
+  if (cb) { S.cabSel = cb.dataset.cable; S.tabR = 'cab'; S.sel = null; return render(); }
+  const g = e.target.closest('[data-dev]');
   if (!g) { if (S.sel) { S.sel = null; render(); } return; }
   const id = g.dataset.dev, d = RC.dev(S.P, id); if (!d) return; const svg = $('rsvg'), b = svg.getBoundingClientRect(), h = RC.h(S.P, d), top = RR.slotTop(rack(), d.u, h, S.geo.topY), off = (e.clientY - b.top) / S.zoom - top;
   const was = S.sel === id; if (!was) { S.sel = id; S.tabR = 'dev'; render(); }
   startDrag('move', { id, h, off, side: d.side, label: d.hostname || RC.model(S.P, d.modelId).name }, e);
 });
 
+$('cv').addEventListener('pointermove', e => { if (!S.cabTool || S.mode === 'room' || !S.geo) return; const [x, y] = cabPoint(e), h = RCB.hit(S.P, rack(), S.geo, S.face, x, y), k = h ? h.d.id + '|' + h.p.id : ''; const cur = S.cabHover ? S.cabHover.d + '|' + S.cabHover.p : ''; if (k !== cur) { S.cabHover = h ? { d: h.d.id, p: h.p.id } : null; paintCab(); } });
 /* ---------- events ---------- */
 $('left').addEventListener('click', e => {
   const t = e.target.closest('[data-tl]'); if (t) { S.tabL = t.dataset.tl; return renderLeft(); }
@@ -515,6 +587,9 @@ $('left').addEventListener('change', e => {
 $('right').addEventListener('click', e => {
   const t = e.target.closest('[data-tr]'); if (t) { S.tabR = t.dataset.tr; return renderRight(); }
   if (S.mode === 'room' && !e.target.closest('[data-ik]')) return;
+  const cs = e.target.closest('[data-cs]'); if (cs) { S.cabSel = cs.dataset.cs; S.tabR = 'cab'; const c = S.P.cables.find(x => x.id === S.cabSel); if (c) { const x = RCB.end(S.P, c.a); if (x && x.d.rackId !== S.rackId && !S.cabA) S.rackId = x.d.rackId; } return render(); }
+  const cc = e.target.closest('[data-cc]'); if (cc && S.cabSel) return mutate(() => { const c = S.P.cables.find(x => x.id === S.cabSel); if (c) c.color = cc.dataset.cc; });
+  const ca = e.target.closest('[data-ca]'); if (ca) return cabAction(ca.dataset.ca);
   const da = e.target.closest('[data-da]'); if (da && S.sel) return da.dataset.da === 'dup' ? dupDevice(S.sel) : delDevice(S.sel);
   const ak = e.target.closest('[data-ack]'); if (ak) { e.stopPropagation(); const k = ak.dataset.ack; return mutate(() => { if (S.P.ack[k]) delete S.P.ack[k]; else S.P.ack[k] = 1; }); }
   const is = e.target.closest('[data-ik]'); if (is) return issueGo(is);
@@ -529,9 +604,18 @@ $('right').addEventListener('change', e => {
     else if (k === 'feedA' || k === 'feedB') { const f = k === 'feedA' ? 'A' : 'B'; d.feeds = d.feeds.filter(x => x !== f); if (t.checked) d.feeds.push(f); d.feeds.sort(); }
     else if (k === 'watts' || k === 'kg') { if (v.trim() === '') delete d[k]; else d[k] = num(v, 0, 0, k === 'kg' ? 500 : 30000); }
     else if (k === 'rev') d.rev = v === '1';
+    else if (k === 'pduFeed') d.pduFeed = v === 'A' || v === 'B' ? v : '';
+    else if (k === 'pduCap') d.pduCap = num(v, 0, 0, 100000);
     else if (k === 'u') { const u = num(v, d.u, 1, 60) | 0; if (RC.fits(S.P, r, u, h) && !RC.collides(S.P, r.id, d.id, u, h, d.side)) d.u = u; else { const n = RC.nearestFree(S.P, r, d.id, u, h, d.side); if (n != null) { d.u = n; toast('Slot taken, moved to U' + n); } else toast('No room there'); } }
     else if (k === 'side') { if (!RC.collides(S.P, r.id, d.id, d.u, h, v)) d.side = v; else toast('Another device shares that U, so it cannot change to ' + v); }
     else if (k === 'rackId') { const nr = RC.rack(S.P, v); if (!nr) return; const u = RC.nearestFree(S.P, nr, d.id, Math.min(d.u, nr.u), h, d.side); if (u == null) return toast('No room in ' + nr.label); d.rackId = nr.id; d.u = u; S.rackId = nr.id; }
+  });
+});
+$('right').addEventListener('change', e => {
+  const t = e.target, k = t.dataset.cf; if (!k) return; const c = S.cabSel && S.P.cables.find(x => x.id === S.cabSel); if (!c) return; const v = t.value;
+  mutate(() => {
+    if (k === 'type') { const old = c.color === RC.CABLES[c.type].col; c.type = Object.prototype.hasOwnProperty.call(RC.CABLES, v) ? v : c.type; if (old) c.color = RC.CABLES[c.type].col; }
+    else if (k === 'len') c.len = v.trim() === '' ? null : num(v, 0, 0, 100000); else if (k === 'label' || k === 'note') c[k] = v.trim(); else if (k === 'status') c.status = v;
   });
 });
 $('docname').addEventListener('change', e => mutate(() => { S.P.name = e.target.value.trim().slice(0, 80) || 'Untitled rack project'; }));
@@ -539,14 +623,21 @@ let _tabT=0,_tabId=null;
 $('rtabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.add) return addRack(); const now=Date.now(); if (_tabId===b.dataset.r && now-_tabT<450) { _tabT=0; return renameRack(b.dataset.r); } _tabT=now; _tabId=b.dataset.r; S.rackId = b.dataset.r; S.sel = null; render(); fit(); });
 $('faceseg').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if (b) { S.face = b.dataset.f; render(); } });
 $('z-in').onclick = () => { S.zoom = Math.min(3, S.zoom * 1.2); renderCanvas(); }; $('z-out').onclick = () => { S.zoom = Math.max(0.2, S.zoom / 1.2); renderCanvas(); }; $('z-fit').onclick = () => fit(true);
+$('b-cab').onclick = () => setCabTool(!S.cabTool); $('t-cab').onchange = e => { S.cabShow = e.target.checked; renderCanvas(); };
 $('t-gaps').onchange = e => { S.gaps = e.target.checked; renderCanvas(); };
 $('b-blank').onclick = () => { const n = RC.freeRuns(S.P, rack(), true).length; if (!n) return toast('No open gaps between equipment'); let c = 0; mutate(() => { c = RC.autoBlank(S.P, S.rackId, false); }); toast(c + ' blanking panel' + (c === 1 ? '' : 's') + ' added'); };
 $('b-undo').onclick = () => undo(false); $('b-redo').onclick = () => undo(true); $('b-exp').onclick = () => exportDlg();
 $('cv').addEventListener('wheel', e => { if (S.mode === 'room') { if (S.view === '3d') { e.preventDefault(); S.cam.zoom = Math.max(0.3, Math.min(4, S.cam.zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1))); renderRoom(); } else if (e.ctrlKey || e.metaKey) { e.preventDefault(); S.pz = Math.max(0.01, Math.min(1, S.pz * (e.deltaY < 0 ? 1.1 : 1 / 1.1))); renderRoom(); } return; } if (e.ctrlKey || e.metaKey) { e.preventDefault(); S.zoom = Math.max(0.2, Math.min(3, S.zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1))); renderCanvas(); } }, { passive: false });
 document.addEventListener('keydown', e => {
-  const tg = e.target.tagName; if (e.key === 'Escape') { if ($('ov').classList.contains('on')) closeM(); else if (S.mode === 'room' && S.rsel) { S.rsel = null; render(); } else if (S.sel) { S.sel = null; render(); } return; }
+  const tg = e.target.tagName; if (e.key === 'Escape') { if ($('ov').classList.contains('on')) closeM(); else if (S.cabTool) setCabTool(false); else if (S.cabSel) { S.cabSel = null; render(); } else if (S.mode === 'room' && S.rsel) { S.rsel = null; render(); } else if (S.sel) { S.sel = null; render(); } return; }
   if (tg === 'INPUT' || tg === 'TEXTAREA' || tg === 'SELECT' || $('ov').classList.contains('on')) return;
   const mod = e.ctrlKey || e.metaKey;
+  if (e.key === '?') { e.preventDefault(); return shortcutsDlg(); }
+  if (S.mode !== 'room' && !mod) { const k = e.key.toLowerCase();
+    if (k === 'c') { e.preventDefault(); return setCabTool(!S.cabTool); }
+    if (k === 'f') { e.preventDefault(); return fit(true); }
+    if (k === 'v') { e.preventDefault(); S.face = S.face === 'front' ? 'rear' : 'front'; return render(); }
+    if (k === 'g') { e.preventDefault(); S.gaps = !S.gaps; $('t-gaps').checked = S.gaps; return renderCanvas(); } }
   if (S.mode === 'room') { if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(e.shiftKey); } else if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); undo(true); } else if (!mod) roomKey(e); return; }
   if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(e.shiftKey); } else if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); undo(true); }
   else if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); if (S.sel) dupDevice(S.sel); }
@@ -605,6 +696,10 @@ $('left').addEventListener('click', e => {
 
 /* ---------- dialogs ---------- */
 function modal(html, ready) { $('md').innerHTML = html; $('ov').classList.add('on'); if (ready) ready(); }
+function shortcutsDlg() {
+  const rows = [['C', 'Cable tool: click a port, then another port'], ['Esc', 'Stop cabling, deselect, close a window'], ['F', 'Fit the rack to the screen'], ['V', 'Switch between front and rear'], ['G', 'Show or hide open gaps'], ['↑ / ↓', 'Move the selected device one U'], ['Delete', 'Remove the selected device'], ['Ctrl+D', 'Duplicate the selected device'], ['Ctrl+Z / Ctrl+Y', 'Undo / redo'], ['Ctrl + wheel', 'Zoom'], ['?', 'This list']];
+  modal('<h3>Keyboard shortcuts</h3><table class="bom">' + rows.map(r => `<tr><td style="font-family:var(--mono);white-space:nowrap">${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('') + '</table><div class="ft"><button class="btn" id="sc-x">Close</button></div>', () => { $('sc-x').onclick = closeM; });
+}
 function closeM() { $('ov').classList.remove('on'); }
 $('ov').addEventListener('pointerdown', e => { if (e.target === $('ov')) closeM(); });
 const FP = { none: [], '24rj': [{ k: 'p', t: 'rj45', n: 24, r: 2 }], '48rj': [{ k: 'p', t: 'rj45', n: 48, r: 2 }, { k: 'p', t: 'sfp+', n: 4, r: 1 }], '24x': [{ k: 'p', t: 'sfp+', n: 24, r: 2 }], '48x': [{ k: 'p', t: 'sfp+', n: 48, r: 2 }, { k: 'p', t: 'qsfp', n: 6, r: 1 }], bay8: [{ k: 'bay', n: 8, c: 4 }], bay24: [{ k: 'bay', n: 24, c: 8 }] };
@@ -632,11 +727,11 @@ function download(name, blob) { const a = document.createElement('a'); a.href = 
 function exportDlg() {
   XS.what = S.mode === 'room' ? (S.view === '3d' ? '3d' : 'plan') : 'racks';
   const seg = (k, a) => `<div class="opts" data-x="${k}">${a.map(x => `<button data-v="${esc(x[0])}" class="${String(XS[k]) === String(x[0]) ? 'on' : ''}">${esc(x[1])}</button>`).join('')}</div>`;
-  modal(`<h3>Export</h3><div class="f"><label class="lbl">Format</label>${seg('fmt', [['png', 'PNG image'], ['pdf', 'PDF'], ['svg', 'SVG'], ['csv', 'BOM (CSV)'], ['json', 'Project file (.json)']])}</div>
-<div id="x-img"><div class="f"><label class="lbl">Content</label>${seg('what', [['racks', 'Rack elevations'], ['plan', 'Room plan'], ['3d', '3D view']])}</div><div id="x-fr"><div class="f"><label class="lbl">Show</label>${seg('faces', [['front', 'Front'], ['rear', 'Rear'], ['both', 'Front and rear']])}</div><div class="f"><label class="lbl">Racks</label>${seg('scope', [['current', 'This rack'], ['all', 'All racks']])}</div></div>
+  modal(`<h3>Export</h3><div class="f"><label class="lbl">Format</label>${seg('fmt', [['png', 'PNG image'], ['pdf', 'PDF'], ['svg', 'SVG'], ['csv', 'BOM (CSV)'], ['cables', 'Cable schedule (CSV)'], ['json', 'Project file (.json)']])}</div>
+<div id="x-img"><div class="f"><label class="lbl">Content</label>${seg('what', [['racks', 'Rack elevations'], ['plan', 'Room plan'], ['3d', '3D view'], ['cables', 'Cable schedule']])}</div><div id="x-fr"><div class="f"><label class="lbl">Show</label>${seg('faces', [['front', 'Front'], ['rear', 'Rear'], ['both', 'Front and rear']])}</div><div class="f"><label class="lbl">Racks</label>${seg('scope', [['current', 'This rack'], ['all', 'All racks']])}</div></div>
 <div class="f"><label class="lbl">Theme</label>${seg('theme', [['light', 'Light (for print)'], ['dark', 'Dark']])}</div><div class="f" id="x-sc"><label class="lbl">Resolution</label>${seg('scale', [[1, '1×'], [2, '2×'], [3, '3×']])}</div><div class="f" id="x-pg"><label class="lbl">PDF page</label>${seg('page', [['auto', 'Fit drawing'], ['a4', 'A4'], ['a3', 'A3'], ['letter', 'Letter']])}</div></div>
 <div class="ft"><button class="btn" id="x-c">Close</button><button class="btn pri" id="x-go">Download</button></div>`, () => {
-    const sync = () => { const f = XS.fmt; $('x-fr').style.display = XS.what === 'racks' ? '' : 'none'; $('x-img').style.display = f === 'csv' || f === 'json' ? 'none' : ''; $('x-sc').style.display = f === 'png' || f === 'pdf' ? '' : 'none'; $('x-pg').style.display = f === 'pdf' ? '' : 'none'; };
+    const sync = () => { const f = XS.fmt; $('x-fr').style.display = XS.what === 'racks' ? '' : 'none'; $('x-img').style.display = f === 'csv' || f === 'json' || f === 'cables' ? 'none' : ''; $('x-sc').style.display = f === 'png' || f === 'pdf' ? '' : 'none'; $('x-pg').style.display = f === 'pdf' ? '' : 'none'; };
     $('md').onclick = e => { const b = e.target.closest('[data-x] button'); if (!b) return; const k = b.parentNode.dataset.x; XS[k] = k === 'scale' ? +b.dataset.v : b.dataset.v; b.parentNode.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); sync(); };
     sync(); $('x-c').onclick = closeM; $('x-go').onclick = doExport;
   });
@@ -646,9 +741,10 @@ async function doExport() {
   try {
     btn.disabled = true; btn.textContent = 'Working…';
     if (f === 'json') download(base + '.json', new Blob([JSON.stringify({ app: 'configlabs-rack', v: 1, project: S.P }, null, 1)], { type: 'application/json' }));
+    else if (f === 'cables') download(base + '-cables.csv', new Blob(['\ufeff' + RCB.csv(S.P)], { type: 'text/csv' }));
     else if (f === 'csv') download(base + '-bom.csv', new Blob(['﻿' + RC.bomCSV(S.P)], { type: 'text/csv' }));
     else {
-      const svg = XS.what === 'plan' ? RR.planSheetSVG(S.P, { pal: XS.theme, color: S.rcolor, clear: S.rclear, scale: 0.12 }) : XS.what === '3d' ? RR.room3D(S.P, { pal: XS.theme, yaw: S.cam.yaw, pitch: S.cam.pitch, zoom: S.cam.zoom, w: 1400, h: 900, color: S.rcolor }) : RR.sheetSVG(S.P, { ids: XS.scope === 'all' ? null : [S.rackId], faces: XS.faces === 'both' ? ['front', 'rear'] : [XS.faces], pal: XS.theme, gaps: false, scale: 0.9 });
+      const svg = XS.what === 'cables' ? RCB.scheduleSVG(S.P, { pal: XS.theme }) : XS.what === 'plan' ? RR.planSheetSVG(S.P, { pal: XS.theme, color: S.rcolor, clear: S.rclear, scale: 0.12 }) : XS.what === '3d' ? RR.room3D(S.P, { pal: XS.theme, yaw: S.cam.yaw, pitch: S.cam.pitch, zoom: S.cam.zoom, w: 1400, h: 900, color: S.rcolor }) : RR.sheetSVG(S.P, { ids: XS.scope === 'all' ? null : [S.rackId], faces: XS.faces === 'both' ? ['front', 'rear'] : [XS.faces], pal: XS.theme, gaps: false, scale: 0.9 });
       if (f === 'svg') download(base + '.svg', new Blob([svg], { type: 'image/svg+xml' }));
       else {
         const fill = XS.theme === 'light' ? '#ffffff' : RR.PAL.dark.bg, c = await svgToCanvas(svg, XS.scale, fill);
@@ -666,6 +762,7 @@ async function doExport() {
 
 /* ================= ROOM MODE (v7.1) ================= */
 Object.assign(S, { snap: 'tile', mode: 'rack', view: '2d', rsel: null, pz: 0.1, cam: { yaw: -35, pitch: 42, zoom: 1 }, rcolor: 'plain', rclear: false, tabRR: 'item', rg: null });
+Object.assign(S, { cabTool: false, cabShow: true, cabA: null, cabSel: null, cabHover: null });
 const ROOMRULES = { rwall: 1, rhit: 1, rclear: 1, rair: 1, rdoor: 1, rcool: 1, runpl: 1 };
 const DIRN = { 0: 'south', 90: 'west', 180: 'north', 270: 'east' };
 function setMode(m) {
@@ -779,6 +876,7 @@ function issueGo(is) {
   const rule = is.dataset.ik.split(':')[0], io = (is.dataset.io || '').split(/[+:]/)[0];
   if (ROOMRULES[rule]) { if (S.mode !== 'room') setMode('room'); let t = null; if (io) { if (RC.rack(S.P, io)) t = { t: 'rack', id: io }; else if (S.P.room.objs.some(o => o.id === io)) t = { t: 'obj', id: io }; } S.rsel = t; S.tabRR = 'item'; if (t && t.t === 'rack') S.rackId = io; return render(); }
   if (S.mode === 'room') setMode('rack');
+  if (rule.indexOf('cable') === 0 || rule === 'pduload') { const c = S.P.cables.find(x => x.id === io); if (c) { S.cabSel = c.id; S.tabR = 'cab'; return cabGo(c.a); } }
   if (is.dataset.ir && RC.rack(S.P, is.dataset.ir)) S.rackId = is.dataset.ir; S.sel = is.dataset.id && RC.dev(S.P, is.dataset.id) ? is.dataset.id : null; if (S.sel) S.tabR = 'dev'; render(); fit();
 }
 

@@ -8,6 +8,17 @@
   const oneOf = (v, a, d) => a.indexOf(v) >= 0 ? v : d;
   const ipv4 = s => { const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(String(s || '').trim()); return !!m && m.slice(1).every(x => +x <= 255); };
   RC.ipv4 = ipv4;
+  /* ---------- cables (v7.3) ---------- */
+  RC.CABLES = {
+    cat5e: { n: 'Cat5e copper', fam: 'cu', max: 100, col: '#3b82f6' }, cat6: { n: 'Cat6 copper', fam: 'cu', max: 100, col: '#3b82f6' }, cat6a: { n: 'Cat6A copper', fam: 'cu', max: 100, col: '#14b8a6' },
+    dac: { n: 'DAC (twinax)', fam: 'dac', max: 7, col: '#f97316' }, aoc: { n: 'AOC (active optical)', fam: 'dac', max: 30, col: '#a855f7' },
+    om3: { n: 'Fiber OM3 (LC)', fam: 'fb', max: 300, col: '#22d3ee' }, om4: { n: 'Fiber OM4 (LC)', fam: 'fb', max: 400, col: '#a855f7' }, os2: { n: 'Fiber OS2 single-mode (LC)', fam: 'fb', max: 10000, col: '#eab308' },
+    console: { n: 'Console cable', fam: 'con', max: 15, col: '#9ca3af' }, usb: { n: 'USB cable', fam: 'usb', max: 5, col: '#9ca3af' }, power: { n: 'Power cord', fam: 'pwr', max: 4, col: '#111827' }
+  };
+  RC.CCOL = [['#3b82f6', 'Blue'], ['#ef4444', 'Red'], ['#22c55e', 'Green'], ['#eab308', 'Yellow'], ['#f97316', 'Orange'], ['#a855f7', 'Purple'], ['#ec4899', 'Pink'], ['#14b8a6', 'Teal'], ['#22d3ee', 'Aqua'], ['#9ca3af', 'Grey'], ['#f5f5f5', 'White'], ['#111827', 'Black']];
+  RC.hooks = RC.hooks || [];
+  /* feeds of a device: from its power cords when it has any to a PDU with a feed set, else the ticked A/B boxes */
+  RC.feeds = function (P, d) { const f = RC.derive ? RC.derive(P, d) : []; return f.length ? f : d.feeds; };
   let seq = 0;
   RC.uid = p => (p || 'x') + Date.now().toString(36) + (seq++).toString(36) + Math.random().toString(36).slice(2, 5);
 
@@ -21,7 +32,7 @@
   };
   RC.newProject = function (name) {
     const r = RC.newRack('Rack 1', 42);
-    return { schemaVersion: RK.SCHEMA, id: RC.uid('p'), name: str(name || 'Untitled rack project', 80), site: '', settings: RC.defaults(), room: RC.defaultRoom(), racks: [r], devices: [], models: {}, ack: {} };
+    return { schemaVersion: RK.SCHEMA, id: RC.uid('p'), name: str(name || 'Untitled rack project', 80), site: '', settings: RC.defaults(), room: RC.defaultRoom(), racks: [r], devices: [], cables: [], models: {}, ack: {} };
   };
 
   /* ---------- sanitiser: every loaded or imported project goes through here ---------- */
@@ -53,16 +64,24 @@
     const mids = {};
     if (raw.models && typeof raw.models === 'object') Object.keys(raw.models).slice(0, 200).forEach(k => { const m = RK.cleanModel(raw.models[k]); if (m && m.id === k) { delete m.custom; P.models[k] = m; } });
     const dids = {};
+    P.cables = [];
     (Array.isArray(raw.devices) ? raw.devices : []).slice(0, 2000).forEach(v => {
       if (!v || typeof v !== 'object') return; let id = idOk(v.id); if (!id || dids[id]) id = RC.uid('d'); const rid = String(v.rackId || ''); if (!rm[rid]) return;
       const mid = idOk(v.modelId); if (!mid) return; dids[id] = 1;
       const feeds = (Array.isArray(v.feeds) ? v.feeds : []).filter((x, i, a) => (x === 'A' || x === 'B') && a.indexOf(x) === i);
       const o = { id, rackId: rid, modelId: mid, u: num(v.u, 1, 1, 60) | 0, side: oneOf(v.side, ['full', 'front', 'rear'], 'full'), rev: !!v.rev, hostname: str(v.hostname, 63), role: str(v.role, 40),
         ips: (Array.isArray(v.ips) ? v.ips : []).slice(0, 8).map(x => str(x, 45).trim()).filter(Boolean), mgmtIp: str(v.mgmtIp, 45).trim(), vlan: str(v.vlan, 40), serial: str(v.serial, 60), asset: str(v.asset, 60),
-        status: oneOf(v.status, ['planned', 'installed'], 'planned'), feeds, notes: str(v.notes, 500) };
+        status: oneOf(v.status, ['planned', 'installed'], 'planned'), feeds, notes: str(v.notes, 500), pduFeed: oneOf(v.pduFeed, ['A', 'B'], ''), pduCap: num(v.pduCap, 0, 0, 100000) };
       if (v.watts != null && v.watts !== '') o.watts = num(v.watts, 0, 0, 30000);
       if (v.kg != null && v.kg !== '') o.kg = num(v.kg, 0, 0, 500);
       P.devices.push(o);
+    });
+    const cids = {}, pid = v => /^[fr](?:\d{1,3}|con|mgmt|psu\d{1,2})$/.test(String(v)) ? String(v) : '', hx = v => /^#[0-9a-fA-F]{6}$/.test(String(v)) ? String(v).toLowerCase() : '';
+    (Array.isArray(raw.cables) ? raw.cables : []).slice(0, 5000).forEach(c => {
+      if (!c || typeof c !== 'object') return; const a = c.a || {}, b = c.b || {}, da = String(a.d || ''), db = String(b.d || ''), pa = pid(a.p), pb = pid(b.p);
+      if (!pa || !pb || !dids[da] || !dids[db] || da === db) return; let id = idOk(c.id); if (!id || cids[id]) id = RC.uid('c'); cids[id] = 1;
+      const type = Object.prototype.hasOwnProperty.call(RC.CABLES, c.type) ? c.type : 'cat6';
+      P.cables.push({ id, a: { d: da, p: pa }, b: { d: db, p: pb }, type, color: hx(c.color) || RC.CABLES[type].col, len: c.len == null || c.len === '' ? null : num(c.len, 0, 0, 100000), label: str(c.label, 60), note: str(c.note, 200), status: oneOf(c.status, ['planned', 'installed'], 'planned') });
     });
     if (raw.ack && typeof raw.ack === 'object') Object.keys(raw.ack).slice(0, 500).forEach(k => { if (/^[\w.\-:]{1,140}$/.test(k) && raw.ack[k]) P.ack[k] = 1; });
     return P;
@@ -101,7 +120,7 @@
     const ds = RC.devsOf(P, rack.id), used = new Array(rack.u + 2).fill(false); let w = { A: 0, B: 0, none: 0 }, kg = rack.emptyKg, total = 0, solo = { A: 0, B: 0 }, dual = 0;
     ds.forEach(d => {
       for (let i = d.u; i <= RC.top(P, d); i++) if (i >= 1 && i <= rack.u) used[i] = true;
-      const x = RC.watts(P, d), f = d.feeds; total += x; kg += RC.kg(P, d);
+      const x = RC.watts(P, d), f = RC.feeds(P, d); total += x; kg += RC.kg(P, d);
       if (f.length === 2) { w.A += x / 2; w.B += x / 2; dual += x; } else if (f.length === 1) { w[f[0]] += x; solo[f[0]] += x; } else w.none += x;
     });
     const usedU = used.filter(Boolean).length;
@@ -109,7 +128,7 @@
   };
 
   /* ---------- validation ---------- */
-  RC.RULES = { collision: 'Overlap', range: 'Out of rack', gap: 'Open gap', host: 'Duplicate hostname', ipdup: 'IP conflict', ipbad: 'Invalid IP', pwr: 'Power', redund: 'Feed redundancy', single: 'Single-fed', nofeed: 'No feed', weight: 'Rack weight', floor: 'Floor loading', depth: 'Depth', missing: 'Unknown model', rwall: 'Outside room', rhit: 'Overlap (room)', rclear: 'Clearance', rair: 'Airflow', rdoor: 'Door', rcool: 'Cooling', runpl: 'Not placed' };
+  RC.RULES = { collision: 'Overlap', range: 'Out of rack', gap: 'Open gap', host: 'Duplicate hostname', ipdup: 'IP conflict', ipbad: 'Invalid IP', pwr: 'Power', redund: 'Feed redundancy', single: 'Single-fed', nofeed: 'No feed', weight: 'Rack weight', floor: 'Floor loading', depth: 'Depth', missing: 'Unknown model', rwall: 'Outside room', rhit: 'Overlap (room)', rclear: 'Clearance', rair: 'Airflow', rdoor: 'Door', rcool: 'Cooling', density: 'Heat density', runpl: 'Not placed' };
   RC.validate = function (P) {
     const out = [], S = P.settings;
     const add = (rule, sev, rackId, devId, msg, objId) => { const key = rule + ':' + (objId || devId || rackId); out.push({ key, rule, sev, rackId, devId: devId || null, objId: objId || null, msg, ack: !!P.ack[key] }); };
@@ -126,8 +145,8 @@
         if (d.hostname) { const k = d.hostname.toLowerCase(); (hosts[k] = hosts[k] || []).push(d); }
         [d.mgmtIp].concat(d.ips).filter(Boolean).forEach(ip => { if (!ipv4(ip)) add('ipbad', 'warn', rack.id, d.id, lab + ': "' + ip + '" is not a valid IPv4 address.'); else (ips[ip] = ips[ip] || []).push(d); });
         const w = RC.watts(P, d);
-        if (w > 0 && m.psu >= 2 && d.feeds.length === 1) add('single', 'warn', rack.id, d.id, lab + ' has ' + m.psu + ' power supplies but is wired to feed ' + d.feeds[0] + ' only.');
-        if (w > 0 && !d.feeds.length && (rack.pdus.A.cap || rack.pdus.B.cap)) add('nofeed', 'info', rack.id, d.id, lab + ' is not assigned to a PDU feed, so its ' + Math.round(w) + ' W is not in the feed totals.');
+        if (w > 0 && m.psu >= 2 && RC.feeds(P, d).length === 1) add('single', 'warn', rack.id, d.id, lab + ' has ' + m.psu + ' power supplies but is wired to feed ' + RC.feeds(P, d)[0] + ' only.');
+        if (w > 0 && !RC.feeds(P, d).length && (rack.pdus.A.cap || rack.pdus.B.cap)) add('nofeed', 'info', rack.id, d.id, lab + ' is not assigned to a PDU feed, so its ' + Math.round(w) + ' W is not in the feed totals.');
       });
       /* gaps */
       RC.freeRuns(P, rack, true).forEach(g => add('gap', 'info', rack.id, null, 'U' + g.u + (g.h > 1 ? '–U' + (g.u + g.h - 1) : '') + ' in ' + name + ' is open between equipment: fit a blanking panel to stop hot air recirculating.'));
@@ -149,12 +168,14 @@
       /* weight */
       if (st.kg > rack.loadRating) add('weight', 'crit', rack.id, null, name + ' weighs ' + Math.round(st.kg) + ' kg against a ' + rack.loadRating + ' kg load rating.');
       else if (st.kg > rack.loadRating * 0.9) add('weight', 'warn', rack.id, null, name + ' weighs ' + Math.round(st.kg) + ' kg, over 90% of its ' + rack.loadRating + ' kg load rating.');
+      if (st.watts > 10000) add('density', 'warn', rack.id, null, name + ' draws ' + (st.watts / 1000).toFixed(1) + ' kW: above about 10 kW a rack usually needs aisle containment or in-row cooling.');
       const fl = st.kg / st.footprint;
       if (fl > S.floorRating) add('floor', 'warn', rack.id, null, name + ' puts ' + Math.round(fl) + ' kg/m² on the floor, above the ' + S.floorRating + ' kg/m² rating you set.');
     });
     Object.keys(hosts).forEach(k => { const a = hosts[k]; if (a.length > 1) a.forEach(d => add('host', 'warn', d.rackId, d.id, 'Hostname "' + d.hostname + '" is used ' + a.length + ' times in this project.')); });
     Object.keys(ips).forEach(k => { const a = ips[k]; if (a.length > 1) a.forEach(d => add('ipdup', 'crit', d.rackId, d.id, 'IP ' + k + ' is used by ' + a.length + ' devices.')); });
     RC.validateRoom(P, add);
+    RC.hooks.forEach(f => { try { f(P, add); } catch (e) {} });
     const ord = { crit: 0, warn: 1, info: 2 }; out.sort((a, b) => ord[a.sev] - ord[b.sev]);
     return out;
   };
@@ -283,6 +304,24 @@
 
   /* ---------- starter layouts ---------- */
   const mk = (rackId, modelId, u, o) => Object.assign({ id: RC.uid('d'), rackId, modelId, u, side: 'full', rev: false, hostname: '', role: '', ips: [], mgmtIp: '', vlan: '', serial: '', asset: '', status: 'planned', feeds: [], notes: '' }, o || {});
+  /* power cords: PSU 1 to the first PDU, PSU 2 to the second (or the first when only one). Returns the number of cords added. */
+  RC.autoPower = function (P, rackId) {
+    const pdus = P.devices.filter(d => d.rackId === rackId && RC.model(P, d.modelId).cat === 'pdu').sort((a, b) => b.u - a.u); if (!pdus.length) return 0;
+    pdus.forEach((d, i) => { if (!d.pduFeed && i < 2) d.pduFeed = i ? 'B' : 'A'; });
+    const outs = pdus.map(d => { const o = (RC.model(P, d.modelId).front || []).find(b => b.k === 'out'); return { d, n: o ? o.n : 0, used: {} }; });
+    P.cables.filter(c => c.type === 'power').forEach(c => [c.a, c.b].forEach(e => outs.forEach(o => { if (o.d.id === e.d) o.used[e.p] = 1; })));
+    let n = 0;
+    P.devices.filter(d => d.rackId === rackId).forEach(d => {
+      const m = RC.model(P, d.modelId); if (!(m.psu > 0) || m.cat === 'pdu' || m.cat === 'ups' || m.cat === 'blank') return;
+      if (P.cables.some(c => c.type === 'power' && (c.a.d === d.id || c.b.d === d.id))) return;
+      const np = (m.cat === 'switch' || m.cat === 'router' || m.cat === 'firewall') && m.psu < 2 ? 1 : m.psu;
+      for (let i = 0; i < Math.min(np, 2); i++) {
+        const o = outs[Math.min(i, outs.length - 1)]; let k = 1; while (k <= o.n && o.used['r' + k]) k++; if (k > o.n) continue; o.used['r' + k] = 1;
+        P.cables.push({ id: RC.uid('c'), a: { d: d.id, p: 'rpsu' + (i + 1) }, b: { d: o.d.id, p: 'r' + k }, type: 'power', color: RC.CABLES.power.col, len: 1, label: '', note: '', status: 'planned' }); n++;
+      }
+    });
+    return n;
+  };
   RC.TEMPLATES = [['blank', 'Blank rack', '42U cabinet, no equipment'], ['closet', 'Small closet', '18U: patch panel, firewall, switch, UPS'], ['core', 'Network core', '42U: core pair, ToR, firewalls, patching'], ['compute', 'Compute rack', '42U: ToR pair and 2U servers']];
   RC.fromTemplate = function (key, name) {
     const P = RC.newProject(name), r = P.racks[0], id = r.id, D = P.devices;
@@ -295,6 +334,10 @@
       D.push(mk(id, 'h3c-s6860-54hf', 42, { hostname: 'TOR-A', role: 'ToR', feeds: ['A', 'B'] }), mk(id, 'h3c-s6860-54hf', 41, { hostname: 'TOR-B', role: 'ToR', feeds: ['A', 'B'] }), mk(id, 'gen-cm-1u', 40));
       for (let i = 0; i < 8; i++) D.push(mk(id, 'h3c-r4900-g5', 38 - i * 2, { hostname: 'SRV' + (i + 1), role: 'Hypervisor', feeds: ['A', 'B'] }));
       D.push(mk(id, 'gen-sto-2u', 20, { hostname: 'NAS1', role: 'Storage', feeds: ['A', 'B'] }), mk(id, 'gen-pdu-1u', 1), mk(id, 'gen-pdu-1u', 2)); }
+    const by = h => D.find(d => d.hostname === h), link = (a, pa, b, pb, type, label) => { if (by(a) && by(b)) P.cables.push({ id: RC.uid('c'), a: { d: by(a).id, p: pa }, b: { d: by(b).id, p: pb }, type, color: RC.CABLES[type].col, len: 1, label, note: '', status: 'planned' }); };
+    if (key === 'core') { link('CORE1', 'f49', 'CORE2', 'f49', 'dac', 'ISL-1'); link('CORE1', 'f50', 'CORE2', 'f50', 'dac', 'ISL-2'); link('DIST1', 'f49', 'CORE1', 'f1', 'om4', 'DIST1-CORE1'); link('DIST1', 'f50', 'CORE2', 'f1', 'om4', 'DIST1-CORE2'); link('DIST2', 'f49', 'CORE1', 'f2', 'om4', 'DIST2-CORE1'); link('DIST2', 'f50', 'CORE2', 'f2', 'om4', 'DIST2-CORE2'); }
+    if (key === 'compute') link('TOR-A', 'f49', 'TOR-B', 'f49', 'dac', 'ISL');
+    if (key === 'core' || key === 'compute') RC.autoPower(P, id);
     return P;
   };
 })();

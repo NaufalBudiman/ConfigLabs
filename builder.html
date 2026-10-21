@@ -1491,6 +1491,17 @@ document.addEventListener('keydown', e => {
   await loadVendors();
   await loadTemplates();
   updateHints();
+  let handoff = null;
+  try { if (/[?&]from=rack\b/.test(location.search)) { handoff = JSON.parse(localStorage.getItem('clab_rack_handoff') || 'null'); localStorage.removeItem('clab_rack_handoff'); } } catch (e) {}
+  if (handoff && handoff.data) {
+    try {
+      if (state.vendors[handoff.vendor] && state.vendor !== handoff.vendor) selectVendor(handoff.vendor);
+      const vd = state.vendors[state.vendor]; if (vd && vd.os_list.some(o => o.id === handoff.os && o.status === 'available')) selectOS(handoff.os);
+      await loadTemplates();
+      applyTemplate({ system: { hostname: String(handoff.data.system && handoff.data.system.hostname || '').slice(0, 63) }, interfaces: (handoff.data.interfaces || []).slice(0, 200).map(i => ({ interface: String(i.interface || '').slice(0, 60), description: String(i.description || '').slice(0, 80), mode: 'access' })) });
+      toast('Loaded from the Rack Builder: ' + (handoff.from || 'device') + '. Interface names are suggestions, check them against the hardware guide.');
+    } catch (e) { addVlan({ vlan:'10', name:'USERS' }); }
+  } else
   addVlan({ vlan:'10', name:'USERS' });
 })();
 </script>
