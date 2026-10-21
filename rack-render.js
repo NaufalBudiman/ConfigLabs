@@ -96,7 +96,7 @@
       const y = RR.slotTop(rack, d.u, h, topY), hh = h * UMM, sd = d.side || 'full', off = sd !== 'full' && sd !== face, fk = (face === 'front') !== !!d.rev ? 'front' : 'rear';
       const lab = opts.labels === false ? ' ' : (d.hostname || m.name);
       s += `<g data-dev="${esc(d.id)}" transform="translate(${x0},${y})"${off ? ' opacity=".28"' : ''}>`;
-      s += RR.faceSVG(m, fk, RW, hh, pal, { label: lab, status: compact ? '' : d.status });
+      s += RR.faceSVG(m, fk, RW, hh, pal, { label: lab, status: compact ? '' : d.status, compact: compact });
       if (sd !== 'full') s += `<text x="${RW - EAR - 6}" y="${hh - 5}" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="6" fill="${pal.sub}">${sd === 'front' ? 'FRONT HALF' : 'REAR HALF'}</text>`;
       s += `</g>`;
     });

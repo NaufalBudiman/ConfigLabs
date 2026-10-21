@@ -187,7 +187,7 @@ html,body{height:100%}body{display:flex;flex-direction:column;overflow:hidden;mi
 .mi{position:relative;margin:0 12px 6px;padding:9px 38px 9px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);cursor:grab;touch-action:none;user-select:none}
 .mi:hover{border-color:var(--accent);background:var(--surface-hover)}
 .mi .t{display:flex;gap:6px;align-items:center;justify-content:space-between}.mi b{font-size:12.5px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mi .s{font:10.5px var(--mono);color:var(--text-muted);margin-top:2px}
+.mi .s{font:10.5px var(--mono);color:var(--text-muted);margin-top:2px}.mi .pv{margin-top:6px;pointer-events:none;border-radius:3px;overflow:hidden}.mi .pv svg{display:block}.pvbig{margin-top:8px}.pvbig .l{font:10px var(--mono);color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin:6px 0 2px}.pvbig svg{display:block;border-radius:4px}
 .mi .add{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:7px;border:1px solid var(--border-strong);background:var(--bg);color:var(--accent);cursor:pointer;font-size:16px;line-height:1}
 .mi .cx{position:absolute;right:38px;bottom:5px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:2px 4px}.mi .cx:hover{color:var(--danger)}
 .mi .add:hover{background:var(--accent);color:#0b0d10}
@@ -273,6 +273,7 @@ table.bom td{padding:7px 4px;border-bottom:1px solid var(--border);vertical-alig
 <script src="/rack-lib.js"></script>
 <script src="/rack-calc.js"></script>
 <script src="/rack-render.js"></script>
+<script src="/rack-art.js"></script>
 <script src="/topology-raster.js"></script>
 <script>
 'use strict';
@@ -365,7 +366,7 @@ function renderLeft() {
     const all = RK.all(), vs = [...new Set(all.map(m => m.vendor || 'Generic'))];
     h += `<div class="sec"><input type="text" id="lq" placeholder="Search equipment" value="${esc(S.q)}" autocomplete="off"><div class="row" style="margin-top:8px"><select id="lv"><option value="all">All vendors</option>${vs.map(v => `<option${v === S.vendor ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select><button class="btn sm" id="b-cust">+ Custom device</button></div><p class="note">Drag into the rack, or press + to add at the first free slot. <b>Typical</b> means a placeholder value: check it against your datasheet.</p></div>`;
     const q = S.q.trim().toLowerCase(), f = all.filter(m => (S.vendor === 'all' || (m.vendor || 'Generic') === S.vendor) && (!q || (m.vendor + ' ' + m.name + ' ' + RK.CATS[m.cat]).toLowerCase().includes(q)));
-    RK.GROUPS.forEach(g => { const it = f.filter(m => g[2].indexOf(m.cat) >= 0); if (!it.length) return; h += `<div class="grp"><span>${esc(g[1])}</span><span>${it.length}</span></div>` + it.map(m => `<div class="mi" data-m="${esc(m.id)}"><div class="t"><b>${esc((m.vendor ? m.vendor + ' ' : '') + m.name)}</b>${verPill(m)}</div><div class="s">${esc(modelLine(m))}</div>${m.custom ? `<button class="cx" data-cdel="${esc(m.id)}" title="Delete from my library">✕</button>` : ''}<button class="add" data-add="${esc(m.id)}" title="Add to rack">+</button></div>`).join(''); });
+    RK.GROUPS.forEach(g => { const it = f.filter(m => g[2].indexOf(m.cat) >= 0); if (!it.length) return; h += `<div class="grp"><span>${esc(g[1])}</span><span>${it.length}</span></div>` + it.map(m => `<div class="mi" data-m="${esc(m.id)}"><div class="t"><b>${esc((m.vendor ? m.vendor + ' ' : '') + m.name)}</b>${verPill(m)}</div><div class="s">${esc(modelLine(m))}</div>${m.cat === 'blank' ? '' : `<div class="pv">${RR.devicePreview(m, 'front', pal(), { compact: true, label: ' ' })}</div>`}${m.custom ? `<button class="cx" data-cdel="${esc(m.id)}" title="Delete from my library">✕</button>` : ''}<button class="add" data-add="${esc(m.id)}" title="Add to rack">+</button></div>`).join(''); });
     if (!f.length) h += '<div class="empt">Nothing matches. Clear the search, or add a custom device.</div>';
     h += '<div style="height:20px"></div>';
   } else {
@@ -403,7 +404,7 @@ function devPanel() {
   const m = RC.model(S.P, d.modelId), nf = d.feeds, op = (v, a) => a.map(x => `<option value="${esc(x[0])}"${x[0] === v ? ' selected' : ''}>${esc(x[1])}</option>`).join('');
   const link = m.src ? `<a href="${esc(m.src)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">source</a>` : '';
   return `<div class="sec"><h4>${esc(RK.CATS[m.cat])} ${verPill(m)}</h4><div style="font-weight:600;font-size:14px">${esc((m.vendor ? m.vendor + ' ' : '') + m.name)}</div>
-<div class="kv" style="margin-top:6px">${m.u}U · depth <b>${fLen(m.d)}</b> · <b>${fKg(RC.kg(S.P, d))}</b> · <b>${fW(RC.watts(S.P, d))}</b> · ${m.psu} PSU<br>Airflow: ${esc(RK.AIR[m.air])}</div>${m.note ? `<p class="note">${esc(m.note)} ${link}</p>` : (link ? `<p class="note">${link}</p>` : '')}</div>
+<div class="kv" style="margin-top:6px">${m.u}U · depth <b>${fLen(m.d)}</b> · <b>${fKg(RC.kg(S.P, d))}</b> · <b>${fW(RC.watts(S.P, d))}</b> · ${m.psu} PSU<br>Airflow: ${esc(RK.AIR[m.air])}</div>${m.note ? `<p class="note">${esc(m.note)} ${link}</p>` : (link ? `<p class="note">${link}</p>` : '')}<div class="pvbig"><div class="l">Front</div>${RR.devicePreview(m, 'front', pal(), { label: d.hostname || m.name })}${m.cat === 'patch' || m.cat === 'blank' ? '' : `<div class="l">Rear</div>${RR.devicePreview(m, 'rear', pal(), { label: d.hostname || m.name })}`}<p class="note" style="margin-top:6px">Port counts and types follow the model. LED, console and fan positions are illustrative.</p></div></div>
 <div class="sec"><h4>Identity</h4><div class="f2"><div class="f full"><label class="lbl">Hostname</label><input type="text" data-df="hostname" value="${esc(d.hostname)}" maxlength="63" placeholder="e.g. CORE-01"></div><div class="f"><label class="lbl">Role</label><input type="text" data-df="role" value="${esc(d.role)}" maxlength="40"></div><div class="f"><label class="lbl">Status</label><select data-df="status">${op(d.status, [['planned', 'Planned'], ['installed', 'Installed']])}</select></div>
 <div class="f"><label class="lbl">Management IP</label><input type="text" data-df="mgmtIp" value="${esc(d.mgmtIp)}" maxlength="45" placeholder="10.0.0.1"></div><div class="f"><label class="lbl">VLAN</label><input type="text" data-df="vlan" value="${esc(d.vlan)}" maxlength="40"></div>
 <div class="f full"><label class="lbl">Other IPs (comma separated)</label><input type="text" data-df="ips" value="${esc(d.ips.join(', '))}"></div><div class="f"><label class="lbl">Serial</label><input type="text" data-df="serial" value="${esc(d.serial)}" maxlength="60"></div><div class="f"><label class="lbl">Asset tag</label><input type="text" data-df="asset" value="${esc(d.asset)}" maxlength="60"></div></div></div>
@@ -782,7 +783,7 @@ function issueGo(is) {
 }
 
 /* ---------- theme and start ---------- */
-function setTheme(t) { document.body.dataset.theme = t; $('theme-btn').textContent = t === 'dark' ? '🌙' : '☀️'; ls.set('clab_theme', t); if (S.P) { renderCanvas(); } }
+function setTheme(t) { document.body.dataset.theme = t; $('theme-btn').textContent = t === 'dark' ? '🌙' : '☀️'; ls.set('clab_theme', t); if (S.P) { renderCanvas(); try { renderLeft(); renderRight(); } catch (e) {} } }
 function toggleTheme() { setTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'); }
 setTheme(ls.get('clab_theme') === 'light' ? 'light' : 'dark');
 if (load()) { render(); fit(); addEventListener('resize', () => { if (S.P && !S.drag) renderCanvas(); }); if (qs.get('export') === '1') exportDlg(); }
