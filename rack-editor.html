@@ -237,7 +237,7 @@ table.bom td{padding:7px 4px;border-bottom:1px solid var(--border);vertical-alig
   </div>
   <div class="nav-actions">
     <div class="chip"><span class="dot"></span><span>Rack builder</span><span class="beta">BETA</span></div>
-    <button class="icon-btn" onclick="toggleTheme()" title="Theme" id="theme-btn">🌙</button>
+    <button class="btn sm" id="b-tag" onclick="toggleArt('catTag')" title="Show or hide the thin category colour line on top of each device">Tag</button><button class="btn sm" id="b-bez" onclick="toggleArt('bezel')" title="Show the front bezel on H3C servers (hides the drive bays)">Bezel</button><button class="icon-btn" onclick="toggleTheme()" title="Theme" id="theme-btn">🌙</button>
   </div>
 </nav>
 <div id="app">
@@ -784,8 +784,11 @@ function issueGo(is) {
 
 /* ---------- theme and start ---------- */
 function setTheme(t) { document.body.dataset.theme = t; $('theme-btn').textContent = t === 'dark' ? '🌙' : '☀️'; ls.set('clab_theme', t); if (S.P) { renderCanvas(); try { renderLeft(); renderRight(); } catch (e) {} } }
+function toggleArt(k) { RR.art[k] = !RR.art[k]; ls.set('clab_art_' + k, RR.art[k] ? '1' : '0'); syncArt(); if (S.P) { renderCanvas(); try { renderLeft(); renderRight(); } catch (e) {} } }
+function syncArt() { $('b-tag').classList.toggle('pri', !!RR.art.catTag); $('b-bez').classList.toggle('pri', !!RR.art.bezel); }
+RR.art = RR.art || {}; RR.art.catTag = ls.get('clab_art_catTag') !== '0'; RR.art.bezel = ls.get('clab_art_bezel') === '1';
 function toggleTheme() { setTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'); }
-setTheme(ls.get('clab_theme') === 'light' ? 'light' : 'dark');
+setTheme(ls.get('clab_theme') === 'light' ? 'light' : 'dark'); syncArt();
 if (load()) { render(); fit(); addEventListener('resize', () => { if (S.P && !S.drag) renderCanvas(); }); if (qs.get('export') === '1') exportDlg(); }
 </script>
 </body>

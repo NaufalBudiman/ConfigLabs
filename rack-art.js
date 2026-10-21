@@ -14,6 +14,31 @@
   const BRAND = { H3C: { c: '#d8262f', t: 'H3C' }, Cisco: { c: '#1ba0d7', t: 'cisco' } };
   const DIM = { rj45: [13, 12], sfp: [12, 8], 'sfp+': [12, 8], qsfp: [16, 9], lc: [9, 11], usb: [10, 5], con: [9, 7] };
   const GAP = 1.8, BG = 7;
+  /* display options (the editor sets these): catTag = thin category colour line on top, bezel = front bezel on H3C servers */
+  RR.art = RR.art || { catTag: true, bezel: false };
+  const TAG = { switch: '#4f8fe0', router: '#8d6fe0', firewall: '#e05a55', server: '#aab3c2', storage: '#4fb27d', patch: '#aab3c2', manager: '#8a919c', pdu: '#e0b34f', ups: '#e0b34f', kvm: '#4fb8c8' };
+  const lum = h => { const c = h.replace('#', ''); const v = [0, 2, 4].map(i => parseInt(c.substr(i, 2), 16) / 255); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]; };
+  /* real chassis colour by vendor: H3C is black, Cisco is grey. Other vendors keep the category colour. */
+  function look(m, pal) {
+    const light = pal.bg === '#ffffff', cat = m.cat, net = cat === 'switch' || cat === 'router' || cat === 'firewall', srv = cat === 'server' || cat === 'storage';
+    let body = pal.cat[cat] || pal.cat.server, p = pal;
+    if (m.vendor === 'H3C' && (net || srv)) body = light ? '#2b2e34' : '#202328';
+    else if (m.vendor === 'Cisco' && net) body = /nexus|n9k/i.test(m.name) ? (light ? '#6c747f' : '#4a515b') : (light ? '#b2b9c3' : '#68717c');
+    if (body !== (pal.cat[cat] || pal.cat.server)) {
+      const dk = lum(body) < 0.45;
+      p = Object.assign({}, pal, { ink: dk ? '#e8edf5' : '#10141a', sub: dk ? '#a2adbd' : '#2b3340', edge: dk ? '#07080a' : '#5a6370' });
+      if (dk) { p.port = '#090b0e'; p.portIn = '#2a313b'; p.slot = '#0e1115'; }
+      p.cat = Object.assign({}, pal.cat, { server: dk ? '#2e3239' : '#9aa2ad' });
+    }
+    return { body, pal: p };
+  }
+  const family = m => /s6860/i.test(m.id) ? 's6860' : /s5130s/i.test(m.id) ? 's5130s' : '';
+  /* serial number label with a small barcode */
+  function sticker(x, y, w, h, pal) {
+    let s = R(x, y, w, h, '#e9ecef', '', 0, 0.6, ' opacity=".9"');
+    for (let i = 0; i < Math.floor((w - 3) / 1.4); i++) s += R(x + 1.5 + i * 1.4, y + 1.2, (i % 3 === 0 ? 0.9 : 0.5), h - 2.4 - (h > 6 ? 2 : 0), '#111', '', 0, 0);
+    return s;
+  }
   const cols = b => Math.ceil(b.n / Math.max(1, b.r));
   const pw = b => { const c = cols(b), d = DIM[b.t] || DIM.rj45; return c * (d[0] + GAP) + (b.t === 'rj45' ? Math.floor((c - 1) / 4) * 2.5 : 0); };
   /* is the area (px, py, pw, ph) free enough for the port numbers? */
@@ -114,19 +139,20 @@
   }
 
   /* ---------- per category ---------- */
-  function netFront(m, W, H, pal, o, ctx) {
+  function netFront(m, W, H, pal, o, ctx, fam) {
     let s = '', brand = BRAND[m.vendor];
     const strip = 9, ax = EAR + 5, aw = W - 2 * EAR - 10, ay = strip, ah = H - strip - 3;
     const blocks = (m.front || []).filter(b => b.k === 'p');
     /* brand and LED module on the left */
-    const bw = 62;
+    const bw = fam === 's6860' ? 36 : 62;
     if (ah > 8) {
       s += R(ax, ay + 1, bw, ah - 2, '#000', '', 0, 1.5, ' opacity=".18"');
       if (brand) { s += R(ax + 3, ay + 3.2, 2.4, 5.8, brand.c, '', 0, 0.8); s += T(ax + 8, ay + 9, brand.t, 7, pal.ink, '', 700); }
       else s += T(ax + 4, ay + 9, 'SWITCH', 5, pal.sub, '', 600);
       const ly = ay + ah - 6;
-      ['PWR', 'SYS', 'ACT', 'MODE'].forEach((n, i) => { s += C(ax + 5 + i * 8.5, ly, 1.3, i < 2 ? pal.led : pal.sub, '', 0, i < 2 ? ' opacity=".8"' : ' opacity=".35"'); if (ctx.detail && ah > 20) s += T(ax + 5 + i * 8.5, ly + 4.2, n, 2.3, pal.sub, 'middle'); });
-      if (ah > 14) { s += R(ax + 40, ay + ah - 14, 12, 8.5, pal.port, pal.portIn, 0.5, 1) + R(ax + 42, ay + ah - 12, 8, 4.5, '#2b5b8a', '', 0, 0.5) + T(ax + 46, ay + ah - 15.5, 'CON', 2.5, pal.sub, 'middle'); if (ctx.collect) ctx.collect.push({ id: 'fcon', n: 0, t: 'con', x: ax + 40, y: ay + ah - 14, w: 12, h: 8.5, label: 'Console' }); }
+      (fam === 's6860' ? ['SYS'] : ['PWR', 'SYS', 'ACT', 'MODE']).forEach((n, i) => { s += C(ax + 5 + i * 8.5, ly, 1.3, i < 2 ? pal.led : pal.sub, '', 0, i < 2 ? ' opacity=".8"' : ' opacity=".35"'); if (ctx.detail && ah > 20) s += T(ax + 5 + i * 8.5, ly + 4.2, n, 2.3, pal.sub, 'middle'); });
+      if (fam === 's5130s' && ah > 14) { s += R(ax + 54, ay + ah - 12, 5, 3.4, pal.port, pal.portIn, 0.4, 0.8) + T(ax + 56.5, ay + ah - 13.4, 'USB', 2.2, pal.sub, 'middle'); }
+      if (fam !== 's6860' && ah > 14) { s += R(ax + 40, ay + ah - 14, 12, 8.5, pal.port, pal.portIn, 0.5, 1) + R(ax + 42, ay + ah - 12, 8, 4.5, '#2b5b8a', '', 0, 0.5) + T(ax + 46, ay + ah - 15.5, 'CON', 2.5, pal.sub, 'middle'); if (ctx.collect) ctx.collect.push({ id: 'fcon', n: 0, t: 'con', x: ax + 40, y: ay + ah - 14, w: 12, h: 8.5, label: 'Console' }); }
     }
     /* ports */
     const px = ax + bw + 5, pwid = aw - bw - 5;
@@ -139,9 +165,24 @@
     } else s += drawPorts(blocks, { x: px, y: ay, w: pwid, h: ah }, sc, pal, ctx);
     return s;
   }
-  function netRear(m, W, H, pal, o, ctx) {
+  function netRear(m, W, H, pal, o, ctx, fam) {
     let s = '';
     const ay = 7, ah = H - ay - 3, ax = EAR + 6, aw = W - 2 * EAR - 12;
+    if (fam === 's6860') { /* console, management and USB on the rear; four fan trays; two PSU slots */
+      let x = ax + aw; const mh = Math.min(ah, 36), my = ay + (ah - mh) / 2;
+      for (let i = 0; i < 2; i++) { x -= 78; s += psuMod(x, my, 78, mh, pal, i === 0); x -= 4; }
+      for (let i = 0; i < 4; i++) { x -= 28; s += fanMod(x, my, 28, mh, pal); x -= 2.5; }
+      const lx = ax + 2;
+      s += R(lx, ay, 118, ah, '#000', '', 0, 1.5, ' opacity=".18"');
+      const pr = (px, py, w, h, lab, id, t) => { s += R(px, py, w, h, pal.port, pal.portIn, 0.5, 1) + R(px + w * 0.2, py + h * 0.3, w * 0.6, h * 0.55, pal.portIn) + T(px + w / 2, py - 1, lab, 2.4, pal.sub, 'middle'); if (ctx.collect) ctx.collect.push({ id, n: 0, t, x: px, y: py, w, h, label: lab }); };
+      const py = ay + Math.max(3, ah * 0.28);
+      pr(lx + 4, py, 11, 9, 'CON', 'rcon', 'con'); pr(lx + 20, py, 11, 9, 'MGMT', 'rmgmt', 'rj45');
+      s += R(lx + 36, py, 12, 8, pal.port, pal.portIn, 0.5, 1) + T(lx + 42, py - 1, 'MGMT SFP', 2.2, pal.sub, 'middle');
+      s += R(lx + 53, py + 2, 6, 3.6, pal.port, pal.portIn, 0.4, 0.8) + R(lx + 63, py + 2, 8, 4, pal.port, pal.portIn, 0.4, 0.8) + T(lx + 56, py - 1, 'USB', 2.2, pal.sub, 'middle');
+      s += C(lx + 80, py + 3, 1.3, pal.led, '', 0, ' opacity=".8"') + T(lx + 80, py + 8, 'SYS', 2.2, pal.sub, 'middle') + C(lx + 90, py + 3, 1.1, pal.led, '', 0, ' opacity=".6"') + C(lx + 96, py + 3, 1.1, '#f4a23c', '', 0, ' opacity=".4"') + T(lx + 93, py + 8, 'MGMT', 2.2, pal.sub, 'middle');
+      s += sticker(lx + 4, ay + ah - 7, 22, 5, pal) + C(lx + 108, ay + ah - 4, 2, pal.sub, pal.edge, 0.4, ' opacity=".6"') + T(lx + 104, ay + ah - 6.5, 'GND', 2.2, pal.sub);
+      return s;
+    }
     const tray = m.air === 'tray' || m.psu >= 2, nP = Math.max(0, m.psu || 0);
     let x = ax + aw;
     const mh = Math.min(ah, 36);
@@ -155,31 +196,55 @@
     }
     if (x - ax > 20) s += vents(ax, ay + 3, Math.min(x - ax - 8, 180), ah - 6, pal, 3.2);
     s += C(ax + 6, ay + ah - 5, 2.2, pal.sub, pal.edge, 0.4, ' opacity=".6"') + T(ax + 11, ay + ah - 3.8, 'GND', 2.6, pal.sub);
+    if (ah > 12) s += sticker(ax + 24, ay + ah - 7, 24, 5, pal);
     return s;
   }
   function srvFront(m, W, H, pal, o, ctx) {
-    let s = '', brand = BRAND[m.vendor];
-    const ay = 9, ah = H - 12, ax = EAR + 3, aw = W - 2 * EAR - 6;
-    /* left control block */
-    const cw = 30; s += R(ax, ay, cw, ah, '#000', '', 0, 1.5, ' opacity=".2"');
-    s += C(ax + 7, ay + Math.min(9, ah * 0.3), 3, pal.port, pal.led, 0.7, '') + C(ax + 7, ay + Math.min(9, ah * 0.3), 0.9, pal.led, '', 0, ' opacity=".7"');
-    s += C(ax + 17, ay + Math.min(9, ah * 0.3), 1.2, pal.led, '', 0, ' opacity=".5"') + C(ax + 23, ay + Math.min(9, ah * 0.3), 1.2, '#4aa3ff', '', 0, ' opacity=".4"');
-    if (brand && ah > 18) s += T(ax + 3, ay + ah - 3, brand.t, 5.5, pal.sub, '', 700);
-    /* right block: USB + VGA */
-    const rw = 22; s += R(ax + aw - rw, ay, rw, ah, '#000', '', 0, 1.5, ' opacity=".2"');
-    for (let i = 0; i < 2; i++) s += R(ax + aw - rw + 4 + i * 8, ay + 4, 6.5, 3.4, '#1a5a9a', pal.portIn, 0.4, 0.5);
-    if (ah > 14) s += R(ax + aw - rw + 4, ay + ah - 8, 14, 5, '#2a4a8a', pal.portIn, 0.4, 1);
-    /* drive bays */
+    let s = '', brand = BRAND[m.vendor], h3 = m.vendor === 'H3C';
+    const ay = 9, ah = H - 12, ax = EAR + 3, aw = W - 2 * EAR - 6, dy = Math.min(9, ah * 0.3);
+    const cw = 30, rw = 22;
+    /* ear blocks. H3C UniServer: left = VGA, Type-C management, USB; right = power button, UID, health, system power, OCP LED. Others: power left, USB/VGA right. */
+    const ioBlock = (x) => {
+      let t = R(x, ay, rw, ah, '#000', '', 0, 1.5, ' opacity=".2"');
+      if (h3) {
+        t += R(x + 3, ay + 3, 7, 4.4, pal.port, pal.portIn, 0.4, 0.6) + T(x + 6.5, ay + 2.2, 'VGA', 2, pal.sub, 'middle');
+        t += R(x + 12, ay + 3.4, 6, 3, pal.port, pal.portIn, 0.4, 1.4) + T(x + 15, ay + 2.2, 'C', 2, pal.sub, 'middle');
+        if (ah > 14) t += R(x + 3, ay + ah - 8, 7, 4, '#1a5a9a', pal.portIn, 0.4, 0.5) + R(x + 12, ay + ah - 8, 7, 4, '#1a5a9a', pal.portIn, 0.4, 0.5);
+        if (ctx.collect) ctx.collect.push({ id: 'fmgmt', n: 0, t: 'usbc', x: x + 12, y: ay + 3.4, w: 6, h: 3, label: 'HDM Type-C' });
+      } else {
+        for (let i = 0; i < 2; i++) t += R(x + 4 + i * 8, ay + 4, 6.5, 3.4, '#1a5a9a', pal.portIn, 0.4, 0.5);
+        if (ah > 14) t += R(x + 4, ay + ah - 8, 14, 5, '#2a4a8a', pal.portIn, 0.4, 1);
+      }
+      return t;
+    };
+    const ctlBlock = (x) => {
+      let t = R(x, ay, cw, ah, '#000', '', 0, 1.5, ' opacity=".2"');
+      t += C(x + 7, ay + dy, 3, pal.port, pal.led, 0.7, '') + C(x + 7, ay + dy, 0.9, pal.led, '', 0, ' opacity=".7"');
+      t += C(x + 17, ay + dy, 1.2, pal.led, '', 0, ' opacity=".5"') + C(x + 23, ay + dy, 1.2, '#4aa3ff', '', 0, ' opacity=".4"');
+      if (h3 && ah > 16) t += C(x + 17, ay + dy + 6, 1.2, '#7cf4c7', '', 0, ' opacity=".5"') + C(x + 23, ay + dy + 6, 1.2, '#f4a23c', '', 0, ' opacity=".35"') + T(x + 7, ay + dy + 7.2, 'PWR', 1.9, pal.sub, 'middle') + T(x + 20, ay + dy + 14, 'UID  HLTH  OCP', 1.7, pal.sub, 'middle');
+      if (brand && ah > 18) t += T(x + 3, ay + ah - 3, brand.t, 5.5, pal.sub, '', 700);
+      return t;
+    };
+    s += h3 ? ioBlock(ax) + ctlBlock(ax + aw - cw) : ctlBlock(ax) + ioBlock(ax + aw - rw);
+    const lw = h3 ? rw : cw, rwid = h3 ? cw : rw;
+    const bx = ax + lw + 3, bw = aw - lw - rwid - 6;
     const bays = (m.front || []).filter(b => b.k === 'bay')[0];
-    const bx = ax + cw + 3, bw = aw - cw - rw - 6;
+    if (h3 && RR.art.bezel) { /* intelligent security bezel: perforated black grille with the logo */
+      s += R(bx, ay, bw, ah, '#15171a', pal.edge, 0.6, 2);
+      for (let yy = ay + 2; yy < ay + ah - 1.5; yy += 2.4) for (let xx = bx + 3; xx < bx + bw - 2; xx += 2.4) s += C(xx, yy, 0.62, '#050607', '', 0);
+      if (brand) s += R(bx + bw / 2 - 17, ay + ah / 2 - 5, 3, 10, brand.c, '', 0, 0.8) + T(bx + bw / 2 - 12, ay + ah / 2 + 3.2, brand.t, 9, '#e8edf5', '', 700);
+      return s;
+    }
     if (bays) {
       const c = bays.c, rows = Math.ceil(bays.n / c), g = 1.6, cw2 = (bw - (c - 1) * g) / c, ch = Math.min((ah - (rows - 1) * g) / rows, 30), oy = ay + (ah - (rows * ch + (rows - 1) * g)) / 2;
       for (let i = 0; i < bays.n; i++) {
         const cc = i % c, rr = Math.floor(i / c), x = bx + cc * (cw2 + g), y = oy + rr * (ch + g);
-        s += R(x, y, cw2, ch, pal.port, pal.portIn, 0.5, 1) + R(x + 1, y + 1, cw2 - 2, ch - 2, pal.cat.server, '', 0, 0.6, ' opacity=".45"');
+        s += R(x, y, cw2, ch, pal.port, pal.portIn, 0.5, 1) + R(x + 1, y + 1, cw2 - 2, ch - 2, pal.cat.server, '', 0, 0.6, ' opacity=".55"');
         if (ctx.detail) s += vents(x + 2, y + 2.2, cw2 * 0.58, Math.max(1, ch - 4.4), pal, 2.2);
+        if (ctx.detail && ch > 8) s += R(x + 1.6, y + ch - 3, 5, 1.4, '#e9ecef', '', 0, 0.3, ' opacity=".5"');
         s += R(x + cw2 - 7, y + ch * 0.2, 5, ch * 0.6, pal.portIn, pal.edge, 0.4, 1) + C(x + cw2 - 3.5, y + ch * 0.32, 0.8, pal.led, '', 0, ' opacity=".7"') + C(x + cw2 - 3.5, y + ch * 0.68, 0.8, '#f4a23c', '', 0, ' opacity=".35"');
       }
+      if (ctx.detail && ah > 10) s += sticker(bx + bw - 24, ay + ah + 0.6, 22, 2.2, pal);
     } else s += vents(bx, ay + 2, bw, ah - 4, pal, 3);
     return s;
   }
@@ -195,7 +260,7 @@
     s += R(ix, iy, 126, ih, '#000', '', 0, 1.5, ' opacity=".18"');
     let px = ix + 4;
     s += drawPorts(lom, { x: px, y: iy + (ih > 30 ? 2 : 0), w: 100, h: Math.min(ih, 34) }, sc, pal, ctx);
-    if (ih > 18) { const mgx = ix + 4; s += R(mgx, iy + ih - 13, 13, 11, pal.port, '#4a8fd0', 0.6, 1) + T(mgx + 6.5, iy + ih - 14.4, 'MGMT', 2.4, pal.sub, 'middle'); if (ctx.collect) ctx.collect.push({ id: 'rmgmt', n: 0, t: 'rj45', x: mgx, y: iy + ih - 13, w: 13, h: 11, label: 'MGMT' }); }
+    if (ih > 18) { const mgx = ix + 4; s += R(mgx, iy + ih - 13, 13, 11, pal.port, '#4a8fd0', 0.6, 1) + T(mgx + 6.5, iy + ih - 14.4, m.vendor === 'H3C' ? 'HDM' : 'MGMT', 2.4, pal.sub, 'middle'); if (ctx.collect) ctx.collect.push({ id: 'rmgmt', n: 0, t: 'rj45', x: mgx, y: iy + ih - 13, w: 13, h: 11, label: 'MGMT' }); }
     s += R(ix + 100, iy + 3, 6.5, 3.4, '#1a5a9a', pal.portIn, 0.4, 0.5) + R(ix + 109, iy + 3, 6.5, 3.4, '#1a5a9a', pal.portIn, 0.4, 0.5);
     if (ih > 14) s += R(ix + 100, iy + ih - 9, 15, 6, '#2a4a8a', pal.portIn, 0.4, 1);
     ix += 130;
@@ -203,7 +268,7 @@
     const room = x - ix - 2, slots = Math.max(0, Math.min(m.u === 1 ? 2 : m.u === 2 ? 3 : 5, Math.floor(room / 40)));
     if (slots) {
       const sw = Math.min(70, room / slots - 2);
-      for (let i = 0; i < slots; i++) { const sx = ix + i * (sw + 2); s += R(sx, iy, sw, ih, pal.portIn, pal.edge, 0.5, 1) + vents(sx + 3, iy + ih * 0.3, sw - 6, ih * 0.4, pal, 3) + R(sx + 1.5, iy + 1.5, 3, 1.4, pal.sub, '', 0, 0.5, ' opacity=".4"'); }
+      for (let i = 0; i < slots; i++) { const sx = ix + i * (sw + 2); s += R(sx, iy, sw, ih, pal.portIn, pal.edge, 0.5, 1) + vents(sx + 3, iy + ih * 0.3, sw - 6, ih * 0.4, pal, 3) + R(sx + 1.5, iy + 1.5, 3, 1.4, pal.sub, '', 0, 0.5, ' opacity=".4"') + (ctx.detail ? T(sx + sw / 2, iy + ih - 2, (m.vendor === 'H3C' ? 'RISER ' : 'PCIe ') + (i + 1), 2.3, pal.sub, 'middle') : ''); }
     }
     return s;
   }
@@ -272,16 +337,17 @@
     o = o || {};
     const cat = m.cat;
     if (['switch', 'router', 'firewall', 'server', 'storage', 'patch', 'pdu', 'ups', 'kvm', 'manager', 'blank'].indexOf(cat) < 0) return basic(m, faceKey, W, H, pal, o);
-    const detail = !o.compact, body = pal.cat[cat] || pal.cat.server, collect = o.collect || null;
+    const detail = !o.compact, lk = look(m, pal), body = lk.body, collect = o.collect || null; pal = lk.pal;
     const ctx = { num: 0, face: faceKey === 'rear' ? 'r' : 'f', collect, detail, numbers: detail && H >= UMM * 0.95 };
     let s = chassis(W, H, body, pal) + ear(W, H, pal);
+    if (RR.art.catTag && cat !== 'blank' && TAG[cat]) s += R(EAR, 0, W - 2 * EAR, Math.min(1.8, H * 0.08), TAG[cat], '', 0, 0, ' opacity=".85"');
     if (cat === 'blank') return s + R(EAR + 8, H / 2 - 0.4, W - 2 * EAR - 16, 0.8, pal.edge, '', 0, 0, ' opacity=".5"');
     /* hostname label */
     const lab = o.label || m.name, fs = Math.min(7, Math.max(4.5, H * 0.16)), maxc = Math.floor((W - 2 * EAR - 16) / (fs * 0.62)), shown = lab.length > maxc ? lab.slice(0, Math.max(1, maxc - 1)) + '…' : lab;
     s += T(EAR + 5, fs + 2.2, shown, fs, pal.ink, '', 600);
     if (o.status) s += C(W - EAR - 6, fs / 2 + 3, 2.4, o.status === 'installed' ? pal.led : pal.plan);
-    const rear = faceKeyIsRear(faceKey);
-    if (cat === 'switch' || cat === 'router' || cat === 'firewall') s += rear ? netRear(m, W, H, pal, o, ctx) : netFront(m, W, H, pal, o, ctx);
+    const rear = faceKeyIsRear(faceKey), fam = family(m);
+    if (cat === 'switch' || cat === 'router' || cat === 'firewall') s += rear ? netRear(m, W, H, pal, o, ctx, fam) : netFront(m, W, H, pal, o, ctx, fam);
     else if (cat === 'server') s += rear ? srvRear(m, W, H, pal, o, ctx) : srvFront(m, W, H, pal, o, ctx);
     else if (cat === 'storage') s += rear ? storRear(m, W, H, pal, o, ctx) : srvFront(m, W, H, pal, o, ctx);
     else if (cat === 'patch') s += rear ? '' : patch(m, W, H, pal, o, ctx);
