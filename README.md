@@ -2,7 +2,7 @@
 
 Free network tools for engineers — **https://configlabs.online**
 
-- **Config Builder** — generate H3C Comware and Cisco IOS / IOS-XE / NX-OS configs from a form (18 templates).
+- **Config Builder** — generate H3C Comware, Cisco IOS / IOS-XE / NX-OS and Ruijie RGOS (switch, router, WLAN AC + fit AP) configs from a form (27 templates).
 - **WiFi Planner** — floor-plan heatmaps (signal, SINR, coverage), field calibration and Word reports.
 
 ## Stack
@@ -16,4 +16,4 @@ The site version lives in one place: `site.js` (`window.CL`). Pages and the API 
 `DATABASE_URL`, `SESSION_SECRET`, `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
 
 ## License
-[MIT](LICENSE) © 2026 Naufal Budiman. H3C, Comware and Cisco are trademarks of their owners; this project is independent.
+[MIT](LICENSE) © 2026 Naufal Budiman. H3C, Comware, Cisco and Ruijie are trademarks of their owners; this project is independent.

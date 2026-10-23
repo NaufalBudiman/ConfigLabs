@@ -37,7 +37,7 @@
   --surface-hover:#222831;--border:#232a34;--border-strong:#2e3744;
   --text:#e6e9ee;--text-dim:#9aa3af;--text-muted:#5b6472;
   --accent:#7cf4c7;--accent-2:#a8b5ff;--accent-3:#ffb86b;
-  --accent-cisco:#a8b5ff;--accent-h3c:#7cf4c7;
+  --accent-cisco:#a8b5ff;--accent-h3c:#7cf4c7;--accent-ruijie:#ff9aa8;
   --danger:#ff6478;--success:#7cf4c7;--warning:#ffc857;
   --glow:0 0 40px rgba(124,244,199,.15);
   --sans:'Geist',system-ui,sans-serif;
@@ -51,7 +51,7 @@
   --surface-hover:#ebe6d8;--border:#e4dfd0;--border-strong:#d0c9b5;
   --text:#1a1a1a;--text-dim:#5a5a5a;--text-muted:#8a8a8a;
   --accent:#0f766e;--accent-2:#4f46e5;--accent-3:#ea580c;
-  --accent-cisco:#4f46e5;--accent-h3c:#0f766e;
+  --accent-cisco:#4f46e5;--accent-h3c:#0f766e;--accent-ruijie:#be123c;
   --glow:0 4px 20px rgba(15,118,110,.08)
 }
 
@@ -102,6 +102,7 @@ nav{position:sticky;top:0;z-index:50;padding:16px 32px;background:color-mix(in s
 .vendor-pill{padding:10px 18px;border-radius:999px;border:1.5px solid var(--border);background:var(--surface);font-size:13px;display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);color:var(--text-dim);transition:all .2s var(--ease);cursor:pointer;font-weight:500}
 .vendor-pill:not(.disabled):hover{border-color:var(--border-strong);color:var(--text);transform:translateY(-1px)}
 .vendor-pill.active{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface));box-shadow:0 4px 16px color-mix(in srgb,var(--accent) 20%,transparent)}
+.vendor-pill[data-vendor="ruijie"].active{border-color:var(--accent-ruijie);color:var(--accent-ruijie);background:color-mix(in srgb,var(--accent-ruijie) 12%,var(--surface))}
 .vendor-pill[data-vendor="cisco"].active{border-color:var(--accent-cisco);color:var(--accent-cisco);background:color-mix(in srgb,var(--accent-cisco) 12%,var(--surface))}
 .vendor-pill.disabled{opacity:.45;cursor:not-allowed}
 .vendor-pill .soon-badge{font-size:9px;padding:2px 7px;border-radius:99px;background:var(--surface-hover);color:var(--text-muted);border:1px solid var(--border);letter-spacing:.5px;font-weight:600}
@@ -113,6 +114,8 @@ nav{position:sticky;top:0;z-index:50;padding:16px 32px;background:color-mix(in s
 .os-btn{padding:12px 20px;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;cursor:pointer;transition:all .2s var(--ease);color:var(--text-dim);font-family:var(--sans);font-size:13px;font-weight:500;display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:140px;text-align:left}
 .os-btn:hover{border-color:var(--border-strong);color:var(--text);transform:translateY(-1px)}
 .os-btn.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--bg));color:var(--text)}
+.os-btn[data-vendor="ruijie"].active{border-color:var(--accent-ruijie);background:color-mix(in srgb,var(--accent-ruijie) 10%,var(--bg))}
+.os-btn[data-vendor="ruijie"] .os-check{color:var(--accent-ruijie)}
 .os-btn[data-vendor="cisco"].active{border-color:var(--accent-cisco);background:color-mix(in srgb,var(--accent-cisco) 10%,var(--bg))}
 .os-btn .os-name{font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px}
 .os-btn .os-check{color:var(--accent);opacity:0;transition:opacity .2s}
@@ -149,6 +152,15 @@ nav{position:sticky;top:0;z-index:50;padding:16px 32px;background:color-mix(in s
 .panel-title .num{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:6px;background:var(--bg);color:var(--text-dim);border:1px solid var(--border)}
 .panel-title .vendor-label{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:99px;background:var(--accent);color:var(--bg);font-weight:700;letter-spacing:.5px}
 .panel-title .vendor-label.cisco{background:var(--accent-cisco)}
+.panel-title .vendor-label.ruijie{background:var(--accent-ruijie)}
+/* Ruijie-only controls */
+.rj-only,.rj-l2-only,.rj-rt-only{display:none}
+body.is-ruijie .rj-only{display:block}
+body.rj-l2 .rj-l2-only{display:block}
+body.rj-router .rj-rt-only{display:block}
+body.rj-router .i-l2opts{display:none}
+body.rj-router .mode-seg button[data-m="access"],body.rj-router .mode-seg button[data-m="trunk"],body.rj-router .mode-seg button[data-m="hybrid"]{display:none}
+.rj-sub{font-family:var(--mono);font-size:11px;color:var(--text-muted);margin:12px 0 6px;letter-spacing:.5px;text-transform:uppercase}
 
 /* Tabs */
 .tabs{display:flex;gap:4px;padding:12px 12px 0;background:var(--surface-2);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:thin}
@@ -406,7 +418,7 @@ footer{margin-top:80px;padding:40px 0 30px;border-top:1px solid var(--border)}
 
   <!-- HERO -->
   <section class="hero">
-    <div class="hero-tag"><span class="live"></span> Config Builder · H3C + Cisco</div>
+    <div class="hero-tag"><span class="live"></span> Config Builder · H3C + Cisco + Ruijie</div>
     <h1>Network configuration,<br><span class="serif">without the pain.</span></h1>
     <p>Pick a vendor, fill in the form, get a clean config. H3C to NX-OS, VLAN to OSPF. Fewer typos, less guesswork.</p>
     <div class="vendor-pills" id="vendor-pills"></div>
@@ -441,13 +453,15 @@ footer{margin-top:80px;padding:40px 0 30px;border-top:1px solid var(--border)}
 
       <div class="tabs">
         <button class="tab active" data-tab="system">System</button>
-        <button class="tab" data-tab="vlan">VLAN <span class="badge" id="b-vlan">0</span></button>
-        <button class="tab" data-tab="svi">VLAN-int <span class="badge" id="b-svi">0</span></button>
+        <button class="tab" data-tab="vlan" id="tab-vlan">VLAN <span class="badge" id="b-vlan">0</span></button>
+        <button class="tab" data-tab="svi" id="tab-svi">VLAN-int <span class="badge" id="b-svi">0</span></button>
         <button class="tab" data-tab="intf">Interfaces <span class="badge" id="b-intf">0</span></button>
         <button class="tab" data-tab="dhcp">DHCP <span class="badge" id="b-dhcp">0</span></button>
         <button class="tab" data-tab="route">Routing <span class="badge" id="b-route">0</span></button>
         <button class="tab" data-tab="ospf">OSPF</button>
         <button class="tab" data-tab="acl">ACL <span class="badge" id="b-acl">0</span></button>
+        <button class="tab" data-tab="nat" id="tab-nat" style="display:none">NAT <span class="badge" id="b-nat">0</span></button>
+        <button class="tab" data-tab="wlan" id="tab-wlan" style="display:none">WLAN <span class="badge" id="b-wlan">0</span></button>
         <button class="tab" data-tab="pbr" id="tab-pbr">ISP / PBR <span class="badge" id="b-pbr">0</span></button>
       </div>
 
@@ -461,6 +475,23 @@ footer{margin-top:80px;padding:40px 0 30px;border-top:1px solid var(--border)}
             <div class="field"><label>Timezone</label><input id="sys-tz" placeholder="JKT 07:00:00"></div>
           </div>
           <div class="field"><label>Login Banner</label><input id="sys-banner" placeholder="Authorized users only"></div>
+          <div class="rj-only">
+            <div class="rj-sub">Ruijie management</div>
+            <div class="field-row">
+              <div class="field"><label>Admin user</label><input id="sys-user" placeholder="admin" autocomplete="off"></div>
+              <div class="field"><label>Admin password</label><input id="sys-pass" placeholder="use a strong one" autocomplete="off"></div>
+            </div>
+            <label class="check" style="margin-bottom:10px"><input type="checkbox" id="sys-ssh"> Enable SSH (v2) on VTY lines</label>
+            <div class="field-row">
+              <div class="field"><label>SNMP community <span class="hint">read-only</span></label><input id="sys-snmp" placeholder="CKI-RO" autocomplete="off"></div>
+              <div class="field"><label>SNMP trap host</label><input id="sys-snmphost" placeholder="10.0.0.50"></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label>SNMP location</label><input id="sys-snmploc" placeholder="Server Room"></div>
+              <div class="field"><label>SNMP contact</label><input id="sys-snmpcontact" placeholder="noc@company.com"></div>
+            </div>
+            <div class="field"><label>Syslog server</label><input id="sys-syslog" placeholder="10.0.0.51"></div>
+          </div>
         </div>
 
         <!-- ==================== VLAN ==================== -->
@@ -510,10 +541,35 @@ footer{margin-top:80px;padding:40px 0 30px;border-top:1px solid var(--border)}
 
         <!-- ==================== ACL ==================== -->
         <div class="tab-panel" id="pane-acl">
+          <div class="info-banner rj-only"><span class="icon">🛡️</span><span>Ruijie: ACL 1-99 / 1300-1999 = standard (source only), 100-199 / 2000-2699 = extended. Apply them with the "ACL in/out" fields on a VLAN-int or interface.</span></div>
           <div class="repeater" id="rep-acls"></div>
           <button class="btn-add" onclick="addAcl()">＋ Add ACL</button>
         </div>
 
+
+        <!-- ==================== NAT (Ruijie router) ==================== -->
+        <div class="tab-panel" id="pane-nat">
+          <div class="info-banner"><span class="icon">🌐</span><span>Source NAT (PAT) for internet access. Set the <strong style="color:var(--text)">outside interface</strong> and the inside networks; mark the LAN interfaces as <em>NAT inside</em> on the Interfaces tab.</span></div>
+          <div class="field-row">
+            <div class="field"><label>Outside interface <span class="hint">WAN</span></label><input id="nat-out" placeholder="GigabitEthernet 0/0"></div>
+            <div class="field"><label>NAT ACL number <span class="hint">1-99</span></label><input id="nat-acl" placeholder="10"></div>
+          </div>
+          <label style="margin-top:8px">Inside networks <span class="hint">allowed to be translated</span></label>
+          <div class="repeater" id="rep-nat-nets"></div>
+          <button class="btn-add" onclick="addNatNet()">＋ Add Network</button>
+        </div>
+
+        <!-- ==================== WLAN (Ruijie AC + fit AP) ==================== -->
+        <div class="tab-panel" id="pane-wlan">
+          <div class="info-banner"><span class="icon">📶</span><span>Ruijie AC + fit AP. Give the AP a VLAN with DHCP <strong style="color:var(--text)">option 138</strong> (DHCP tab, "AC IP") so it can find the AC, then add SSIDs here. WPA2-PSK only for now.</span></div>
+          <div class="field-row">
+            <div class="field"><label>AC IP <span class="hint">CAPWAP control address</span></label><input id="wl-acip" placeholder="10.10.10.1"></div>
+            <div class="field"><label>AP group</label><input id="wl-group" placeholder="default"></div>
+          </div>
+          <label style="margin-top:8px">SSIDs</label>
+          <div class="repeater" id="rep-ssids"></div>
+          <button class="btn-add" onclick="addSsid()">＋ Add SSID</button>
+        </div>
 
         <!-- ==================== ISP / PBR (H3C Comware) ==================== -->
         <div class="tab-panel" id="pane-pbr">
@@ -602,6 +658,7 @@ footer{margin-top:80px;padding:40px 0 30px;border-top:1px solid var(--border)}
         <h4>Vendors</h4>
         <a href="https://www.h3c.com" target="_blank" rel="noopener noreferrer">H3C Official</a>
         <a href="https://www.cisco.com" target="_blank" rel="noopener noreferrer">Cisco Official</a>
+        <a href="https://www.ruijienetworks.com" target="_blank" rel="noopener noreferrer">Ruijie Official</a>
         <a href="https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/" target="_blank" rel="noopener noreferrer">IOS Docs</a>
         <a href="https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/" target="_blank" rel="noopener noreferrer">NX-OS Docs</a>
       </div>
@@ -734,8 +791,8 @@ async function loadVendors() {
 
 function renderVendorPills() {
   const c = document.getElementById('vendor-pills');
-  const ORDER = ['h3c','cisco','huawei','juniper','arista','mikrotik'];
-  const EMOJIS = {h3c:'🟢',cisco:'🔵',huawei:'🟡',juniper:'🟠',arista:'🔴',mikrotik:'⚪'};
+  const ORDER = ['h3c','cisco','ruijie','huawei','juniper','arista','mikrotik'];
+  const EMOJIS = {h3c:'🟢',cisco:'🔵',ruijie:'🟣',huawei:'🟡',juniper:'🟠',arista:'🔴',mikrotik:'⚪'};
   c.innerHTML = ORDER.map(k => {
     const v = state.vendors[k]; if (!v) return '';
     const live = v.status === 'available';
@@ -775,14 +832,24 @@ function updateVendorLabel() {
   const os = v.os_list.find(o => o.id === state.os);
   const lbl = document.getElementById('active-vendor-label');
   lbl.textContent = `${v.name} · ${os ? os.name : ''}`.toUpperCase();
-  lbl.className = 'vendor-label' + (state.vendor === 'cisco' ? ' cisco' : '');
+  lbl.className = 'vendor-label' + (state.vendor === 'cisco' ? ' cisco' : state.vendor === 'ruijie' ? ' ruijie' : '');
 }
 
+const isRj = () => state.vendor === 'ruijie';
+function updateRuijieUI() {
+  const rj = isRj(), rt = rj && state.os === 'rgos_router', wl = rj && state.os === 'rgos_wlan';
+  document.body.classList.toggle('is-ruijie', rj);
+  document.body.classList.toggle('rj-router', rt);
+  document.body.classList.toggle('rj-l2', rj && !rt);
+  const show = (id, on) => { const t = document.getElementById(id); if (!t) return; t.style.display = on ? '' : 'none'; if (!on && t.classList.contains('active')) document.querySelector('.tab[data-tab="system"]').click(); };
+  show('tab-nat', rt); show('tab-wlan', wl); show('tab-vlan', !rt); show('tab-svi', !rt);
+}
 function updateHints() {
-  updatePbrTab();
+  updatePbrTab(); updateRuijieUI();
   document.getElementById('hint-hostname').textContent = state.vendor === 'h3c' ? 'sysname' : 'hostname';
   const extra = document.getElementById('svi-hint-extra');
   if (state.vendor === 'h3c') extra.textContent = 'H3C: link pool via "Apply Pool".';
+  else if (isRj()) extra.textContent = 'Ruijie: gateway redundancy with VRRP; ACLs apply with ACL in/out.';
   else if (state.os === 'nxos') extra.textContent = 'NX-OS: use prefix notation (10.0.0.1/24) for IPs.';
   else extra.textContent = 'Cisco: use "ip helper-address" for DHCP relay.';
 }
@@ -810,6 +877,12 @@ function makeItem(title, html) {
   return div;
 }
 
+function rjAclHtml(d, pfx) {
+  return `<div class="field-row"><div class="field"><label>ACL in <span class="hint">number</span></label><input class="${pfx}-acl-in" value="${escA(d.acl_in||'')}" placeholder="100"></div><div class="field"><label>ACL out <span class="hint">number</span></label><input class="${pfx}-acl-out" value="${escA(d.acl_out||'')}" placeholder=""></div></div>`;
+}
+function rjVrrpHtml(d, pfx) {
+  return `<div class="field-row-3"><div class="field"><label>VRRP group</label><input class="${pfx}-vrrp-id" value="${escA(d.vrrp_id||'')}" placeholder="10"></div><div class="field"><label>Virtual IP</label><input class="${pfx}-vrrp-ip" value="${escA(d.vrrp_ip||'')}" placeholder="10.10.10.1"></div><div class="field"><label>Priority</label><input class="${pfx}-vrrp-prio" value="${escA(d.vrrp_prio||'')}" placeholder="120"></div></div>`;
+}
 function addVlan(data = {}) {
   const html = `<div class="field-row-3">
     <div class="field"><label>VLAN ID</label><input class="v-id" value="${escA(data.vlan||'')}" placeholder="10" oninput="refreshSviDropdowns()"></div>
@@ -838,6 +911,7 @@ function addSvi(data = {}) {
   </div>
   <div class="field s-server-wrap" style="display:${mode==='server'?'block':'none'}"><label>Apply Pool</label><select class="s-pool" data-sel="${escA(data.dhcp_apply_pool||'')}"><option value="">— select pool —</option></select></div>
   <div class="field s-relay-wrap"  style="display:${mode==='relay' ?'block':'none'}"><label>Relay IP</label><input class="s-relay" value="${escA(data.dhcp_relay||'')}" placeholder="10.10.100.10"></div>
+  <div class="rj-only"><div class="rj-sub">Ruijie · VRRP + ACL</div>${rjVrrpHtml(data,'s')}${rjAclHtml(data,'s')}</div>
   <label class="check" style="margin-top:8px"><input type="checkbox" class="s-shut" ${data.shutdown?'checked':''}> Shutdown</label>`;
   const el = makeItem('VLAN-interface', html);
   document.getElementById('rep-svis').appendChild(el);
@@ -870,8 +944,8 @@ function refreshSviDropdowns() {
 }
 
 function addIntf(data = {}) {
-  const mode = data.mode || 'access';
-  const ifEx = state.vendor==='cisco' && state.os==='nxos' ? 'Ethernet1/1' : state.vendor==='cisco' ? 'GigabitEthernet0/1' : 'GigabitEthernet1/0/1';
+  const mode = data.mode || (isRj() && state.os === 'rgos_router' ? 'routed' : 'access');
+  const ifEx = isRj() ? 'GigabitEthernet 0/1' : state.vendor==='cisco' && state.os==='nxos' ? 'Ethernet1/1' : state.vendor==='cisco' ? 'GigabitEthernet0/1' : 'GigabitEthernet1/0/1';
   const html = `<div class="field-row">
     <div class="field"><label>Interface</label><input class="i-name" value="${escA(data.interface||'')}" placeholder="${ifEx}"></div>
     <div class="field"><label>Description</label><input class="i-desc" value="${escA(data.description||'')}" placeholder="Uplink"></div>
@@ -881,6 +955,7 @@ function addIntf(data = {}) {
       <button type="button" data-m="access" class="${mode==='access'?'active':''}">Access</button>
       <button type="button" data-m="trunk"  class="${mode==='trunk' ?'active':''}">Trunk</button>
       <button type="button" data-m="hybrid" class="${mode==='hybrid'?'active':''}">Hybrid</button>
+      <button type="button" data-m="routed" class="rj-only ${mode==='routed'?'active':''}">Routed L3</button>
     </div>
     <input type="hidden" class="i-mode" value="${mode}">
   </div>
@@ -891,7 +966,16 @@ function addIntf(data = {}) {
   <div class="field i-hybrid-w" style="display:${mode==='hybrid'?'block':'none'}">
     <div class="field-row"><div class="field"><label>Untagged</label><input class="i-untagged" value="${escA(data.untagged||'')}" placeholder="10"></div><div class="field"><label>Tagged</label><input class="i-tagged" value="${escA(data.tagged||'')}" placeholder="20 30"></div></div>
   </div>
-  <div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap">
+  <div class="i-routed-w" style="display:${mode==='routed'?'block':'none'}">
+    <div class="field-row"><div class="field"><label>IP / CIDR <span class="hint">or "dhcp"</span></label><input class="i-ip" value="${escA(data.ip||'')}" placeholder="192.168.1.1/24"></div><div class="field"><label>NAT role</label><select class="i-nat"><option value="">none</option><option value="inside" ${data.nat==='inside'?'selected':''}>inside (LAN)</option><option value="outside" ${data.nat==='outside'?'selected':''}>outside (WAN)</option></select></div></div>
+    <div class="field-row"><div class="field"><label>Dot1Q VLAN <span class="hint">sub-interface only</span></label><input class="i-dot1q" value="${escA(data.dot1q||'')}" placeholder="10"></div><div class="field"><label>DHCP relay</label><input class="i-relay" value="${escA(data.dhcp_relay||'')}" placeholder="10.10.20.10"></div></div>
+    ${rjVrrpHtml(data,'i')}
+  </div>
+  <div class="rj-only"><div class="rj-sub">Ruijie · LAG + ACL</div>
+    <div class="rj-l2-only" style="margin-bottom:8px"><div class="field-row"><div class="field"><label>Port-group (LAG) <span class="hint">AggregatePort id</span></label><input class="i-lag" value="${escA(data.lag||'')}" placeholder="1"></div><div class="field"><label>LAG mode</label><select class="i-lag-mode"><option value="static">static</option><option value="active" ${data.lag_mode==='active'?'selected':''}>LACP active</option><option value="passive" ${data.lag_mode==='passive'?'selected':''}>LACP passive</option></select></div></div></div>
+    ${rjAclHtml(data,'i')}
+  </div>
+  <div class="i-l2opts" style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap">
     <label class="check"><input type="checkbox" class="i-edge" ${data.stp_edge?'checked':''}> STP Edge/PortFast</label>
     <label class="check"><input type="checkbox" class="i-poe"  ${data.poe?'checked':''}>      PoE</label>
     <label class="check"><input type="checkbox" class="i-shut" ${data.shutdown?'checked':''}>  Shutdown</label>
@@ -906,6 +990,7 @@ function addIntf(data = {}) {
       el.querySelector('.i-access-w').style.display = b.dataset.m === 'access' ? 'block' : 'none';
       el.querySelector('.i-trunk-w').style.display  = b.dataset.m === 'trunk'  ? 'block' : 'none';
       el.querySelector('.i-hybrid-w').style.display = b.dataset.m === 'hybrid' ? 'block' : 'none';
+      el.querySelector('.i-routed-w').style.display = b.dataset.m === 'routed' ? 'block' : 'none';
     });
   });
   updateBadges();
@@ -954,6 +1039,7 @@ function addDhcp(data = {}) {
     <div class="field"><label>Domain</label><input class="d-domain" value="${escA(data.domain||'')}" placeholder="company.local"></div>
   </div>
   <div class="field"><label>Excluded IPs <span class="hint">space-separated</span></label><input class="d-forbidden" value="${forbidden}" placeholder="10.10.10.1 10.10.10.2" oninput="dhcpInfo(this.closest('.repeater-item'))"></div>
+  <div class="field rj-only"><label>AC IP <span class="hint">option 138, for fit APs</span></label><input class="d-acip" value="${escA(data.ac_ip||'')}" placeholder="10.10.10.1"></div>
   <div class="d-info" style="font-family:var(--mono);font-size:12px;color:var(--accent);min-height:18px;margin-top:2px"></div>`;
   { const it = makeItem('DHCP Pool', html); document.getElementById('rep-dhcp').appendChild(it); dhcpInfo(it); }
   updateBadges(); refreshSviDropdowns();
@@ -999,7 +1085,7 @@ function addAcl(data = {}) {
   const rules = (data.rules && data.rules.length) ? data.rules : [{}];
   const rowHtml = aclRowHtml;
   const html = `<div class="field-row">
-    <div class="field"><label>ACL Number</label><input class="a-num" value="${escA(data.acl_number||'3000')}" placeholder="3000"></div>
+    <div class="field"><label>ACL Number</label><input class="a-num" value="${escA(data.acl_number||(isRj()?'100':'3000'))}" placeholder="${isRj()?'100':'3000'}"></div>
     <div class="field"><label>Description</label><input class="a-desc" value="${escA(data.description||'')}" placeholder="ACL-NAME"></div>
   </div>
   <label>Rules <span class="hint">id · action · proto · source · wildcard · destination (optional, ACL 3000+)</span></label>
@@ -1015,6 +1101,20 @@ function addAclRow(btn) {
   btn.previousElementSibling.appendChild(t.firstElementChild);
 }
 
+
+function addNatNet(data = {}) {
+  const html = `<div class="field-row"><div class="field"><label>Network</label><input class="n-net" value="${escA(data.network||'')}" placeholder="192.168.1.0"></div><div class="field"><label>CIDR</label><select class="n-cidr">${cidrOptions(data.cidr)}</select></div></div>`;
+  document.getElementById('rep-nat-nets').appendChild(makeItem('Inside network', html));
+  updateBadges();
+}
+function addSsid(data = {}) {
+  const n = document.querySelectorAll('#rep-ssids .repeater-item').length + 1;
+  const sec = data.security || 'psk';
+  const html = `<div class="field-row-3"><div class="field"><label>WLAN ID</label><input class="w-id" value="${escA(data.id||n)}" placeholder="1"></div><div class="field"><label>SSID name</label><input class="w-name" value="${escA(data.name||'')}" placeholder="CKI-WiFi"></div><div class="field"><label>VLAN</label><input class="w-vlan" value="${escA(data.vlan||'')}" placeholder="20"></div></div>
+  <div class="field-row"><div class="field"><label>Security</label><select class="w-sec"><option value="psk" ${sec==='psk'?'selected':''}>WPA2-PSK (AES)</option><option value="open" ${sec==='open'?'selected':''}>Open</option></select></div><div class="field"><label>Password <span class="hint">8-63 chars</span></label><input class="w-pass" value="${escA(data.password||'')}" placeholder="min 8 characters" autocomplete="off"></div></div>`;
+  document.getElementById('rep-ssids').appendChild(makeItem('SSID', html));
+  updateBadges();
+}
 
 function addIsp(data = {}) {
   if (document.querySelectorAll('#rep-isps .repeater-item').length >= 5) { toast('Max 5 ISPs', true); return; }
@@ -1098,7 +1198,7 @@ function updatePbrTab() {
 }
 
 function updateBadges() {
-  const MAP = {vlan:'rep-vlans',svi:'rep-svis',intf:'rep-intfs',dhcp:'rep-dhcp',route:'rep-routes',acl:'rep-acls',pbr:'rep-isps'};
+  const MAP = {nat:'rep-nat-nets',wlan:'rep-ssids',vlan:'rep-vlans',svi:'rep-svis',intf:'rep-intfs',dhcp:'rep-dhcp',route:'rep-routes',acl:'rep-acls',pbr:'rep-isps'};
   for (const [k, v] of Object.entries(MAP)) {
     const el = document.getElementById('b-' + k);
     if (el) el.textContent = document.getElementById(v).children.length;
@@ -1112,6 +1212,16 @@ function collectData() {
   if (val('sys-ntp'))      sys.ntp      = val('sys-ntp');
   if (val('sys-tz'))       sys.timezone = val('sys-tz');
   if (val('sys-banner'))   sys.banner   = val('sys-banner');
+  if (isRj()) {
+    if (val('sys-user')) sys.admin_user = val('sys-user');
+    if (val('sys-pass')) sys.admin_pass = val('sys-pass');
+    if (document.getElementById('sys-ssh').checked) sys.ssh = true;
+    if (val('sys-snmp')) sys.snmp_community = val('sys-snmp');
+    if (val('sys-snmphost')) sys.snmp_host = val('sys-snmphost');
+    if (val('sys-snmploc')) sys.snmp_location = val('sys-snmploc');
+    if (val('sys-snmpcontact')) sys.snmp_contact = val('sys-snmpcontact');
+    if (val('sys-syslog')) sys.syslog = val('sys-syslog');
+  }
   return {
     system: Object.keys(sys).length ? sys : undefined,
     vlans: [...document.querySelectorAll('#rep-vlans .repeater-item')].map(el => ({
@@ -1126,6 +1236,8 @@ function collectData() {
       dhcp_mode: el.querySelector('.s-dhcp-mode').value,
       dhcp_apply_pool: el.querySelector('.s-pool').value.trim(),
       dhcp_relay: el.querySelector('.s-relay').value.trim(),
+      vrrp_id: el.querySelector('.s-vrrp-id').value.trim(), vrrp_ip: el.querySelector('.s-vrrp-ip').value.trim(), vrrp_prio: el.querySelector('.s-vrrp-prio').value.trim(),
+      acl_in: el.querySelector('.s-acl-in').value.trim(), acl_out: el.querySelector('.s-acl-out').value.trim(),
       shutdown: el.querySelector('.s-shut').checked
     })).filter(s => s.vlan),
     interfaces: [...document.querySelectorAll('#rep-intfs .repeater-item')].map(el => ({
@@ -1138,6 +1250,10 @@ function collectData() {
       untagged: el.querySelector('.i-untagged').value.trim(),
       tagged: el.querySelector('.i-tagged').value.trim(),
       stp_edge: el.querySelector('.i-edge').checked,
+      ip: el.querySelector('.i-ip').value.trim(), nat: el.querySelector('.i-nat').value, dot1q: el.querySelector('.i-dot1q').value.trim(), dhcp_relay: el.querySelector('.i-relay').value.trim(),
+      vrrp_id: el.querySelector('.i-vrrp-id').value.trim(), vrrp_ip: el.querySelector('.i-vrrp-ip').value.trim(), vrrp_prio: el.querySelector('.i-vrrp-prio').value.trim(),
+      lag: el.querySelector('.i-lag').value.trim(), lag_mode: el.querySelector('.i-lag-mode').value,
+      acl_in: el.querySelector('.i-acl-in').value.trim(), acl_out: el.querySelector('.i-acl-out').value.trim(),
       poe: el.querySelector('.i-poe').checked,
       shutdown: el.querySelector('.i-shut').checked
     })).filter(i => i.interface),
@@ -1149,7 +1265,8 @@ function collectData() {
       dns: el.querySelector('.d-dns').value.trim(),
       domain: el.querySelector('.d-domain').value.trim(),
       lease_days: el.querySelector('.d-lease').value.trim(),
-      forbidden_ips: el.querySelector('.d-forbidden').value.trim()
+      forbidden_ips: el.querySelector('.d-forbidden').value.trim(),
+      ac_ip: el.querySelector('.d-acip').value.trim()
     })).filter(p => p.pool_name),
     static_routes: [...document.querySelectorAll('#rep-routes .repeater-item')].map(el => ({
       network: el.querySelector('.r-net').value.trim(),
@@ -1180,7 +1297,15 @@ function collectData() {
         dest_wildcard: r.querySelector('.acl-dwc').value.trim() || undefined
       })).filter(r => r.source)
     })).filter(a => a.acl_number),
-    pbr: (state.vendor === 'h3c' && state.os === 'comware') ? collectPbr() : undefined
+    pbr: (state.vendor === 'h3c' && state.os === 'comware') ? collectPbr() : undefined,
+    nat: (isRj() && state.os === 'rgos_router') ? {
+      acl_number: val('nat-acl'), outside: val('nat-out'),
+      networks: [...document.querySelectorAll('#rep-nat-nets .repeater-item')].map(el => ({ network: el.querySelector('.n-net').value.trim(), cidr: el.querySelector('.n-cidr').value.trim() })).filter(n => n.network)
+    } : undefined,
+    wlan: (isRj() && state.os === 'rgos_wlan') ? {
+      ac_ip: val('wl-acip'), ap_group: val('wl-group'),
+      ssids: [...document.querySelectorAll('#rep-ssids .repeater-item')].map(el => ({ id: el.querySelector('.w-id').value.trim(), name: el.querySelector('.w-name').value.trim(), vlan: el.querySelector('.w-vlan').value.trim(), security: el.querySelector('.w-sec').value, password: el.querySelector('.w-pass').value })).filter(x => x.name)
+    } : undefined
   };
 }
 
@@ -1191,6 +1316,8 @@ function applyTemplate(data) {
     document.getElementById('sys-ntp').value      = data.system.ntp      || '';
     document.getElementById('sys-tz').value       = data.system.timezone || '';
     document.getElementById('sys-banner').value   = data.system.banner   || '';
+    [['sys-user','admin_user'],['sys-pass','admin_pass'],['sys-snmp','snmp_community'],['sys-snmphost','snmp_host'],['sys-snmploc','snmp_location'],['sys-snmpcontact','snmp_contact'],['sys-syslog','syslog']].forEach(([id,k]) => { document.getElementById(id).value = data.system[k] || ''; });
+    document.getElementById('sys-ssh').checked = !!data.system.ssh;
   }
   (data.vlans || []).forEach(v => addVlan(v));
   (data.dhcp_pools || []).forEach(d => addDhcp(d));
@@ -1205,17 +1332,20 @@ function applyTemplate(data) {
   }
   (data.acls || []).forEach(a => addAcl(a));
   if (data.pbr) applyPbr(data.pbr);
+  if (data.nat) { document.getElementById('nat-out').value = data.nat.outside || ''; document.getElementById('nat-acl').value = data.nat.acl_number || ''; (data.nat.networks || []).forEach(n => addNatNet(n)); }
+  if (data.wlan) { document.getElementById('wl-acip').value = data.wlan.ac_ip || ''; document.getElementById('wl-group').value = data.wlan.ap_group || ''; (data.wlan.ssids || []).forEach(x => addSsid(x)); }
   updateBadges();
   setTimeout(refreshSviDropdowns, 50);
 }
 
 function clearAll(silent) {
-  ['sys-hostname','sys-ntp','sys-tz','sys-banner','ospf-pid','ospf-rid','ospf-area','pbr-name','pbr-acl','nqa-freq','nqa-thr','nqa-count','nqa-tmo','nqa-src'].forEach(id => {
+  ['sys-hostname','sys-ntp','sys-tz','sys-banner','sys-user','sys-pass','sys-snmp','sys-snmphost','sys-snmploc','sys-snmpcontact','sys-syslog','nat-out','nat-acl','wl-acip','wl-group','ospf-pid','ospf-rid','ospf-area','pbr-name','pbr-acl','nqa-freq','nqa-thr','nqa-count','nqa-tmo','nqa-src'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
-  ['rep-vlans','rep-svis','rep-intfs','rep-dhcp','rep-routes','rep-ospf-nets','rep-acls','rep-isps','rep-lans'].forEach(id => {
+  ['rep-vlans','rep-svis','rep-intfs','rep-dhcp','rep-routes','rep-ospf-nets','rep-acls','rep-isps','rep-lans','rep-nat-nets','rep-ssids'].forEach(id => {
     document.getElementById(id).innerHTML = '';
   });
+  { const ssh = document.getElementById('sys-ssh'); if (ssh) ssh.checked = false; }
   updateBadges();
   if (!silent) {
     document.getElementById('output').className = 'output empty';
@@ -1233,7 +1363,9 @@ function loadExample() {
     'cisco|iosxe': {system:{hostname:'C9K-DEMO'},vlans:[{vlan:'10',name:'USERS'}],svis:[{vlan:'10',description:'Users',ip:'10.10.10.1/24'}],interfaces:[{interface:'GigabitEthernet1/0/1',mode:'access',vlan:'10',stp_edge:true},{interface:'TenGigabitEthernet1/1/1',mode:'trunk',allowed:'10,20'}]},
     'cisco|nxos':  {system:{hostname:'N9K-DEMO'},vlans:[{vlan:'10',name:'USERS'}],svis:[{vlan:'10',description:'Users',ip:'10.10.10.1/24'}],interfaces:[{interface:'Ethernet1/1',mode:'access',vlan:'10',stp_edge:true},{interface:'Ethernet1/49',mode:'trunk',allowed:'10,20'}],ospf:{process_id:'1',router_id:'1.1.1.1',area:'0',networks:[{network:'10.10.0.0',cidr:'16'}]}}
   };
-  applyTemplate(EXAMPLES[`${state.vendor}|${state.os}`] || EXAMPLES['h3c|comware']);
+  const ex = EXAMPLES[`${state.vendor}|${state.os}`];
+  if (!ex && isRj() && state.allTemplates && Object.keys(state.allTemplates).length) { applyTemplate(state.allTemplates[Object.keys(state.allTemplates)[0]].data); toast('Example loaded!'); return; }
+  applyTemplate(ex || EXAMPLES['h3c|comware']);
   toast('Example loaded!');
 }
 
@@ -1280,6 +1412,29 @@ function lint() {
     if (mode === 'trunk' && !it.querySelector('.i-allowed').value.trim()) W('intf', it.querySelector('.i-allowed'), `${nm}: trunk has no Allowed VLANs, so it will carry no VLANs`);
     if (mode === 'access' && !it.querySelector('.i-vlan').value.trim()) W('intf', it.querySelector('.i-vlan'), `${nm}: access port has no VLAN (stays in VLAN 1)`);
   });
+  // Ruijie extras
+  if (isRj()) {
+    q(document, '#rep-ssids .repeater-item').forEach(it => {
+      const nm = it.querySelector('.w-name').value.trim(), pw = it.querySelector('.w-pass'), sec = it.querySelector('.w-sec').value;
+      if (nm && sec === 'psk' && (pw.value.length < 8 || pw.value.length > 63)) E('wlan', pw, `SSID ${nm}: WPA2 password must be 8-63 characters`);
+      if (nm && !it.querySelector('.w-vlan').value.trim()) W('wlan', it.querySelector('.w-vlan'), `SSID ${nm} has no VLAN mapping`);
+    });
+    if (state.os === 'rgos_wlan' && document.querySelectorAll('#rep-ssids .repeater-item').length && !document.getElementById('wl-acip').value.trim()) W('wlan', document.getElementById('wl-acip'), 'No AC IP: the "ac-controller" block will be skipped');
+    if (state.os === 'rgos_router') {
+      const o = document.getElementById('nat-out'), has = document.querySelectorAll('#rep-nat-nets .repeater-item').length;
+      if (has && !o.value.trim()) E('nat', o, 'NAT needs an outside interface');
+      const na = parseInt(document.getElementById('nat-acl').value, 10); if (na && !(na >= 1 && na <= 99)) E('nat', document.getElementById('nat-acl'), 'NAT ACL must be a standard ACL (1-99)');
+    }
+    q(document, '#rep-intfs .repeater-item').forEach(it => {
+      if (it.querySelector('.i-mode').value !== 'routed') return;
+      const ip = it.querySelector('.i-ip'), v = ip.value.trim(), nm = it.querySelector('.i-name').value.trim();
+      if (v && v.toLowerCase() !== 'dhcp' && !LINT_CIDRIP(v)) E('intf', ip, `${nm}: "${v}" is not a valid IP/prefix (use e.g. 192.168.1.1/24 or dhcp)`);
+    });
+    q(document, '#rep-acls .repeater-item').forEach(it => {
+      const n = parseInt(it.querySelector('.a-num').value, 10);
+      if ((n >= 1 && n <= 99) || (n >= 1300 && n <= 1999)) q(it, '.acl-dst').forEach(d => { if (d.value.trim() && d.value.trim().toLowerCase() !== 'any') W('acl', d, `ACL ${n} is standard on Ruijie, so the destination is ignored (use 100-199 or 2000-2699)`); });
+    });
+  }
   // Hostname
   { const hn = document.getElementById('sys-hostname'); if (hn && hn.value.trim() && !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,62}$/.test(hn.value.trim())) W('sys', hn, `Hostname "${hn.value.trim().slice(0,30)}" has invalid characters (use letters, digits, - _ . only; max 63)`); }
   // DHCP
@@ -1316,7 +1471,7 @@ function lint() {
 
 async function generate() {
   const data = collectData();
-  const hasData = data.system || (data.vlans||[]).length || (data.svis||[]).length || (data.interfaces||[]).length || (data.dhcp_pools||[]).length || (data.static_routes||[]).length || data.ospf || (data.acls||[]).length || data.pbr;
+  const hasData = data.system || (data.vlans||[]).length || (data.svis||[]).length || (data.interfaces||[]).length || (data.dhcp_pools||[]).length || (data.static_routes||[]).length || data.ospf || (data.acls||[]).length || data.pbr || (data.nat && data.nat.networks.length) || (data.wlan && data.wlan.ssids.length);
   if (!hasData) { toast('Add something first!', true); return; }
   lintClear();
   const L = lint();
@@ -1415,10 +1570,13 @@ function toggleHistory() {
 /* ============================================================
    TEMPLATES
    ============================================================ */
+let _tplSeq = 0;
 async function loadTemplates() {
+  const my = ++_tplSeq;
   try {
     const res = await fetch(`${API}/templates?vendor=${state.vendor}&os=${state.os}`);
     const data = await res.json();
+    if (my !== _tplSeq) return; // a newer vendor/OS pick superseded this response
     state.allTemplates = data;
     const keys = Object.keys(data);
     document.getElementById('tpl-count').textContent = `${keys.length} templates for ${state.vendor.toUpperCase()}/${state.os.toUpperCase()}`;

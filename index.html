@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>ConfigLabs — Network Config Generator &amp; WiFi Planner</title>
-<meta name="description" content="Free network config generator for H3C Comware and Cisco IOS, IOS-XE, NX-OS, plus a WiFi heatmap planner with Word reports. No login needed."/>
+<meta name="description" content="Free network config generator for H3C Comware, Cisco IOS, IOS-XE, NX-OS and Ruijie RGOS, plus a WiFi heatmap planner with Word reports. No login needed."/>
 <meta name="keywords" content="H3C config generator, Cisco IOS config, NX-OS config, Comware CLI, VLAN generator, OSPF config, WiFi heatmap planner, WiFi site survey, H3C access point"/>
 <meta name="author" content="ConfigLabs"/>
 <meta property="og:title" content="ConfigLabs — Network Config Generator &amp; WiFi Planner"/>
@@ -403,7 +403,7 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
 <section class="hero">
   <div class="hero-tag">
     <span class="live"></span>
-    <span><b data-cl-version>v6.0.0</b> · Config Builder + WiFi Planner · H3C + Cisco</span>
+    <span><b data-cl-version>v6.0.0</b> · Config Builder + WiFi Planner · H3C + Cisco + Ruijie</span>
   </div>
   <h1>Network configuration,<br><span class="serif">without the pain.</span></h1>
   <p>A multi-vendor config generator and a WiFi heatmap planner in one place. H3C to NX-OS, VLAN to OSPF, floor plan to report. Fewer typos, less guesswork.</p>
@@ -450,7 +450,7 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
       <p>Generate ready-to-review configs from 18 templates. Multi-vendor support, one-click copy, instant download. Generated from tested templates.</p>
       <ul class="feature-benefits">
         <li>18 pre-built templates</li>
-        <li>H3C, Cisco IOS / IOS-XE / NX-OS</li>
+        <li>H3C, Cisco IOS / IOS-XE / NX-OS, Ruijie RGOS</li>
         <li>VLAN · Routing · OSPF · BGP</li>
         <li>Browser session history</li>
       </ul>
@@ -563,7 +563,8 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--border);position:relati
         <p>Active development with regular releases. Here's what shipped recently:</p>
       </div>
       <div class="changelog">
-        <div class="cl-item"><span class="cl-version"><span data-cl-version>v7.5.0</span></span><div class="cl-content"><h4>Rack Builder: polish</h4><p>Press ? to see every shortcut (C cable tool, F fit, V front/rear, G gaps). The Core and Compute templates now come with cabling and power cords. Cable schedules export to PDF, PNG, SVG and CSV, and large projects (600+ devices) stay fast.</p></div></div>
+        <div class="cl-item"><span class="cl-version"><span data-cl-version>v7.6.0</span></span><div class="cl-content"><h4>Config Builder: Ruijie</h4><p>Ruijie (RGOS) is now a vendor in the Config Builder, with three platforms: switches (VLAN, trunk, LAG, VRRP, OSPF, ACL), routers (dot1Q sub-interfaces, NAT, DHCP, routing) and WLAN AC with fit APs (SSIDs, AP groups, WPA2-PSK, DHCP option 138). Nine templates included. Syntax follows public Ruijie documentation, so test on your model first.</p></div></div>
+        <div class="cl-item"><span class="cl-version">v7.5.0</span><div class="cl-content"><h4>Rack Builder: polish</h4><p>Press ? to see every shortcut (C cable tool, F fit, V front/rear, G gaps). The Core and Compute templates now come with cabling and power cords. Cable schedules export to PDF, PNG, SVG and CSV, and large projects (600+ devices) stay fast.</p></div></div>
         <div class="cl-item"><span class="cl-version"><span>v7.4.0</span></span><div class="cl-content"><h4>Rack Builder: power cords, cooling and hand-offs</h4><p>Draw power cords from device PSUs to PDU outlets: devices then take their A or B feed from the PDU, and each PDU is checked against its capacity. Auto power cords wires a whole rack in one click. Racks now show kW, BTU/h and the airflow needed, with a warning above about 10 kW. Send the cabled devices to the Topology editor as a ready diagram, or open a switch in the Config Builder with its hostname and interface descriptions filled in from its cables.</p></div></div>
         <div class="cl-item"><span class="cl-version"><span>v7.3.0</span></span><div class="cl-content"><h4>Rack Builder: cabling</h4><p>Connect any port to any port with the Cable tool (press C): pick the cable type (Cat5e/6/6A, DAC, AOC, OM3/OM4/OS2 fiber, console, USB), colour, length and label. Cables are drawn on the rack front and rear, with warnings for a wrong cable type, a port used twice and a cable that is too long. Includes a cable schedule (CSV, PDF) and a purchase list by type and length.</p></div></div>
         <div class="cl-item"><span class="cl-version"><span>v7.2.1</span></span><div class="cl-content"><h4>Rack Builder: vendor-accurate device looks</h4><p>H3C switches and servers are now drawn in black and Cisco in grey, like the real hardware. The category colour moved to a thin line on top (toggle: Tag). H3C S6860 now has its console, management ports, four fan trays and two PSUs on the rear. H3C servers get the UniServer ear layout (VGA, Type-C, USB on the left; power, UID, health on the right), a Bezel toggle and serial labels.</p></div></div>
