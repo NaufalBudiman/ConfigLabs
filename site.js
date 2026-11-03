@@ -15,3 +15,15 @@ window.CL = { version: '7.7.0', wifi: '5.30', topo: '2.1', rack: '1.3' };
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fill); else fill();
 })();
+/* Google Analytics 4 (gtag.js), loaded once here for every page. */
+(function () {
+  var id = 'G-28G67DQ3DL';
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://www.googletagmanager.com/gtag/js?id=' + id;
+  document.head.appendChild(s);
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function () { dataLayer.push(arguments); };
+  gtag('js', new Date());
+  gtag('config', id);
+})();
