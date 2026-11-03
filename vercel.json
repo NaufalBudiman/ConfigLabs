@@ -11,6 +11,11 @@
       "permanent": true
     },
     {
+      "source": "/translator",
+      "destination": "/translate.html",
+      "permanent": false
+    },
+    {
       "source": "/builder",
       "destination": "/builder.html",
       "permanent": true

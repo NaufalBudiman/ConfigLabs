@@ -61,3 +61,20 @@ class WifiPlan(db.Model):
     floor_id   = db.Column(db.String(40), nullable=False)
     data       = db.Column(db.Text, nullable=False)            # image as a data: URL
     __table_args__ = (db.UniqueConstraint('project_id', 'floor_id', name='uq_wifi_plan'),)
+
+
+class TranslateUse(db.Model):
+    """Daily counter for the config translator free tier (key is a hash, never an IP or a config)."""
+    __tablename__ = 'translate_use'
+    id    = db.Column(db.Integer, primary_key=True)
+    day   = db.Column(db.Date, nullable=False)
+    key   = db.Column(db.String(64), nullable=False)
+    count = db.Column(db.Integer, nullable=False, default=0)
+    __table_args__ = (db.UniqueConstraint('day', 'key', name='uq_translate_use'),)
+
+
+class ProWaitlist(db.Model):
+    __tablename__ = 'pro_waitlist'
+    id         = db.Column(db.Integer, primary_key=True)
+    email      = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

@@ -18,7 +18,7 @@
 from flask import Flask, request, jsonify, redirect, url_for, g
 from flask_cors import CORS
 from authlib.integrations.flask_client import OAuth
-from models import db, User, SavedFile, WifiProject, WifiPlan
+from models import db, User, SavedFile, WifiProject, WifiPlan, TranslateUse, ProWaitlist
 from datetime import datetime, timedelta
 from functools import wraps
 import jwt
@@ -120,7 +120,7 @@ def init_db_once():
         with_app_context_done = True
 
 APP_NAME = "ConfigLabs"
-APP_VERSION = "7.6.0"
+APP_VERSION = "7.7.0"
 
 # ==========================================================
 # VENDOR / OS REGISTRY
@@ -319,6 +319,66 @@ def gen_comware_pbr(pbr):
 # ============================================================
 # H3C COMWARE v7 GENERATOR
 # ============================================================
+def _h3c_vl(v):
+    """'10 20 30-40' / '10,20,30-40' -> '10 20 30 to 40' (Comware range syntax)"""
+    import re as _re
+    t = " ".join(str(v).replace(",", " ").split())
+    return _re.sub(r"(\d+)\s*-\s*(\d+)", r"\1 to \2", t)
+
+def _h3c_pf(o):
+    r = []
+    for key, d in (("acl_in", "inbound"), ("acl_out", "outbound")):
+        v = _rj_s(o.get(key))
+        if v: r.append(f" packet-filter {v} {d}" if v.isdigit() else f" packet-filter name {v} {d}")
+    return r
+
+def _h3c_vrrp(o):
+    items = o.get("vrrp")
+    if not isinstance(items, list):
+        items = [{"id": o.get("vrrp_id"), "ip": o.get("vrrp_ip"), "priority": o.get("vrrp_prio")}] if o.get("vrrp_id") else []
+    r = []
+    for v in items:
+        if not isinstance(v, dict) or not (v.get("id") and v.get("ip")): continue
+        r.append(f" vrrp vrid {_rj_s(v['id'])} virtual-ip {_rj_s(v['ip'])}")
+        if v.get("priority"): r.append(f" vrrp vrid {_rj_s(v['id'])} priority {_rj_s(v['priority'])}")
+    return r
+
+def _h3c_system_extras(sd):
+    """STP, local user + SSH, SNMP and syslog for the H3C generator (used by the translator)."""
+    c = []
+    if sd.get("stp_mode") in ("rstp", "mstp", "pvst"):
+        c += [f"stp mode {sd['stp_mode']}", "stp global enable", "#"]
+    if sd.get("bpdu_guard"): c += ["stp bpdu-protection", "#"]
+    user, pw = _rj_s(sd.get("admin_user")), _rj_s(sd.get("admin_pass"))
+    if sd.get("ssh") or user:
+        c.append("ssh server enable")
+        c.append("# once per device, run from user view: public-key local create rsa")
+        c += ["line vty 0 4", " authentication-mode scheme", " protocol inbound ssh", "#"]
+    if user:
+        c += [f"local-user {user} class manage"]
+        if pw: c.append(f" password simple {pw}")
+        c += [" service-type ssh terminal", " authorization-attribute user-role network-admin", "#"]
+    comms = sd.get("snmp_communities")
+    if not isinstance(comms, list):
+        comms = [{"name": sd["snmp_community"], "mode": "read"}] if sd.get("snmp_community") else []
+    hosts = sd.get("snmp_hosts")
+    if not isinstance(hosts, list):
+        hosts = [{"ip": sd["snmp_host"], "community": (comms[0]["name"] if comms else "public")}] if sd.get("snmp_host") else []
+    if comms or hosts:
+        c += ["snmp-agent", "snmp-agent sys-info version v2c"]
+        for cm in comms:
+            if isinstance(cm, dict) and cm.get("name"):
+                c.append(f"snmp-agent community {'write' if cm.get('mode') == 'write' else 'read'} simple {_rj_s(cm['name']).replace(' ', '_')}")
+        if sd.get("snmp_location"): c.append(f"snmp-agent sys-info location {_rj_s(sd['snmp_location'])}")
+        if sd.get("snmp_contact"):  c.append(f"snmp-agent sys-info contact {_rj_s(sd['snmp_contact'])}")
+        for h in hosts:
+            if isinstance(h, dict) and h.get("ip"):
+                c.append(f"snmp-agent target-host trap address udp-domain {_rj_s(h['ip'])} params securityname {_rj_s(h.get('community') or 'public').replace(' ', '_')} v2c")
+        if hosts or sd.get("snmp_traps"): c.append("snmp-agent trap enable")
+        c.append("#")
+    if sd.get("syslog"): c += [f"info-center loghost {_rj_s(sd['syslog'])}", "#"]
+    return c
+
 def gen_h3c_comware(data):
     """Generate H3C Comware v7 config (same as v1.1)"""
     config = [
@@ -345,6 +405,7 @@ def gen_h3c_comware(data):
             _dl = next((d for d in "%#@$~" if d not in _bn), "%")
             config.append(f"header shell {_dl}{_bn}{_dl}")
             config.append("#")
+        config += _h3c_system_extras(sys_data)
 
     # VLANs (L2)
     for v in data.get("vlans", []):
@@ -363,7 +424,9 @@ def gen_h3c_comware(data):
         for p in pools:
             for ip in str(p.get("forbidden_ips", "") or "").replace(",", " ").split():
                 if ip.strip() and ip.strip() not in _fb: _fb.append(ip.strip())
-        for ip in _fb: config.append(f"dhcp server forbidden-ip {ip}")
+        for ip in _fb:
+            _r = [x for x in str(ip).replace("-", " ").split() if x]
+            config.append("dhcp server forbidden-ip " + " ".join(_r[:2]))
         if _fb: config.append("#")
         for p in pools:
             if not p.get("pool_name"): continue
@@ -372,9 +435,47 @@ def gen_h3c_comware(data):
             if p.get("network") and p.get("cidr"):
                 config.append(f" network {p['network']} mask {cidr_to_mask(p['cidr'])}")
             if p.get("dns"): config.append(f" dns-list {p['dns']}")
-            if p.get("lease_days"): config.append(f" expired day {p['lease_days']}")
+            if p.get("lease_days") or p.get("lease_hours"):
+                config.append(f" expired day {_rj_s(p.get('lease_days') or 0)}" + (f" hour {_rj_s(p['lease_hours'])}" if p.get("lease_hours") else ""))
             if p.get("domain"): config.append(f" domain-name {p['domain']}")
+            if p.get("ac_ip"): config.append(f" option 138 ip-address {_rj_s(p['ac_ip'])}")
             config.append("#")
+
+    # ACLs (before the interfaces that reference them)
+    for a in data.get("acls", []):
+        num = a.get("acl_number")
+        aname = _rj_s(a.get("acl_name"))
+        if aname:
+            acl_type = "basic" if a.get("acl_type") == "basic" else "advanced"
+            config.append(f"acl {acl_type} name {aname}")
+        else:
+            if not num: continue
+            try: n = int(num)
+            except: continue
+            acl_type = "basic" if 2000 <= n <= 2999 else "advanced"
+            config.append(f"acl {acl_type} {n}")
+        if a.get("description"): config.append(f" description {_rj_s(a['description'])}")
+        _auto = 0
+        for rule in a.get("rules", []):
+            if not (rule.get("action") and rule.get("source")): continue
+            _auto += 5
+            rid = (rule.get("rule_id") or "").strip() if isinstance(rule.get("rule_id"), str) else str(rule.get("rule_id") or "")
+            rid = rid or str(_auto)
+            proto = rule.get("protocol", "ip")
+            src = rule["source"]
+            if src.lower() == "any":
+                line = f" rule {rid} {rule['action']} {proto} source any"
+            else:
+                wc = rule.get("wildcard") or "0"
+                line = f" rule {rid} {rule['action']} {proto} source {src} {wc}"
+            if rule.get("src_port"): line += f" source-port {_rj_s(rule['src_port'])}"
+            dst = (rule.get("destination") or "").strip()
+            if dst and dst.lower() != "any" and acl_type == "advanced":
+                line += f" destination {dst} {rule.get('dest_wildcard') or '0'}"
+            if rule.get("dst_port") and acl_type == "advanced": line += f" destination-port {_rj_s(rule['dst_port'])}"
+            if rule.get("icmp_type"): line += f" icmp-type {_rj_s(rule['icmp_type'])}"
+            config.append(" " + " ".join(line.split()).lstrip())
+        config.append("#")
 
     # SVIs (L3 VLAN-interfaces)
     for s in data.get("svis", []):
@@ -394,30 +495,64 @@ def gen_h3c_comware(data):
         elif dhcp_mode == "relay" and s.get("dhcp_relay"):
             config.append(" dhcp select relay")
             config.append(f" dhcp relay server-address {s['dhcp_relay']}")
+        config += _h3c_vrrp(s) + _h3c_pf(s)
         if s.get("shutdown"): config.append(" shutdown")
         config.append("#")
 
     # Physical interfaces
+    _is_router = (sys_data.get("device_type") == "router")
     for i in data.get("interfaces", []):
         if not i.get("interface"): continue
-        config.append(f"interface {i['interface']}")
-        if i.get("description"): config.append(f" description {i['description']}")
+        _nm = _rj_s(i["interface"]); _low = _nm.lower()
+        config.append(f"interface {_nm}")
+        if i.get("description"): config.append(f" description {_rj_s(i['description'])}")
         mode = i.get("mode", "access")
+        _bagg = _low.startswith("bridge-aggregation")
+        if i.get("lag") and not _bagg:
+            config.append(f" port link-aggregation group {_rj_s(i['lag'])}")
+            if i.get("speed"): config.append(f" speed {_rj_s(i['speed'])}")
+            if i.get("duplex"): config.append(f" duplex {_rj_s(i['duplex'])}")
+            if i.get("shutdown"): config.append(" shutdown")
+            config.append("#")
+            continue
         if mode == "access":
             config.append(" port link-type access")
             if i.get("vlan"): config.append(f" port access vlan {i['vlan']}")
         elif mode == "trunk":
             config.append(" port link-type trunk")
             config.append(" undo port trunk permit vlan 1")
-            if i.get("allowed"): config.append(f" port trunk permit vlan {' '.join(str(i['allowed']).replace(',', ' ').split())}")
+            if i.get("allowed"): config.append(f" port trunk permit vlan {_h3c_vl(i['allowed'])}")
             if i.get("pvid"): config.append(f" port trunk pvid vlan {i['pvid']}")
         elif mode == "hybrid":
             config.append(" port link-type hybrid")
             config.append(" undo port hybrid vlan 1")
-            if i.get("untagged"): config.append(f" port hybrid vlan {i['untagged']} untagged")
-            if i.get("tagged"): config.append(f" port hybrid vlan {i['tagged']} tagged")
-        if i.get("stp_edge"): config.append(" stp edged-port")
-        if i.get("poe"): config.append(" poe enable")
+            if i.get("untagged"): config.append(f" port hybrid vlan {_h3c_vl(i['untagged'])} untagged")
+            if i.get("tagged"): config.append(f" port hybrid vlan {_h3c_vl(i['tagged'])} tagged")
+            if i.get("pvid"): config.append(f" port hybrid pvid vlan {i['pvid']}")
+        elif mode == "routed":
+            _loop = _low.startswith("loopback")
+            if i.get("dot1q"): config.append(f" vlan-type dot1q vid {_rj_s(i['dot1q'])}")
+            elif not _is_router and not _loop and "." not in _nm and not _low.startswith(("vlan", "tunnel")):
+                config.append(" port link-mode route")
+            _ip = str(i.get("ip") or "").strip()
+            if _ip.lower() == "dhcp": config.append(" ip address dhcp-alloc")
+            elif _ip:
+                try:
+                    _a, _c = _ip.split("/"); config.append(f" ip address {_rj_s(_a)} {cidr_to_mask(_c)}")
+                except Exception: pass
+            if i.get("dhcp_relay"):
+                config += [" dhcp select relay", f" dhcp relay server-address {_rj_s(i['dhcp_relay'])}"]
+            config += _h3c_vrrp(i)
+            if i.get("nat_outbound"):
+                _no = _rj_s(i["nat_outbound"])
+                config.append(f" nat outbound {_no}" if _no.isdigit() else f" nat outbound name {_no}")
+        if _bagg and i.get("lag_dynamic"): config.append(" link-aggregation mode dynamic")
+        config += _h3c_pf(i)
+        if i.get("speed"): config.append(f" speed {_rj_s(i['speed'])}")
+        if i.get("duplex"): config.append(f" duplex {_rj_s(i['duplex'])}")
+        if mode != "routed":
+            if i.get("stp_edge"): config.append(" stp edged-port")
+            if i.get("poe"): config.append(" poe enable")
         if i.get("shutdown"): config.append(" shutdown")
         config.append("#")
 
@@ -439,38 +574,22 @@ def gen_h3c_comware(data):
             config.append(f"ospf {ospf['process_id']} router-id {ospf['router_id']}")
         else:
             config.append(f"ospf {ospf['process_id']}")
-        if ospf.get("area") not in (None, ""):
-            config.append(f" area {format_area(ospf['area'])}")
-            for net in ospf.get("networks", []):
-                if net.get("network") and net.get("cidr"):
-                    config.append(f"  network {net['network']} {cidr_to_wildcard(net['cidr'])}")
-        config.append("#")
-
-    # ACLs
-    for a in data.get("acls", []):
-        num = a.get("acl_number")
-        if not num: continue
-        try: n = int(num)
-        except: continue
-        acl_type = "basic" if 2000 <= n <= 2999 else "advanced"
-        config.append(f"acl {acl_type} {n}")
-        if a.get("description"): config.append(f" description {a['description']}")
-        _auto = 0
-        for rule in a.get("rules", []):
-            if not (rule.get("action") and rule.get("source")): continue
-            _auto += 5
-            rid = (rule.get("rule_id") or "").strip() or str(_auto)
-            proto = rule.get("protocol", "ip")
-            src = rule["source"]
-            if src.lower() == "any":
-                line = f" rule {rid} {rule['action']} {proto} source any"
-            else:
-                wc = rule.get("wildcard") or "0"
-                line = f" rule {rid} {rule['action']} {proto} source {src} {wc}"
-            dst = (rule.get("destination") or "").strip()
-            if dst and dst.lower() != "any" and acl_type == "advanced":
-                line += f" destination {dst} {rule.get('dest_wildcard') or '0'}"
-            config.append(" " + " ".join(line.split()).lstrip())
+        if ospf.get("default_originate"):
+            config.append(" default-route-advertise" + (" always" if ospf.get("default_originate") == "always" else ""))
+        for _pi in ospf.get("passive", []) or []:
+            config.append(f" silent-interface {_rj_s(_pi)}")
+        _groups = {}
+        for net in ospf.get("networks", []):
+            if net.get("network") and net.get("cidr"):
+                _ar = net.get("area", ospf.get("area"))
+                if _ar in (None, ""): continue
+                _groups.setdefault(format_area(_ar), []).append(net)
+        if not _groups and ospf.get("area") not in (None, ""):
+            _groups[format_area(ospf["area"])] = []
+        for _ar, _nets in _groups.items():
+            config.append(f" area {_ar}")
+            for net in _nets:
+                config.append(f"  network {net['network']} {cidr_to_wildcard(net['cidr'])}")
         config.append("#")
 
     pbr = data.get("pbr")
@@ -1354,6 +1473,634 @@ def gen_ruijie_switch(data): return gen_ruijie_rgos(data, "switch")
 def gen_ruijie_router(data): return gen_ruijie_rgos(data, "router")
 def gen_ruijie_wlan(data):   return gen_ruijie_rgos(data, "wlan")
 
+# ============================================================
+# CONFIG TRANSLATOR: Cisco IOS / IOS-XE and Ruijie RGOS  ->  H3C Comware v7
+# Parser -> ConfigLabs data model -> gen_h3c_comware, plus a report of what
+# was translated, what needs review and what was not translated.
+# ============================================================
+import re as _re_tr
+
+_TR_IFTYPES = {
+    "tengigabitethernet": "te", "tengige": "te", "te": "te", "twentyfivegige": "twe", "twe": "twe", "tw": "twe",
+    "fortygigabitethernet": "fo", "fortygige": "fo", "fo": "fo", "hundredgige": "hu", "hu": "hu",
+    "gigabitethernet": "gi", "gi": "gi", "fastethernet": "fa", "fa": "fa", "ethernet": "eth", "eth": "eth",
+    "port-channel": "po", "portchannel": "po", "po": "po", "aggregateport": "po", "ag": "po",
+    "loopback": "lo", "lo": "lo", "vlan": "vlan", "vl": "vlan", "tunnel": "tu", "tu": "tu",
+}
+_TR_H3NAME = {"gi": "GigabitEthernet", "fa": "GigabitEthernet", "eth": "GigabitEthernet", "te": "Ten-GigabitEthernet",
+              "twe": "Twenty-FiveGigE", "fo": "FortyGigE", "hu": "HundredGigE", "po": "Bridge-Aggregation",
+              "lo": "LoopBack", "vlan": "Vlan-interface", "tu": "Tunnel"}
+_TR_PORTS = {"www": 80, "http": 80, "https": 443, "ssh": 22, "telnet": 23, "domain": 53, "ftp": 21, "ftp-data": 20,
+             "smtp": 25, "pop3": 110, "imap4": 143, "snmp": 161, "snmptrap": 162, "ntp": 123, "bgp": 179, "tftp": 69,
+             "syslog": 514, "ldap": 389, "ldaps": 636, "sip": 5060, "msrpc": 135, "netbios-ssn": 139, "microsoft-ds": 445,
+             "bootps": 67, "bootpc": 68, "isakmp": 500, "ntp": 123, "radius": 1812, "tacacs": 49}
+_TR_PROTOS = {"ip", "tcp", "udp", "icmp", "ospf", "gre", "esp", "ahp", "igmp", "pim", "ipinip"}
+_TR_IGNORE_TOP = ("version ", "service timestamps", "service password-encryption", "service call-home", "no service ",
+                  "no ip domain-lookup", "no ip domain lookup", "ip routing", "ip classless", "no ip classless", "end", "exit",
+                  "boot ", "license ", "no ip http", "ip subnet-zero", "no ip source-route", "service compress-config",
+                  "memory ", "ip domain-name", "ip domain name", "ip cef", "no ip cef", "ipv6 cef", "udld ", "errdisable", "vtp ", "cdp run", "no cdp run",
+                  "lldp run", "clock summer-time", "archive", "ip http", "no ip bootp", "no ip finger",
+                  "!", "build version", "no aaa new-model", "diagnostic ", "login on-", "enable service ", "wr", "write")
+
+def _tr_ipv4(v):
+    m = _re_tr.match(r"^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$", str(v))
+    return bool(m) and all(int(x) <= 255 for x in m.groups())
+
+def _tr_mask_cidr(m, wildcard=False):
+    if not _tr_ipv4(m): return None
+    n = 0
+    for p in m.split("."): n = (n << 8) | int(p)
+    if wildcard: n ^= 0xffffffff
+    b = bin(n)[2:].zfill(32)
+    return None if "01" in b else b.count("1")
+
+def _tr_blocks(text):
+    """Split an IOS-like config into [(lineno, command, [(lineno, child)...])]; banners become one command."""
+    lines = str(text).replace("\r", "").split("\n")
+    out, cur, i = [], None, 0
+    while i < len(lines):
+        raw = lines[i]; i += 1; n = i
+        st = raw.strip()
+        if not st: continue
+        if st.startswith("!"):
+            cur = None; continue
+        m = _re_tr.match(r"^banner\s+(\S+)\s*(.*)$", st)
+        if m and raw[:1] not in " \t":
+            rest = m.group(2); dl = "^C" if rest.startswith("^C") else (rest[:1] or "#")
+            body = rest[len(dl):]; txt = []
+            if dl in body: txt.append(body.split(dl, 1)[0])
+            else:
+                txt.append(body)
+                while i < len(lines):
+                    ln = lines[i]; i += 1
+                    if dl in ln: txt.append(ln.split(dl, 1)[0]); break
+                    txt.append(ln)
+            out.append((n, "banner " + m.group(1) + " " + " ".join(t.strip() for t in txt if t.strip()), [])); cur = None
+            continue
+        if raw[:1] in " \t" and cur is not None:
+            cur[2].append((n, st))
+        else:
+            cur = (n, st, []); out.append(cur)
+    return out
+
+class _Translator:
+    def __init__(self, flavor, member=1, device="auto"):
+        self.f = flavor
+        try: self.member = max(1, min(int(member), 16))
+        except Exception: self.member = 1
+        self.dev = device if device in ("auto", "switch", "router") else "auto"
+        self.ok = 0; self.review = []; self.skip = []; self.if_map = []; self.acl_map = []; self.notes = []
+        self.d = {"system": {}, "vlans": [], "svis": [], "interfaces": [], "dhcp_pools": [], "static_routes": [], "ospf": {}, "acls": []}
+        self.acls = {}; self.excl = []; self.nat = []; self._fa_noted = False
+        self.members = {}; self.bagg = {}; self.is_router = False
+
+    # --- reporting
+    def R(self, n, t, note): self.review.append({"line": n, "text": t[:160], "note": note})
+    def S(self, n, t, why): self.skip.append({"line": n, "text": t[:160], "note": why})
+
+    # --- names
+    def if_name(self, raw, n=0, t=""):
+        s = _re_tr.sub(r"\s+", "", raw)
+        m = _re_tr.match(r"^([A-Za-z\-]+)(\d[\d/.]*)$", s)
+        key = _TR_IFTYPES.get(m.group(1).lower()) if m else None
+        if not key: return None
+        nums = m.group(2)
+        if key in ("po", "lo", "vlan", "tu"):
+            out = _TR_H3NAME[key] + nums
+        else:
+            base, _, sub = nums.partition(".")
+            parts = base.split("/")
+            if not self.is_router:
+                if len(parts) == 1: parts = [str(self.member), "0", parts[0]]
+                elif len(parts) == 2: parts = [str(self.member)] + parts
+            out = _TR_H3NAME[key] + "/".join(parts) + ("." + sub if sub else "")
+            if key == "fa" and not self._fa_noted:
+                self._fa_noted = True; self.R(n, t, "FastEthernet mapped to GigabitEthernet; check the real port speed on the H3C model")
+        pretty = raw.strip()
+        if not any(x[0] == pretty for x in self.if_map) and key not in ("vlan",):
+            clash = [a for a, b in self.if_map if b == out]
+            if clash: self.R(n, t or pretty, f"{pretty} and {clash[0]} map to the same H3C port ({out}); check the member/port numbering")
+            self.if_map.append((pretty, out))
+        return out
+
+    def acl_ref(self, ref, std=None):
+        """Cisco/Ruijie ACL number or name -> H3C number (digits) or name."""
+        ref = str(ref).strip()
+        if ref.isdigit():
+            n = int(ref)
+            if 1 <= n <= 99: out = 2000 + n
+            elif 1300 <= n <= 1999: out = 2000 + (n - 1300)
+            elif 100 <= n <= 199: out = 3000 + (n - 100)
+            elif 2000 <= n <= 2699: out = 3100 + (n - 2000)
+            else: out = n
+            out = str(out)
+        else:
+            out = _re_tr.sub(r"[^A-Za-z0-9_]", "_", ref)[:63]
+            if not out or not out[0].isalpha(): out = "ACL_" + out
+        if ref != out and not any(x[0] == ref for x in self.acl_map): self.acl_map.append((ref, out))
+        return out
+
+    # --- main entry
+    def run(self, text):
+        blocks = _tr_blocks(text)
+        self.total = sum(1 + len(b[2]) for b in blocks)
+        sw = any(b[1].startswith(("vlan ", "interface vlan", "interface Vlan")) or any(k[1].startswith("switchport") for k in b[2]) for b in blocks)
+        self.is_router = (self.dev == "router") or (self.dev == "auto" and not sw)
+        if self.is_router: self.d["system"]["device_type"] = "router"
+        self.notes.append("Device treated as a " + ("router (interfaces are routed ports, names kept as-is)" if self.is_router
+                          else f"switch (2-part names like 0/1 become {self.member}/0/1; change the member number if this unit is not member {self.member})"))
+        self.hidden = 0
+        own = ("vlan", "interface", "ip dhcp pool", "router ospf", "ip access-list", "line", "access-list")
+        for n, cmd, kids in blocks:
+            before = len(self.skip)
+            try: self.top(n, cmd, kids)
+            except Exception as e: self.S(n, cmd, f"could not be parsed ({type(e).__name__})")
+            if kids and len(self.skip) > before and not cmd.lower().startswith(own): self.hidden += len(kids)
+        self.finish()
+        return self.d
+
+    # --- top-level dispatcher
+    def top(self, n, cmd, kids):
+        w = cmd.split(); lw = cmd.lower(); sysd = self.d["system"]
+        if not w: return
+        if lw.startswith(_TR_IGNORE_TOP) or lw in ("end", "exit", "wr", "write"):
+            self.ok += 1 + len(kids); return
+        if w[0] == "hostname" and len(w) > 1:
+            sysd["hostname"] = w[1]; self.ok += 1; return
+        if w[0] == "banner":
+            sysd["banner"] = cmd.split(None, 2)[2] if len(w) > 2 else ""; self.ok += 1; return
+        if lw.startswith("ntp server"):
+            ips = [x for x in w[2:] if _tr_ipv4(x) or "." in x]
+            if not sysd.get("ntp") and ips: sysd["ntp"] = ips[0]; self.ok += 1
+            else: self.R(n, cmd, "only the first NTP server is translated; add the others on the H3C manually")
+            return
+        if lw.startswith("ntp "): self.S(n, cmd, "NTP option has no mapping yet (authentication, peers, etc.)"); return
+        if lw.startswith("clock timezone") and len(w) >= 4:
+            try:
+                h = int(w[3]); mnt = int(w[4]) if len(w) > 4 else 0
+                sysd["timezone"] = f"{w[2]} {'minus' if h < 0 else 'add'} {abs(h):02d}:{mnt:02d}:00"; self.ok += 1
+            except Exception: self.S(n, cmd, "timezone format not understood")
+            return
+        if w[0] == "vlan" and len(w) >= 2:
+            if w[1] == "range" or "," in w[1] or "-" in w[1]:
+                spec = w[2] if w[1] == "range" and len(w) > 2 else w[1]
+                ids = []
+                for part in spec.split(","):
+                    a, _, b = part.partition("-")
+                    if a.isdigit() and (not b or b.isdigit()): ids += range(int(a), int(b or a) + 1)
+                if 0 < len(ids) <= 300: [self.d["vlans"].append({"vlan": str(v), "name": ""}) for v in ids]; self.ok += 1
+                else: self.S(n, cmd, "VLAN list too large or not understood")
+                return
+            if w[1].isdigit():
+                v = {"vlan": w[1], "name": "", "description": ""}
+                for kn, kt in kids:
+                    kw = kt.split(None, 1)
+                    if kw[0] == "name" and len(kw) > 1: v["name"] = kw[1].replace(" ", "_")[:32]; self.ok += 1
+                    elif kw[0] in ("state", "exit"): self.ok += 1
+                    else: self.S(kn, kt, "VLAN option has no mapping yet")
+                self.d["vlans"].append(v); self.ok += 1; return
+        if w[0] == "interface" and len(w) > 1: return self.iface(n, cmd, kids)
+        if lw.startswith("ip route "): return self.route(n, cmd)
+        if lw.startswith("ip default-gateway") and len(w) > 2 and _tr_ipv4(w[2]):
+            self.d["static_routes"].append({"network": "0.0.0.0", "cidr": "0", "next_hop": w[2]}); self.ok += 1; return
+        if lw.startswith("ip dhcp excluded-address"):
+            ips = [x for x in w[3:] if _tr_ipv4(x)]
+            if ips: self.excl.append("-".join(ips[:2])); self.ok += 1
+            else: self.S(n, cmd, "excluded-address not understood")
+            return
+        if lw.startswith("ip dhcp pool") and len(w) > 3: return self.pool(n, w[3], kids)
+        if lw in ("service dhcp", "ip dhcp snooping") or lw.startswith("service dhcp"):
+            self.ok += 1; return
+        if lw.startswith("ip dhcp "): self.S(n, cmd, "DHCP option (snooping, relay options, etc.) has no mapping yet"); return
+        if lw.startswith("router ospf"): return self.ospf(n, cmd, kids)
+        if lw.startswith(("ip access-list", "access-list")) and not lw.startswith("access-list role"): return self.acl_top(n, cmd, kids)
+        if lw.startswith("ip nat inside source list"):
+            m = _re_tr.match(r"^ip nat inside source list (\S+) (?:interface (.+?) )?overload$", cmd)
+            if m and m.group(2): self.nat.append((n, cmd, m.group(1), m.group(2).strip())); return
+            self.S(n, cmd, "only 'list X interface Y overload' NAT is translated (pools and static NAT need manual work)"); return
+        if lw.startswith("ip nat "): self.S(n, cmd, "NAT pool / static NAT is not translated yet"); return
+        if lw.startswith("snmp-server "): return self.snmp(n, cmd, w)
+        if lw.startswith(("logging host", "logging server")) or (w[0] == "logging" and len(w) == 2 and _tr_ipv4(w[1])):
+            ip = w[-1]
+            if _tr_ipv4(ip) and not sysd.get("syslog"): sysd["syslog"] = ip; self.ok += 1
+            else: self.R(n, cmd, "only the first syslog server is translated")
+            return
+        if lw.startswith("logging "): self.ok += 1; return
+        if w[0] == "username" and len(w) >= 3: return self.user(n, cmd, w)
+        if lw.startswith(("enable secret", "enable password")): self.S(n, cmd, "enable password: set a role password on the H3C yourself (super password)"); return
+        if lw.startswith("spanning-tree"): return self.stp(n, cmd, w)
+        if lw.startswith("ip ssh") or lw.startswith("crypto key") or lw == "enable service ssh-server":
+            sysd["ssh"] = True; self.ok += 1; return
+        if lw.startswith("enable service telnet"): self.R(n, cmd, "telnet is not carried over; H3C output uses SSH only"); return
+        if w[0] == "line" and len(w) > 1:
+            if w[1] in ("vty", "con", "console", "aux"):
+                for kn, kt in kids:
+                    kl = kt.lower()
+                    if kl.startswith("transport input") and "ssh" in kl: sysd["ssh"] = True; self.ok += 1
+                    elif kl.startswith("transport input"): self.R(kn, kt, "telnet is not carried over; H3C output uses SSH only")
+                    else: self.ok += 1
+                self.ok += 1; return
+        if lw.startswith(("wlan-config", "ap-group", "wlansec", "ac-controller", "capwap", "ap-config")):
+            self.S(n, cmd, "WLAN AC config is not translated: on H3C use wlan service-template / ap-group / ap on the WX controller"); return
+        if lw.startswith(("aaa ", "radius", "tacacs", "dot1x", "mab", "authentication ", "crypto ", "ip sla", "track ", "class-map", "policy-map", "route-map", "ip prefix-list", "router bgp", "router eigrp", "router rip", "mpls", "ip vrf", "vrf ", "ip nbar", "ntp authenticate", "ip dhcp snooping")):
+            self.S(n, cmd, "feature not translated yet in this version")
+            return
+        self.S(n, cmd, "no mapping for this command yet")
+
+    # --- static route
+    def route(self, n, cmd):
+        w = cmd.split()
+        if len(w) >= 5 and w[2] == "vrf": self.S(n, cmd, "VRF routes are not translated yet"); return
+        if len(w) < 5 or not _tr_ipv4(w[2]) or not _tr_ipv4(w[3]): self.S(n, cmd, "route format not understood"); return
+        c = _tr_mask_cidr(w[3])
+        if c is None: self.S(n, cmd, "non-contiguous mask"); return
+        if not _tr_ipv4(w[4]): self.S(n, cmd, "route via an interface is not translated; use a next-hop address"); return
+        r = {"network": w[2], "cidr": str(c), "next_hop": w[4]}
+        if len(w) > 5 and w[5].isdigit(): r["preference"] = w[5]
+        if "permanent" in w or "tag" in w or "track" in w: self.R(n, cmd, "extra route keywords (tag/track/permanent) dropped")
+        self.d["static_routes"].append(r); self.ok += 1
+
+    # --- DHCP pool
+    def pool(self, n, name, kids):
+        p = {"pool_name": _re_tr.sub(r"[^A-Za-z0-9_-]", "_", name)[:63], "network": "", "cidr": "", "gateway": "", "dns": "", "domain": "", "lease_days": "", "forbidden_ips": ""}
+        for kn, kt in kids:
+            kw = kt.split(); k = kw[0].lower() if kw else ""
+            if k == "network" and len(kw) >= 2 and _tr_ipv4(kw[1]):
+                if len(kw) >= 3: c = _tr_mask_cidr(kw[2].lstrip("/")) if "." in kw[2] else (int(kw[2].lstrip("/")) if kw[2].lstrip("/").isdigit() and int(kw[2].lstrip("/")) <= 32 else None)
+                else: c = None
+                p["network"] = kw[1]; p["cidr"] = str(c) if c is not None else ""; self.ok += 1
+                if c is None: self.R(kn, kt, "network mask not understood: set the pool network manually")
+            elif k == "default-router" and len(kw) > 1: p["gateway"] = kw[1]; self.ok += 1
+            elif k == "dns-server": p["dns"] = " ".join(kw[1:3]); self.ok += 1
+            elif k == "domain-name" and len(kw) > 1: p["domain"] = kw[1]; self.ok += 1
+            elif k == "lease" and len(kw) > 1:
+                if kw[1].isdigit(): p["lease_days"] = kw[1]; self.ok += 1
+                if len(kw) > 2 and kw[2].isdigit() and int(kw[2]) > 0: p["lease_hours"] = kw[2]
+                if len(kw) > 3 and kw[3].isdigit() and int(kw[3]) > 0: self.R(kn, kt, "lease minutes dropped (H3C: days and hours)")
+                if kw[1] == "infinite": p["lease_days"] = ""; self.R(kn, kt, "infinite lease: set 'expired unlimited' on the H3C manually")
+            elif k == "option" and len(kw) >= 4 and kw[1] == "138" and kw[2] == "ip": p["ac_ip"] = kw[3]; self.ok += 1
+            else: self.S(kn, kt, "DHCP pool option has no mapping yet")
+        self.d["dhcp_pools"].append(p); self.ok += 1
+
+    # --- OSPF
+    def ospf(self, n, cmd, kids):
+        w = cmd.split()
+        if len(w) < 3 or not w[2].isdigit(): self.S(n, cmd, "OSPF process not understood"); return
+        if self.d["ospf"].get("process_id"):
+            self.S(n, cmd, "only one OSPF process is translated"); return
+        o = {"process_id": w[2], "router_id": "", "area": "", "networks": [], "passive": []}
+        for kn, kt in kids:
+            kw = kt.split(); k = kt.lower()
+            if kw[0] == "router-id" and len(kw) > 1: o["router_id"] = kw[1]; self.ok += 1
+            elif kw[0] == "network" and len(kw) >= 5 and kw[3] == "area":
+                c = _tr_mask_cidr(kw[2], True)
+                if c is None: self.S(kn, kt, "non-contiguous wildcard"); continue
+                o["networks"].append({"network": kw[1], "cidr": str(c), "area": kw[4]})
+                if not o["area"]: o["area"] = kw[4]
+                self.ok += 1
+            elif kw[0] == "passive-interface" and len(kw) > 1:
+                if kw[1] == "default": self.R(kn, kt, "passive-interface default: list the silent interfaces on the H3C manually")
+                else:
+                    nm = self.if_name(" ".join(kw[1:]), kn, kt)
+                    if nm: o["passive"].append(nm); self.ok += 1
+                    else: self.S(kn, kt, "interface name not understood")
+            elif k.startswith("default-information originate"):
+                o["default_originate"] = "always" if "always" in kw else True; self.ok += 1
+            elif k.startswith("auto-cost"): self.ok += 1; self.R(kn, kt, "dropped: set 'bandwidth-reference' on the H3C if you changed it")
+            elif k.startswith(("log-adjacency", "nsr", "exit")): self.ok += 1
+            else: self.S(kn, kt, "OSPF option has no mapping yet (redistribute, area types, summaries...)")
+        self.d["ospf"] = o; self.ok += 1
+
+    # --- ACL
+    def acl_top(self, n, cmd, kids):
+        w = cmd.split()
+        if w[0] == "access-list":   # numbered one-liner
+            if len(w) < 4 or not w[1].isdigit(): self.S(n, cmd, "access-list not understood"); return
+            num = int(w[1]); std = (1 <= num <= 99 or 1300 <= num <= 1999)
+            self.acl_rule(w[1], std, n, cmd, w[2:]); return
+        if len(w) < 4 or w[2] not in ("standard", "extended"): self.S(n, cmd, "ACL type not understood"); return
+        std = (w[2] == "standard"); ref = w[3]
+        for kn, kt in kids: self.acl_rule(ref, std, kn, kt, kt.split())
+        self.ok += 1
+        self.acls.setdefault(ref, self.acls.get(ref) or {"std": std, "rules": [], "desc": ""})
+
+    def acl_rule(self, ref, std, n, text, toks):
+        a = self.acls.setdefault(ref, {"std": std, "rules": [], "desc": ""})
+        a["std"] = std
+        seq = ""
+        if toks and toks[0].isdigit() and len(toks) > 1 and toks[1] in ("permit", "deny", "remark"): seq = toks[0]; toks = toks[1:]
+        if not toks: return
+        if toks[0] == "remark":
+            if not a["desc"]: a["desc"] = " ".join(toks[1:])[:240]; self.ok += 1
+            else: self.R(n, text, "extra remark dropped (H3C ACL keeps one description)")
+            return
+        if toks[0] not in ("permit", "deny"): self.S(n, text, "ACL entry not understood"); return
+        try:
+            r, why = self._rule(toks, std)
+        except IndexError: r, why = None, "entry is incomplete"
+        if r is None: self.S(n, text, why or "ACL entry not translated"); return
+        if seq: r["rule_id"] = seq
+        a["rules"].append(r); self.ok += 1
+
+    def _addr(self, t, i, std):
+        x = t[i]
+        if x == "any": return "any", "", i + 1
+        if x == "host": return t[i + 1], "0", i + 2
+        if _tr_ipv4(x):
+            if i + 1 < len(t) and _tr_ipv4(t[i + 1]): return x, t[i + 1], i + 2
+            if std: return x, "0", i + 1
+        raise IndexError
+
+    def _port(self, t, i):
+        if i < len(t) and t[i] in ("eq", "neq", "gt", "lt", "range"):
+            op = t[i]; need = 2 if op == "range" else 1
+            vals = []
+            for v in t[i + 1:i + 1 + need]:
+                if v.isdigit(): vals.append(v)
+                elif v in _TR_PORTS: vals.append(str(_TR_PORTS[v]))
+                else: raise KeyError(v)
+            return f"{op} {' '.join(vals)}", i + 1 + need
+        return "", i
+
+    def _rule(self, t, std):
+        act = t[0]; r = {"action": act, "protocol": "ip"}; i = 1
+        if std:
+            s, wc, i = self._addr(t, i, True); r["source"] = s; r["wildcard"] = wc
+            rest = t[i:]
+        else:
+            proto = t[i]; i += 1
+            if proto.isdigit() or proto not in _TR_PROTOS: return None, f"protocol '{proto}' not supported"
+            r["protocol"] = proto
+            s, wc, i = self._addr(t, i, False); r["source"] = s; r["wildcard"] = wc
+            try:
+                if proto in ("tcp", "udp"): sp, i = self._port(t, i); 
+                else: sp = ""
+            except KeyError as e: return None, f"port name {e} not mapped"
+            if sp: r["src_port"] = sp
+            d, dwc, i = self._addr(t, i, False); r["destination"] = d; r["dest_wildcard"] = dwc
+            try:
+                if proto in ("tcp", "udp"): dp, i = self._port(t, i)
+                else: dp = ""
+            except KeyError as e: return None, f"port name {e} not mapped"
+            if dp: r["dst_port"] = dp
+            if proto == "icmp" and i < len(t) and t[i] not in ("log", "log-input"):
+                if t[i] in ("echo", "echo-reply"): r["icmp_type"] = t[i]; i += 1
+                else: return None, f"ICMP type '{t[i]}' not mapped"
+            rest = t[i:]
+        extra = [x for x in rest if x not in ("log", "log-input")]
+        if extra: return None, "option '" + extra[0] + "' (established / dscp / time-range ...) is not translated"
+        if len(rest) != len(extra): self.notes.append("'log' keyword on ACL entries was dropped") if "'log' keyword on ACL entries was dropped" not in self.notes else None
+        return r, ""
+
+    # --- interface
+    def iface(self, n, cmd, kids):
+        rest = cmd.split(None, 1)[1]
+        names = [rest]
+        if rest.lower().startswith("range "):
+            names = []
+            for part in rest[6:].split(","):
+                part = part.strip(); m = _re_tr.match(r"^([A-Za-z\-]+)\s*([\d/]*?/)?(\d+)\s*-\s*(\d+)$", part)
+                if m and int(m.group(4)) - int(m.group(3)) < 96:
+                    names += [f"{m.group(1)}{m.group(2) or ''}{k}" for k in range(int(m.group(3)), int(m.group(4)) + 1)]
+                elif part: names.append(part)
+        if not names: self.S(n, cmd, "interface range not understood"); return
+        it = self.kids(kids)
+        for nm in names:
+            self.one_iface(n, cmd, nm, it)
+        self.ok += 1
+
+    def kids(self, kids):
+        it = {"desc": "", "shut": False, "mode": "", "vlan": "", "allowed": None, "add": [], "pvid": "", "untag": "", "tag": "", "edge": False,
+              "poe": False, "lag": "", "lagmode": "", "ip": "", "dhcp": False, "relay": "", "acl_in": "", "acl_out": "", "vrrp": {}, "nat": "",
+              "dot1q": "", "noswitchport": False, "speed": "", "duplex": ""}
+        def vr(g):
+            g = "1" if g in ("0", "") else g
+            return it["vrrp"].setdefault(g, {"id": g, "ip": "", "priority": ""})
+        for n, t in kids:
+            w = t.split(); lw = t.lower(); k = w[0].lower()
+            if lw == "no shutdown" or k == "exit": self.ok += 1; continue
+            if lw == "no switchport": it["noswitchport"] = True; self.ok += 1; continue
+            if lw.startswith("no ip address"): self.ok += 1; continue
+            if k == "no": self.ok += 1; continue
+            if k == "description": it["desc"] = t.split(None, 1)[1][:240] if len(w) > 1 else ""; self.ok += 1
+            elif k == "shutdown": it["shut"] = True; self.ok += 1
+            elif lw.startswith("switchport mode"):
+                m = w[2] if len(w) > 2 else ""
+                if m in ("access", "trunk", "hybrid"): it["mode"] = m; self.ok += 1
+                else: self.R(n, t, "dynamic switchport mode: pick access or trunk on the H3C")
+            elif lw.startswith("switchport access vlan") and len(w) > 3: it["vlan"] = w[3]; self.ok += 1
+            elif lw.startswith("switchport trunk native vlan") and len(w) > 4: it["pvid"] = w[4]; self.ok += 1
+            elif lw.startswith("switchport hybrid native vlan") and len(w) > 4: it["pvid"] = w[4]; self.ok += 1
+            elif lw.startswith("switchport hybrid allowed vlan") and len(w) > 5:
+                key = "untag" if w[4] == "untagged" else "tag" if w[4] == "tagged" else ""
+                if key: it[key] = ",".join(filter(None, [it[key], w[5]])); self.ok += 1
+                else: self.S(n, t, "hybrid VLAN option not understood")
+            elif lw.startswith("switchport trunk allowed vlan") and len(w) > 4:
+                a = w[4]
+                if a in ("add",) and len(w) > 5:
+                    if it["allowed"] is None: self.R(n, t, "'add' without a base list: check which VLANs this trunk should carry")
+                    else: it["allowed"] += "," + w[5]
+                    it["add"].append(w[5]); self.ok += 1
+                elif a in ("only",) and len(w) > 5: it["allowed"] = w[5]; self.ok += 1
+                elif a == "all": it["allowed"] = "all"; self.ok += 1
+                elif a in ("remove", "except", "none"): self.R(n, t, "VLAN 'remove/except/none': write the allowed list explicitly on the H3C")
+                else: it["allowed"] = a; self.ok += 1
+            elif lw.startswith(("switchport trunk encapsulation", "switchport nonegotiate", "switchport voice vlan", "cdp ", "lldp ", "load-interval", "negotiation", "mdix", "duplex auto", "speed auto", "ip proxy-arp", "ip redirects", "ip unreachables", "keepalive", "flowcontrol", "logging event")):
+                self.ok += 1 if not lw.startswith("switchport voice") else 0
+                if lw.startswith("switchport voice"): self.S(n, t, "voice VLAN has no mapping yet (use voice-vlan on H3C)")
+            elif lw.startswith("spanning-tree portfast") or lw.startswith("spanning-tree edge"): it["edge"] = True; self.ok += 1
+            elif lw.startswith("spanning-tree bpduguard") : self.d["system"]["bpdu_guard"] = True; self.ok += 1
+            elif lw.startswith("power inline"):
+                if "never" in lw: self.R(n, t, "PoE off: add 'undo poe enable' on the H3C port")
+                else: it["poe"] = True; self.ok += 1
+            elif lw.startswith("channel-group") and len(w) > 1:
+                it["lag"] = w[1]; mode = w[3] if len(w) > 3 and w[2] == "mode" else ""
+                it["lagmode"] = "dynamic" if mode in ("active", "passive") else ""
+                if mode in ("desirable", "auto"): self.R(n, t, "PAgP is Cisco-only; converted to a static aggregation")
+                self.ok += 1
+            elif k == "port-group" and len(w) > 1:
+                it["lag"] = w[1]; it["lagmode"] = "dynamic" if (len(w) > 3 and w[2] == "mode" and w[3] in ("active", "passive")) else ""; self.ok += 1
+            elif lw.startswith("ip address dhcp"): it["dhcp"] = True; self.ok += 1
+            elif lw.startswith("ip address") and len(w) >= 4:
+                if "secondary" in w: self.R(n, t, "secondary IP dropped; add it on the H3C with 'ip address ... sub'"); continue
+                c = _tr_mask_cidr(w[3])
+                if _tr_ipv4(w[2]) and c is not None: it["ip"] = f"{w[2]}/{c}"; self.ok += 1
+                else: self.S(n, t, "IP address not understood")
+            elif lw.startswith("ip helper-address") and len(w) > 2:
+                if it["relay"]: self.R(n, t, "only the first helper address is translated")
+                else: it["relay"] = w[2]; self.ok += 1
+            elif lw.startswith("ip access-group") and len(w) >= 4:
+                ref = self.acl_ref(w[2]);
+                if w[3] == "in": it["acl_in"] = ref; self.ok += 1
+                elif w[3] == "out": it["acl_out"] = ref; self.ok += 1
+                else: self.S(n, t, "ACL direction not understood")
+            elif k == "vrrp" and len(w) >= 3 and w[1].isdigit():
+                g = vr(w[1]); s = w[2].lower()
+                if s == "ip" and len(w) > 3: g["ip"] = w[3]; self.ok += 1
+                elif s == "priority" and len(w) > 3: g["priority"] = w[3]; self.ok += 1
+                elif s == "preempt": self.ok += 1
+                else: self.S(n, t, "VRRP option has no mapping yet (timers, track, authentication)")
+            elif k == "standby" and len(w) >= 2:
+                gid = w[1] if w[1].isdigit() else "0"; rest = w[2:] if w[1].isdigit() else w[1:]
+                if rest[:1] == ["version"]: self.ok += 1; continue
+                g = vr(gid); s = rest[0].lower() if rest else ""
+                if s == "ip" and len(rest) > 1:
+                    g["ip"] = rest[1]; self.ok += 1
+                    self.R(n, t, "HSRP converted to VRRP: a different protocol, so both peers must be migrated together" + ("; group 0 became VRRP group 1" if gid == "0" else ""))
+                elif s == "priority" and len(rest) > 1: g["priority"] = rest[1]; self.ok += 1
+                elif s == "preempt": self.ok += 1
+                else: self.S(n, t, "HSRP option has no mapping yet (timers, track, authentication)")
+            elif lw in ("ip nat inside", "ip nat outside"): it["nat"] = w[2]; self.ok += 1
+            elif k == "encapsulation" and len(w) >= 3 and w[1].lower() == "dot1q": it["dot1q"] = w[2]; self.ok += 1
+            elif k == "speed" and len(w) > 1 and w[1].isdigit(): it["speed"] = w[1]; self.ok += 1
+            elif k == "duplex" and len(w) > 1 and w[1] in ("full", "half"): it["duplex"] = w[1]; self.ok += 1
+            elif lw.startswith(("ip ospf", "ip pim", "ip igmp")): self.S(n, t, "interface-level routing option has no mapping yet")
+            elif lw.startswith(("switchport port-security", "storm-control", "ip dhcp snooping", "service-policy", "mls qos", "ip verify", "ip arp inspection", "authentication", "dot1x", "mab")):
+                self.S(n, t, "security / QoS feature not translated yet")
+            else: self.S(n, t, "no mapping for this interface command yet")
+        it["vrrp"] = [g for g in it["vrrp"].values() if g["ip"]]
+        return it
+
+    def one_iface(self, n, cmd, raw, it):
+        h3 = self.if_name(raw, n, cmd)
+        if not h3: self.S(n, cmd, f"interface type '{raw}' not understood"); return
+        key = _TR_IFTYPES.get(_re_tr.match(r"^([A-Za-z\-]+)", _re_tr.sub(r"\s+", "", raw)).group(1).lower())
+        if key == "vlan":
+            vid = _re_tr.sub(r"\D", "", raw)
+            ip = it["ip"]; dm = "client" if it["dhcp"] else ("relay" if it["relay"] else "none")
+            self.d["svis"].append({"vlan": vid, "description": it["desc"], "ip": ip, "dhcp_mode": dm, "dhcp_relay": it["relay"],
+                                   "shutdown": it["shut"], "vrrp": it["vrrp"], "acl_in": it["acl_in"], "acl_out": it["acl_out"]}); return
+        e = {"interface": h3, "description": it["desc"], "shutdown": it["shut"], "speed": it["speed"], "duplex": it["duplex"],
+             "acl_in": it["acl_in"], "acl_out": it["acl_out"]}
+        if key == "po":
+            e.update(self._l2(it, "trunk")); self.bagg[_re_tr.sub(r"\D", "", raw)] = e; self.d["interfaces"].append(e); return
+        if it["lag"]:
+            e["lag"] = it["lag"]; e["mode"] = it["mode"] or "access"
+            self.members.setdefault(it["lag"], []).append((e, it)); self.d["interfaces"].append(e); return
+        routed = key == "lo" or it["noswitchport"] or bool(it["dot1q"]) or (self.is_router) or (it["ip"] and not it["mode"]) or it["dhcp"]
+        if routed:
+            e["mode"] = "routed"; e["ip"] = "dhcp" if it["dhcp"] else it["ip"]; e["dot1q"] = it["dot1q"]
+            e["dhcp_relay"] = it["relay"]; e["vrrp"] = it["vrrp"]; e["nat_side"] = it["nat"]
+        else:
+            e.update(self._l2(it, "access")); e["stp_edge"] = it["edge"]; e["poe"] = it["poe"]
+        self.d["interfaces"].append(e)
+
+    def _l2(self, it, default):
+        mode = it["mode"] or ("trunk" if (it["allowed"] or it["pvid"]) and default == "access" else default)
+        out = {"mode": mode}
+        if mode == "access": out["vlan"] = it["vlan"]
+        elif mode == "trunk":
+            if it["allowed"] and it["allowed"] != "all": out["allowed"] = it["allowed"]
+            elif it["allowed"] == "all": out["allowed"] = "all"
+            out["pvid"] = it["pvid"]
+        else:
+            out["untagged"] = it["untag"]; out["tagged"] = it["tag"]; out["pvid"] = it["pvid"]
+        return out
+
+    # --- misc
+    def snmp(self, n, cmd, w):
+        sd = self.d["system"]
+        if len(w) >= 3 and w[1] == "community":
+            ro = "RW" in [x.upper() for x in w[3:]] or "rw" in w[3:]
+            sd.setdefault("snmp_communities", []).append({"name": w[2], "mode": "write" if ro else "read"}); self.ok += 1
+            if len(w) > 4 and w[4].isdigit(): self.R(n, cmd, "SNMP community ACL dropped")
+        elif w[1] == "location": sd["snmp_location"] = cmd.split(None, 2)[2] if len(w) > 2 else ""; self.ok += 1
+        elif w[1] == "contact": sd["snmp_contact"] = cmd.split(None, 2)[2] if len(w) > 2 else ""; self.ok += 1
+        elif w[1] == "host" and len(w) >= 3 and _tr_ipv4(w[2]):
+            comm = w[-1] if len(w) > 3 else "public"
+            if "version" in w and w[w.index("version") + 1] not in ("1", "2c"): self.S(n, cmd, "SNMPv3 hosts are not translated yet"); return
+            sd.setdefault("snmp_hosts", []).append({"ip": w[2], "community": comm}); self.ok += 1
+        elif w[1] == "enable" and len(w) > 2 and w[2] == "traps": sd["snmp_traps"] = True; self.ok += 1
+        elif w[1] in ("trap-source", "trap", "ifindex", "chassis-id", "system-shutdown", "queue-length"): self.ok += 1
+        else: self.S(n, cmd, "SNMP option has no mapping yet (SNMPv3 users/groups/views)")
+
+    def user(self, n, cmd, w):
+        sd = self.d["system"]
+        if sd.get("admin_user"): self.R(n, cmd, "only the first user is translated; create the others with 'local-user' on the H3C"); return
+        sd["admin_user"] = w[1]
+        m = _re_tr.search(r"\b(password|secret)\s+(?:(\d)\s+)?(\S+)", cmd)
+        if m and (m.group(2) in (None, "0")) and m.group(1) == "password": sd["admin_pass"] = m.group(3); self.ok += 1
+        else:
+            self.R(n, cmd, "the password is hashed or a 'secret', so it cannot be carried over: set the password on the H3C")
+        if "privilege" in w and w[w.index("privilege") + 1:][:1] not in (["15"],): self.R(n, cmd, "user role: non-15 privilege mapped to network-admin, adjust the role")
+
+    def stp(self, n, cmd, w):
+        sd = self.d["system"]
+        if len(w) >= 3 and w[1] == "mode":
+            m = {"rapid-pvst": "pvst", "pvst": "pvst", "mst": "mstp", "mstp": "mstp", "rstp": "rstp", "stp": "rstp"}.get(w[2])
+            if m: sd["stp_mode"] = m; self.ok += 1
+            if w[2] in ("rapid-pvst", "pvst"): self.R(n, cmd, "PVST needs an H3C model that supports it; use stp mode rstp or mstp otherwise")
+            if w[2] == "stp": self.R(n, cmd, "classic STP mapped to RSTP (compatible)")
+            if not m: self.S(n, cmd, "STP mode not understood")
+        elif cmd.strip() in ("spanning-tree",): self.ok += 1
+        elif "portfast" in cmd and "default" in cmd: self.ok += 1
+        elif "bpduguard" in cmd and "default" in cmd: sd["bpdu_guard"] = True; self.ok += 1
+        elif "vlan" in cmd and "priority" in cmd or "mst" in cmd or "priority" in cmd: self.S(n, cmd, "STP priority / MST instance is not translated yet: set 'stp priority' / 'stp region-configuration' on the H3C")
+        else: self.S(n, cmd, "STP option has no mapping yet")
+
+    def finish(self):
+        d = self.d
+        # LAG: make sure every aggregation has its Bridge-Aggregation interface
+        for lg, mems in self.members.items():
+            dyn = any(it["lagmode"] == "dynamic" for _, it in mems)
+            if lg not in self.bagg:
+                e = {"interface": "Bridge-Aggregation" + lg, "description": "", "shutdown": False}
+                e.update(self._l2(mems[0][1], "trunk")); d["interfaces"].append(e); self.bagg[lg] = e
+            self.bagg[lg]["lag_dynamic"] = dyn
+            for e, it in mems: e["lag"] = lg
+        # NAT -> nat outbound on the outside interface
+        by = {x["interface"]: x for x in d["interfaces"]}
+        for n, cmd, acl, ifc in self.nat:
+            nm = self.if_name(ifc, n, cmd)
+            if nm and nm in by: by[nm]["nat_outbound"] = self.acl_ref(acl); self.ok += 1
+            else: self.R(n, cmd, "NAT outside interface not found in this config")
+        for x in d["interfaces"]: x.pop("nat_side", None)
+        # DHCP excluded addresses: attach to the pool that contains them
+        for ex in self.excl:
+            first = ex.split("-")[0]; placed = False
+            for p in d["dhcp_pools"]:
+                try:
+                    import ipaddress
+                    if p["network"] and p["cidr"] and ipaddress.ip_address(first) in ipaddress.ip_network(f"{p['network']}/{p['cidr']}", strict=False):
+                        p["forbidden_ips"] = (p["forbidden_ips"] + " " + ex).strip(); placed = True; break
+                except Exception: pass
+            if not placed and d["dhcp_pools"]:
+                d["dhcp_pools"][0]["forbidden_ips"] = (d["dhcp_pools"][0]["forbidden_ips"] + " " + ex).strip()
+            elif not placed: self.R(0, "ip dhcp excluded-address " + ex, "no DHCP pool in this config to attach it to")
+        # ACLs
+        for ref, a in self.acls.items():
+            out = self.acl_ref(ref)
+            ent = {"acl_type": "basic" if a["std"] else "advanced", "description": a["desc"], "rules": []}
+            if out.isdigit(): ent["acl_number"] = out
+            else: ent["acl_name"] = out
+            auto = 0
+            for r in a["rules"]:
+                auto += 10
+                r = dict(r); r.setdefault("rule_id", str(auto)); ent["rules"].append(r)
+            d["acls"].append(ent)
+        if d["ospf"] and not d["ospf"].get("process_id"): d["ospf"] = {}
+        for e in d["interfaces"]:
+            if e.get("lag_dynamic") is None and e["interface"].lower().startswith("bridge-aggregation"): e["lag_dynamic"] = False
+
+    def report(self):
+        review = sorted(self.review, key=lambda x: x["line"]); skip = sorted(self.skip, key=lambda x: x["line"])
+        return {"total": self.total, "ok": self.ok, "review": review[:300], "skipped": skip[:400], "review_count": len(self.review), "skipped_count": len(self.skip) + getattr(self, "hidden", 0),
+                "interface_map": [{"from": a, "to": b} for a, b in self.if_map[:300]], "acl_map": [{"from": a, "to": b} for a, b in self.acl_map[:100]], "notes": self.notes}
+
+def translate_config(source, text, member=1, device="auto"):
+    """source: 'cisco' (IOS / IOS-XE) or 'ruijie' (RGOS). Returns (h3c_config, report, data)."""
+    tr = _Translator("ruijie" if source == "ruijie" else "cisco", member, device)
+    data = tr.run(text)
+    cfg = gen_h3c_comware(data)
+    rep = tr.report()
+    todo = ["#", "# ===== NOT TRANSLATED: review these lines by hand ====="]
+    for s in tr.skip[:200]: todo.append("# [" + str(s["line"]) + "] " + _rj_s(s["text"]) + "   <- " + s["note"])
+    for r in tr.review[:200]: todo.append("# [CHECK " + str(r["line"]) + "] " + _rj_s(r["text"]) + "   <- " + r["note"])
+    if len(todo) > 2:
+        head, sep, tail = cfg.rpartition("\nreturn")
+        cfg = (head + "\n" + "\n".join(todo) + "\n#\nreturn") if sep else cfg + "\n" + "\n".join(todo)
+    return cfg, rep, data
+
 def generate_config(vendor, os_id, data):
     """Route to the correct generator based on vendor+OS"""
     if vendor == "h3c" and os_id == "comware":
@@ -1928,6 +2675,112 @@ def templates():
         filtered = {k: v for k, v in TEMPLATES.items() if v.get("vendor") == vendor}
         return jsonify(filtered)
     return jsonify(TEMPLATES)
+
+
+# ==========================================================
+# CONFIG TRANSLATOR API (free tier limits enforced here, on the server)
+# ==========================================================
+TR_FREE_DAILY = 3
+TR_FREE_LINES = 150
+TR_PRO_LINES = 5000
+
+def _wib_today():
+    return (datetime.utcnow() + timedelta(hours=7)).date()
+
+def _tr_identity():
+    """-> (key, email). Logged-in users are counted by account, everyone else by a salted hash of the IP."""
+    import hashlib
+    raw = request.headers.get("Authorization", "").replace("Bearer ", "").strip()
+    u = decode_token(raw) if raw else None
+    if u and u.get("user_id"):
+        return "u" + str(u["user_id"]), str(u.get("email") or "").lower()
+    ip = (request.headers.get("x-real-ip") or request.headers.get("x-forwarded-for", "").split(",")[0].strip() or request.remote_addr or "?").strip()
+    return "i" + hashlib.sha256((ip + "|" + str(app.config["SECRET_KEY"])).encode()).hexdigest()[:40], ""
+
+def _tr_is_pro(email):
+    pro = {e.strip().lower() for e in os.environ.get("PRO_EMAILS", "").split(",") if e.strip()}
+    return bool(email) and email in pro
+
+def _tr_used(key):
+    row = TranslateUse.query.filter_by(day=_wib_today(), key=key).first()
+    return row.count if row else 0
+
+def _tr_bump(key, cap=None):
+    """Add one use. With cap: refuse (return False) when the cap is already reached."""
+    from sqlalchemy.exc import IntegrityError
+    for _ in range(2):
+        row = TranslateUse.query.filter_by(day=_wib_today(), key=key).first()
+        if row is None:
+            db.session.add(TranslateUse(day=_wib_today(), key=key, count=1))
+        else:
+            if cap is not None and row.count >= cap: return False
+            row.count += 1
+        try:
+            db.session.commit(); return True
+        except IntegrityError:
+            db.session.rollback()
+    return False
+
+def _tr_limits(key, email):
+    pro = _tr_is_pro(email)
+    used = _tr_used(key)
+    return {"plan": "pro" if pro else "free", "used": used, "daily_limit": None if pro else TR_FREE_DAILY,
+            "remaining": None if pro else max(TR_FREE_DAILY - used, 0), "lines_limit": TR_PRO_LINES if pro else TR_FREE_LINES, "resets": "00:00 WIB"}
+
+@app.route("/api/translate/limits", methods=["GET"])
+def api_translate_limits():
+    key, email = _tr_identity()
+    return jsonify(_tr_limits(key, email))
+
+@app.route("/api/translate", methods=["POST"])
+def api_translate():
+    key, email = _tr_identity()
+    try:
+        payload = request.get_json(silent=True) or {}
+        source = payload.get("source")
+        if source not in ("cisco", "ruijie"):
+            return jsonify({"success": False, "error": "Pick a source: Cisco or Ruijie"}), 400
+        text = str(payload.get("config") or "")
+        lines = [l for l in text.replace("\r", "").split("\n") if l.strip() and not l.strip().startswith("!")]
+        lim = _tr_limits(key, email)
+        if not lines:
+            return jsonify({"success": False, "error": "Paste a config first"}), 400
+        if len(lines) > lim["lines_limit"]:
+            return jsonify({"success": False, "code": "limit_lines", "limits": lim,
+                            "error": f"This config has {len(lines)} lines. The free plan translates up to {lim['lines_limit']} lines at a time."}), 413
+        opts = payload.get("options") if isinstance(payload.get("options"), dict) else {}
+        if lim["plan"] == "free":
+            if not _tr_bump(key, TR_FREE_DAILY):
+                return jsonify({"success": False, "code": "limit_daily", "limits": _tr_limits(key, email),
+                                "error": f"Daily limit reached ({TR_FREE_DAILY} translations). It resets at 00:00 WIB."}), 429
+        try:
+            cfg, rep, _data = translate_config(source, text, opts.get("member", 1), str(opts.get("device", "auto")))
+        except Exception:
+            if lim["plan"] == "free":   # give the use back when the translator itself failed
+                row = TranslateUse.query.filter_by(day=_wib_today(), key=key).first()
+                if row and row.count > 0: row.count -= 1; db.session.commit()
+            raise
+        if lim["plan"] == "pro": _tr_bump(key)
+        return jsonify({"success": True, "config": cfg, "report": rep, "lines": len(cfg.split("\n")), "limits": _tr_limits(key, email),
+                        "source": source, "target": "h3c_comware"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": "Could not translate this config (" + type(e).__name__ + ")"}), 400
+
+@app.route("/api/pro-waitlist", methods=["POST"])
+def api_pro_waitlist():
+    key, _ = _tr_identity()
+    email = str((request.get_json(silent=True) or {}).get("email") or "").strip().lower()
+    if not re.match(r"^[^@\s]{1,64}@[^@\s]{1,190}\.[^@\s]{2,20}$", email) or len(email) > 254:
+        return jsonify({"success": False, "error": "Enter a valid email"}), 400
+    if not _tr_bump("w" + key[:40], 5):
+        return jsonify({"success": False, "error": "Too many tries today"}), 429
+    try:
+        if not ProWaitlist.query.filter_by(email=email).first():
+            db.session.add(ProWaitlist(email=email)); db.session.commit()
+    except Exception:
+        db.session.rollback()
+    return jsonify({"success": True, "message": "You are on the list. We will email you when Pro opens."})
 
 @app.route("/feedback", methods=["POST"])
 def feedback():
