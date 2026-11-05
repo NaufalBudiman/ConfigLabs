@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dashboard — ConfigLabs</title>
+<meta name="description" content="Your ConfigLabs dashboard: saved configs, WiFi projects, topology diagrams, rack projects and Translator usage in one place."/>
+<meta name="robots" content="noindex"/>
+<meta name="theme-color" content="#0b0d10"/>
+<link rel="icon" type="image/x-icon" href="/favicon.ico"/>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/>
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png"/>
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png"/>
+<link rel="manifest" href="/site.webmanifest"/>
+<script src="/site.js" defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<style>
+@property --p{syntax:'<number>';inherits:false;initial-value:0}
+:root{
+  --sans:'Geist',system-ui,-apple-system,'Segoe UI',sans-serif;--serif:'Instrument Serif',Georgia,serif;--mono:'JetBrains Mono',ui-monospace,monospace;
+  --ease:cubic-bezier(.22,1,.36,1);color-scheme:dark;
+  /* site tokens; the two text greys are a step lighter so they keep 4.5:1 on glass over the orbs */
+  --bg:#0b0d10;--text:#e6e9ee;--text-dim:#b3bcc8;--text-muted:#9ca5b3;
+  --accent:#7cf4c7;--accent-2:#a8b5ff;--accent-3:#ffb86b;--accent-4:#f9a8d4;--danger:#ff8a9a;--on-accent:#06130e;
+  --glass:rgba(18,22,28,.66);--glass-strong:rgba(14,17,22,.78);--glass-solid:#13171d;
+  --line:rgba(255,255,255,.10);--line-2:rgba(255,255,255,.15);--rim:rgba(255,255,255,.14);--sheen:rgba(255,255,255,.06);
+  --shadow:0 10px 40px rgba(0,0,0,.35);
+  --item:rgba(230,233,238,.04);--item-line:rgba(255,255,255,.08);
+  --solid:#13171d;--solid-line:#262d38;--track:rgba(230,233,238,.12);
+  --sk-a:rgba(230,233,238,.06);--sk-b:rgba(230,233,238,.14);
+  --orb-a:rgba(124,244,199,.26);--orb-b:rgba(168,181,255,.24);--orb-c:rgba(255,184,107,.2);
+}
+[data-theme="light"]{
+  color-scheme:light;
+  --bg:#f8f6f1;--text:#1a1a1a;--text-dim:#4a4d53;--text-muted:#5a5e66;
+  --accent:#0f766e;--accent-2:#4f46e5;--accent-3:#ea580c;--accent-4:#be185d;--danger:#c81e3a;--on-accent:#fff;
+  --glass:rgba(255,255,255,.62);--glass-strong:rgba(255,255,255,.8);--glass-solid:#fff;
+  --line:rgba(255,255,255,.75);--line-2:rgba(26,26,26,.14);--rim:rgba(255,255,255,.95);--sheen:rgba(255,255,255,.4);
+  --shadow:0 10px 36px rgba(60,50,20,.12),0 1px 0 rgba(0,0,0,.04);
+  --item:rgba(255,255,255,.55);--item-line:rgba(26,26,26,.08);
+  --solid:#fff;--solid-line:#e4dfd0;--track:rgba(26,26,26,.1);
+  --sk-a:rgba(26,26,26,.06);--sk-b:rgba(26,26,26,.12);
+  --orb-a:rgba(15,118,110,.2);--orb-b:rgba(79,70,229,.16);--orb-c:rgba(234,88,12,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:90px}
+body{background:var(--bg);color:var(--text);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+button,input{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer}
+em{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--accent)}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* colour behind the glass: soft gradients (no blur filter, cheap to move) */
+.orbs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.orbs i{position:absolute;border-radius:50%;will-change:transform;animation:drift 26s ease-in-out infinite alternate}
+.orbs i:nth-child(1){width:48vw;height:48vw;min-width:320px;min-height:320px;max-width:680px;max-height:680px;left:-10vw;top:-12vw;background:radial-gradient(closest-side,var(--orb-a) 25%,transparent)}
+.orbs i:nth-child(2){width:42vw;height:42vw;min-width:280px;min-height:280px;max-width:600px;max-height:600px;right:-8vw;top:14vh;background:radial-gradient(closest-side,var(--orb-b) 25%,transparent);animation-duration:32s;animation-direction:alternate-reverse}
+.orbs i:nth-child(3){width:38vw;height:38vw;min-width:260px;min-height:260px;max-width:540px;max-height:540px;left:28vw;bottom:-16vw;background:radial-gradient(closest-side,var(--orb-c) 25%,transparent);animation-duration:38s}
+@keyframes drift{to{transform:translate3d(6vw,4vh,0) scale(1.12)}}
+
+/* liquid glass, for the hero surfaces only: blur + saturation, a lit rim and a soft sheen */
+.glass{position:relative;background:var(--glass);border:1px solid var(--line);border-radius:22px;-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);box-shadow:inset 0 1px 0 var(--rim),inset 0 -1px 0 rgba(0,0,0,.12),var(--shadow)}
+.glass::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(135deg,var(--sheen),transparent 38%,transparent 70%,var(--sheen))}
+.glass>*{position:relative}
+.glass.soft{-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);border-radius:18px}
+.glass.strong{background:var(--glass-strong)}
+.glass.flat{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--glass-strong)}   /* same look, no blur: the logged-out sign-in card */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.glass,.glass.strong{background:var(--glass-solid)}}
+.lift{transition:transform .25s var(--ease),border-color .25s var(--ease)}
+.lift:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+
+.wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:16px 20px 56px}
+.skip{position:absolute;left:16px;top:-80px;z-index:100;padding:10px 16px;border-radius:12px;background:var(--solid);border:1px solid var(--solid-line);font-weight:600}
+.skip:focus{top:16px}
+.sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+
+/* top bar */
+.top{position:sticky;top:12px;z-index:20;display:flex;align-items:center;gap:12px;padding:8px 10px 8px 14px;border-radius:999px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:16.5px;letter-spacing:-.3px;flex-shrink:0;border-radius:10px;white-space:nowrap}
+.brand-logo{width:30px;height:30px;border-radius:8px;background:conic-gradient(from 180deg,var(--accent),var(--accent-2),var(--accent-3),var(--accent));display:grid;place-items:center;position:relative}
+.brand-logo::after{content:'';position:absolute;inset:2px;border-radius:6px;background:var(--bg)}
+.brand-logo svg{position:relative;z-index:1;width:17px;height:17px;color:var(--text)}
+.nav-links{display:flex;gap:2px;margin-left:auto;min-width:0;padding:2px}
+.nav-link{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:999px;font-size:13px;font-weight:500;color:var(--text-dim);white-space:nowrap;transition:background .2s,color .2s}
+.nav-link:hover{color:var(--text);background:color-mix(in srgb,var(--text) 8%,transparent)}
+.nav-link.on{color:var(--text);background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.nav-link:focus-visible{outline-offset:-2px}
+.nav-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.icon-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--line-2);background:color-mix(in srgb,var(--text) 6%,transparent);color:var(--text-dim);display:grid;place-items:center;transition:color .2s,background .2s}
+.icon-btn:hover{color:var(--text);background:color-mix(in srgb,var(--text) 12%,transparent)}
+.i-sun,[data-theme="light"] .i-moon{display:none}
+[data-theme="light"] .i-sun{display:block}
+.acct{position:relative;display:flex}
+.avatar{position:relative;width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:15px;display:grid;place-items:center}
+.avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.menu{position:absolute;right:0;top:calc(100% + 10px);z-index:30;width:max-content;min-width:220px;max-width:min(300px,calc(100vw - 28px));padding:6px;border-radius:16px;background:var(--solid);border:1px solid var(--solid-line);box-shadow:0 18px 50px rgba(0,0,0,.35)}
+.m-head{padding:10px 12px;border-bottom:1px solid var(--solid-line);margin-bottom:4px}
+.m-head b,.m-head span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.m-head b{font-size:14px;font-weight:600}
+.m-head span{font:12px var(--mono);color:var(--text-muted);margin-top:2px}
+.m-note{padding:10px 12px 6px;font-size:13px;color:var(--text-dim)}
+.m-item{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;border-radius:10px;font-size:13.5px;font-weight:500;text-align:left}
+.m-item:hover{background:color-mix(in srgb,var(--text) 8%,transparent)}
+.m-item.danger{color:var(--danger)}
+
+/* buttons and links */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 18px;border-radius:999px;font-weight:600;font-size:14px;line-height:1.2;border:1px solid transparent;white-space:nowrap;transition:transform .2s var(--ease),filter .2s,background .2s}
+.btn:hover{transform:translateY(-1px)}
+.btn.primary{background:var(--accent);color:var(--on-accent);box-shadow:0 6px 22px color-mix(in srgb,var(--accent) 30%,transparent)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{background:color-mix(in srgb,var(--text) 7%,transparent);border-color:var(--line-2);color:var(--text)}
+.btn.ghost:hover{background:color-mix(in srgb,var(--text) 12%,transparent)}
+.btn.sm{padding:8px 14px;font-size:13px}
+.btn:disabled{opacity:.65;cursor:default;transform:none}
+.lnk{color:var(--accent);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px}
+.lnk:hover{text-decoration-thickness:2px}
+
+/* header */
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px 32px;flex-wrap:wrap;margin:40px 4px 22px}
+.eyebrow{font:500 11px var(--mono);letter-spacing:1.4px;text-transform:uppercase;color:var(--text-muted)}
+.head .eyebrow{color:var(--text-dim)}
+h1{font-size:clamp(30px,4.6vw,46px);font-weight:600;letter-spacing:-1.2px;line-height:1.08;margin-top:6px;overflow-wrap:anywhere}
+.sub{color:var(--text-dim);font-size:14px;max-width:46ch}
+
+/* sign-in card (logged out) */
+.signin{display:flex;align-items:center;gap:18px;padding:20px 22px;margin-bottom:16px}
+.si-txt{flex:1;min-width:0}
+.si-txt h2{font-size:17px;font-weight:600;letter-spacing:-.2px}
+.si-txt p{font-size:13.5px;color:var(--text-dim);margin-top:3px;max-width:72ch}
+.si-note{display:inline-flex;align-items:center;gap:8px;margin-bottom:8px;padding:4px 12px;border-radius:999px;font-size:12.5px;font-weight:500;border:1px solid color-mix(in srgb,var(--accent-3) 55%,transparent);background:color-mix(in srgb,var(--accent-3) 12%,transparent)}
+.si-note::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--accent-3)}
+
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
+.c-resume{grid-column:span 7}.c-usage{grid-column:span 5}.c-stat{grid-column:span 3}
+.tool-ico{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;flex-shrink:0;color:#071014;background:linear-gradient(135deg,var(--c),color-mix(in srgb,var(--c) 55%,#fff))}
+.tool-ico.lg{width:52px;height:52px;border-radius:16px}
+[data-theme="light"] .tool-ico{color:var(--c);background:color-mix(in srgb,var(--c) 12%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 22%,transparent)}
+.t-config{--c:var(--accent)}.t-wifi{--c:var(--accent-2)}.t-topo{--c:var(--accent-3)}.t-rack{--c:var(--accent-4)}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--c)}
+
+/* continue where you left off */
+.resume{padding:24px;display:flex;flex-direction:column;gap:16px;min-height:228px}
+.resume .row{display:flex;align-items:center;gap:16px;min-width:0}
+.rt{flex:1;min-width:0}
+.resume h2{font-size:21px;font-weight:600;letter-spacing:-.3px;line-height:1.25;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.desc{font-size:13px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+.meta{display:flex;flex-wrap:wrap;align-items:center;gap:2px 12px;font:12px/1.6 var(--mono);color:var(--text-muted);min-width:0}
+.meta>span,.empty,.wl,.toast{min-width:0;overflow-wrap:anywhere}
+.resume .meta{margin-top:6px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:auto}
+.ob-p{font-size:14px;color:var(--text-dim);max-width:56ch;margin-top:-6px}
+.ob{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;font-size:13px;font-weight:500;white-space:nowrap;background:var(--item);border:1px solid var(--line-2);transition:border-color .2s}
+.pill:hover{border-color:color-mix(in srgb,var(--accent) 55%,var(--line-2))}
+
+/* translator usage */
+.usage{padding:24px;display:flex;align-items:center;gap:20px;min-height:228px}
+.ring{--p:0;width:96px;height:96px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:conic-gradient(var(--accent) calc(var(--p)*360deg),var(--track) 0);transition:--p .9s var(--ease)}
+.ring.out{background:conic-gradient(var(--accent-3) calc(var(--p)*360deg),var(--track) 0)}
+.ring span{width:74px;height:74px;border-radius:50%;background:var(--solid);display:grid;place-items:center;font:700 19px var(--mono);font-variant-numeric:tabular-nums}
+.ring.pro span{font-size:28px;font-weight:400}
+.usage[data-st="loading"] .ring{background:var(--sk-a)}
+.usage[data-st="error"] .ring{display:none}
+.u-txt{flex:1;min-width:0}
+.u-txt h2{font-size:16px;font-weight:600;letter-spacing:-.1px}
+.u-txt p{font-size:13.5px;color:var(--text-dim);margin:4px 0 14px}
+.u-txt .wl{margin:0;color:var(--text)}
+.u-txt .wl.err{color:var(--danger);margin-top:10px;font-size:13px}
+.nw{white-space:nowrap}
+
+/* stat tiles */
+.stat{padding:18px 20px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.stat .n{font-size:34px;font-weight:600;line-height:1;letter-spacing:-1px;font-variant-numeric:tabular-nums;min-height:34px}
+.stat .n.sk{width:64px}
+.stat .l{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim)}
+.stat .s{font:11.5px/1.5 var(--mono);color:var(--text-muted);min-height:17px}
+
+/* quick actions */
+.quick{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.quick .q{flex:1 1 170px;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px 16px;border-radius:999px;font-size:13.5px;font-weight:500;white-space:nowrap}
+
+/* recent work (items are translucent cards, never glass, so long lists stay fast) */
+.recent{margin-top:16px;padding:22px}
+.rhead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.rhead h2{font-size:18px;font-weight:600;letter-spacing:-.2px;margin-right:auto}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:500;color:var(--text-dim);border:1px solid var(--line-2);transition:background .2s,color .2s,border-color .2s}
+.chip:hover{color:var(--text)}
+.chip[aria-pressed="true"]{color:var(--text);background:color-mix(in srgb,var(--accent) 18%,transparent);border-color:color-mix(in srgb,var(--accent) 50%,transparent)}
+.cn{font:500 11px var(--mono);color:var(--text-muted)}
+.chip[aria-pressed="true"] .cn{color:var(--text-dim)}
+.search{width:220px;max-width:100%;padding:8px 14px;border-radius:999px;background:var(--solid);border:1px solid var(--solid-line);font-size:13px;-webkit-appearance:none;appearance:none}
+.search::placeholder{color:var(--text-muted)}
+.notes{display:grid;gap:8px;margin-bottom:12px}
+.notes:empty{display:none}
+.note{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;padding:10px 14px;border-radius:12px;font-size:13px;border:1px solid color-mix(in srgb,var(--danger) 45%,transparent);background:color-mix(in srgb,var(--danger) 8%,transparent)}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr));gap:12px}
+.item{display:flex;flex-direction:column;gap:10px;min-width:0;padding:14px;border-radius:16px;background:var(--item);border:1px solid var(--item-line);transition:transform .2s var(--ease),border-color .2s}
+.item:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--item-line))}
+@media (hover:hover){.item:not(.ghost):hover{transform:translateY(-2px)}}
+.item.ghost{pointer-events:none}
+.itop{display:flex;align-items:center;gap:12px;min-width:0}
+.nm{flex:1;min-width:0;display:flex;flex-direction:column}
+.nm b{font-size:14.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nm small{font-size:12px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag{flex-shrink:0;padding:3px 8px;border-radius:999px;border:1px solid var(--line-2);font:500 10.5px/1.4 var(--mono);letter-spacing:.6px;text-transform:uppercase;color:var(--text-dim)}
+.where{display:inline-flex;align-items:center;gap:5px}
+.where.synced,.where.cloud{color:var(--accent)}
+.empty{grid-column:1/-1;padding:34px 12px;text-align:center;font-size:14px;color:var(--text-dim)}
+.more{display:flex;justify-content:center;margin-top:16px}
+.more:has(#more[hidden]){display:none}
+
+/* footer, toast */
+.foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 18px;margin-top:28px;font:12px var(--mono);color:var(--text-dim)}
+.foot a{border-radius:4px}
+.foot a:hover{color:var(--text);text-decoration:underline;text-underline-offset:3px}
+.ver{padding:4px 10px;border-radius:999px;border:1px solid var(--line-2);background:color-mix(in srgb,var(--bg) 55%,transparent)}
+.toast{position:fixed;left:50%;bottom:20px;z-index:60;max-width:calc(100% - 32px);padding:10px 18px;border-radius:18px;background:var(--solid);border:1px solid var(--solid-line);color:var(--text);font-size:13.5px;box-shadow:0 12px 40px rgba(0,0,0,.3);opacity:0;transform:translate(-50%,16px);pointer-events:none;transition:opacity .2s,transform .2s var(--ease)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* loading skeletons */
+.sk{display:block;border-radius:8px;background:linear-gradient(90deg,var(--sk-a) 25%,var(--sk-b) 50%,var(--sk-a) 75%) 0 0/200% 100%;animation:shimmer 1.4s linear infinite}
+.tool-ico.sk,[data-theme="light"] .tool-ico.sk{background:linear-gradient(90deg,var(--sk-a) 25%,var(--sk-b) 50%,var(--sk-a) 75%) 0 0/200% 100%;box-shadow:none}
+.avatar.sk{border-radius:50%}
+@keyframes shimmer{from{background-position:150% 0}to{background-position:-50% 0}}
+.sk-h{width:62%;height:18px;margin:2px 0 10px}
+.sk-m{width:44%;height:11px}
+.sk-l{width:72%;height:12px;margin-bottom:7px}
+.sk-s{width:42%;height:10px}
+.sk-b{width:150px;height:40px;border-radius:999px}
+.sk-b2{width:118px;height:40px;border-radius:999px}
+
+/* responsive */
+@media (max-width:1180px){.nav-link svg{display:none}}
+@media (max-width:1023px){
+  .top{flex-wrap:wrap;row-gap:6px;border-radius:22px}
+  .nav-links{order:3;flex:0 0 100%;margin:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .nav-links::-webkit-scrollbar{display:none}
+  .nav-actions{margin-left:auto}
+}
+@media (max-width:980px){.c-resume,.c-usage{grid-column:span 12}.c-stat{grid-column:span 6}.resume,.usage{min-height:0}}
+@media (max-width:640px){
+  .wrap{padding:10px 14px 44px}
+  .glass{-webkit-backdrop-filter:blur(12px) saturate(150%);backdrop-filter:blur(12px) saturate(150%);border-radius:18px}
+  .glass.soft{-webkit-backdrop-filter:blur(10px) saturate(140%);backdrop-filter:blur(10px) saturate(140%)}
+  .orbs i{animation:none}
+  .top{position:relative;top:auto;border-radius:20px;padding:8px 8px 6px 12px}
+  .head{margin:24px 2px 18px}
+  .signin{flex-direction:column;align-items:flex-start;padding:18px}
+  .signin .btn{width:100%}
+  .resume,.usage,.recent{padding:18px}
+  .actions .btn{flex:1 1 auto}
+  .usage{gap:16px}
+  .ring{width:78px;height:78px}.ring span{width:60px;height:60px;font-size:16px}
+  .stat{padding:16px}
+  .stat .n{font-size:28px;min-height:28px}
+  .quick .q{flex-basis:140px;padding:11px 12px}
+  .search{width:100%}
+}
+@media (prefers-reduced-motion:reduce){
+  .orbs i,.sk{animation:none}
+  .lift,.btn,.item,.ring,.toast,.nav-link,.chip{transition:none}
+  .lift:hover,.btn:hover,.item:not(.ghost):hover{transform:none}
+}
+</style>
+<script>
+/* ConfigLabs dashboard: everything a user has across the tools, in one place.
+   This script sits in <head> so the theme and the ?auth_token cleanup happen before the first paint and before
+   site.js sends the page view; the requests start right away and the page renders on DOMContentLoaded.
+   Every source loads on its own, with its own loading and error state, so one failure never blanks the page. */
+(function () {
+  'use strict';
+
+  /* ---------- helpers ---------- */
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const ls = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
+  const calm = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+  const str = (v, n) => typeof v === 'string' ? v.trim().slice(0, n) : '';
+  const num = v => typeof v === 'number' && v >= 0 && v < 1e7 ? Math.floor(v) : 0;
+  const pl = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+  const JWT = /^[\w-]+\.[\w-]+\.[\w-]+$/, LOCAL_ID = /^[\w.\-]{1,60}$/, CLOUD_ID = /^[A-Za-z0-9_-]{3,40}$/, FILE_ID = /^\d{1,10}$/;
+  const LOGIN = '/auth/google?next=/dashboard.html';
+  const token = () => ls.get('clab_token') || '';
+  const shown = new WeakMap();   // last HTML written into each element: skip rewrites that would change nothing (and drop focus)
+  const setHTML = (el, h) => { if (!el || shown.get(el) === h) return false; shown.set(el, h); el.innerHTML = h; return true; };
+
+  /* times: ms epochs from this browser, or ISO strings from the backend (datetime.utcnow, no zone, so UTC) */
+  function ts(v) {
+    if (typeof v === 'number') return v > 0 && v < 8.64e15 ? v : 0;
+    if (typeof v !== 'string' || !/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(v)) return 0;
+    let s = v.replace(/(\.\d{3})\d+/, '$1'); if (!/(Z|[+-]\d\d:?\d\d)$/i.test(s)) s += 'Z';
+    const t = Date.parse(s); return t > 0 ? t : 0;
+  }
+  function ago(t) {
+    const s = Math.max(0, (Date.now() - t) / 1000);
+    if (s < 60) return 'just now'; if (s < 3600) return Math.floor(s / 60) + ' min ago'; if (s < 86400) return Math.floor(s / 3600) + ' h ago';
+    if (s < 604800) return Math.floor(s / 86400) + ' d ago'; return new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  /* ---------- tools ---------- */
+  const svg = (p, n) => '<svg width="' + n + '" height="' + n + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>';
+  const ICON = {
+    config: '<path d="M8 6l-6 6 6 6M16 6l6 6-6 6"/>',
+    wifi: '<path d="M2 9a15 15 0 0 1 20 0M5 13a10 10 0 0 1 14 0M8.5 16.5a5 5 0 0 1 7 0"/><circle cx="12" cy="20" r="1"/>',
+    topo: '<circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M11 7.3L6 16.7M13 7.3l5 9.4M7.5 19h9"/>',
+    rack: '<rect x="5" y="2" width="14" height="20" rx="1.5"/><path d="M5 7h14M5 12h14M5 17h14"/>'
+  };
+  const CLOUD = svg('<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>', 12);
+  const TOOL = {
+    config: { tag: 'Config', app: 'Builder', href: '/builder.html?file=', lib: '#recent', libText: 'All saved configs' },
+    wifi: { tag: 'WiFi', app: 'WiFi Planner', href: '/wifi.html#p=', lib: '/wifi.html', libText: 'All WiFi projects' },
+    topo: { tag: 'Diagram', app: 'Topology', href: '/topology-editor.html?d=', lib: '/topology.html', libText: 'All diagrams' },
+    rack: { tag: 'Rack', app: 'Rack Builder', href: '/rack-editor.html?p=', lib: '/rack.html', libText: 'All rack projects' }
+  };
+  const WHERE = { synced: 'synced', local: 'this browser', cloud: 'in your account' };
+  const VENDOR = { h3c: 'H3C', cisco: 'Cisco', ruijie: 'Ruijie' };
+  function item(k, id, name, desc, meta, where, t) {
+    return { k, id, name, desc, meta, where, t, href: TOOL[k].href + encodeURIComponent(id),
+      hay: [name, desc, TOOL[k].tag, WHERE[where] || ''].concat(meta).join(' ').toLowerCase() };
+  }
+
+  /* ---------- state ---------- */
+  // auth: out | check | in | error (token kept, account not reachable). Source st: off | loading | ok | error
+  const S = {
+    auth: 'out', user: null, tok: '', epoch: 0, expired: false,
+    src: { files: { st: 'off', items: [] }, wcloud: { st: 'off', items: [] }, wlocal: { st: 'loading', items: [] }, topo: { st: 'loading', items: [] }, rack: { st: 'loading', items: [] }, lim: { st: 'loading', data: null } },
+    filter: 'all', q: '', all: false, wl: '', wlMsg: '', grace: false
+  };
+  const KIND = { files: 'config', wcloud: 'wifi', wlocal: 'wifi', topo: 'topo', rack: 'rack' };
+  const pending = () => Object.keys(KIND).filter(k => S.src[k].st === 'loading');
+  const failedSources = () => ['files', 'wcloud', 'wlocal'].filter(k => S.src[k].st === 'error');
+  let ready = false, queued = false, PILLS = '';
+  function paint() { if (!ready || queued) return; queued = true; Promise.resolve().then(() => { queued = false; render(); }); }
+
+  /* ---------- theme (clab_theme, same key as the other pages) ---------- */
+  const root = document.documentElement;
+  function setTheme(t, save) {
+    t = t === 'light' ? 'light' : 'dark';
+    root.dataset.theme = t; if (document.body) document.body.dataset.theme = t;
+    const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = t === 'dark' ? '#0b0d10' : '#f8f6f1';
+    const b = $('theme-btn'); if (b) b.setAttribute('aria-label', t === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
+    if (save) ls.set('clab_theme', t);
+  }
+
+  /* ---------- back from Google: ?auth_token / ?auth_error ---------- */
+  let notice = '';
+  function readLoginRedirect() {
+    const q = new URLSearchParams(location.search), tk = q.get('auth_token'), er = q.get('auth_error');
+    if (tk === null && er === null) return;
+    if (tk && JWT.test(tk)) ls.set('clab_token', tk);
+    if (er !== null) notice = 'Login failed, please try again.';   // fixed text: the URL value is never shown
+    q.delete('auth_token'); q.delete('auth_error');
+    try { history.replaceState(history.state, '', location.pathname + (String(q) ? '?' + q : '') + location.hash); } catch (e) {}
+  }
+
+  /* ---------- backend ---------- */
+  async function api(path, body) {
+    const h = { Accept: 'application/json' };
+    if (S.tok) h.Authorization = 'Bearer ' + S.tok;
+    if (body) h['Content-Type'] = 'application/json';
+    const ctl = typeof AbortController === 'function' ? new AbortController() : null, tm = ctl && setTimeout(() => ctl.abort(), 20000);
+    try {
+      const r = await fetch(path, { method: body ? 'POST' : 'GET', headers: h, body: body ? JSON.stringify(body) : undefined, cache: 'no-store', signal: ctl ? ctl.signal : undefined });
+      let j = null; try { j = await r.json(); } catch (e) {}
+      return { ok: r.ok, status: r.status, json: j };
+    } catch (e) { return { ok: false, status: 0, json: null }; }
+    finally { clearTimeout(tm); }
+  }
+
+  /* ---------- account: /api/me, saved configs, WiFi projects in the account ---------- */
+  function boot() {   // (re)start from the token this browser holds now
+    S.epoch++; S.tok = token(); S.user = null; S.wl = '';
+    const on = !!S.tok;
+    S.auth = on ? 'check' : 'out';
+    S.src.files = { st: on ? 'loading' : 'off', items: [] }; S.src.wcloud = { st: on ? 'loading' : 'off', items: [] };
+    if (on) { loadMe(); loadList('files'); loadList('wcloud'); }
+    loadLimits(); loadTopo(); loadRack(); loadWlocal();
+  }
+  function signOut(expired) {   // logged out here, or the server rejected the token
+    if (token() === S.tok) ls.del('clab_token');   // keep a newer login made in another tab
+    S.epoch++; S.tok = ''; S.auth = 'out'; S.user = null; S.expired = expired; S.wl = '';
+    S.src.files = { st: 'off', items: [] }; S.src.wcloud = { st: 'off', items: [] };
+    loadLimits(); paint();
+  }
+  async function loadMe() {
+    const ep = S.epoch;
+    if (S.auth !== 'in') S.auth = 'check';
+    paint();
+    const r = await api('/api/me'), u = r.json;
+    if (ep !== S.epoch) return;
+    if (r.ok && u && typeof u === 'object' && typeof u.email === 'string') { S.auth = 'in'; S.user = u; S.expired = false; }
+    else if (r.status === 401 || r.status === 404) return signOut(true);
+    else if (S.auth !== 'in') S.auth = 'error';
+    paint();
+  }
+  async function loadList(k) {
+    const ep = S.epoch, s = S.src[k], seq = s.seq = (s.seq || 0) + 1;
+    if (s.st !== 'ok') s.st = 'loading';
+    paint();
+    const r = await api(k === 'files' ? '/api/files?type=config' : '/api/wifi/projects');
+    if (ep !== S.epoch || seq !== s.seq) return;
+    if (r.status === 401) return signOut(true);
+    if (r.ok && Array.isArray(r.json)) { s.items = k === 'files' ? mapFiles(r.json) : mapCloud(r.json); s.st = 'ok'; }
+    else if (s.st !== 'ok') s.st = 'error';   // a failed refresh keeps the list already shown
+    paint();
+  }
+  function mapFiles(a) {
+    return a.filter(f => f && typeof f === 'object' && (f.file_type == null || f.file_type === 'config') && FILE_ID.test(String(f.id))).map(f => {
+      const v = str(f.vendor, 24);
+      return item('config', String(f.id), str(f.name, 160) || 'Untitled config', '', [VENDOR[v.toLowerCase()] || v, str(f.hostname, 64)].filter(Boolean), '', ts(f.updated_at) || ts(f.created_at));
+    });
+  }
+  async function joinWaitlist() {   // one POST per click; a refused email (400) or too many tries (429) ends it for this visit
+    if (S.auth !== 'in' || S.wl === 'busy' || S.wl === 'done' || S.wl === 'no') return;
+    const ep = S.epoch, id = String(S.user.id);
+    S.wl = 'busy'; paint();
+    const r = await api('/api/pro-waitlist', { email: str(S.user.email, 254) });
+    if (ep !== S.epoch) return;
+    if (r.ok && r.json && r.json.success) { S.wl = 'done'; S.wlMsg = str(r.json.message, 200) || 'You are on the list.'; ls.set('cl_pro_wl', id); }
+    else {
+      const srv = r.json && str(r.json.error, 200);
+      S.wl = r.status === 400 || r.status === 429 ? 'no' : 'err';
+      S.wlMsg = r.status === 400 ? 'The waitlist did not accept your account email' + (srv ? ' (' + srv + ').' : '.') : srv || (r.status ? 'Could not join the waitlist (HTTP ' + r.status + ').' : 'Cannot reach ConfigLabs. Check your connection and try again.');
+    }
+    toast(S.wlMsg); paint();
+  }
+
+  /* ---------- Translator usage: works logged out (counted per IP), per account with the token ---------- */
+  async function loadLimits() {
+    const s = S.src.lim, seq = s.seq = (s.seq || 0) + 1;
+    if (s.st !== 'ok') s.st = 'loading';
+    paint();
+    const r = await api('/api/translate/limits'), d = r.json;
+    if (seq !== s.seq) return;
+    if (r.ok && d && (d.plan === 'pro' || (d.plan === 'free' && num(d.daily_limit) > 0))) {
+      const pro = d.plan === 'pro', daily = num(d.daily_limit), used = num(d.used);
+      s.data = { pro, used, daily, left: pro ? 0 : typeof d.remaining === 'number' ? num(d.remaining) : Math.max(daily - used, 0), lines: num(d.lines_limit), resets: str(d.resets, 40) || '00:00 WIB' };
+      s.st = 'ok';
+    } else if (s.st !== 'ok') s.st = 'error';
+    paint();
+  }
+
+  /* ---------- this browser: diagram and rack indexes (localStorage) ---------- */
+  function readIndex(key) {
+    let a = null; try { a = JSON.parse(ls.get(key) || '[]'); } catch (e) {}
+    return Array.isArray(a) ? a.filter(x => x && typeof x === 'object' && (typeof x.id === 'string' || typeof x.id === 'number') && LOCAL_ID.test(String(x.id))) : [];
+  }
+  function loadTopo() {
+    S.src.topo = { st: 'ok', items: readIndex('cl_tg_idx').map(x => item('topo', String(x.id), str(x.name, 160) || 'Untitled diagram', str(x.desc, 160), [pl(num(x.n), 'device'), pl(num(x.l), 'link')], 'local', ts(x.updated) || ts(x.created))) };
+    paint();
+  }
+  function loadRack() {
+    S.src.rack = { st: 'ok', items: readIndex('cl_rk_idx').map(x => item('rack', String(x.id), str(x.name, 160) || 'Untitled rack project', str(x.desc, 160), [pl(num(x.n), 'rack'), pl(num(x.d), 'device')], 'local', ts(x.updated) || ts(x.created))) };
+    paint();
+  }
+
+  /* ---------- this browser: WiFi projects (IndexedDB 'configlabs-wifi', owned by wifi.html) ----------
+     Read only. Opened without a version so this page can never create or upgrade the database:
+     if onupgradeneeded fires the database did not exist, so the creation is aborted and the list is empty. */
+  function readWifiDb() {
+    return new Promise((resolve, reject) => {
+      let idb = null; try { idb = window.indexedDB || null; } catch (e) {}
+      if (!idb) return resolve([]);
+      let done = false, rq;
+      const end = (fn, v) => { if (!done) { done = true; clearTimeout(tm); fn(v); } };
+      const tm = setTimeout(() => end(reject, new Error('timeout')), 8000);
+      try { rq = idb.open('configlabs-wifi'); } catch (e) { return end(resolve, []); }
+      rq.onupgradeneeded = e => { try { e.target.transaction.abort(); } catch (x) {} end(resolve, []); };
+      rq.onblocked = () => end(resolve, []);
+      rq.onerror = e => { if (e && e.preventDefault) e.preventDefault(); end(resolve, []); };   // the abort above, or no storage (private window)
+      rq.onsuccess = () => {
+        const db = rq.result;
+        if (done) { db.close(); return; }
+        db.onversionchange = () => db.close();
+        if (!db.objectStoreNames.contains('projects')) { db.close(); return end(resolve, []); }
+        try {
+          const tx = db.transaction('projects', 'readonly'), g = tx.objectStore('projects').getAll();
+          tx.oncomplete = () => { db.close(); end(resolve, Array.isArray(g.result) ? g.result : []); };
+          tx.onerror = tx.onabort = () => { db.close(); end(reject, tx.error || new Error('read failed')); };
+        } catch (e) { db.close(); end(reject, e); }
+      };
+    });
+  }
+  async function loadWlocal() {
+    const s = S.src.wlocal, seq = s.seq = (s.seq || 0) + 1;
+    if (s.st !== 'ok') s.st = 'loading';
+    paint();
+    let list = null; try { list = await readWifiDb(); } catch (e) {}
+    if (seq !== s.seq) return;
+    if (list) { s.items = list.filter(p => p && typeof p === 'object' && typeof p.id === 'string' && LOCAL_ID.test(p.id)).map(p => wifiRow(p, true)); s.st = 'ok'; }
+    else if (s.st !== 'ok') s.st = 'error';
+    paint();
+  }
+  /* one WiFi project, from this browser (full project) or from the account list (summary with counts) */
+  function wifiRow(p, local) {
+    const fl = local && Array.isArray(p.floors) ? p.floors : [];
+    return { id: p.id, name: str(p.name, 160) || 'Untitled project', sub: [str(p.client, 80), str(p.location, 80)].filter(Boolean).join(' · '),
+      floors: local ? fl.length : num(p.floors), aps: local ? fl.reduce((n, f) => n + (f && f.data && Array.isArray(f.data.aps) ? f.data.aps.length : 0), 0) : num(p.aps),
+      t: local ? ts(p.updated) || ts(p.created) : ts(p.updated_at), cloud: local && p.cloud === true };
+  }
+  const mapCloud = a => a.filter(p => p && typeof p === 'object' && typeof p.id === 'string' && CLOUD_ID.test(p.id)).map(p => wifiRow(p, false));
+  /* merge by id: the browser copy wins for display. Synced = the account list has it too; while that list is not
+     available (logged out, loading, failed) the browser copy's own cloud flag decides */
+  function wifiItems() {
+    const acct = S.src.wcloud.st === 'ok', cl = acct ? S.src.wcloud.items : [], lo = S.src.wlocal.st === 'ok' ? S.src.wlocal.items : [];
+    const m = new Map(cl.map(c => [c.id, Object.assign({}, c, { where: 'cloud' })]));
+    lo.forEach(p => { const c = m.get(p.id); m.set(p.id, Object.assign({}, p, { t: Math.max(p.t, c ? c.t : 0), where: c || (!acct && p.cloud) ? 'synced' : 'local' })); });
+    return Array.from(m.values(), w => item('wifi', w.id, w.name, w.sub, [pl(w.floors, 'floor'), pl(w.aps, 'AP')], w.where, w.t));
+  }
+  function allItems() {
+    const ok = k => S.src[k].st === 'ok' ? S.src[k].items : [];
+    return ok('files').concat(wifiItems(), ok('topo'), ok('rack')).sort((a, b) => b.t - a.t);
+  }
+
+  /* ---------- render ---------- */
+  const SK_ITEM = '<div class="item ghost" aria-hidden="true"><span class="itop"><span class="tool-ico sk"></span><span class="nm"><i class="sk sk-l"></i><i class="sk sk-s"></i></span></span><i class="sk sk-m"></i></div>';
+  const SK_RESUME = '<p class="eyebrow">Continue where you left off</p><div class="row" aria-hidden="true"><span class="tool-ico lg sk"></span><span class="rt"><i class="sk sk-h"></i><i class="sk sk-m"></i></span></div><div class="actions" aria-hidden="true"><i class="sk sk-b"></i><i class="sk sk-b2"></i></div><span class="sr">Loading your recent work</span>';
+  const SK_USAGE = '<i class="sk sk-h"></i><i class="sk sk-l"></i><i class="sk sk-m"></i><span class="sr">Loading Translator usage</span>';
+  function render() {
+    const items = allItems(), pend = pending();
+    renderAccount(); renderHead(); renderSignin(); renderResume(items, pend); renderUsage(); renderStats(items); renderRecent(items, pend);
+  }
+  function renderAccount() {
+    const a = S.auth, u = S.user || {};
+    let h;
+    if (a === 'out') h = '<a class="btn primary sm" href="' + LOGIN + '">Log in</a>';
+    else if (a === 'check') h = '<span class="avatar sk" aria-hidden="true"></span><span class="sr">Checking your account</span>';
+    else {
+      const name = a === 'in' ? str(u.name, 80) || str(u.email, 120) : '', pic = a === 'in' && typeof u.avatar_url === 'string' && /^https:\/\//.test(u.avatar_url) ? u.avatar_url : '';
+      h = '<button class="avatar" id="acct-btn" type="button" aria-expanded="false" aria-controls="acct-menu" aria-label="' + esc(a === 'in' ? 'Account: ' + name : 'Account not reachable') + '">' +
+        '<span aria-hidden="true">' + esc(a === 'in' ? (Array.from(name)[0] || '?').toUpperCase() : '!') + '</span>' + (pic ? '<img src="' + esc(pic) + '" alt="" referrerpolicy="no-referrer">' : '') + '</button>' +
+        '<div class="menu" id="acct-menu" hidden>' + (a === 'in' ? '<div class="m-head"><b>' + esc(name) + '</b><span>' + esc(u.email) + '</span></div>'
+          : '<p class="m-note">Could not reach your account just now.</p><button class="m-item" type="button" data-retry="me">Try again</button>') +
+        '<button class="m-item danger" type="button" id="logout">' + svg('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>', 15) + 'Log out</button></div>';
+    }
+    if (setHTML($('acct'), h)) { const img = $('acct').querySelector('img'); if (img) img.addEventListener('error', () => img.remove(), { once: true }); }   // broken photo: the initial shows
+  }
+  function renderHead() {
+    const now = new Date(), hr = now.getHours(), part = hr >= 5 && hr < 12 ? 'morning' : hr >= 12 && hr < 18 ? 'afternoon' : 'evening';
+    $('today').textContent = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+    const u = S.user || {}, first = S.auth === 'in' ? str(u.name, 80).split(/\s+/)[0] || str(u.email, 80).split('@')[0] : '';
+    setHTML($('greet'), S.auth === 'out' ? 'Welcome to your <em>dashboard</em>' : 'Good ' + part + (first ? ', <em>' + esc(first) + '</em>' : ''));
+  }
+  function renderSignin() { $('signin').hidden = S.auth !== 'out'; $('si-note').hidden = !S.expired; }
+  function metaHTML(i) {
+    return i.meta.map(m => '<span>' + esc(m) + '</span>').join('') + (i.where ? '<span class="where ' + i.where + '">' + (i.where === 'local' ? '' : CLOUD) + WHERE[i.where] + '</span>' : '');
+  }
+  function renderResume(items, pend) {
+    const el = $('resume'), wait = pend.length > 0 && (!S.grace || !items.length), failed = !items.length && failedSources().length > 0;   // after a short grace, show what is known while slow sources finish
+    el.setAttribute('aria-busy', wait ? 'true' : 'false');
+    $('quick').hidden = !wait && !items.length && !failed;   // the onboarding card carries the quick actions itself
+    if (wait) { setHTML(el, SK_RESUME); return; }
+    if (failed) { setHTML(el, '<p class="eyebrow">Continue where you left off</p><h2>Your work could not be loaded just now</h2><p class="ob-p">' + (failedSources().some(k => k !== 'wlocal') ? 'ConfigLabs did not answer.' : 'This browser did not let the page read its storage.') + ' Nothing is lost: try again in a moment.</p><div class="actions"><button class="btn ghost" type="button" data-retry="all">Try again</button></div>'); return; }
+    if (!items.length) { setHTML(el, '<p class="eyebrow">Get started</p><h2>Start your first project</h2><p class="ob-p">Generate a config, translate one to H3C, plan WiFi coverage, draw a topology or lay out a rack. Whatever you make shows up here.</p><div class="ob">' + PILLS + '</div>'); return; }
+    const i = items[0], T = TOOL[i.k];
+    setHTML(el, '<p class="eyebrow">Continue where you left off</p><div class="row"><span class="tool-ico lg t-' + i.k + '">' + svg(ICON[i.k], 24) + '</span><div class="rt">' +
+      '<h2 title="' + esc(i.name) + '">' + esc(i.name) + '</h2>' + (i.desc ? '<p class="desc">' + esc(i.desc) + '</p>' : '') +
+      '<p class="meta"><span class="tag">' + T.tag + '</span>' + metaHTML(i) + (i.t ? '<span>edited <span data-ago="' + i.t + '">' + esc(ago(i.t)) + '</span></span>' : '') + '</p></div></div>' +
+      '<div class="actions"><a class="btn primary" href="' + esc(i.href) + '">Open in ' + T.app + ' <span aria-hidden="true">→</span></a>' +
+      '<a class="btn ghost" href="' + T.lib + '"' + (i.k === 'config' ? ' data-filter="config"' : '') + '>' + T.libText + '</a></div>');
+  }
+  function waitlistHTML() {
+    const u = S.user || {};
+    if (S.auth !== 'in' || !str(u.email, 254)) return '<a class="btn ghost sm" href="/translate.html">Open the Translator</a>';
+    if (S.wl === 'done') return '<p class="wl">' + esc(S.wlMsg) + '</p>';
+    if (S.wl === 'no') return '<p class="wl err">' + esc(S.wlMsg) + '</p>';
+    if (ls.get('cl_pro_wl') === String(u.id)) return '<p class="wl">You are on the Pro waitlist. We will email you when Pro opens.</p>';
+    return '<button class="btn ghost sm" type="button" id="wl-btn"' + (S.wl === 'busy' ? ' disabled' : '') + '>' + (S.wl === 'busy' ? 'Joining…' : 'Join the Pro waitlist') + '</button>' +
+      (S.wl === 'err' ? '<p class="wl err">' + esc(S.wlMsg) + '</p>' : '');
+  }
+  function renderUsage() {
+    const s = S.src.lim, d = s.data, card = $('usage'), st = s.st === 'ok' && d ? 'ok' : s.st === 'error' ? 'error' : 'loading';
+    card.dataset.st = st; card.setAttribute('aria-busy', st === 'loading' ? 'true' : 'false');
+    if (st === 'ok') {
+      const ring = $('ring');
+      ring.classList.toggle('out', !d.pro && d.left === 0); ring.classList.toggle('pro', d.pro);
+      ring.style.setProperty('--p', d.pro ? '1' : String(Math.min(1, d.used / d.daily)));
+      $('ring-n').textContent = d.pro ? '∞' : d.used + '/' + d.daily;
+    } else $('ring-n').textContent = '';
+    setHTML($('u-txt'), st === 'loading' ? SK_USAGE
+      : st === 'error' ? '<h2>Translator usage</h2><p>Could not load today’s usage.</p><button class="btn ghost sm" type="button" data-retry="lim">Retry</button>'
+      : d.pro ? '<h2>Translator · Pro</h2><p>Pro plan · unlimited translations. Up to ' + d.lines.toLocaleString('en-US') + ' lines each.</p><a class="btn ghost sm" href="/translate.html">Open the Translator</a>'
+      : '<h2>Translator · free plan</h2><p><b>' + d.left + '</b> of ' + d.daily + ' translations left today. Up to ' + d.lines.toLocaleString('en-US') + ' lines each. Resets at <span class="nw">' + esc(d.resets) + '</span>.</p>' + waitlistHTML());
+  }
+  const anim = new WeakMap();
+  function countTo(el, to) {   // count-up, skipped when the user prefers reduced motion
+    if (el.dataset.v === String(to)) return;
+    const from = +el.dataset.v || 0; el.dataset.v = to; el.textContent = to; cancelAnimationFrame(anim.get(el));   // the final value stays if frames never run
+    if (calm() || from === to) return;
+    let t0 = 0;
+    const step = t => { t0 = t0 || t; const p = Math.min(1, (t - t0) / 700); el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - p, 3))); if (p < 1) anim.set(el, requestAnimationFrame(step)); };
+    anim.set(el, requestAnimationFrame(step));
+    setTimeout(() => { if (el.dataset.v === String(to)) { cancelAnimationFrame(anim.get(el)); el.textContent = to; } }, 1000);
+  }
+  function stat(k, v, sub) {   // v: a number, 'loading', or null for no value
+    const el = $('n-' + k);
+    el.parentNode.setAttribute('aria-busy', v === 'loading' ? 'true' : 'false');
+    el.classList.toggle('sk', v === 'loading');
+    el.setAttribute('aria-hidden', v == null ? 'true' : 'false');
+    if (typeof v === 'number') countTo(el, v);
+    else { cancelAnimationFrame(anim.get(el)); el.dataset.v = ''; el.textContent = v === 'loading' ? '' : '—'; }
+    setHTML($('s-' + k), sub);
+  }
+  function renderStats(items) {
+    const n = k => items.filter(i => i.k === k).length, f = S.src.files, wl = S.src.wlocal, wc = S.src.wcloud;
+    const again = (k, what) => what + ' · <button class="lnk" type="button" data-retry="' + k + '">Retry</button>';
+    if (S.auth === 'out') stat('config', null, '<a class="lnk" href="' + LOGIN + '">Log in to sync</a>');
+    else stat('config', f.st === 'ok' ? n('config') : f.st === 'error' ? null : 'loading', f.st === 'error' ? again('files', 'Not loaded') : f.st === 'ok' ? 'in your account' : '');
+    stat('wifi', wl.st === 'loading' || wc.st === 'loading' ? 'loading' : wl.st === 'error' || wc.st === 'error' ? null : n('wifi'),   // no partial count
+      wl.st === 'error' ? again('wlocal', 'Browser list not read') : wc.st === 'error' ? again('wcloud', 'Account list not loaded') : wc.st === 'off' ? 'this browser' : 'this browser + account');
+    stat('topo', n('topo'), 'this browser');
+    stat('rack', n('rack'), 'this browser');
+  }
+  const ERR = { files: 'Could not load your saved configs.', wcloud: 'Could not load the WiFi projects in your account.', wlocal: 'Could not read the WiFi projects saved in this browser.' };
+  function itemHTML(i) {
+    return '<a class="item" href="' + esc(i.href) + '" data-key="' + esc(i.k + ':' + i.id) + '"><span class="itop"><span class="tool-ico t-' + i.k + '">' + svg(ICON[i.k], 19) + '</span>' +
+      '<span class="nm"><b title="' + esc(i.name) + '">' + esc(i.name) + '</b>' + (i.desc ? '<small>' + esc(i.desc) + '</small>' : '') + '</span><span class="tag">' + TOOL[i.k].tag + '</span></span>' +
+      '<span class="meta">' + metaHTML(i) + (i.t ? '<span data-ago="' + i.t + '">' + esc(ago(i.t)) + '</span>' : '') + '</span></a>';
+  }
+  function emptyHTML(q) {
+    if (q) return 'Nothing matches “' + esc(S.q.trim()) + '”. Try another search or filter.';
+    const out = S.auth === 'out', login = '<a class="lnk" href="' + LOGIN + '">Log in</a>';
+    return {
+      config: out ? 'Saved configs live in your account. ' + login + ' to see them.' : 'No saved configs yet. Generate one in the <a class="lnk" href="/builder.html">Builder</a> and save it.',
+      wifi: 'No WiFi projects yet. <a class="lnk" href="/wifi.html">Start a WiFi plan</a>.' + (out ? ' ' + login + ' to see the ones in your account.' : ''),
+      topo: 'No diagrams in this browser yet. <a class="lnk" href="/topology.html">Draw one</a>.',
+      rack: 'No rack projects in this browser yet. <a class="lnk" href="/rack.html">Lay out a rack</a>.',
+      all: 'Nothing here yet. The configs, WiFi plans, diagrams and racks you make show up here.' + (out ? ' ' + login + ' to include what is saved in your account.' : '')
+    }[S.filter];
+  }
+  function renderRecent(items, pend) {
+    const q = S.q.trim().toLowerCase(), hit = q ? items.filter(i => i.hay.includes(q)) : items, c = { all: hit.length, config: 0, wifi: 0, topo: 0, rack: 0 };
+    hit.forEach(i => { c[i.k]++; });
+    document.querySelectorAll('#chips .cn').forEach(e => { e.textContent = c[e.dataset.c]; });
+    const mine = k => S.filter === 'all' || KIND[k] === S.filter, rows = S.filter === 'all' ? hit : hit.filter(i => i.k === S.filter);
+    const busy = pend.filter(mine), errs = failedSources().filter(mine);
+    setHTML($('notes'), errs.map(k => '<p class="note">' + ERR[k] + ' <button class="lnk" type="button" data-retry="' + k + '">Retry</button></p>').join(''));
+    let h = (S.all ? rows : rows.slice(0, 12)).map(itemHTML).join('');
+    if (busy.length) h += SK_ITEM.repeat(rows.length ? 2 : 3);
+    else if (!rows.length && (q || !errs.length)) h = '<p class="empty">' + emptyHTML(q) + '</p>';
+    const list = $('list'), a = document.activeElement, key = a && list.contains(a) ? a.getAttribute('data-key') : null;
+    list.setAttribute('aria-busy', busy.length ? 'true' : 'false');
+    if (setHTML(list, h) && key) { const n = Array.from(list.querySelectorAll('[data-key]')).find(e => e.getAttribute('data-key') === key); if (n) n.focus({ preventScroll: true }); }
+    const more = $('more');
+    more.hidden = rows.length <= 12; more.textContent = S.all ? 'Show fewer' : 'Show all ' + rows.length; more.setAttribute('aria-expanded', S.all ? 'true' : 'false');
+  }
+
+  /* ---------- interaction ---------- */
+  let toastT = 0;
+  function toast(msg) { const t = $('toast'); if (!t) return; t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 3400); }
+  function menu(open) {
+    const b = $('acct-btn'), m = $('acct-menu'); if (!b || !m) return;
+    open = open == null ? m.hidden : open; m.hidden = !open; b.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  function logout() { menu(false); signOut(false); render(); toast('Logged out'); const l = $('acct').querySelector('a'); if (l) l.focus(); }
+  function retry(k) {
+    if (k === 'all') { if (S.auth === 'error') loadMe(); if (S.src.lim.st === 'error') loadLimits(); failedSources().forEach(retry); }
+    else if (k === 'me') { loadMe(); ['files', 'wcloud'].forEach(x => { if (S.src[x].st === 'error') loadList(x); }); }
+    else if (k === 'files' || k === 'wcloud') loadList(k);
+    else if (k === 'wlocal') loadWlocal();
+    else if (k === 'lim') loadLimits();
+  }
+  function refresh() {   // back/forward cache restore or back from another tab: same session, newer data
+    if (token() !== S.tok) return boot();
+    if (S.tok) { loadMe(); loadList('files'); loadList('wcloud'); }
+    loadLimits(); loadTopo(); loadRack(); loadWlocal();
+  }
+  function setFilter(f) { S.filter = f; document.querySelectorAll('#chips .chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.f === f ? 'true' : 'false')); paint(); }
+  function bind() {
+    $('theme-btn').addEventListener('click', () => setTheme(root.dataset.theme === 'light' ? 'dark' : 'light', true));
+    $('chips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (b) setFilter(b.dataset.f); });
+    $('q').addEventListener('input', e => { S.q = e.target.value; paint(); });
+    $('more').addEventListener('click', () => { S.all = !S.all; paint(); });
+    document.addEventListener('click', e => {
+      const t = e.target, at = s => t.closest(s);
+      if (!at('#acct')) menu(false);
+      let b;
+      if (at('#acct-btn')) menu();
+      else if (at('#logout')) logout();
+      else if ((b = at('[data-retry]'))) retry(b.dataset.retry);
+      else if (at('#wl-btn')) joinWaitlist();
+      else if ((b = at('[data-filter]'))) { e.preventDefault(); setFilter(b.dataset.filter); $('recent').scrollIntoView({ behavior: calm() ? 'auto' : 'smooth', block: 'start' }); $('recent-h').focus({ preventScroll: true }); }
+    });
+    document.addEventListener('focusin', e => { if (!e.target.closest('#acct')) menu(false); });
+    document.addEventListener('keydown', e => { const m = $('acct-menu'); if (e.key === 'Escape' && m && !m.hidden) { menu(false); $('acct-btn').focus(); } });
+    addEventListener('storage', e => {   // another tab changed something this page shows
+      if (e.key === 'cl_tg_idx' || e.key === null) loadTopo();
+      if (e.key === 'cl_rk_idx' || e.key === null) loadRack();
+      if (e.key === 'clab_theme') setTheme(e.newValue);
+      if ((e.key === 'clab_token' || e.key === null) && token() !== S.tok) { S.expired = false; boot(); }
+    });
+    addEventListener('pageshow', e => { if (e.persisted) refresh(); });
+    let away = 0;   // back from another tab after a while: WiFi (IndexedDB) and account changes made there fire no storage event
+    document.addEventListener('visibilitychange', () => { if (document.hidden) away = Date.now(); else if (away && Date.now() - away > 15000) { away = 0; refresh(); } });
+    setInterval(() => { document.querySelectorAll('[data-ago]').forEach(e => { e.textContent = ago(+e.dataset.ago); }); renderHead(); }, 60000);
+  }
+  function start() {
+    ready = true;
+    setTheme(root.dataset.theme);
+    PILLS = Array.from($('quick').querySelectorAll('a'), a => '<a class="pill" href="' + esc(a.getAttribute('href')) + '">' + a.innerHTML + '</a>').join('');
+    bind(); render();
+    if (notice) toast(notice);
+  }
+
+  setTheme(ls.get('clab_theme'));
+  readLoginRedirect();
+  boot();
+  setTimeout(() => { S.grace = true; paint(); }, 2500);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+</script>
+<!-- the font stylesheet comes after the inline script on purpose: a script placed after a stylesheet that is still loading waits for it -->
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="orbs" aria-hidden="true"><i></i><i></i><i></i></div>
+<div class="wrap">
+  <header class="top glass">
+    <a href="/" class="brand">
+      <span class="brand-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg></span>
+      <span>Config<em>Labs</em></span>
+    </a>
+    <nav class="nav-links" aria-label="Main">
+      <a href="/" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12L12 3l9 9M5 10v10h14V10"/></svg>Home</a>
+      <a href="/dashboard.html" class="nav-link on" aria-current="page"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Dashboard</a>
+      <a href="/builder.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>Builder</a>
+      <a href="/translate.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h13l-3-3M20 17H7l3 3"/></svg>Translator</a>
+      <a href="/wifi.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>WiFi Planner</a>
+      <a href="/topology.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/></svg>Topology</a>
+      <a href="/rack.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="1.5"/><path d="M5 7h14M5 12h14M5 17h14"/></svg>Rack Builder</a>
+      <a href="/about.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>About</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="icon-btn" id="theme-btn" type="button" aria-label="Switch to light theme" title="Theme">
+        <svg class="i-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        <svg class="i-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </button>
+      <div class="acct" id="acct"><span class="avatar sk" aria-hidden="true"></span></div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="head" aria-labelledby="greet">
+      <div>
+        <p class="eyebrow" id="today">Dashboard</p>
+        <h1 id="greet">Your <em>dashboard</em></h1>
+      </div>
+      <p class="sub">Everything you made with the Builder, Translator, WiFi Planner, Topology and Rack Builder, in one place.</p>
+    </section>
+
+    <section class="glass flat signin" id="signin" aria-labelledby="si-h" hidden>
+      <span class="tool-ico lg t-config" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg></span>
+      <div class="si-txt">
+        <div class="si-note" id="si-note" hidden>Your session expired, log in again.</div>
+        <h2 id="si-h">Log in to see everything in one place</h2>
+        <p>Saved configs and WiFi projects sync to your ConfigLabs account, so they follow you to any device. Diagrams, racks and WiFi projects kept in this browser are listed below either way.</p>
+      </div>
+      <a class="btn primary" href="/auth/google?next=/dashboard.html"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>Log in with Google</a>
+    </section>
+
+    <section class="grid" aria-label="Overview">
+      <article class="c-resume glass strong resume" id="resume" aria-busy="true"><p class="eyebrow">Continue where you left off</p><div class="row" aria-hidden="true"><span class="tool-ico lg sk"></span><span class="rt"><i class="sk sk-h"></i><i class="sk sk-m"></i></span></div><div class="actions" aria-hidden="true"><i class="sk sk-b"></i><i class="sk sk-b2"></i></div><span class="sr">Loading your recent work</span></article>
+      <article class="c-usage glass usage" id="usage" data-st="loading" aria-busy="true"><div class="ring" id="ring" aria-hidden="true"><span id="ring-n"></span></div><div class="u-txt" id="u-txt"><i class="sk sk-h"></i><i class="sk sk-l"></i><i class="sk sk-m"></i><span class="sr">Loading Translator usage</span></div></article>
+      <article class="c-stat glass soft stat" aria-busy="true"><div class="n sk" id="n-config"></div><div class="l"><i class="dot t-config"></i>Saved configs</div><div class="s" id="s-config"></div></article>
+      <article class="c-stat glass soft stat" aria-busy="true"><div class="n sk" id="n-wifi"></div><div class="l"><i class="dot t-wifi"></i>WiFi projects</div><div class="s" id="s-wifi"></div></article>
+      <article class="c-stat glass soft stat" aria-busy="true"><div class="n sk" id="n-topo"></div><div class="l"><i class="dot t-topo"></i>Topology diagrams</div><div class="s" id="s-topo"></div></article>
+      <article class="c-stat glass soft stat" aria-busy="true"><div class="n sk" id="n-rack"></div><div class="l"><i class="dot t-rack"></i>Rack projects</div><div class="s" id="s-rack"></div></article>
+    </section>
+
+    <nav class="quick" id="quick" aria-label="Quick actions">
+      <a class="q glass soft lift" href="/builder.html"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New config</a>
+      <a class="q glass soft lift" href="/translate.html"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h13l-3-3M20 17H7l3 3"/></svg>Translate a config</a>
+      <a class="q glass soft lift" href="/wifi.html"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9a15 15 0 0 1 20 0M5 13a10 10 0 0 1 14 0M8.5 16.5a5 5 0 0 1 7 0"/><circle cx="12" cy="20" r="1"/></svg>New WiFi plan</a>
+      <a class="q glass soft lift" href="/topology.html"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M11 7.3L6 16.7M13 7.3l5 9.4M7.5 19h9"/></svg>New diagram</a>
+      <a class="q glass soft lift" href="/rack.html"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="1.5"/><path d="M5 7h14M5 12h14M5 17h14"/></svg>New rack</a>
+    </nav>
+
+    <section class="glass strong recent" id="recent" aria-labelledby="recent-h">
+      <div class="rhead">
+        <h2 id="recent-h" tabindex="-1">Recent work</h2>
+        <div class="chips" id="chips" role="group" aria-label="Filter by tool">
+          <button class="chip" type="button" data-f="all" aria-pressed="true">All <span class="cn" data-c="all"></span></button>
+          <button class="chip" type="button" data-f="config" aria-pressed="false">Configs <span class="cn" data-c="config"></span></button>
+          <button class="chip" type="button" data-f="wifi" aria-pressed="false">WiFi <span class="cn" data-c="wifi"></span></button>
+          <button class="chip" type="button" data-f="topo" aria-pressed="false">Diagrams <span class="cn" data-c="topo"></span></button>
+          <button class="chip" type="button" data-f="rack" aria-pressed="false">Racks <span class="cn" data-c="rack"></span></button>
+        </div>
+        <input class="search" id="q" type="search" placeholder="Search your work" aria-label="Search your work" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="notes" id="notes" role="status"></div>
+      <div class="list" id="list" aria-busy="true"><div class="item ghost" aria-hidden="true"><span class="itop"><span class="tool-ico sk"></span><span class="nm"><i class="sk sk-l"></i><i class="sk sk-s"></i></span></span><i class="sk sk-m"></i></div><div class="item ghost" aria-hidden="true"><span class="itop"><span class="tool-ico sk"></span><span class="nm"><i class="sk sk-l"></i><i class="sk sk-s"></i></span></span><i class="sk sk-m"></i></div><div class="item ghost" aria-hidden="true"><span class="itop"><span class="tool-ico sk"></span><span class="nm"><i class="sk sk-l"></i><i class="sk sk-s"></i></span></span><i class="sk sk-m"></i></div></div>
+      <div class="more"><button class="btn ghost sm" id="more" type="button" aria-expanded="false" hidden>Show all</button></div>
+    </section>
+    <noscript><p class="empty">The dashboard needs JavaScript to read your saved work.</p></noscript>
+  </main>
+
+  <footer class="foot">
+    <span class="ver" data-cl-version>v7.8.0</span>
+    <a href="/about.html">About</a>
+    <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" rel="noopener noreferrer">GitHub</a>
+  </footer>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

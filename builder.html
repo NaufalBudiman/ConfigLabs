@@ -345,7 +345,10 @@ footer{margin-top:80px;padding:40px 0 30px;border-top:1px solid var(--border)}
 /* ---- v6 nav & mobile ---- */
 .nav-links{display:flex;gap:2px;margin-left:auto;margin-right:12px}
 .nav-link{white-space:nowrap}
-@media(max-width:900px){
+/* One nav row fits from a 1348px viewport with icons, 1204px without, 1140px without and with 10px link padding (measured with the Login button and the "Connecting…" chip); each step keeps 24px+ spare, at 1170px and below the nav stacks */
+@media(min-width:1170.02px) and (max-width:1380px){.nav-link svg{display:none}}
+@media(min-width:1170.02px) and (max-width:1230px){.nav-link{padding:8px 10px}}
+@media(max-width:1170px){
   nav{flex-wrap:wrap;padding:10px 16px!important;row-gap:8px}
   nav .brand{order:1}
   nav .nav-actions{order:2;margin-left:auto}
@@ -382,6 +385,7 @@ footer{margin-top:80px;padding:40px 0 30px;border-top:1px solid var(--border)}
   </a>
   <div class="nav-links">
     <a href="/" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M3 12L12 3l9 9M5 10v10h14V10"/></svg>Home</a>
+    <a href="/dashboard.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Dashboard</a>
     <a href="/builder.html" class="nav-link active"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>Builder</a>
     <a href="/translate.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M4 7h13l-3-3M20 17H7l3 3"/></svg>Translator</a>
     <a href="/wifi.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>WiFi Planner </a>
@@ -404,7 +408,7 @@ footer{margin-top:80px;padding:40px 0 30px;border-top:1px solid var(--border)}
     <button class="auth-modal-close" onclick="authCloseModal()">✕</button>
     <h2 class="auth-modal-title">Sign in to <em>ConfigLabs</em></h2>
     <p class="auth-modal-sub">Save your configs · It's free</p>
-    <button class="oauth-btn google" onclick="window.location.href='/auth/google'">
+    <button class="oauth-btn google" onclick="window.location.href='/auth/google?next=/builder.html'">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
       Continue with Google
     </button>
@@ -908,7 +912,7 @@ function addSvi(data = {}) {
       <button type="button" data-m="relay"  class="${mode==='relay'  ?'active':''}">Relay</button>
       <button type="button" data-m="client" class="${mode==='client' ?'active':''}">Client</button>
     </div>
-    <input type="hidden" class="s-dhcp-mode" value="${mode}">
+    <input type="hidden" class="s-dhcp-mode" value="${escA(mode)}">
   </div>
   <div class="field s-server-wrap" style="display:${mode==='server'?'block':'none'}"><label>Apply Pool</label><select class="s-pool" data-sel="${escA(data.dhcp_apply_pool||'')}"><option value="">— select pool —</option></select></div>
   <div class="field s-relay-wrap"  style="display:${mode==='relay' ?'block':'none'}"><label>Relay IP</label><input class="s-relay" value="${escA(data.dhcp_relay||'')}" placeholder="10.10.100.10"></div>
@@ -938,9 +942,9 @@ function refreshSviDropdowns() {
   const poolNames = [...document.querySelectorAll('#rep-dhcp .d-name')].map(i => i.value.trim()).filter(Boolean);
   document.querySelectorAll('#rep-svis .repeater-item').forEach(el => {
     const vs = el.querySelector('.s-vlan'), prev = vs.value || vs.dataset.sel || '';
-    vs.innerHTML = '<option value="">— select VLAN —</option>' + vlanIds.map(id => `<option value="${id}" ${id===prev?'selected':''}>${id}${vlanNames[id]?' ('+vlanNames[id]+')':''}</option>`).join('');
+    vs.innerHTML = '<option value="">— select VLAN —</option>' + vlanIds.map(id => `<option value="${escA(id)}" ${id===prev?'selected':''}>${escH(id)}${vlanNames[id]?' ('+escH(vlanNames[id])+')':''}</option>`).join('');
     const ps = el.querySelector('.s-pool'), prevP = ps.value || ps.dataset.sel || '';
-    ps.innerHTML = '<option value="">— select pool —</option>' + poolNames.map(p => `<option value="${p}" ${p===prevP?'selected':''}>${p}</option>`).join('');
+    ps.innerHTML = '<option value="">— select pool —</option>' + poolNames.map(p => `<option value="${escA(p)}" ${p===prevP?'selected':''}>${escH(p)}</option>`).join('');
   });
 }
 
@@ -958,7 +962,7 @@ function addIntf(data = {}) {
       <button type="button" data-m="hybrid" class="${mode==='hybrid'?'active':''}">Hybrid</button>
       <button type="button" data-m="routed" class="rj-only ${mode==='routed'?'active':''}">Routed L3</button>
     </div>
-    <input type="hidden" class="i-mode" value="${mode}">
+    <input type="hidden" class="i-mode" value="${escA(mode)}">
   </div>
   <div class="field i-access-w" style="display:${mode==='access'?'block':'none'}"><label>Access VLAN</label><input class="i-vlan" value="${escA(data.vlan||'')}" placeholder="10"></div>
   <div class="field i-trunk-w"  style="display:${mode==='trunk' ?'block':'none'}">
@@ -1039,7 +1043,7 @@ function addDhcp(data = {}) {
     <div class="field"><label>DNS Servers</label><input class="d-dns" value="${escA(data.dns||'8.8.8.8 1.1.1.1')}" placeholder="8.8.8.8"></div>
     <div class="field"><label>Domain</label><input class="d-domain" value="${escA(data.domain||'')}" placeholder="company.local"></div>
   </div>
-  <div class="field"><label>Excluded IPs <span class="hint">space-separated</span></label><input class="d-forbidden" value="${forbidden}" placeholder="10.10.10.1 10.10.10.2" oninput="dhcpInfo(this.closest('.repeater-item'))"></div>
+  <div class="field"><label>Excluded IPs <span class="hint">space-separated</span></label><input class="d-forbidden" value="${escA(forbidden)}" placeholder="10.10.10.1 10.10.10.2" oninput="dhcpInfo(this.closest('.repeater-item'))"></div>
   <div class="field rj-only"><label>AC IP <span class="hint">option 138, for fit APs</span></label><input class="d-acip" value="${escA(data.ac_ip||'')}" placeholder="10.10.10.1"></div>
   <div class="d-info" style="font-family:var(--mono);font-size:12px;color:var(--accent);min-height:18px;margin-top:2px"></div>`;
   { const it = makeItem('DHCP Pool', html); document.getElementById('rep-dhcp').appendChild(it); dhcpInfo(it); }
@@ -1647,6 +1651,8 @@ document.addEventListener('keydown', e => {
    BOOT
    ============================================================ */
 (async function boot() {
+  // read now: the auth script below drops the whole query when it carries ?auth_token / ?auth_error, which is how a login lands back here
+  const qs = new URLSearchParams(location.search), fileLink = qs.get('file'), loginBack = qs.has('auth_token') || qs.has('auth_error');
   await loadVendors();
   await loadTemplates();
   updateHints();
@@ -1662,6 +1668,24 @@ document.addEventListener('keydown', e => {
     } catch (e) { addVlan({ vlan:'10', name:'USERS' }); }
   } else
   addVlan({ vlan:'10', name:'USERS' });
+  // Dashboard deep link ?file=<id>: open that saved config like My Files does, now that loadFile can pick its vendor/OS from state.vendors.
+  // Logged out, the id waits in sessionStorage (setPendingFile) and opens when the login lands back here
+  if (fileLink !== null || loginBack) {
+    if (document.readyState === 'loading') await new Promise(r => document.addEventListener('DOMContentLoaded', r, { once: true })); // getToken, loadFile, authOpenModal and setPendingFile are defined by the scripts further down, and by then the auth script has stored ?auth_token
+    let id = fileLink;
+    if (fileLink !== null) {
+      const q = new URLSearchParams(location.search); q.delete('file');
+      history.replaceState(history.state, '', location.pathname + (String(q) ? '?' + q : '') + location.hash);
+    } else {
+      try { id = sessionStorage.getItem('clab_pending_file'); } catch (e) {}
+      if (id === null) return; // a plain login, no saved config waiting
+      setPendingFile(null);
+    }
+    if (!/^\d{1,10}$/.test(id)) return;
+    if (!getToken()) { setPendingFile(id); authOpenModal(); toast('Log in to open this saved config', 'warn'); return; }
+    setPendingFile(null);
+    loadFile(id);
+  }
 })();
 </script>
 <script>
@@ -1704,6 +1728,8 @@ document.addEventListener('keydown', e => {
 var _pendingSaveType = null;
 
 function getToken() { return localStorage.getItem('clab_token') || ''; }
+// Saved config to open after a login (a ?file deep link while logged out, or an expired session): the login returns to /builder.html and boot() opens it
+function setPendingFile(id) { try { if (id === null) sessionStorage.removeItem('clab_pending_file'); else if (/^\d{1,10}$/.test(String(id))) sessionStorage.setItem('clab_pending_file', String(id)); } catch (e) {} }
 
 function saveConfigFile() {
   if (!getToken()) { authOpenModal(); return; }
@@ -1771,12 +1797,14 @@ async function loadMyFiles(type) {
   empty.style.display = 'none';
 
   try {
-    const url = '/api/files' + (type ? '?type=' + type : '');
+    const url = '/api/files' + (type ? '?type=' + encodeURIComponent(type) : '');
     const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + getToken() } });
     if (!res.ok) { list.innerHTML = ''; empty.style.display='block'; return; }
-    const files = await res.json();
+    const files = (await res.json()).filter(f => f && /^\d{1,10}$/.test(String(f.id))); // the id goes into the onclick handlers below
     if (!files.length) { list.innerHTML = ''; empty.style.display='block'; return; }
+    const day = s => { s = String(s || ''); const d = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(s) ? s : s + 'Z'); return isNaN(d) ? '' : d.toLocaleDateString(); }; // API times are UTC without a zone suffix
 
+    // name, vendor and hostname are whatever was saved, so everything from the server is escaped
     list.innerHTML = files.map(f => `
       <div style="
         display:flex;align-items:center;justify-content:space-between;
@@ -1784,18 +1812,18 @@ async function loadMyFiles(type) {
         border-radius:10px;transition:border-color .15s
       " onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
         <div style="flex:1;min-width:0">
-          <div style="font-weight:600;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.name}</div>
+          <div style="font-weight:600;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escA(f.name)}</div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:3px;font-family:var(--mono)">
-            ${f.vendor ? f.vendor.toUpperCase() + ' · ' : ''}${f.hostname || ''}
-            · ${new Date(f.updated_at).toLocaleDateString()}
+            ${f.vendor ? escH(String(f.vendor).toUpperCase()) + ' · ' : ''}${escA(f.hostname)}
+            · ${escH(day(f.updated_at))}
           </div>
         </div>
         <div style="display:flex;gap:6px;margin-left:12px">
-          <button onclick="loadFile(${f.id})" style="
+          <button onclick="loadFile(${+f.id})" style="
             padding:6px 12px;background:var(--accent);color:var(--bg);border:none;
             border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans)
           ">Load</button>
-          <button onclick="deleteFile(${f.id},this)" style="
+          <button onclick="deleteFile(${+f.id},this)" style="
             padding:6px 10px;background:none;border:1px solid var(--border);color:var(--danger);
             border-radius:7px;font-size:12px;cursor:pointer;font-family:var(--sans)
           ">✕</button>
@@ -1903,8 +1931,13 @@ function parseH3cConfig(text) {
 
 async function loadFile(id) {
   try {
-    const res = await fetch('/api/files/' + id, { headers: { 'Authorization': 'Bearer ' + getToken() } });
-    if (!res.ok) { alert('Could not load file'); return; }
+    const res = await fetch('/api/files/' + encodeURIComponent(id), { headers: { 'Authorization': 'Bearer ' + getToken() } });
+    if (!res.ok) {
+      closeMyFiles(); // its overlay sits above the toast and the login modal
+      if (res.status === 401) { setPendingFile(id); authOpenModal(); toast('Your session expired. Log in again', true); }
+      else toast(res.status === 404 ? 'Saved config not found in your account' : 'Could not load the file (HTTP ' + res.status + ')', true);
+      return;
+    }
     const file = await res.json();
     const data = file.data || {};
     closeMyFiles();
@@ -1953,7 +1986,8 @@ async function loadFile(id) {
       toast('This file was saved by an older version and has no config rows to restore', true);
     }
   } catch(e) {
-    alert('Load failed: ' + e.message);
+    closeMyFiles();
+    toast('Load failed: ' + e.message, true);
   }
 }
 
@@ -1961,7 +1995,7 @@ async function deleteFile(id, btn) {
   if (!confirm('Delete this saved file?')) return;
   const row = btn.closest('div[style*="border"]');
   try {
-    const res = await fetch('/api/files/' + id, {
+    const res = await fetch('/api/files/' + encodeURIComponent(id), {
       method: 'DELETE',
       headers: { 'Authorization': 'Bearer ' + getToken() }
     });

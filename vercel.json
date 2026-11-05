@@ -16,6 +16,11 @@
       "permanent": false
     },
     {
+      "source": "/dashboard",
+      "destination": "/dashboard.html",
+      "permanent": false
+    },
+    {
       "source": "/builder",
       "destination": "/builder.html",
       "permanent": true

@@ -15,7 +15,7 @@
 ║  https://configlabs.online                                   ║
 ╚══════════════════════════════════════════════════════════════╝
 """
-from flask import Flask, request, jsonify, redirect, url_for, g
+from flask import Flask, request, jsonify, redirect, url_for, g, session
 from flask_cors import CORS
 from authlib.integrations.flask_client import OAuth
 from models import db, User, SavedFile, WifiProject, WifiPlan, TranslateUse, ProWaitlist
@@ -120,7 +120,7 @@ def init_db_once():
         with_app_context_done = True
 
 APP_NAME = "ConfigLabs"
-APP_VERSION = "7.7.0"
+APP_VERSION = "7.8.0"
 
 # ==========================================================
 # VENDOR / OS REGISTRY
@@ -2927,15 +2927,29 @@ def api_delete_file(file_id):
 # AUTH — Google OAuth
 # ============================================================
 
+# Pages that read ?auth_token from their own URL. /auth/google?next=<one of these> sends the
+# user back there after login; anything else (other paths, full URLs, '//host') goes to '/'.
+AUTH_NEXT = ('/', '/dashboard.html', '/builder.html', '/translate.html', '/wifi.html', '/about.html')
+
+def _auth_next(path):
+    """Login return path: an exact AUTH_NEXT entry, else '/' (no open redirect)."""
+    return path if path in AUTH_NEXT else '/'
+
 @app.route('/auth/google')
 def auth_google():
-    """Redirect user to Google login page"""
+    """Redirect user to Google login page (?next=<page> returns there after login)"""
+    nxt = _auth_next(request.args.get('next'))
+    if nxt != '/':
+        session['auth_next'] = nxt
+    else:
+        session.pop('auth_next', None)   # drop a value left by an abandoned login
     redirect_uri = 'https://configlabs.online/auth/google/callback'
     return google.authorize_redirect(redirect_uri)
 
 @app.route('/auth/google/callback')
 def auth_google_callback():
     """Google sends user back here after they log in"""
+    nxt = _auth_next(session.pop('auth_next', None))
     try:
         token     = google.authorize_access_token()
         user_info = token.get('userinfo')
@@ -2956,12 +2970,12 @@ def auth_google_callback():
         db.session.commit()
 
         jwt_token = create_token(user)
-        # Redirect back to frontend with token in URL (JS grabs it)
-        return redirect(f'/?auth_token={jwt_token}')
+        # Redirect back to the page that started the login, token in URL (JS grabs it)
+        return redirect(f'{nxt}?auth_token={jwt_token}')
 
     except Exception as e:
         print(f"[AUTH ERROR] Google callback: {e}")
-        return redirect(f'/?auth_error=Login+failed')
+        return redirect(f'{nxt}?auth_error=Login+failed')
 
 # ── WiFi Planner: per-account default wall library ───────────
 WIFI_MATLIB = 'wifi_matlib'

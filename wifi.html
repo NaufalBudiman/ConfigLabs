@@ -361,6 +361,17 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
 .cal-tbl{width:100%;border-collapse:collapse;font-size:12px}
 .cal-tbl th,.cal-tbl td{border:1px solid var(--border);padding:5px 6px;text-align:center}
 .cal-tbl input{width:64px;padding:4px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);text-align:center}
+@media(max-width:1111px){
+  .nav-tab svg{display:none}
+  .nav-tab{padding:7px 10px;white-space:nowrap}
+}
+@media(min-width:701px) and (max-width:965px){
+  nav{height:auto;flex-wrap:wrap;padding:8px 14px;row-gap:6px}
+  nav .brand{order:1}
+  .nav-right{order:2;margin-left:auto}
+  .nav-center{order:3;flex:0 0 100%;overflow-x:auto;scrollbar-width:none}
+  .nav-center::-webkit-scrollbar{display:none}
+}
 @media(max-width:700px){
   nav{padding:0 10px}
   .nav-tab{padding:6px 8px}
@@ -480,6 +491,9 @@ select option:disabled{color:var(--text-muted)}
   </a>
   <div class="nav-center">
     <a href="/" class="nav-tab">Home</a>
+    <a href="/dashboard.html" class="nav-tab">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Dashboard
+    </a>
     <a href="/builder.html" class="nav-tab">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>Builder
     </a>
@@ -4693,10 +4707,16 @@ async function _route() {
     return;
   }
   await flushSave();
-  let proj;
+  let proj, pulled = false;
   try { proj = await dbGet('projects', h.p); } catch (e) { proj = null; }
+  if (!proj && cl_token() && /^[A-Za-z0-9_-]{3,40}$/.test(h.p)) {   // not in this browser: try the account (e.g. a dashboard link) and open it in place, no nav() so it cannot loop
+    showBusy('Opening from your account…'); await tick();
+    try { proj = await cloudPull(h.p, true); } catch (e) { proj = null; } finally { hideBusy(); }
+    if (parseHash().p !== h.p) return;   // the user navigated away meanwhile; the queued route() takes over
+    pulled = !!proj;
+  }
   if (!proj) { toast('Project not found in this browser', 'error'); curProj = null; history.replaceState(null, '', '#'); await showHome(); return; }
-  proj = await cloudCheckNewer(proj);
+  if (!pulled) proj = await cloudCheckNewer(proj);
   curProj = proj;
   loadMats(proj); buildMatList();
   document.getElementById('proj-home').style.display = 'none';
@@ -4939,9 +4959,9 @@ async function cloudConflict(p) {
   if (np) { curProj = null; curFloor = null; toast('Cloud version loaded'); route(); }
 }
 // download a project (and its plans) from the account into this browser
-async function cloudPull(id) {
+async function cloudPull(id, quiet) {
   const r = await cfetch('/api/wifi/projects/' + id);
-  if (!r.ok) { toast('Could not load the project from your account', 'error'); return null; }
+  if (!r.ok) { if (!quiet) toast('Could not load the project from your account', 'error'); return null; }
   const p = r.json.project; p.cloud = true; p.cloudRev = r.json.updated_at; p.cloudPlans = {};
   for (const fid of (r.json.plans || [])) {
     const pr = await cfetch('/api/wifi/projects/' + id + '/plan/' + fid);
