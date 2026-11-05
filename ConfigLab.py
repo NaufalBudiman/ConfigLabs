@@ -514,7 +514,7 @@ def gen_h3c_comware(data):
                 config.append(f" ip address {ip_addr} {cidr_to_mask(cidr)}")
             except: pass
         if dhcp_mode == "server":
-            config.append(" dhcp select server")
+            # server mode is the Comware default once 'dhcp enable' is set; only the pool binding is written
             if s.get("dhcp_apply_pool"): config.append(f" dhcp server apply ip-pool {_rj_s(s['dhcp_apply_pool'])}")
         elif dhcp_mode == "relay" and s.get("dhcp_relay"):
             config.append(" dhcp select relay")
