@@ -20,32 +20,18 @@
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/>
 <link rel="manifest" href="/site.webmanifest"/>
 <meta property="og:image" content="https://configlabs.online/og-image.png"/>
+<link rel="stylesheet" href="/site.css"/>
 <script src="/site.js" defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ===== Rack Builder: projects ===== */
-:root{--bg:#0b0d10;--bg-2:#111418;--surface:#15191f;--surface-2:#1b2027;--surface-hover:#222831;--border:#232a34;--border-strong:#2e3744;--text:#e6e9ee;--text-dim:#9aa3af;--text-muted:#5b6472;--accent:#7cf4c7;--accent-2:#a8b5ff;--accent-3:#ffb86b;--danger:#ff6478;--success:#7cf4c7;--warning:#ffc857;--sans:'Geist',system-ui,sans-serif;--serif:'Instrument Serif',Georgia,serif;--mono:'JetBrains Mono',monospace;--ease:cubic-bezier(.22,1,.36,1)}
-[data-theme="light"]{--bg:#f8f6f1;--bg-2:#fff;--surface:#fff;--surface-2:#f1ede3;--surface-hover:#ebe6d8;--border:#e4dfd0;--border-strong:#d0c9b5;--text:#1a1a1a;--text-dim:#5a5a5a;--text-muted:#8a8a8a;--accent:#0f766e;--accent-2:#4f46e5;--accent-3:#ea580c;--danger:#e11d48;--warning:#b7791f}
+:root{--bg:#0b0d10;--bg-2:#111418;--surface:#15191f;--surface-2:#1b2027;--surface-hover:#222831;--border:#232a34;--border-strong:#2e3744;--text:#e6e9ee;--text-dim:#b3bcc8;--text-muted:#9ca5b3;--accent:#7cf4c7;--accent-2:#a8b5ff;--accent-3:#ffb86b;--danger:#ff6478;--success:#7cf4c7;--warning:#ffc857;--sans:'Geist',system-ui,sans-serif;--serif:'Instrument Serif',Georgia,serif;--mono:'JetBrains Mono',monospace;--ease:cubic-bezier(.22,1,.36,1)}
+[data-theme="light"]{--bg:#f8f6f1;--bg-2:#fff;--surface:#fff;--surface-2:#f1ede3;--surface-hover:#ebe6d8;--border:#e4dfd0;--border-strong:#d0c9b5;--text:#1a1a1a;--text-dim:#4a4d53;--text-muted:#5a5e66;--accent:#0f766e;--accent-2:#4f46e5;--accent-3:#ea580c;--danger:#e11d48;--warning:#b7791f}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
 body{display:flex;flex-direction:column;overflow:hidden}
-nav{flex:none;z-index:60;padding:12px 24px;background:color-mix(in srgb,var(--bg) 80%,transparent);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
-.brand{display:flex;align-items:center;gap:12px;font-weight:600;font-size:17px;letter-spacing:-.3px;text-decoration:none;color:var(--text)}
-.brand-logo{width:32px;height:32px;border-radius:8px;background:conic-gradient(from 180deg,var(--accent),var(--accent-2),var(--accent-3),var(--accent));display:grid;place-items:center;position:relative}
-.brand-logo::after{content:'';position:absolute;inset:2px;border-radius:6px;background:var(--bg)}
-.brand-logo svg{position:relative;z-index:1;width:18px;height:18px;color:var(--text)}
-.brand em{font-family:var(--serif);font-style:italic;color:var(--accent);font-weight:400}
-.nav-links{display:flex;gap:2px;flex-wrap:wrap}
-.nav-link{padding:8px 14px;color:var(--text-dim);text-decoration:none;font-size:13px;font-weight:500;border-radius:8px;transition:all .2s}
-.nav-link:hover{color:var(--text);background:var(--surface)}
-.nav-link.active{color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
-.nav-actions{display:flex;gap:8px;align-items:center}
-.chip{font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:999px;border:1px solid var(--border-strong);color:var(--text-dim);display:inline-flex;align-items:center;gap:6px}
-.chip .dot{width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success)}
-.icon-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);width:36px;height:36px;border-radius:10px;cursor:pointer;display:grid;place-items:center;transition:all .2s var(--ease);font-size:15px}
-.icon-btn:hover{background:var(--surface-hover);color:var(--text);border-color:var(--border-strong)}
 #app{flex:1;min-height:0;display:grid;grid-template-columns:292px 1fr 324px;position:relative}
 .panel{background:var(--bg-2);border-right:1px solid var(--border);overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;z-index:5}
 #right.panel{border-right:none;border-left:1px solid var(--border)}
@@ -94,7 +80,6 @@ select:focus,input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-m
 #toast.show{transform:translate(-50%,0)}
 #printbox{display:none}
 body{display:block;overflow:auto;height:auto;min-height:100%}
-nav{position:sticky;top:0}
 .beta{font:700 9px var(--mono);letter-spacing:1px;padding:2px 6px;border-radius:99px;background:color-mix(in srgb,var(--accent-3) 18%,transparent);color:var(--accent-3);border:1px solid color-mix(in srgb,var(--accent-3) 45%,transparent);margin-left:6px;vertical-align:2px}
 a.btn{text-decoration:none}
 .bnote{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;color:var(--text-dim);background:color-mix(in srgb,var(--accent-3) 8%,var(--surface));border:1px solid color-mix(in srgb,var(--accent-3) 30%,transparent);border-radius:10px;padding:9px 12px;margin-bottom:16px}
@@ -156,11 +141,9 @@ a.btn{text-decoration:none}
 .tpl div.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--bg))}
 .drop{position:fixed;inset:0;z-index:95;background:color-mix(in srgb,var(--accent) 12%,rgba(0,0,0,.6));display:none;align-items:center;justify-content:center;font-size:22px;font-family:var(--serif);color:var(--text);pointer-events:none;border:3px dashed var(--accent)}
 .drop.on{display:flex}
-@media (max-width:1366px){.nav-link{padding:8px 10px;white-space:nowrap}.nav-link svg{display:none}}
-@media (max-width:1158px){nav{flex-wrap:wrap;padding:8px 14px}.nav-links{order:3;width:100%;flex-wrap:nowrap;overflow-x:auto;gap:0}.nav-link{padding:6px 10px;white-space:nowrap}.nav-link svg{display:none}}
-@media (max-width:640px){.wrap{padding:22px 16px 60px}.hd h1{font-size:32px}.grid{grid-template-columns:1fr 1fr;gap:10px}.chip{display:none}}
+@media (max-width:640px){.wrap{padding:22px 16px 60px}.hd h1{font-size:32px}.grid{grid-template-columns:1fr 1fr;gap:10px}}
 /* ===== Rack editor ===== */
-html,body{height:100%}body{display:flex;flex-direction:column;overflow:hidden;min-height:0}nav{position:relative}
+html,body{height:100%}body{display:flex;flex-direction:column;overflow:hidden;min-height:0}
 #app{grid-template-columns:304px minmax(0,1fr) 344px}
 #stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
 #docbar{flex:none;height:46px;display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--bg-2);border-bottom:1px solid var(--border)}
@@ -218,34 +201,57 @@ table.bom td{padding:7px 4px;border-bottom:1px solid var(--border);vertical-alig
 .opts{display:flex;gap:6px;flex-wrap:wrap}.opts button{padding:6px 11px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg);color:var(--text-dim);font:12px var(--sans);cursor:pointer}.opts button.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--bg))}
 @media (max-width:700px){#docbar{height:auto;flex-wrap:wrap;padding:8px 12px;gap:8px}#docbar input{flex:1 1 140px;min-width:100px}#docbar .sp,.beta{display:none}#docbar .btn.sm{padding:6px 9px}}
 @media (max-width:1000px){html,body{height:auto}body{display:block;overflow:auto;min-height:100%}#app{display:flex;flex-direction:column;flex:none;min-height:0}#stage{order:1;display:flex;flex-direction:column;min-width:0}#right{order:2}#left{order:3}.panel{max-height:none;overflow:visible;border:none;border-bottom:1px solid var(--border)}#cv{flex:none;height:70vh;min-height:360px}.tabs{position:static}}
+/* ===== liquid glass layer (tokens, orbs and the top nav live in /site.css). The rack drawing (#cv), inputs and tables stay solid. ===== */
+#cl-nav{flex:none}
+#app{z-index:1;flex:1 1 auto;min-height:0;height:calc(100vh - var(--cl-nav-h));gap:10px;padding:8px 12px 12px}
+.panel,#stage{background:var(--cl-glass);border:1px solid var(--cl-line);border-radius:20px;-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);box-shadow:inset 0 1px 0 var(--cl-rim),inset 0 -1px 0 rgba(0,0,0,.12),var(--cl-shadow)}
+#right.panel{border:1px solid var(--cl-line)}
+#stage{overflow:hidden}
+.panel::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--text) 18%,transparent)}
+.sec{border-bottom-color:var(--cl-item-line)}
+.tabs{background:var(--cl-glass-strong);border-bottom-color:var(--cl-item-line);-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%)}
+#docbar{height:auto;min-height:50px;flex-wrap:wrap;row-gap:6px;padding:7px 12px;background:transparent;border-bottom-color:var(--cl-item-line)}
+#docbar input{flex:1 1 150px;max-width:300px}#docbar input:hover{border-color:var(--cl-item-line)}
+.vsep{width:1px;height:20px;background:var(--cl-item-line);flex:none}
+#rtabs{padding:8px 14px;align-items:center;background:transparent;border-bottom-color:var(--cl-item-line);scrollbar-width:thin}
+#rtabs button{padding:6px 14px;border:1px solid var(--cl-item-line);border-radius:999px;background:var(--cl-item)}
+#rtabs button.on{top:0;color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);border-color:color-mix(in srgb,var(--accent) 45%,transparent)}
+#rtabs .add{border-style:dashed;border-color:color-mix(in srgb,var(--accent) 45%,transparent);background:none}
+#bar2,#bar3{background:transparent;border-bottom-color:var(--cl-item-line)}
+#cv{border-bottom:1px solid var(--cl-item-line)}
+#stat{background:transparent;border-top:none}
+.btn{border-radius:999px;padding:8px 14px;background:color-mix(in srgb,var(--text) 7%,transparent);border-color:var(--cl-line-2);color:var(--text);font-weight:600}
+.btn.sm{padding:5px 10px}
+.btn:hover{background:color-mix(in srgb,var(--text) 12%,transparent);border-color:var(--cl-line-2)}
+.btn.pri{background:var(--accent);color:var(--cl-on-accent);border-color:transparent;box-shadow:0 4px 16px color-mix(in srgb,var(--accent) 28%,transparent)}
+.btn.pri:hover{background:var(--accent);filter:brightness(1.06)}
+.seg{background:color-mix(in srgb,var(--text) 6%,transparent);border-color:var(--cl-line-2);border-radius:999px}
+.seg button{border-radius:999px}
+.opts button{border-radius:999px;background:var(--cl-item);border-color:var(--cl-item-line)}
+.opts button.on{background:color-mix(in srgb,var(--accent) 12%,transparent);border-color:var(--accent)}
+.mi,.rr,.cabrow,.is{background:var(--cl-item);border-color:var(--cl-item-line)}
+.mi,.rr,.is{border-radius:12px}
+.mi:hover,.cabrow:hover{background:color-mix(in srgb,var(--text) 8%,transparent);border-color:color-mix(in srgb,var(--accent) 50%,var(--cl-item-line))}
+.rr.on,.cabrow.on{border-color:var(--accent)}
+.mi .add{border-radius:999px;border-color:var(--cl-line-2);background:var(--cl-solid)}
+.mi .add:hover{background:var(--accent);color:var(--cl-on-accent)}
+.cabmsg{border-color:var(--cl-item-line)}
+table.bom th,table.bom td{border-bottom-color:var(--cl-item-line)}
+.tpl div{background:var(--cl-item);border-color:var(--cl-item-line);border-radius:12px}
+.tpl div.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.ov{z-index:1001;background:rgba(0,0,0,.45)}
+[data-theme="light"] .ov{background:rgba(40,34,20,.22)}
+.md{background:var(--cl-glass-strong);border-color:var(--cl-line);border-radius:22px;padding:24px;-webkit-backdrop-filter:blur(26px) saturate(170%);backdrop-filter:blur(26px) saturate(170%);box-shadow:inset 0 1px 0 var(--cl-rim),inset 0 -1px 0 rgba(0,0,0,.12),0 30px 80px rgba(0,0,0,.45)}
+#toast{background:var(--cl-glass-strong);border-color:var(--cl-line);-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);box-shadow:inset 0 1px 0 var(--cl-rim),0 14px 34px rgba(0,0,0,.35);z-index:1002}
+#chip{z-index:1003;border-radius:999px;background:var(--cl-glass-strong);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.panel,#stage,.md,#toast,#chip{background:var(--cl-glass-solid)}.tabs{background:var(--cl-glass-solid)}}
+@media (max-width:1000px){#app{height:auto;padding:8px 12px 16px;gap:12px}.panel{border:1px solid var(--cl-line)}.tabs{border-radius:20px 20px 0 0}}
+@media (max-width:640px){.panel,#stage,.md{-webkit-backdrop-filter:blur(12px) saturate(150%);backdrop-filter:blur(12px) saturate(150%)}}
 </style>
 </head>
 <body data-theme="dark">
-<nav>
-  <a href="/" class="brand">
-    <div class="brand-logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/>
-        <path d="M8.5 2h7"/><path d="M7 16h10"/>
-      </svg>
-    </div>
-    <div>Config<em>Labs</em></div>
-  </a>
-  <div class="nav-links">
-    <a href="/" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M3 12L12 3l9 9M5 10v10h14V10"/></svg>Home</a>
-    <a href="/dashboard.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Dashboard</a>
-    <a href="/builder.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>Builder</a>
-    <a href="/translate.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M4 7h13l-3-3M20 17H7l3 3"/></svg>Translator</a>
-    <a href="/wifi.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>WiFi Planner </a>
-    <a href="/topology.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/></svg>Topology</a>
-    <a href="/rack.html" class="nav-link active"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="5" y="2" width="14" height="20" rx="1.5"/><path d="M5 7h14M5 12h14M5 17h14"/></svg>Rack Builder</a>
-    <a href="/about.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>About</a>
-  </div>
-  <div class="nav-actions">
-    <div class="chip"><span class="dot"></span><span>Rack builder</span><span class="beta">BETA</span></div>
-    <button class="btn sm" id="b-tag" onclick="toggleArt('catTag')" title="Show or hide the thin category colour line on top of each device">Tag</button><button class="btn sm" id="b-bez" onclick="toggleArt('bezel')" title="Show the front bezel on H3C servers (hides the drive bays)">Bezel</button><button class="icon-btn" onclick="toggleTheme()" title="Theme" id="theme-btn">🌙</button>
-  </div>
-</nav>
+<div class="cl-orbs" aria-hidden="true"><i></i><i></i><i></i></div>
+<div id="cl-nav"></div>
 <div id="app">
   <aside class="panel" id="left"></aside>
   <section id="stage">
@@ -257,6 +263,7 @@ table.bom td{padding:7px 4px;border-bottom:1px solid var(--border);vertical-alig
       <button class="btn sm" id="z-out" title="Zoom out">−</button><span class="zl" id="zl">100%</span><button class="btn sm" id="z-in" title="Zoom in">+</button><button class="btn sm" id="z-fit">Fit</button>
       <label class="tgl" style="gap:8px;padding:0 4px"><span>Show gaps</span><input type="checkbox" id="t-gaps" checked><i></i></label>
       <button class="btn sm" id="b-cab" title="Cable tool (C): click a port, then another port to connect them. Esc to stop.">Cable tool</button><label class="tgl" style="gap:8px;padding:0 4px"><span>Cables</span><input type="checkbox" id="t-cab" checked><i></i></label>
+      <span class="vsep"></span><button class="btn sm" id="b-tag" onclick="toggleArt('catTag')" title="Show or hide the thin category colour line on top of each device">Tag</button><button class="btn sm" id="b-bez" onclick="toggleArt('bezel')" title="Show the front bezel on H3C servers (hides the drive bays)">Bezel</button>
       <span class="sp"></span>
       <button class="btn sm" id="b-rename" title="Rename this rack (or double-click its tab)">Rename rack</button>
       <button class="btn sm" id="b-blank" title="Fit blanking panels in every open gap between equipment">Fill gaps with blanking</button>
@@ -884,12 +891,12 @@ function issueGo(is) {
 }
 
 /* ---------- theme and start ---------- */
-function setTheme(t) { document.body.dataset.theme = t; $('theme-btn').textContent = t === 'dark' ? '🌙' : '☀️'; ls.set('clab_theme', t); if (S.P) { renderCanvas(); try { renderLeft(); renderRight(); } catch (e) {} } }
+function setTheme(t) { document.body.dataset.theme = document.documentElement.dataset.theme = t; const tb = $('theme-btn'); if (tb) tb.textContent = t === 'dark' ? '🌙' : '☀️'; ls.set('clab_theme', t); if (S.P) { renderCanvas(); try { renderLeft(); renderRight(); } catch (e) {} } }
 function toggleArt(k) { RR.art[k] = !RR.art[k]; ls.set('clab_art_' + k, RR.art[k] ? '1' : '0'); syncArt(); if (S.P) { renderCanvas(); try { renderLeft(); renderRight(); } catch (e) {} } }
 function syncArt() { $('b-tag').classList.toggle('pri', !!RR.art.catTag); $('b-bez').classList.toggle('pri', !!RR.art.bezel); }
 RR.art = RR.art || {}; RR.art.catTag = ls.get('clab_art_catTag') !== '0'; RR.art.bezel = ls.get('clab_art_bezel') === '1';
 function toggleTheme() { setTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'); }
-setTheme(ls.get('clab_theme') === 'light' ? 'light' : 'dark'); syncArt();
+setTheme((ls.get('clab_theme') || ls.get('configlabs-theme')) === 'light' ? 'light' : 'dark'); syncArt();
 if (load()) { render(); fit(); addEventListener('resize', () => { if (S.P && !S.drag) renderCanvas(); }); if (qs.get('export') === '1') exportDlg(); }
 </script>
 </body>

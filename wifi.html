@@ -17,6 +17,8 @@
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png"/>
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/>
 <link rel="manifest" href="/site.webmanifest"/>
+<link rel="stylesheet" href="/site.css"/>
+<script>try{var _t=localStorage.getItem('clab_theme')||localStorage.getItem('configlabs-theme');if(_t==='light'||_t==='dark')document.documentElement.dataset.theme=_t}catch(e){}</script>
 <script src="/site.js" defer></script>
 <link rel="icon" type="image/x-icon" href="/favicon.ico"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,31 +35,14 @@
   --radius:12px;--radius-lg:20px;--ease:cubic-bezier(.22,1,.36,1)
 }
 [data-theme="light"]{
-  --bg:#f4f5f7;--bg-2:#eceef1;--surface:#ffffff;--surface-2:#f0f2f5;
-  --surface-hover:#e8eaed;--border:#dde0e5;--border-strong:#c8ccd3;
-  --text:#1a1d23;--text-dim:#4a5060;--text-muted:#8a909a
+  --bg:#f8f6f1;--bg-2:#efece5;--surface:#ffffff;--surface-2:#f3f1ec;
+  --surface-hover:#ebe8e0;--border:#e4dfd0;--border-strong:#d2ccbb;
+  --text:#1a1d23;--text-dim:#4a5060;--text-muted:#6b717b;
+  --accent:#0f766e;--accent-2:#4f46e5;--accent-3:#ea580c;--success:#0f766e
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
 body{font-family:var(--sans);background:var(--bg);color:var(--text);display:flex;flex-direction:column}
-
-/* NAV */
-nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:54px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;z-index:100;position:relative}
-.brand{display:flex;align-items:center;gap:12px;font-weight:600;font-size:17px;letter-spacing:-.3px;text-decoration:none;color:var(--text)}
-.brand-logo{width:32px;height:32px;border-radius:8px;background:conic-gradient(from 180deg,var(--accent),var(--accent-2),var(--accent-3),var(--accent));display:grid;place-items:center;position:relative}
-.brand-logo::after{content:'';position:absolute;inset:2px;border-radius:6px;background:var(--bg)}
-.brand-logo svg{position:relative;z-index:1;width:18px;height:18px;color:var(--text)}
-.brand em{font-family:var(--serif);font-style:italic;color:var(--accent);font-weight:400}
-.nav-center{display:flex;align-items:center;gap:2px}
-.nav-tab{padding:7px 14px;color:var(--text-dim);text-decoration:none;font-size:13px;font-weight:500;border-radius:8px;transition:all .2s;display:inline-flex;align-items:center;gap:5px}
-.nav-tab:hover{color:var(--text);background:var(--surface-hover)}
-.nav-tab.active{color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
-.beta-pill{background:color-mix(in srgb,var(--accent-3) 15%,transparent);color:var(--accent-3);font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;letter-spacing:.5px}
-.nav-right{display:flex;align-items:center;gap:8px}
-.chip{display:flex;align-items:center;gap:7px;padding:5px 11px;background:var(--surface-2);border:1px solid var(--border);border-radius:99px;font-size:11px;font-family:var(--mono);color:var(--text-dim)}
-.chip .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);flex-shrink:0}
-.icon-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);width:36px;height:36px;border-radius:10px;cursor:pointer;display:grid;place-items:center;transition:all .2s;font-size:16px}
-.icon-btn:hover{background:var(--surface-hover);color:var(--text);border-color:var(--border-strong)}
 
 /* LAYOUT */
 .wifi-page{display:flex;flex:1;overflow:hidden}
@@ -165,20 +150,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
 .btn-primary-modal{width:100%;padding:11px;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--bg);border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;font-family:var(--sans)}
 .btn-secondary-modal{width:100%;padding:10px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text);border-radius:10px;font-size:13px;cursor:pointer;font-family:var(--sans);margin-bottom:8px}
 
-/* AUTH (matching existing) */
-.auth-login-btn{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--bg);border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all .15s}
-.auth-login-btn:hover{filter:brightness(1.1)}
-.auth-user-wrap{position:relative;display:inline-flex;align-items:center}
-.auth-avatar{width:34px;height:34px;border-radius:50%;border:2px solid var(--border);cursor:pointer;transition:border-color .15s;object-fit:cover;display:block}
-.auth-avatar:hover{border-color:var(--accent)}
-.auth-dropdown{position:absolute;top:calc(100% + 10px);right:0;background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;min-width:200px;box-shadow:0 16px 48px rgba(0,0,0,.4);z-index:9999;opacity:0;pointer-events:none;transform:translateY(-6px);transition:all .18s var(--ease)}
-.auth-dropdown.open{opacity:1;pointer-events:auto;transform:translateY(0)}
-.auth-dropdown-header{padding:12px 14px;border-bottom:1px solid var(--border)}
-.auth-dropdown-name{font-weight:600;color:var(--text);font-size:13px}
-.auth-dropdown-email{font-size:11px;color:var(--text-dim)}
-.auth-dropdown-item{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;color:var(--text);font-size:13px;font-family:var(--sans);cursor:pointer;transition:background .1s}
-.auth-dropdown-item:hover{background:var(--surface-hover)}
-.auth-dropdown-item.danger{color:var(--danger)}
+/* AUTH */
 .auth-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);z-index:200;display:none;place-items:center;padding:20px}
 .auth-modal-overlay.open{display:grid}
 .auth-modal{background:var(--surface);border:1px solid var(--border-strong);border-radius:20px;padding:32px;max-width:400px;width:100%;position:relative}
@@ -361,23 +333,6 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px
 .cal-tbl{width:100%;border-collapse:collapse;font-size:12px}
 .cal-tbl th,.cal-tbl td{border:1px solid var(--border);padding:5px 6px;text-align:center}
 .cal-tbl input{width:64px;padding:4px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);text-align:center}
-@media(max-width:1111px){
-  .nav-tab svg{display:none}
-  .nav-tab{padding:7px 10px;white-space:nowrap}
-}
-@media(min-width:701px) and (max-width:965px){
-  nav{height:auto;flex-wrap:wrap;padding:8px 14px;row-gap:6px}
-  nav .brand{order:1}
-  .nav-right{order:2;margin-left:auto}
-  .nav-center{order:3;flex:0 0 100%;overflow-x:auto;scrollbar-width:none}
-  .nav-center::-webkit-scrollbar{display:none}
-}
-@media(max-width:700px){
-  nav{padding:0 10px}
-  .nav-tab{padding:6px 8px}
-  .nav-tab svg,.nav-right .chip,.beta-pill{display:none}
-  .nav-tab{white-space:nowrap}
-}
 /* ---- v6.0 phone block ---- */
 .phone-block{display:none}
 @media(max-width:767px){
@@ -473,48 +428,77 @@ select option:disabled{color:var(--text-muted)}
 .plc-m div{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:6px 4px;text-align:center}
 .plc-m b{display:block;font-family:var(--mono);font-size:14px;color:var(--text)}
 .plc-m span{font-size:10px;color:var(--text-muted)}
+/* ---- v6.1: liquid glass + shared top nav (site.css / site.js) ---- */
+:root{--surface-hover:rgba(255,255,255,.07);--gl-div:rgba(255,255,255,.08);--gl-blur:blur(22px) saturate(170%);--gl-rim:inset 0 1px 0 var(--cl-rim),inset 0 -1px 0 rgba(0,0,0,.12)}
+[data-theme="light"]{--surface-hover:rgba(26,26,26,.06);--gl-div:rgba(26,26,26,.08)}
+html,body{background:var(--bg)}
+body>#cl-nav{flex-shrink:0}
+.proj-home,#editor-page{position:relative;z-index:1}
+.proj-home{background:transparent}
+/* editor: two floating glass panels around the solid plan canvas */
+#editor-page{padding:10px 12px 12px;gap:10px}
+.left-panel{background:var(--cl-glass);border:1px solid var(--cl-line);border-radius:20px;-webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur);box-shadow:var(--gl-rim),var(--cl-shadow)}
+.lp-sec{border-bottom-color:var(--gl-div)}
+.lp-sec:last-child{border-bottom:0}
+.wifi-main{border-radius:20px;border:1px solid var(--cl-line);box-shadow:var(--cl-shadow);isolation:isolate}
+.wifi-main::before{content:'';position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;background:var(--cl-glass);-webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur);box-shadow:var(--gl-rim)}
+.projbar,.topbar,.stats-bar{background:transparent}
+.projbar,.topbar{border-bottom-color:var(--gl-div)}
+.stats-bar{border-top-color:var(--gl-div)}
+.canvas-wrap{background:var(--bg-2)}
+.tgroup{background:color-mix(in srgb,var(--text) 5%,transparent);border-color:var(--gl-div);border-radius:12px}
+.menu-btn{background:color-mix(in srgb,var(--text) 6%,transparent);border-color:var(--cl-line-2);border-radius:999px}
+.tt.primary{background:var(--cl-accent);color:var(--cl-on-accent);border-radius:999px;box-shadow:0 6px 22px color-mix(in srgb,var(--cl-accent) 28%,transparent)}
+.tt.primary:hover{color:var(--cl-on-accent)}
+.chip-scale,.stat-chip{border-radius:999px}
+.stat-chip{background:var(--cl-item);border-color:var(--cl-item-line)}
+.ap-item,.mat-btn{background:var(--cl-item);border-color:var(--cl-item-line)}
+.ap-item:hover,.mat-btn:hover{background:var(--surface-hover)}
+.mat-btn.active{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.tool-kbd{background:var(--cl-item);border-color:var(--cl-item-line)}
+.btn-secondary-modal{background:color-mix(in srgb,var(--text) 6%,transparent);border-color:var(--cl-line-2);border-radius:999px}
+.btn-secondary-modal:hover{background:var(--surface-hover)}
+.btn-primary-modal,.upload-btn-big{background:var(--cl-accent);color:var(--cl-on-accent);border-radius:999px;box-shadow:0 6px 22px color-mix(in srgb,var(--cl-accent) 28%,transparent)}
+.btn-primary-modal.danger{background:var(--cl-danger);color:#fff;box-shadow:none}
+/* floating chrome over the canvas, props card, menus, toasts */
+.legend,.stepper,.zoom-ctl,.canvas-hint,.float-pop,.plc-float,.v3-bar,.wifi-props,.filemenu-pop,.pcard .pmenu,.toast{background:var(--cl-glass-strong);border:1px solid var(--cl-line);-webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur);box-shadow:var(--gl-rim),var(--cl-shadow)}
+.legend,.zoom-ctl,.float-pop{border-radius:14px}
+.canvas-hint,.stepper{border-radius:999px}
+.plc-float,.v3-bar{border-radius:18px}
+.wifi-props{border-radius:18px}
+.props-header,.pf{border-bottom-color:var(--gl-div)}
+.props-close,.modal-close,.auth-modal-close{border-radius:50%;background:color-mix(in srgb,var(--text) 6%,transparent);border-color:var(--cl-line-2)}
+.filemenu-pop,.pcard .pmenu{border-radius:16px;padding:6px}
+.legend-stats{border-top-color:var(--gl-div)}
+.toast{border-radius:14px}
+.toast.success{border-left:3px solid var(--accent)}
+.toast.error{border-left:3px solid var(--danger)}
+.toast-container{z-index:1400}
+/* dialogs (above the shared nav) */
+.modal-overlay,.auth-modal-overlay,.savename-modal-overlay{z-index:1100;background:rgba(0,0,0,.5)}
+[data-theme="light"] .modal-overlay,[data-theme="light"] .auth-modal-overlay,[data-theme="light"] .savename-modal-overlay{background:rgba(40,34,20,.22)}
+.modal,.auth-modal{background:var(--cl-glass-strong);border:1px solid var(--cl-line);border-radius:22px;-webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur);box-shadow:var(--gl-rim),0 24px 70px rgba(0,0,0,.35)}
+.oauth-btn{background:color-mix(in srgb,var(--text) 6%,transparent);border-color:var(--cl-line-2);border-radius:999px}
+.oauth-btn:hover{background:var(--surface-hover)}
+.xp-ch,.xp-box,.xp-out,.rad-box,.plc-card,.pdf-th,.xp-stats div,.plc-m div{background:var(--cl-item);border-color:var(--cl-item-line)}
+.xp-ch,.xp-box,.plc-card{border-radius:14px}
+/* project home */
+.ph-note{background:var(--cl-glass);border:1px solid var(--cl-line);border-radius:16px;-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);box-shadow:var(--gl-rim)}
+.pcard{background:var(--cl-glass);border:1px solid var(--cl-line);border-radius:20px;-webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur);box-shadow:var(--gl-rim),var(--cl-shadow)}
+.pcard:hover{border-color:color-mix(in srgb,var(--accent) 60%,transparent)}
+.pcard:has(.pmenu.open){z-index:10}
+.pcard.newcard{border:1px dashed color-mix(in srgb,var(--text) 22%,transparent);background:color-mix(in srgb,var(--cl-glass) 60%,transparent);box-shadow:none}
+.ph-actions .tt:not(.primary){border-radius:999px;border:1px solid var(--cl-line-2);background:color-mix(in srgb,var(--text) 6%,transparent);color:var(--text)}
+.ph-actions .tt:not(.primary):hover{background:var(--surface-hover)}
+.phone-block a{border-radius:999px;background:var(--cl-accent);color:var(--cl-on-accent)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.left-panel,.wifi-main::before,.pcard,.ph-note,.modal,.auth-modal,.wifi-props,.filemenu-pop,.pcard .pmenu,.toast{background:var(--cl-glass-solid)}}
 </style>
 </head>
 <body data-theme="dark">
+<div class="cl-orbs" aria-hidden="true"><i></i><i></i><i></i></div>
+<div id="cl-nav"></div>
 <div class="phone-block"><div style="font-size:40px">📶</div><h2>WiFi Planner needs a bigger screen</h2><p>The planner is built for laptop or tablet. Please open this page on a larger screen to plan floors and place access points.</p><div class="row"><a href="/">Home</a><a class="alt" href="/builder.html">Config Builder</a></div></div>
 
-<!-- NAV -->
-<nav>
-  <a href="/" class="brand">
-    <div class="brand-logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/>
-        <path d="M8.5 2h7"/><path d="M7 16h10"/>
-      </svg>
-    </div>
-    <div>Config<em>Labs</em></div>
-  </a>
-  <div class="nav-center">
-    <a href="/" class="nav-tab">Home</a>
-    <a href="/dashboard.html" class="nav-tab">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Dashboard
-    </a>
-    <a href="/builder.html" class="nav-tab">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>Builder
-    </a>
-    <a href="/wifi.html" class="nav-tab active">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>WiFi Planner
-    </a>
-    <a href="/topology.html" class="nav-tab">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/></svg> Topology
-    </a>
-    <a href="/rack.html" class="nav-tab">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="1.5"/><path d="M5 7h14M5 12h14M5 17h14"/></svg>
-      Rack Builder
-    </a>
-    <a href="/about.html" class="nav-tab">About</a>
-  </div>
-  <div class="nav-right">
-    <div class="chip" title="ConfigLabs site" data-cl-title="Site v"><span class="dot"></span><span data-cl-wifi="Planner v">Planner v5.30</span></div>
-    <div id="auth-nav" style="display:flex;align-items:center"></div>
-    <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
-  </div>
-</nav>
 
 <!-- LOGIN MODAL -->
 <div class="auth-modal-overlay" id="auth-modal" onclick="if(event.target===this)authCloseModal()">
@@ -4477,8 +4461,8 @@ function toggleTheme() {
   const next = cur === 'dark' ? 'light' : 'dark';
   body.dataset.theme = next;
   document.documentElement.dataset.theme = next;
-  document.getElementById('theme-btn').textContent = next === 'dark' ? '🌙' : '☀️';
-  try { localStorage.setItem('configlabs-theme', next); } catch(e){}
+  const tb = document.getElementById('theme-btn'); if (tb) tb.textContent = next === 'dark' ? '🌙' : '☀️';
+  try { localStorage.setItem('clab_theme', next); } catch(e){}
   scheduleRender();
 }
 
@@ -4492,6 +4476,7 @@ function initAuth() {
   if (incoming) {
     localStorage.setItem('clab_token', incoming);
     window.history.replaceState({}, '', window.location.pathname);
+    if (window.clNavRefresh) clNavRefresh();
   }
   if (token || incoming) {
     fetch('/api/me', {headers:{'Authorization':'Bearer '+(incoming||token)}})
@@ -4504,7 +4489,8 @@ function initAuth() {
 }
 
 function renderAuthLogin() {
-  document.getElementById('auth-nav').innerHTML =
+  const an = document.getElementById('auth-nav'); if (!an) return;
+  an.innerHTML =
     `<button class="auth-login-btn" onclick="authOpenModal()">Login</button>`;
 }
 
@@ -4513,7 +4499,8 @@ function renderAuthUser(user) {
   const av = user.avatar_url
     ? `<img class="auth-avatar" src="${/^https:\/\//.test(user.avatar_url)?_X(user.avatar_url):''}" onclick="document.getElementById('auth-dd').classList.toggle('open')">`
     : `<button class="auth-avatar" onclick="document.getElementById('auth-dd').classList.toggle('open')" style="background:var(--accent);color:var(--bg);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center">${_X((user.name||"?")[0])}</button>`;
-  document.getElementById('auth-nav').innerHTML = `
+  const an = document.getElementById('auth-nav'); if (!an) return;
+  an.innerHTML = `
     <div class="auth-user-wrap">
       ${av}
       <div class="auth-dropdown" id="auth-dd">
@@ -4529,6 +4516,11 @@ function renderAuthUser(user) {
     }
   });
 }
+
+// the shared nav (site.js) logs out by itself; clear this page's synced caches too
+window.authLogout = () => { try { localStorage.removeItem('cl_matlib'); localStorage.removeItem('cl_apcat'); } catch(e){} };
+// theme changed in another tab: site.js swaps data-theme, redraw the plan with the new colours
+window.addEventListener('storage', e => { if (e.key === 'clab_theme') setTimeout(() => { try { scheduleRender(); } catch(_){} }, 0); });
 
 // ============================================================
 // PROJECTS  (stored in this browser: IndexedDB)
@@ -4572,7 +4564,7 @@ function dialog({ title, html = '', ok = 'OK', cancel = 'Cancel', danger = false
   return new Promise(res => {
     const ov = document.createElement('div');
     ov.className = 'modal-overlay open';
-    ov.style.zIndex = 300;
+    ov.style.zIndex = 1200;
     ov.innerHTML = `<div class="modal${wide ? ' wide' : ''}"><button class="modal-close" data-x>✕</button><h2>${title}</h2>${html}
       <div style="display:flex;gap:8px;margin-top:16px">${hideCancel ? '' : `<button class="btn-secondary-modal" data-c style="flex:1">${cancel}</button>`}<button class="btn-primary-modal ${danger ? 'danger' : ''}" data-ok style="flex:1">${ok}</button></div></div>`;
     const m = ov.firstChild;
@@ -5347,7 +5339,7 @@ function showBusy(msg) {
   let ov = document.getElementById('busy-ov');
   if (!ov) {
     ov = document.createElement('div');
-    ov.id = 'busy-ov'; ov.className = 'modal-overlay open'; ov.style.zIndex = 400;
+    ov.id = 'busy-ov'; ov.className = 'modal-overlay open'; ov.style.zIndex = 1300;
     ov.innerHTML = '<div class="modal" style="max-width:340px"><div class="busy-box"><div class="busy-spin"></div><div id="busy-msg" style="font-size:13px;color:var(--text-dim);text-align:center"></div></div></div>';
     document.body.appendChild(ov);
   }

@@ -18,6 +18,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/>
 <link rel="manifest" href="/site.webmanifest"/>
 <meta property="og:image" content="https://configlabs.online/og-image.png"/>
+<link rel="stylesheet" href="/site.css"/>
 <script src="/site.js" defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,22 +30,6 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
 body{display:flex;flex-direction:column;overflow:hidden}
-nav{flex:none;z-index:60;padding:12px 24px;background:color-mix(in srgb,var(--bg) 80%,transparent);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
-.brand{display:flex;align-items:center;gap:12px;font-weight:600;font-size:17px;letter-spacing:-.3px;text-decoration:none;color:var(--text)}
-.brand-logo{width:32px;height:32px;border-radius:8px;background:conic-gradient(from 180deg,var(--accent),var(--accent-2),var(--accent-3),var(--accent));display:grid;place-items:center;position:relative}
-.brand-logo::after{content:'';position:absolute;inset:2px;border-radius:6px;background:var(--bg)}
-.brand-logo svg{position:relative;z-index:1;width:18px;height:18px;color:var(--text)}
-.brand em{font-family:var(--serif);font-style:italic;color:var(--accent);font-weight:400}
-.nav-links{display:flex;gap:2px;flex-wrap:wrap}
-.nav-link{padding:8px 14px;color:var(--text-dim);text-decoration:none;font-size:13px;font-weight:500;border-radius:8px;transition:all .2s}
-.nav-link:hover{color:var(--text);background:var(--surface)}
-.nav-link.active{color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
-.nav-actions{display:flex;gap:8px;align-items:center}
-.beta{font:700 9px var(--mono);letter-spacing:1px;padding:2px 6px;border-radius:99px;background:color-mix(in srgb,var(--accent-3) 18%,transparent);color:var(--accent-3);border:1px solid color-mix(in srgb,var(--accent-3) 45%,transparent);margin-left:6px}
-.chip{font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:999px;border:1px solid var(--border-strong);color:var(--text-dim);display:inline-flex;align-items:center;gap:6px}
-.chip .dot{width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success)}
-.icon-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);width:36px;height:36px;border-radius:10px;cursor:pointer;display:grid;place-items:center;transition:all .2s var(--ease);font-size:15px}
-.icon-btn:hover{background:var(--surface-hover);color:var(--text);border-color:var(--border-strong)}
 #app{flex:1;min-height:0;display:grid;grid-template-columns:292px 1fr 324px;position:relative}
 .panel{background:var(--bg-2);border-right:1px solid var(--border);overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;z-index:5}
 #right.panel{border-right:none;border-left:1px solid var(--border)}
@@ -137,38 +122,60 @@ table.bom td:last-child,table.bom th:last-child{text-align:right;font-family:var
 #printbox{display:none}
 .tools .mtog{display:none}
 @media (max-width:1100px){#app{grid-template-columns:1fr}.panel{position:absolute;top:0;bottom:0;width:min(330px,88vw);transform:translateX(-102%);transition:transform .3s var(--ease);box-shadow:0 0 40px rgba(0,0,0,.5)}#right.panel{right:0;transform:translateX(102%)}.panel.open{transform:none}.tools .mtog{display:inline-flex!important}#mini{display:none}}
-@media (max-width:1261px){.nav-link{padding:8px 10px;white-space:nowrap}.nav-link svg{display:none}}
-@media (max-width:1053px){nav{flex-wrap:wrap;padding:8px 14px}.nav-links{order:3;width:100%;flex-wrap:nowrap;overflow-x:auto;gap:0}.nav-link{padding:6px 10px;white-space:nowrap}.nav-link svg{display:none}}
-@media (max-width:700px){.tools{top:8px;padding:3px}.tools button{padding:0 7px;min-width:30px;font-size:12px}#b-grid,#b-regen,.tools .sep{display:none}#hint{display:none}.chip{display:none}}
-@media print{body{display:block;overflow:visible;background:#fff}nav,#app,#toast{display:none!important}#printbox{display:block}#printbox svg{width:100%;height:auto}@page{size:A4 landscape;margin:8mm}}
+@media (max-width:700px){.tools{top:8px;padding:3px}.tools button{padding:0 7px;min-width:30px;font-size:12px}#b-grid,#b-regen,.tools .sep{display:none}#hint{display:none}}
+/* ===== liquid glass: chrome is glass (tokens from /site.css), the drawing stage stays solid ===== */
+#cl-nav{flex:none}
+#app{z-index:1;flex:1 1 auto;height:calc(100% - var(--cl-nav-h));padding:4px 12px 12px;gap:12px}
+.panel{background:var(--cl-glass);border:1px solid var(--cl-line);border-radius:20px;-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);box-shadow:inset 0 1px 0 var(--cl-rim),inset 0 -1px 0 rgba(0,0,0,.12),var(--cl-shadow)}
+#right.panel{border:1px solid var(--cl-line)}
+.panel::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--text) 18%,transparent)}
+.sec{border-bottom-color:var(--cl-item-line)}
+#stage{border:1px solid var(--cl-solid-line);border-radius:20px;box-shadow:var(--cl-shadow)}
+.tools{background:var(--cl-glass-strong);border:1px solid var(--cl-line);border-radius:999px;padding:5px 8px;-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);box-shadow:inset 0 1px 0 var(--cl-rim),inset 0 -1px 0 rgba(0,0,0,.12),var(--cl-shadow)}
+.tools button{border-radius:999px}
+.tools button:hover{background:color-mix(in srgb,var(--text) 9%,transparent)}
+.tools .sep{background:var(--cl-line-2)}
+.menu .dd{background:color-mix(in srgb,var(--cl-glass-solid) 95%,transparent);border:1px solid var(--cl-line-2);border-radius:14px;box-shadow:inset 0 1px 0 var(--cl-rim),0 18px 44px rgba(0,0,0,.35)}
+.dd button{border-radius:9px}
+#mini,#hint{background:var(--cl-glass);border:1px solid var(--cl-line);-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);box-shadow:inset 0 1px 0 var(--cl-rim),var(--cl-shadow)}
+#mini{border-radius:16px}
+#hint{border-radius:999px;padding:6px 12px}
+.stat,.pt,.dcard,.pcard{background:var(--cl-item);border:1px solid var(--cl-item-line);border-radius:12px}
+.stat{border-radius:14px}
+.pt:hover,.dcard:hover,.pcard:hover{background:color-mix(in srgb,var(--text) 7%,transparent);border-color:var(--cl-line-2)}
+.pt:hover{border-color:var(--accent)}
+.dcard.on,.pcard.on{background:color-mix(in srgb,var(--accent) 10%,transparent);border-color:var(--accent)}
+.tabs{border-bottom-color:var(--cl-item-line)}
+.btn{border-radius:999px;padding:8px 15px;white-space:nowrap;background:color-mix(in srgb,var(--text) 7%,transparent);border:1px solid var(--cl-line-2);color:var(--text);font-weight:600}
+.btn:hover{background:color-mix(in srgb,var(--text) 12%,transparent);border-color:var(--cl-line-2)}
+.btn.pri{background:var(--cl-accent);color:var(--cl-on-accent);border-color:transparent;box-shadow:0 6px 22px color-mix(in srgb,var(--cl-accent) 30%,transparent)}
+.btn.pri:hover{background:var(--cl-accent);filter:brightness(1.06)}
+.btn.sm{padding:6px 12px;font-size:11.5px}
+.seg{background:var(--cl-item);border:1px solid var(--cl-item-line);border-radius:999px}
+.seg button{border-radius:999px}
+#toast{background:var(--cl-glass-strong);border:1px solid var(--cl-line);-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);box-shadow:inset 0 1px 0 var(--cl-rim),var(--cl-shadow)}
+.md{background:var(--cl-glass-strong);border:1px solid var(--cl-line);border-radius:22px;-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);box-shadow:inset 0 1px 0 var(--cl-rim),inset 0 -1px 0 rgba(0,0,0,.12),0 30px 80px rgba(0,0,0,.45)}
+@media (max-width:1100px){
+  #app{gap:0}
+  .panel{z-index:20;top:4px;bottom:12px;left:12px;transform:translateX(calc(-100% - 24px));box-shadow:inset 0 1px 0 var(--cl-rim),0 20px 60px rgba(0,0,0,.45)}
+  #right.panel{left:auto;right:12px;transform:translateX(calc(100% + 24px))}
+  .panel.open,#right.panel.open{transform:none}
+}
+@media (max-width:640px){#app{padding:4px 8px 8px}.panel{left:8px;bottom:8px}#right.panel{right:8px}#stage{border-radius:16px}}
+a.btn{text-decoration:none}
+.tools{border-radius:22px}
+#tip{background:var(--cl-glass-strong);border:1px solid var(--cl-line);border-radius:12px;-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);box-shadow:inset 0 1px 0 var(--cl-rim),var(--cl-shadow)}
+.warn-i{border-radius:12px}
+.warn-i.info{background:var(--cl-item);border-color:var(--cl-item-line)}
+.fl{border-radius:10px}
+.fl:hover{background:color-mix(in srgb,var(--text) 7%,transparent)}
+#empty .box{padding:28px 26px;border-radius:22px;background:var(--cl-glass);border:1px solid var(--cl-line);-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);box-shadow:inset 0 1px 0 var(--cl-rim),inset 0 -1px 0 rgba(0,0,0,.12),var(--cl-shadow)}
+@media print{body{display:block;overflow:visible;background:#fff}#cl-nav,.cl-orbs,#app,#toast{display:none!important}#printbox{display:block}#printbox svg{width:100%;height:auto}@page{size:A4 landscape;margin:8mm}}
 </style>
 </head>
 <body data-theme="dark">
-<nav>
-  <a href="/" class="brand">
-    <div class="brand-logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/>
-        <path d="M8.5 2h7"/><path d="M7 16h10"/>
-      </svg>
-    </div>
-    <div>Config<em>Labs</em></div>
-  </a>
-  <div class="nav-links">
-    <a href="/" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M3 12L12 3l9 9M5 10v10h14V10"/></svg>Home</a>
-    <a href="/dashboard.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Dashboard</a>
-    <a href="/builder.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>Builder</a>
-    <a href="/translate.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M4 7h13l-3-3M20 17H7l3 3"/></svg>Translator</a>
-    <a href="/wifi.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>WiFi Planner </a>
-    <a href="/topology.html" class="nav-link active"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/></svg>Topology</a>
-    <a href="/rack.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="5" y="2" width="14" height="20" rx="1.5"/><path d="M5 7h14M5 12h14M5 17h14"/></svg>Rack Builder</a>
-    <a href="/about.html" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>About</a>
-  </div>
-  <div class="nav-actions">
-    <div class="chip"><span class="dot"></span><span>Planner view</span><span class="beta">BETA</span></div>
-    <button class="icon-btn" onclick="toggleTheme()" title="Theme" id="theme-btn">🌙</button>
-  </div>
-</nav>
+<div class="cl-orbs" aria-hidden="true"><i></i><i></i><i></i></div>
+<div id="cl-nav"></div>
 <div id="app">
   <aside class="panel" id="left">
     <div class="sec"><a class="btn sm" href="/topology.html" style="width:100%;margin-bottom:10px">← Free diagram editor</a>
@@ -916,7 +923,7 @@ function doExport(kind) {
 /* ============================================================
    INIT
    ============================================================ */
-function setTheme(t) { document.body.dataset.theme = t; const b = $('theme-btn'); if (b) b.textContent = t === 'dark' ? '🌙' : '☀️'; try { localStorage.setItem('clab_theme', t); } catch (e) {} }
+function setTheme(t) { document.body.dataset.theme = document.documentElement.dataset.theme = t; const b = $('theme-btn'); if (b) b.textContent = t === 'dark' ? '🌙' : '☀️'; try { localStorage.setItem('clab_theme', t); } catch (e) {} }
 
 function toEditor() {
   if (!S.T || !S.T.nAp) { toast('Nothing to edit yet'); return; }

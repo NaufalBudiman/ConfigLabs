@@ -1,0 +1,101 @@
+/* ConfigLabs shared design layer: liquid-glass tokens, background orbs, glass surfaces and the one top nav
+   that site.js renders into <div id="cl-nav"></div> on every page. Everything is prefixed cl- so it never
+   collides with a page's own classes. Pages set data-theme="light" on <html> and/or <body>. */
+:root{
+  --cl-sans:'Geist',system-ui,-apple-system,'Segoe UI',sans-serif;--cl-serif:'Instrument Serif',Georgia,serif;--cl-mono:'JetBrains Mono',ui-monospace,monospace;
+  --cl-ease:cubic-bezier(.22,1,.36,1);
+  --cl-bg:#0b0d10;--cl-text:#e6e9ee;--cl-text-dim:#b3bcc8;--cl-text-muted:#9ca5b3;
+  --cl-accent:#7cf4c7;--cl-accent-2:#a8b5ff;--cl-accent-3:#ffb86b;--cl-danger:#ff8a9a;--cl-on-accent:#06130e;
+  --cl-glass:rgba(18,22,28,.66);--cl-glass-strong:rgba(14,17,22,.8);--cl-glass-solid:#13171d;
+  --cl-line:rgba(255,255,255,.10);--cl-line-2:rgba(255,255,255,.15);--cl-rim:rgba(255,255,255,.14);--cl-sheen:rgba(255,255,255,.06);
+  --cl-shadow:0 10px 40px rgba(0,0,0,.35);
+  --cl-item:rgba(230,233,238,.04);--cl-item-line:rgba(255,255,255,.08);
+  --cl-solid:#13171d;--cl-solid-line:#262d38;
+  --cl-orb-a:rgba(124,244,199,.26);--cl-orb-b:rgba(168,181,255,.24);--cl-orb-c:rgba(255,184,107,.2);
+  --cl-nav-h:66px;   /* height the nav slot takes at the top of the page (12px gap + 54px bar) */
+}
+[data-theme="light"]{
+  --cl-bg:#f8f6f1;--cl-text:#1a1a1a;--cl-text-dim:#4a4d53;--cl-text-muted:#5a5e66;
+  --cl-accent:#0f766e;--cl-accent-2:#4f46e5;--cl-accent-3:#ea580c;--cl-danger:#c81e3a;--cl-on-accent:#fff;
+  --cl-glass:rgba(255,255,255,.62);--cl-glass-strong:rgba(255,255,255,.82);--cl-glass-solid:#fff;
+  --cl-line:rgba(255,255,255,.75);--cl-line-2:rgba(26,26,26,.14);--cl-rim:rgba(255,255,255,.95);--cl-sheen:rgba(255,255,255,.4);
+  --cl-shadow:0 10px 36px rgba(60,50,20,.12),0 1px 0 rgba(0,0,0,.04);
+  --cl-item:rgba(255,255,255,.55);--cl-item-line:rgba(26,26,26,.08);
+  --cl-solid:#fff;--cl-solid-line:#e4dfd0;
+  --cl-orb-a:rgba(15,118,110,.2);--cl-orb-b:rgba(79,70,229,.16);--cl-orb-c:rgba(234,88,12,.14);
+}
+
+/* colour behind the glass: soft gradients (no blur filter, cheap to move). Put <div class="cl-orbs" aria-hidden="true"><i></i><i></i><i></i></div> first in <body>. */
+.cl-orbs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.cl-orbs i{position:absolute;border-radius:50%;will-change:transform;animation:cl-drift 26s ease-in-out infinite alternate}
+.cl-orbs i:nth-child(1){width:48vw;height:48vw;min-width:320px;min-height:320px;max-width:680px;max-height:680px;left:-10vw;top:-12vw;background:radial-gradient(closest-side,var(--cl-orb-a) 25%,transparent)}
+.cl-orbs i:nth-child(2){width:42vw;height:42vw;min-width:280px;min-height:280px;max-width:600px;max-height:600px;right:-8vw;top:14vh;background:radial-gradient(closest-side,var(--cl-orb-b) 25%,transparent);animation-duration:32s;animation-direction:alternate-reverse}
+.cl-orbs i:nth-child(3){width:38vw;height:38vw;min-width:260px;min-height:260px;max-width:540px;max-height:540px;left:28vw;bottom:-16vw;background:radial-gradient(closest-side,var(--cl-orb-c) 25%,transparent);animation-duration:38s}
+@keyframes cl-drift{to{transform:translate3d(6vw,4vh,0) scale(1.12)}}
+
+/* liquid glass surfaces: .cl-glass for hero panels and cards, .cl-glass-soft for smaller ones,
+   .cl-item for repeated items (no blur, so long lists stay fast) */
+.cl-glass,.cl-glass-soft{background:var(--cl-glass);border:1px solid var(--cl-line);-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);box-shadow:inset 0 1px 0 var(--cl-rim),inset 0 -1px 0 rgba(0,0,0,.12),var(--cl-shadow)}
+.cl-glass-soft{-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%)}
+.cl-item{background:var(--cl-item);border:1px solid var(--cl-item-line)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.cl-glass,.cl-glass-soft{background:var(--cl-glass-solid)}}
+
+/* ---------- the shared top nav ---------- */
+#cl-nav{position:sticky;top:0;z-index:1000;min-height:var(--cl-nav-h);padding:12px 20px 0;pointer-events:none;font-family:var(--cl-sans)}
+#cl-nav *{box-sizing:border-box}
+#cl-nav .cl-top{pointer-events:auto;position:relative;max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:12px;min-height:54px;padding:8px 10px 8px 14px;border-radius:999px;color:var(--cl-text);
+  background:var(--cl-glass);border:1px solid var(--cl-line);-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);box-shadow:inset 0 1px 0 var(--cl-rim),inset 0 -1px 0 rgba(0,0,0,.12),var(--cl-shadow)}
+#cl-nav .cl-top::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(135deg,var(--cl-sheen),transparent 38%,transparent 70%,var(--cl-sheen))}
+#cl-nav .cl-top>*{position:relative}
+#cl-nav a{color:inherit;text-decoration:none}
+#cl-nav button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;margin:0}
+#cl-nav :focus-visible{outline:2px solid var(--cl-accent);outline-offset:2px}
+#cl-nav em{font-family:var(--cl-serif);font-style:italic;font-weight:400;color:var(--cl-accent)}
+.cl-brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:16.5px;letter-spacing:-.3px;flex-shrink:0;border-radius:10px;white-space:nowrap;line-height:1}
+.cl-logo{width:30px;height:30px;border-radius:8px;background:conic-gradient(from 180deg,var(--cl-accent),var(--cl-accent-2),var(--cl-accent-3),var(--cl-accent));display:grid;place-items:center;position:relative}
+.cl-logo::after{content:'';position:absolute;inset:2px;border-radius:6px;background:var(--cl-bg)}
+.cl-logo svg{position:relative;z-index:1;width:17px;height:17px;color:var(--cl-text)}
+.cl-links{display:flex;gap:2px;margin-left:auto;min-width:0;padding:2px}
+.cl-link{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:999px;font-size:13px;font-weight:500;line-height:1.3;color:var(--cl-text-dim);white-space:nowrap;transition:background .2s,color .2s}
+.cl-link svg{flex-shrink:0}
+.cl-link:hover{color:var(--cl-text);background:color-mix(in srgb,var(--cl-text) 8%,transparent)}
+.cl-link.on{color:var(--cl-text);background:color-mix(in srgb,var(--cl-accent) 16%,transparent)}
+#cl-nav .cl-link:focus-visible{outline-offset:-2px}
+.cl-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.cl-ibtn{width:36px;height:36px;border-radius:50%;border:1px solid var(--cl-line-2)!important;background:color-mix(in srgb,var(--cl-text) 6%,transparent)!important;color:var(--cl-text-dim)!important;display:grid;place-items:center;padding:0;transition:color .2s,background .2s}
+.cl-ibtn:hover{color:var(--cl-text)!important;background:color-mix(in srgb,var(--cl-text) 12%,transparent)!important}
+.cl-i-sun,[data-theme="light"] .cl-i-moon{display:none}
+[data-theme="light"] .cl-i-sun{display:block}
+.cl-acct{position:relative;display:flex}
+.cl-login{display:inline-flex;align-items:center;padding:8px 14px;border-radius:999px;font-size:13px;font-weight:600;line-height:1.2;white-space:nowrap;background:var(--cl-accent)!important;color:var(--cl-on-accent)!important;box-shadow:0 6px 22px color-mix(in srgb,var(--cl-accent) 30%,transparent)}
+.cl-login:hover{filter:brightness(1.06)}
+.cl-av{position:relative;width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--cl-accent)!important;color:var(--cl-on-accent)!important;font-weight:700;font-size:15px;display:grid;place-items:center;padding:0}
+.cl-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cl-av.cl-sk{background:color-mix(in srgb,var(--cl-text) 12%,transparent)!important}
+.cl-menu{position:absolute;right:0;top:calc(100% + 10px);z-index:30;width:max-content;min-width:220px;max-width:min(300px,calc(100vw - 28px));padding:6px;border-radius:16px;background:var(--cl-solid);border:1px solid var(--cl-solid-line);box-shadow:0 18px 50px rgba(0,0,0,.35);text-align:left}
+.cl-menu[hidden]{display:none}
+.cl-m-head{padding:10px 12px;border-bottom:1px solid var(--cl-solid-line);margin-bottom:4px}
+.cl-m-head b,.cl-m-head span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cl-m-head b{font-size:14px;font-weight:600}
+.cl-m-head span{font:12px var(--cl-mono);color:var(--cl-text-muted);margin-top:2px}
+.cl-m-item{display:flex!important;align-items:center;gap:10px;width:100%;padding:9px 12px!important;border-radius:10px;font-size:13.5px;font-weight:500;text-align:left}
+.cl-m-item:hover{background:color-mix(in srgb,var(--cl-text) 8%,transparent)!important}
+.cl-m-item.cl-danger{color:var(--cl-danger)!important}
+#cl-nav [hidden]{display:none!important}
+
+@media (max-width:1180px){.cl-link svg{display:none}}
+@media (max-width:1023px){
+  :root{--cl-nav-h:104px}
+  #cl-nav .cl-top{flex-wrap:wrap;row-gap:6px;border-radius:22px}
+  .cl-links{order:3;flex:0 0 100%;margin:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .cl-links::-webkit-scrollbar{display:none}
+  .cl-actions{margin-left:auto}
+}
+@media (max-width:640px){
+  #cl-nav{position:relative;padding:10px 14px 0}
+  #cl-nav .cl-top{border-radius:20px;padding:8px 8px 6px 12px;-webkit-backdrop-filter:blur(12px) saturate(150%);backdrop-filter:blur(12px) saturate(150%)}
+  .cl-glass{-webkit-backdrop-filter:blur(12px) saturate(150%);backdrop-filter:blur(12px) saturate(150%)}
+  .cl-glass-soft{-webkit-backdrop-filter:blur(10px) saturate(140%);backdrop-filter:blur(10px) saturate(140%)}
+  .cl-orbs i{animation:none}
+}
+@media (prefers-reduced-motion:reduce){.cl-orbs i{animation:none}.cl-link,.cl-ibtn{transition:none}}
