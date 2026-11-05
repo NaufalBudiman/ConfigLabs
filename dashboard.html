@@ -445,9 +445,9 @@ h1{font-size:clamp(30px,4.6vw,46px);font-weight:600;letter-spacing:-1.2px;line-h
   }
 
   function loadTr() {   // translations saved by translate.html in this browser
-    const SRC = { cisco: 'Cisco', ruijie: 'Ruijie' };
-    S.src.tr = { st: 'ok', items: readIndex('cl_tr_idx').map(x => { const from = SRC[x.src] || 'Cisco', chk = num(x.rv) + num(x.sk);
-      return item('tr', String(x.id), str(x.name, 160) || from + ' config', '', [from + ' → H3C', pl(num(x.lines), 'line'), chk ? chk + ' to check' : 'all translated'], 'local', ts(x.updated) || ts(x.created)); }) };
+    const SRC = { cisco: 'Cisco', ruijie: 'Ruijie', mikrotik: 'MikroTik' };
+    S.src.tr = { st: 'ok', items: readIndex('cl_tr_idx').map(x => { const from = SRC[x.src] || 'Cisco', to = x.tgt === 'mikrotik' ? 'MikroTik' : 'H3C', chk = num(x.rv) + num(x.sk);
+      return item('tr', String(x.id), str(x.name, 160) || from + ' config', '', [from + ' → ' + to, pl(num(x.lines), 'line'), chk ? chk + ' to check' : 'all translated'], 'local', ts(x.updated) || ts(x.created)); }) };
     paint();
   }
 
@@ -576,8 +576,8 @@ h1{font-size:clamp(30px,4.6vw,46px);font-weight:600;letter-spacing:-1.2px;line-h
     } else $('ring-n').textContent = '';
     setHTML($('u-txt'), st === 'loading' ? SK_USAGE
       : st === 'error' ? '<h2>Config Translator</h2><p>Could not load today’s usage.</p><button class="btn ghost sm" type="button" data-retry="lim">Retry</button>'
-      : d.pro ? '<h2>Config Translator · Pro</h2><p>Cisco and Ruijie to H3C. Unlimited translations, up to ' + d.lines.toLocaleString('en-US') + ' lines each.</p>' + lastTrHTML() + '<div class="u-act"><a class="btn primary sm" href="/translate.html">Translate a config</a></div>'
-      : '<h2>Config Translator</h2><p>Cisco and Ruijie to H3C. <b>' + d.left + '</b> of ' + d.daily + ' free translations left today, up to ' + d.lines.toLocaleString('en-US') + ' lines each. Resets at <span class="nw">' + esc(d.resets) + '</span>.</p>' + lastTrHTML() + '<div class="u-act"><a class="btn primary sm" href="/translate.html">Translate a config</a>' + waitlistHTML() + '</div>');
+      : d.pro ? '<h2>Config Translator · Pro</h2><p>Cisco, Ruijie and MikroTik to H3C, or to MikroTik. Unlimited translations, up to ' + d.lines.toLocaleString('en-US') + ' lines each.</p>' + lastTrHTML() + '<div class="u-act"><a class="btn primary sm" href="/translate.html">Translate a config</a></div>'
+      : '<h2>Config Translator</h2><p>Cisco, Ruijie and MikroTik to H3C, or to MikroTik. <b>' + d.left + '</b> of ' + d.daily + ' free translations left today, up to ' + d.lines.toLocaleString('en-US') + ' lines each. Resets at <span class="nw">' + esc(d.resets) + '</span>.</p>' + lastTrHTML() + '<div class="u-act"><a class="btn primary sm" href="/translate.html">Translate a config</a>' + waitlistHTML() + '</div>');
   }
   function lastTrHTML() {
     const t = S.src.tr.st === 'ok' ? S.src.tr.items[0] : null;

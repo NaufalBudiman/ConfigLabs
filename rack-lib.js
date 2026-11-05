@@ -23,6 +23,7 @@
   const OUT = n => ({ k: 'out', n });
   const M = (id, vendor, name, cat, o) => Object.assign({ id, vendor, name, cat, u: 1, d: 450, kg: 5, w: { typ: null, max: 100 }, air: 'unk', psu: 1, ver: 'typical', src: '', note: '' }, o);
   const H3C = 'https://www.h3c.com/en/';
+  const MT = 'https://mikrotik.com/product/', N = 'Size, weight and power are approximate values from the MikroTik product page; check them there before you plan power and depth.';
   const L = [
     /* ---- H3C switches (hardware guides) ---- */
     M('h3c-s5130s-28s-ei', 'H3C', 'S5130S-28S-EI', 'switch', { u: 1, d: 160, kg: 2.5, w: { typ: null, max: 24 }, air: 'unk', psu: 1, front: [P('rj45', 24, 2), P('sfp+', 4, 1)], ver: 'datasheet', src: H3C + 'd_202211/1719936_294551_0.htm', note: 'Fixed power supply. Weight is a maximum; airflow is not stated in the guide.' }),
@@ -43,6 +44,13 @@
     M('cisco-c9300-48p', 'Cisco', 'Catalyst C9300-48P', 'switch', { u: 1, d: 409, kg: 7.59, w: { typ: null, max: 715 }, air: 'unk', psu: 2, front: [P('rj45', 48, 2), P('sfp+', 4, 1)], ver: 'partial', src: 'https://cdn.cablesandkits.com/static/assets/C9300-48P-A-Datasheet.pdf', note: 'Dimensions and weight from the data sheet (model C9300-48P-A). Power shown is the 715 W default supply rating (PoE budget 437 W); real draw is lower. Uplinks are modular.' }),
     M('cisco-n9k-c93180yc-fx', 'Cisco', 'Nexus N9K-C93180YC-FX', 'switch', { u: 1, d: 571, kg: 7.9, w: { typ: 260, max: 425 }, air: 'tray', psu: 2, front: [P('sfp+', 48, 2), P('qsfp', 6, 1)], ver: 'partial', src: 'https://www.layer23-switch.com/n9k-c93180yc-fx.html', note: 'Values quoted from a reseller page citing Cisco. Weight excludes power supplies and fans. Airflow is port-side intake or port-side exhaust, set by the fan and PSU modules.' }),
     M('cisco-fpr-2110', 'Cisco', 'Firepower 2110', 'firewall', { u: 1, d: 502, kg: 7.3, w: { typ: null, max: 250 }, air: 'unk', psu: 1, front: [P('rj45', 12, 2), P('sfp', 4, 1)], ver: 'partial', src: 'https://www.connection.com/media/x3kjimmt/cisco-firepower-2100-data-sheet.pdf?la=en', note: 'Dimensions and weight from the data sheet. Power shown is the integrated 250 W supply rating.' }),
+    /* ---- MikroTik (product pages; approximate, check before ordering) ---- */
+    M('mikrotik-ccr2004-1g-12s-2xs', 'MikroTik', 'CCR2004-1G-12S+2XS', 'router', { u: 1, d: 224, kg: 2.1, w: { typ: null, max: 39 }, air: 'f2b', psu: 2, front: [P('rj45', 1, 1), P('sfp+', 12, 2), P('sfp+', 2, 1)], ver: 'partial', src: MT + 'ccr2004_1g_12s_2xs', note: N + ' Port block 3 is the two 25G SFP28 cages.' }),
+    M('mikrotik-ccr2116-12g-4s', 'MikroTik', 'CCR2116-12G-4S+', 'router', { u: 1, d: 290, kg: 3.3, w: { typ: null, max: 73 }, air: 'f2b', psu: 2, front: [P('rj45', 13, 2), P('sfp+', 4, 1)], ver: 'partial', src: MT + 'ccr2116_12g_4s', note: N }),
+    M('mikrotik-crs326-24g-2s-rm', 'MikroTik', 'CRS326-24G-2S+RM', 'switch', { u: 1, d: 147, kg: 1.4, w: { typ: null, max: 19 }, air: 'passive', psu: 1, front: [P('rj45', 24, 2), P('sfp+', 2, 1)], ver: 'partial', src: MT + 'crs326_24g_2s_rm', note: N }),
+    M('mikrotik-crs354-48g-4s-2q-rm', 'MikroTik', 'CRS354-48G-4S+2Q+RM', 'switch', { u: 1, d: 220, kg: 2.9, w: { typ: null, max: 52 }, air: 'side', psu: 1, front: [P('rj45', 48, 2), P('sfp+', 4, 1), P('qsfp', 2, 1)], ver: 'partial', src: MT + 'crs354_48g_4s_2q_rm', note: N }),
+    M('mikrotik-crs317-1g-16s-rm', 'MikroTik', 'CRS317-1G-16S+RM', 'switch', { u: 1, d: 239, kg: 2.6, w: { typ: null, max: 59 }, air: 'f2b', psu: 2, front: [P('rj45', 1, 1), P('sfp+', 16, 2)], ver: 'partial', src: MT + 'crs317_1g_16s_rm', note: N }),
+    M('mikrotik-crs518-16xs-2xq-rm', 'MikroTik', 'CRS518-16XS-2XQ-RM', 'switch', { u: 1, d: 320, kg: 3.5, w: { typ: null, max: 108 }, air: 'f2b', psu: 2, front: [P('sfp+', 16, 2), P('qsfp', 2, 1)], ver: 'partial', src: MT + 'crs518_16xs_2xq', note: N + ' 16 x 25G SFP28 and 2 x 100G QSFP28.' }),
     /* ---- generic equipment (typical values, replace with yours) ---- */
     M('gen-sw-48g', '', 'Generic 48-port 1G access switch', 'switch', { u: 1, d: 300, kg: 4, w: { typ: 40, max: 80 }, psu: 1, front: [P('rj45', 48, 2), P('sfp+', 4, 1)] }),
     M('gen-sw-48x10', '', 'Generic 48-port 10G ToR switch', 'switch', { u: 1, d: 450, kg: 9, w: { typ: 150, max: 250 }, psu: 2, front: [P('sfp+', 48, 2), P('qsfp', 6, 1)] }),

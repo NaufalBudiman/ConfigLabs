@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Config Translator — ConfigLabs</title>
-<meta name="description" content="Translate Cisco IOS / IOS-XE and Ruijie RGOS configs to H3C Comware v7. Free, with a report of every line that needs review."/>
+<meta name="description" content="Translate Cisco IOS / IOS-XE, Ruijie RGOS and MikroTik RouterOS configs to H3C Comware v7, or Cisco and Ruijie to MikroTik RouterOS v7. Free, with a report of every line that needs review."/>
 <meta name="keywords" content="Cisco to H3C config converter, Ruijie to H3C, config translator, Comware migration, IOS to Comware"/>
 <meta name="author" content="ConfigLabs"/>
 <meta property="og:title" content="Config Translator — ConfigLabs"/>
@@ -337,7 +337,16 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
 .tr-route{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 14px}
 .tr-chip{font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid var(--cl-line);background:var(--cl-glass);-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);box-shadow:inset 0 1px 0 var(--cl-rim);color:var(--text-dim)}
 .tr-chip.h3c{background:var(--accent);color:var(--cl-on-accent);border-color:transparent;font-weight:700}
-.tr-src{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.tr-src{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.tr-src button.on[data-s="mikrotik"]{border-color:#67e8f9;background:color-mix(in srgb,#67e8f9 12%,transparent)}
+.tr-tgt-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.tr-tgt-l{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:1px;color:var(--text-muted)}
+.tr-tgt{display:inline-flex;gap:4px;padding:3px;border-radius:999px;background:var(--cl-item);border:1px solid var(--cl-item-line)}
+.tr-tgt button{padding:7px 14px;border-radius:999px;border:0;background:transparent;color:var(--text-dim);font:600 12.5px var(--sans);cursor:pointer}
+.tr-tgt button.on{background:var(--accent);color:var(--cl-on-accent)}
+.tr-tgt button:disabled{opacity:.4;cursor:not-allowed}
+.tr-chip.mt{border-color:#67e8f9;color:#67e8f9}
+[data-theme="light"] .tr-chip.mt{border-color:#0e7490;color:#0e7490}
 .tr-src button{padding:12px 14px;border-radius:14px;border:1px solid var(--cl-item-line);background:var(--cl-item);color:var(--text-dim);font-family:var(--sans);font-size:13px;cursor:pointer;text-align:left;transition:all .15s}
 .tr-src button b{display:block;color:var(--text);font-weight:600;margin-bottom:2px}
 .tr-src button.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
@@ -403,9 +412,9 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
 <div class="container">
 
   <section class="tr-hero">
-    <div class="tr-route"><span class="tr-chip">Cisco IOS / IOS-XE</span><span class="tr-chip">Ruijie RGOS</span><span style="color:var(--text-muted)">→</span><span class="tr-chip h3c">H3C Comware v7</span></div>
+    <div class="tr-route"><span class="tr-chip">Cisco IOS / IOS-XE</span><span class="tr-chip">Ruijie RGOS</span><span class="tr-chip">MikroTik RouterOS</span><span style="color:var(--text-muted)">→</span><span class="tr-chip h3c">H3C Comware v7</span><span class="tr-chip mt">MikroTik RouterOS v7</span></div>
     <h1>Config <span class="serif">translator</span></h1>
-    <p>Paste a Cisco or Ruijie config and get an H3C Comware config. Every line that could not be translated (or needs a second look) is listed, so nothing disappears silently.</p>
+    <p>Paste a Cisco, Ruijie or MikroTik config and get H3C Comware back, or turn Cisco and Ruijie into MikroTik RouterOS. Every line that could not be translated (or needs a second look) is listed, so nothing disappears silently.</p>
   </section>
 
   <div class="main-layout">
@@ -415,9 +424,11 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
         <div class="tr-src" id="tr-src">
           <button type="button" data-s="cisco" class="on"><b>Cisco</b>IOS / IOS-XE (Catalyst, ISR)</button>
           <button type="button" data-s="ruijie"><b>Ruijie</b>RGOS (RG-S, RSR, EG)</button>
+          <button type="button" data-s="mikrotik"><b>MikroTik</b>RouterOS /export</button>
         </div>
+        <div class="tr-tgt-row"><span class="tr-tgt-l">Translate to</span><div class="tr-tgt" id="tr-tgt"><button type="button" data-t="h3c" class="on">H3C Comware</button><button type="button" data-t="mikrotik">MikroTik RouterOS v7</button></div></div>
         <textarea id="tr-in" spellcheck="false" placeholder="Paste the output of 'show running-config' here..."></textarea>
-        <div class="tr-meta"><span id="tr-lines">0 lines</span><span id="tr-samples"><a href="#" onclick="sample('cisco');return false" style="color:var(--accent)">Cisco sample</a> · <a href="#" onclick="sample('ruijie');return false" style="color:var(--accent)">Ruijie sample</a></span></div>
+        <div class="tr-meta"><span id="tr-lines">0 lines</span><span id="tr-samples"><a href="#" onclick="sample('cisco');return false" style="color:var(--accent)">Cisco sample</a> · <a href="#" onclick="sample('ruijie');return false" style="color:var(--accent)">Ruijie sample</a> · <a href="#" onclick="sample('mikrotik');return false" style="color:var(--accent)">MikroTik sample</a></span></div>
         <div class="tr-opts">
           <div class="field" style="margin:0"><label>Device type</label><select id="tr-dev"><option value="auto">Auto-detect</option><option value="switch">Switch</option><option value="router">Router</option></select></div>
           <div class="field" style="margin:0"><label>H3C member number <span class="hint">IRF / stack</span></label><input id="tr-mem" type="number" min="1" max="16" value="1"></div>
@@ -428,7 +439,7 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
     </section>
 
     <section class="output-wrap">
-      <div class="panel-head"><div class="panel-title"><span class="num">02</span>H3C Comware output</div></div>
+      <div class="panel-head"><div class="panel-title"><span class="num">02</span><span id="tr-out-title">H3C Comware output</span></div></div>
       <div class="output-toolbar"><div class="output-toolbar-left"><button class="tool-btn" onclick="copyOut()">📋 Copy</button><button class="tool-btn" onclick="dlOut()">⬇ Download</button><button class="tool-btn" id="tr-save" type="button" onclick="saveFile()">💾 Save to My Files</button></div><span class="tr-meta" style="margin:0" id="tr-outinfo"></span></div>
       <div class="output empty" id="tr-out"><div>Paste a config and click <strong>Translate</strong></div></div>
       <div class="status-bar" id="status"><span><span class="s-dot"></span> <span id="status-text">Ready</span></span><span id="line-info"></span></div>
@@ -575,7 +586,14 @@ document.addEventListener('keydown', e => {
 
 let src='cisco', last='', lastName='h3c', lastData=null;
 const $=id=>document.getElementById(id);
-document.querySelectorAll('#tr-src button').forEach(b=>b.addEventListener('click',()=>{src=b.dataset.s;document.querySelectorAll('#tr-src button').forEach(x=>x.classList.toggle('on',x===b));$('tr-in').placeholder=src==='ruijie'?"Paste the output of 'show running-config' from the Ruijie device...":"Paste the output of 'show running-config' here...";}));
+let tgt='h3c';
+const SRCN={cisco:'Cisco',ruijie:'Ruijie',mikrotik:'MikroTik'},TGTN={h3c:'H3C',mikrotik:'MikroTik'};
+function setSrc(k){src=SRCN[k]?k:'cisco';document.querySelectorAll('#tr-src button').forEach(x=>x.classList.toggle('on',x.dataset.s===src));
+  $('tr-in').placeholder=src==='ruijie'?"Paste the output of 'show running-config' from the Ruijie device...":src==='mikrotik'?"Paste the output of '/export' (or '/export terse') from the MikroTik...":"Paste the output of 'show running-config' here...";
+  const mt=document.querySelector('#tr-tgt [data-t="mikrotik"]');mt.disabled=src==='mikrotik';mt.title=src==='mikrotik'?'MikroTik to MikroTik is not a translation':'';if(src==='mikrotik')setTgt('h3c');}
+function setTgt(k){tgt=k==='mikrotik'&&src!=='mikrotik'?'mikrotik':'h3c';document.querySelectorAll('#tr-tgt button').forEach(x=>x.classList.toggle('on',x.dataset.t===tgt));$('tr-out-title').textContent=tgt==='mikrotik'?'MikroTik RouterOS output':'H3C Comware output';}
+document.querySelectorAll('#tr-src button').forEach(b=>b.addEventListener('click',()=>setSrc(b.dataset.s)));
+document.querySelectorAll('#tr-tgt button').forEach(b=>b.addEventListener('click',()=>setTgt(b.dataset.t)));
 let LIM=null;
 function lineCount(t){return t.split('\n').filter(l=>l.trim()&&!l.trim().startsWith('!')).length;}
 function upd(){const n=lineCount($('tr-in').value);const lim=LIM?LIM.lines_limit:150;$('tr-lines').innerHTML=n+' lines'+(n>lim?' <span class="over">(over the '+lim+'-line limit)</span>':' / '+lim+' max');}
@@ -657,8 +675,56 @@ router ospf 1
 ip route 0.0.0.0 0.0.0.0 10.10.20.254
 enable service ssh-server
 snmp-server community public ro
+`,
+mikrotik:`# RouterOS 7.16 export, CRS326-24G-2S+
+/interface bridge
+add name=bridge protocol-mode=rstp vlan-filtering=yes
+/interface ethernet
+set [ find default-name=ether1 ] comment=User
+set [ find default-name=sfp-sfpplus1 ] comment="Uplink to core"
+/interface bonding
+add mode=802.3ad name=bond1 slaves=ether23,ether24
+/interface vlan
+add interface=bridge name=vlan10 vlan-id=10
+add interface=bridge name=vlan99 vlan-id=99
+/interface bridge port
+add bridge=bridge edge=yes frame-types=admit-only-untagged-and-priority-tagged interface=ether1 pvid=10
+add bridge=bridge edge=yes frame-types=admit-only-untagged-and-priority-tagged interface=ether2 pvid=10
+add bridge=bridge frame-types=admit-only-vlan-tagged interface=sfp-sfpplus1
+add bridge=bridge frame-types=admit-only-vlan-tagged interface=bond1
+/interface bridge vlan
+add bridge=bridge comment=USERS tagged=bridge,sfp-sfpplus1,bond1 untagged=ether1,ether2 vlan-ids=10
+add bridge=bridge comment=MGMT tagged=bridge,sfp-sfpplus1,bond1 vlan-ids=99
+/ip pool
+add name=USERS ranges=10.10.10.50-10.10.10.200
+/ip dhcp-server
+add address-pool=USERS interface=vlan10 lease-time=1d name=dhcp1
+/ip address
+add address=10.10.10.1/24 interface=vlan10
+add address=10.10.99.11/24 interface=vlan99
+/ip dhcp-server network
+add address=10.10.10.0/24 dns-server=8.8.8.8,1.1.1.1 gateway=10.10.10.1
+/ip firewall filter
+add action=drop chain=forward dst-address=10.10.99.0/24 in-interface=vlan10
+/ip route
+add dst-address=0.0.0.0/0 gateway=10.10.99.1
+/ip service
+set telnet disabled=yes
+set ssh disabled=no
+/snmp community
+add addresses=0.0.0.0/0 name=CKI-RO
+/system clock
+set time-zone-name=Asia/Jakarta
+/system identity
+set name=CRS-ACCESS-01
+/routing ospf instance
+add name=default-v2 router-id=10.10.99.11
+/routing ospf area
+add instance=default-v2 name=backbone-v2
+/routing ospf interface-template
+add area=backbone-v2 networks=10.10.99.0/24,10.10.10.0/24
 `};
-function sample(k){src=k;document.querySelectorAll('#tr-src button').forEach(x=>x.classList.toggle('on',x.dataset.s===k));$('tr-in').value=SAMPLES[k];upd();}
+function sample(k){setSrc(k);$('tr-in').value=SAMPLES[k];upd();}
 function token(){try{return localStorage.getItem('clab_token')||''}catch(e){return ''}}
 function hdrs(){const h={'Content-Type':'application/json'};const t=token();if(t)h['Authorization']='Bearer '+t;return h;}
 function showLim(lim,hit){
@@ -677,11 +743,11 @@ async function run(){
   const text=$('tr-in').value;if(!text.trim()){toast('Paste a config first',true);return;}
   const btn=$('tr-go');btn.disabled=true;setStatus('Translating...','');
   try{
-    const res=await fetch(API+'/api/translate',{method:'POST',headers:hdrs(),body:JSON.stringify({source:src,config:text,options:{device:$('tr-dev').value,member:parseInt($('tr-mem').value,10)||1}})});
+    const res=await fetch(API+'/api/translate',{method:'POST',headers:hdrs(),body:JSON.stringify({source:src,config:text,options:{device:$('tr-dev').value,member:parseInt($('tr-mem').value,10)||1,target:tgt}})});
     const j=await res.json();
     if(!j.success){setStatus(j.error||'Error','err');toast(j.error||'Could not translate',true);showLim(j.limits,true);return;}
     lastData=j.data&&typeof j.data==='object'?j.data:null;show(j.config,j.report,j.lines);
-    setStatus('Translated '+new Date().toLocaleTimeString()+' · '+(src==='ruijie'?'RUIJIE':'CISCO')+' → H3C','ok');
+    setStatus('Translated '+new Date().toLocaleTimeString()+' · '+SRCN[src].toUpperCase()+' → '+TGTN[tgt].toUpperCase(),'ok');
     showLim(j.limits);saveHist(text,j);
     const r=j.report||{};
     if(r.skipped_count||r.review_count)toast((r.skipped_count+r.review_count)+' lines need your attention, see the report','warn');else toast('Translated');
@@ -692,7 +758,7 @@ async function run(){
 // render one result (a fresh translation or one reopened from this browser's history)
 function show(cfg,r,lines){
   const A=x=>Array.isArray(x)?x:[];r=r||{};
-  last=String(cfg||'');const m=/^sysname\s+(\S+)/m.exec(last);lastName=(m?m[1]:'h3c');
+  last=String(cfg||'');const m=/^sysname\s+(\S+)/m.exec(last)||/^\/system identity\nset name="?([^"\n]+)/m.exec(last);lastName=(m?m[1]:'h3c');
   const o=$('tr-out');o.className='output tr-out';o.innerHTML=colorize(last);
   $('line-info').textContent=(lines||last.split('\n').length)+' lines';
   const ok=+r.ok||0,rv=+r.review_count||0,sk=+r.skipped_count||0;$('tr-report').style.display='block';
@@ -713,8 +779,8 @@ const TR_ID=/^t[a-z0-9]{4,24}$/,TR_MAX=30;
 function trIdx(){try{const a=JSON.parse(localStorage.getItem('cl_tr_idx')||'[]');return Array.isArray(a)?a.filter(x=>x&&TR_ID.test(String(x.id))):[];}catch(e){return [];}}
 function saveHist(input,j){
   const id='t'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),now=Date.now(),r=j.report||{};
-  const doc={id,src,input,config:j.config,report:r,data:lastData,lines:j.lines,dev:$('tr-dev').value,mem:$('tr-mem').value};
-  let a=trIdx();a.unshift({id,name:lastName==='h3c'?'':lastName,src,lines:j.lines,ok:+r.ok||0,rv:+r.review_count||0,sk:+r.skipped_count||0,created:now,updated:now});
+  const doc={id,src,tgt,input,config:j.config,report:r,data:lastData,lines:j.lines,dev:$('tr-dev').value,mem:$('tr-mem').value};
+  let a=trIdx();a.unshift({id,name:lastName==='h3c'?'':lastName,src,tgt,lines:j.lines,ok:+r.ok||0,rv:+r.review_count||0,sk:+r.skipped_count||0,created:now,updated:now});
   for(;;){   // storage full: drop the oldest translations until this one fits
     try{localStorage.setItem('cl_tr_d_'+id,JSON.stringify(doc));break;}
     catch(e){const old=a.length>1?a.pop():null;if(!old)return;try{localStorage.removeItem('cl_tr_d_'+old.id);}catch(x){}}
@@ -727,7 +793,7 @@ function openHist(id){
   if(!TR_ID.test(id||''))return false;
   let d=null;try{d=JSON.parse(localStorage.getItem('cl_tr_d_'+id)||'null');}catch(e){}
   if(!d||typeof d.config!=='string')return false;
-  src=d.src==='ruijie'?'ruijie':'cisco';document.querySelectorAll('#tr-src button').forEach(x=>x.classList.toggle('on',x.dataset.s===src));
+  setSrc(d.src);setTgt(d.tgt||'h3c');
   $('tr-in').value=String(d.input||'');
   if(d.dev&&[...$('tr-dev').options].some(o=>o.value===d.dev))$('tr-dev').value=d.dev;
   if(d.mem)$('tr-mem').value=String(parseInt(d.mem,10)||1);
@@ -741,9 +807,10 @@ async function saveFile(){
   if(!token()){if(typeof authOpenModal==='function')authOpenModal();toast('Log in to save it to My Files',true);return;}
   const b=$('tr-save');b.disabled=true;
   try{
-    const nm=(lastName==='h3c'?'Translated config':lastName)+' (from '+(src==='ruijie'?'Ruijie':'Cisco')+')';
-    const res=await fetch(API+'/api/files',{method:'POST',headers:hdrs(),body:JSON.stringify({name:nm,file_type:'config',vendor:'h3c',hostname:lastName==='h3c'?'':lastName,
-      data:{__v:2,vendor:'h3c',os:'comware',form:lastData||{},translated:true,__generated__:last}})});
+    const isMt=/^# Vendor: MikroTik/m.test(last),os=isMt?((lastData&&lastData.system&&lastData.system.device_type==='router')?'routeros_router':'routeros_switch'):'comware';
+    const nm=(lastName==='h3c'?'Translated config':lastName)+' (from '+SRCN[src]+')';
+    const res=await fetch(API+'/api/files',{method:'POST',headers:hdrs(),body:JSON.stringify({name:nm,file_type:'config',vendor:isMt?'mikrotik':'h3c',hostname:lastName==='h3c'?'':lastName,
+      data:{__v:2,vendor:isMt?'mikrotik':'h3c',os,form:lastData||{},translated:true,__generated__:last}})});
     const j=await res.json().catch(()=>({}));
     if(res.ok&&/^\d+$/.test(String(j.id))){toast('Saved to My Files');b.textContent='↗ Open in Builder';b.onclick=()=>{location.href='/builder.html?file='+j.id;};}
     else if(res.status===401)toast('Your session expired, log in again',true);
@@ -752,7 +819,7 @@ async function saveFile(){
   finally{b.disabled=false;}
 }
 function copyOut(){if(!last){toast('Nothing to copy',true);return;}navigator.clipboard.writeText(last).then(()=>toast('Copied to clipboard!'),()=>toast('Copy failed',true));}
-function dlOut(){if(!last){toast('Nothing to download',true);return;}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([last],{type:'text/plain'}));a.download=lastName+'-h3c-comware.txt';a.click();}
+function dlOut(){if(!last){toast('Nothing to download',true);return;}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([last],{type:'text/plain'}));a.download=lastName+(/^# Vendor: MikroTik/m.test(last)?'-mikrotik.rsc':'-h3c-comware.txt');a.click();}
 $('year').textContent=new Date().getFullYear();
 loadLim();upd();
 {const qt=new URLSearchParams(location.search).get('t');if(qt&&!openHist(qt)){toast('That translation is not saved in this browser',true);history.replaceState(null,'',location.pathname);}}

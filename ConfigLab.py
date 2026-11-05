@@ -120,7 +120,7 @@ def init_db_once():
         with_app_context_done = True
 
 APP_NAME = "ConfigLabs"
-APP_VERSION = "7.10.0"
+APP_VERSION = "7.11.0"
 
 # ==========================================================
 # VENDOR / OS REGISTRY
@@ -157,7 +157,15 @@ VENDORS = {
     "huawei":   {"name": "Huawei",   "status": "coming_soon", "os_list": [{"id": "vrp",   "name": "VRP",   "status": "coming_soon"}]},
     "juniper":  {"name": "Juniper",  "status": "coming_soon", "os_list": [{"id": "junos", "name": "Junos", "status": "coming_soon"}]},
     "arista":   {"name": "Arista",   "status": "coming_soon", "os_list": [{"id": "eos",   "name": "EOS",   "status": "coming_soon"}]},
-    "mikrotik": {"name": "MikroTik", "status": "coming_soon", "os_list": [{"id": "routeros", "name": "RouterOS", "status": "coming_soon"}]}
+    "mikrotik": {
+        "name": "MikroTik",
+        "status": "available",
+        "color": "#67e8f9",
+        "os_list": [
+            {"id": "routeros_router", "name": "RouterOS Router", "desc": "hEX / RB5009 / CCR (NAT, DHCP, routing)", "status": "available"},
+            {"id": "routeros_switch", "name": "RouterOS Switch", "desc": "CRS series (bridge VLAN filtering)",   "status": "available"}
+        ]
+    }
 }
 
 # ==========================================================
@@ -1498,6 +1506,512 @@ def gen_ruijie_router(data): return gen_ruijie_rgos(data, "router")
 def gen_ruijie_wlan(data):   return gen_ruijie_rgos(data, "wlan")
 
 # ============================================================
+# MIKROTIK ROUTEROS v7 GENERATOR
+# kind 'switch' = CRS with one VLAN-filtering bridge, 'router' = hEX / RB / CCR with routed ports.
+# Takes the Builder's data and the Translator's data (nat_outbound, vrrp lists, per-network OSPF areas).
+# ============================================================
+def _mt_q(v):
+    """RouterOS value: bare when safe, otherwise a quoted string with \\ " $ ? escaped."""
+    s = _rj_s(v)
+    if s and re.fullmatch(r"[A-Za-z0-9._:/@+-]+", s): return s
+    return '"' + s.replace("\\", "\\\\").replace('"', '\\"').replace("$", "\\$").replace("?", "\\?") + '"'
+
+def _mt_vids(s):
+    """'10 20 30-40' / '10,20,30 to 40' -> sorted VLAN ids (1-4094)"""
+    out = set()
+    for tok in re.sub(r"\s*(?:-|\bto\b)\s*", "-", str(s or "").replace(",", " "), flags=re.I).split():
+        m = re.fullmatch(r"(\d+)(?:-(\d+))?", tok)
+        if not m: continue
+        a, b = int(m.group(1)), int(m.group(2) or m.group(1))
+        if a > b: a, b = b, a
+        out.update(range(max(a, 1), min(b, 4094) + 1))
+    return sorted(out)
+
+def _mt_ranges(ids):
+    """[10, 11, 12, 20] -> '10-12,20'"""
+    r, i = [], 0
+    while i < len(ids):
+        j = i
+        while j + 1 < len(ids) and ids[j + 1] == ids[j] + 1: j += 1
+        r.append(str(ids[i]) if i == j else f"{ids[i]}-{ids[j]}"); i = j + 1
+    return ",".join(r)
+
+def _mt_wc_bits(wc):
+    """wildcard 0.0.0.255 -> 24; None when it is not a contiguous mask"""
+    try:
+        p = str(wc).strip().split(".")
+        if len(p) != 4: return None
+        n = 0
+        for o in p:
+            o = int(o)
+            if not 0 <= o <= 255: return None
+            n = n * 256 + o
+        inv = (~n) & 0xffffffff
+        b = bin(inv).count("1")
+        return b if inv == ((0xffffffff << (32 - b)) & 0xffffffff) else None
+    except Exception:
+        return None
+
+def _mt_addr(a, wc):
+    """ACL side -> RouterOS address: '' = any, None = cannot be expressed (non-contiguous wildcard)"""
+    a = _rj_s(a)
+    if not a or a.lower() == "any": return ""
+    if "/" in a: return a
+    w = _rj_s(wc)
+    if not w or w in ("0", "0.0.0.0"): return a
+    b = _mt_wc_bits(w)
+    return f"{a}/{b}" if b is not None else None
+
+def _mt_port(p):
+    """Cisco/H3C port match ('eq 80', 'range 1 10', 'gt 1024', '443') -> RouterOS port spec, or None"""
+    t = _rj_s(p).lower().split()
+    if not t: return ""
+    try:
+        if len(t) == 1 and t[0].isdigit(): return t[0]
+        if t[0] == "eq" and len(t) >= 2 and all(x.isdigit() for x in t[1:]): return ",".join(t[1:])
+        if t[0] == "range" and len(t) == 3: return f"{int(t[1])}-{int(t[2])}"
+        if t[0] == "gt" and len(t) == 2: return f"{int(t[1]) + 1}-65535"
+        if t[0] == "lt" and len(t) == 2: return f"0-{int(t[1]) - 1}"
+    except Exception:
+        pass
+    return None
+
+def _mt_tz(tz):
+    """'WIB 7:00', 'JKT add 07:00:00', 'Asia/Jakarta' -> an Olson name RouterOS knows"""
+    tz = _rj_s(tz)
+    if re.fullmatch(r"[A-Za-z_]+(/[A-Za-z0-9_+-]+)+", tz): return tz
+    m = re.search(r"(minus|-)?\s*\+?(\d{1,2})(?::(\d{2}))?", tz.replace(" add ", " "))
+    if not m or int(m.group(3) or 0): return None
+    h = int(m.group(2)) * (-1 if m.group(1) else 1)
+    return {7: "Asia/Jakarta", 8: "Asia/Makassar", 9: "Asia/Jayapura", 0: "UTC"}.get(h) or (f"Etc/GMT{'-' if h > 0 else '+'}{abs(h)}" if abs(h) <= 14 else None)
+
+def _mt_pool_ranges(net, cidr, gw, forbidden):
+    """usable hosts of net/cidr minus the gateway and excluded IPs ('a-b' ranges allowed) -> 'x-y,z-w'"""
+    import ipaddress
+    try: n = ipaddress.ip_network(f"{_rj_s(net)}/{int(str(cidr))}", strict=False)
+    except Exception: return ""
+    if n.prefixlen > 30: return ""
+    lo0, hi0 = int(n.network_address) + 1, int(n.broadcast_address) - 1
+    excl = []
+    for x in [gw] + str(forbidden or "").replace(",", " ").split():
+        x = _rj_s(x)
+        if not x: continue
+        try:
+            a, b = (x.split("-", 1) + [None])[:2]
+            ai = int(ipaddress.ip_address(a.strip())); bi = int(ipaddress.ip_address(b.strip())) if b else ai
+            excl.append((min(ai, bi), max(ai, bi)))
+        except Exception:
+            continue
+    iv = [(lo0, hi0)]
+    for a, b in excl:
+        nxt = []
+        for lo, hi in iv:
+            if b < lo or a > hi: nxt.append((lo, hi)); continue
+            if lo < a: nxt.append((lo, a - 1))
+            if b < hi: nxt.append((b + 1, hi))
+        iv = nxt
+    ip = lambda i: str(ipaddress.ip_address(i))
+    return ",".join(ip(lo) if lo == hi else f"{ip(lo)}-{ip(hi)}" for lo, hi in iv)
+
+_MT_LAG = re.compile(r"^(?:bond|bridge-aggregation|port-channel|aggregateport)\s*(\d+)$", re.I)
+
+def gen_mikrotik_routeros(data, kind="router"):
+    import ipaddress
+    data = _rj_clean(data)
+    is_sw = kind == "switch"
+    c = [f"# Generated by {APP_NAME} v{APP_VERSION}",
+         f"# Vendor: MikroTik · OS: RouterOS v7 ({'CRS switch, VLAN-filtering bridge' if is_sw else 'router'})",
+         "# https://configlabs.online",
+         "# Built for a device reset with no default configuration (/system reset-configuration no-defaults=yes).",
+         "# Paste it into a terminal or import it as a .rsc file. Verify on your model before production use.", ""]
+    W = []
+    def sec(path, lines):
+        if lines: c.extend([path] + lines + [""])
+    Q = _mt_q
+    sysd = data.get("system") or {}
+
+    # ---- system ----
+    if sysd.get("hostname"): sec("/system identity", [f"set name={Q(sysd['hostname'])}"])
+    if sysd.get("timezone"):
+        tz = _mt_tz(sysd["timezone"])
+        if tz: sec("/system clock", [f"set time-zone-autodetect=no time-zone-name={tz}"])
+        else: W.append(f"timezone '{_rj_s(sysd['timezone'])}' not understood; set it with /system clock set time-zone-name=Area/City")
+    if sysd.get("ntp"):
+        sec("/system ntp client", [f"set enabled=yes servers={Q(','.join(_rj_s(sysd['ntp']).replace(',', ' ').split()))}"])
+    if sysd.get("banner"): sec("/system note", [f"set show-at-login=yes note={Q(sysd['banner'])}"])
+    user, pw = _rj_s(sysd.get("admin_user")), _rj_s(sysd.get("admin_pass"))
+    if user and pw:
+        sec("/user", [f"set [ find name=admin ] password={Q(pw)}" if user.lower() == "admin" else f"add name={Q(user)} password={Q(pw)} group=full"])
+    elif user or pw:
+        W.append("management user needs BOTH username and password; skipped")
+    if sysd.get("ssh") or user:
+        sec("/ip service", ["set telnet disabled=yes", "set ftp disabled=yes", "set ssh disabled=no"])
+    comms = sysd.get("snmp_communities")
+    if not isinstance(comms, list):
+        comms = [{"name": sysd["snmp_community"], "mode": "read"}] if sysd.get("snmp_community") else []
+    comms = [x for x in comms if isinstance(x, dict) and x.get("name")]
+    hosts = sysd.get("snmp_hosts")
+    if not isinstance(hosts, list):
+        hosts = [{"ip": sysd["snmp_host"], "community": comms[0]["name"] if comms else "public"}] if sysd.get("snmp_host") else []
+    hosts = [x for x in hosts if isinstance(x, dict) and x.get("ip")]
+    if comms or hosts:
+        sec("/snmp community", ["set [ find default=yes ] disabled=yes"] + [f"add name={Q(_rj_s(x['name']).replace(' ', '_'))} addresses=0.0.0.0/0" + (" write-access=yes" if x.get("mode") == "write" else "") for x in comms])
+        s = "set enabled=yes"
+        if sysd.get("snmp_location"): s += f" location={Q(sysd['snmp_location'])}"
+        if sysd.get("snmp_contact"): s += f" contact={Q(sysd['snmp_contact'])}"
+        if hosts: s += f" trap-target={Q(hosts[0]['ip'])} trap-community={Q(_rj_s(hosts[0].get('community') or 'public').replace(' ', '_'))} trap-version=2 trap-generators=interfaces"
+        if len(hosts) > 1: W.append("RouterOS sends traps to one target per 'trap-target' list; only the first SNMP host was used")
+        sec("/snmp", [s])
+    if sysd.get("syslog"):
+        sec("/system logging action", [f"add name=remote target=remote remote={Q(sysd['syslog'])}"])
+        sec("/system logging", ["add action=remote topics=info", "add action=remote topics=warning", "add action=remote topics=error"])
+
+    # ---- interfaces ----
+    ifs = [dict(i, interface=_rj_s(i["interface"])) for i in data.get("interfaces", []) if i.get("interface")]
+    for i in ifs:
+        if i["interface"].lower().startswith("loopback"): i["mode"] = "routed"   # RouterOS loopback = an empty bridge
+    loops = [f"add name={_mt_q(i['interface'])}" for i in ifs if i["interface"].lower().startswith("loopback")]
+    l3name = {}    # interface name in the data -> RouterOS interface that carries its IP
+    vlan_if, bond_l, bport, comments = [], [], [], []
+    lag_members, lag_cfg, lag_mode = {}, {}, {}
+    for i in ifs:
+        m = _MT_LAG.match(i["interface"])
+        if m and i.get("mode", "access") != "routed": lag_cfg[m.group(1)] = i; continue
+        if i.get("lag") and i.get("mode", "access") != "routed":
+            lg = _rj_s(i["lag"]); lag_members.setdefault(lg, []).append(i["interface"])
+            md = str(i.get("lag_mode") or "")
+            if md in ("active", "passive") or i.get("lag_dynamic"): lag_mode[lg] = "802.3ad"
+    for lg, cfg in lag_cfg.items():
+        if cfg.get("lag_dynamic"): lag_mode[lg] = "802.3ad"
+    bonds = {}
+    for lg in sorted(set(lag_members) | set(lag_cfg), key=lambda x: int(x) if x.isdigit() else 0):
+        mem = lag_members.get(lg, [])
+        if not mem: W.append(f"LAG {lg} has no member ports; skipped"); continue
+        bonds[lg] = f"bond{lg}"
+        bond_l.append(f"add name=bond{lg} slaves={','.join(mem)} mode={lag_mode.get(lg, 'balance-xor')} transmit-hash-policy=layer-2-and-3")
+        l3name[f"bond{lg}"] = f"bond{lg}"
+        if lg in lag_cfg: l3name[lag_cfg[lg]["interface"]] = f"bond{lg}"
+
+    tagged, untagged = {}, {}
+    declared = {}
+    for v in data.get("vlans", []):
+        ids = _mt_vids(v.get("vlan"))
+        if len(ids) == 1: declared[ids[0]] = _rj_s(v.get("name") or v.get("description"))
+    def l2(port, cfg):
+        mode = cfg.get("mode", "access"); edge = " edge=yes" if cfg.get("stp_edge") else ""
+        bg = " bpdu-guard=yes" if edge and sysd.get("bpdu_guard") else ""
+        if mode == "access":
+            ids = _mt_vids(cfg.get("vlan")); vid = ids[0] if ids else 1
+            untagged.setdefault(vid, set()).add(port)
+            return f"add bridge=bridge interface={port} pvid={vid} frame-types=admit-only-untagged-and-priority-tagged{edge}{bg}"
+        if mode == "trunk":
+            pv = _mt_vids(cfg.get("pvid")); pvid = pv[0] if pv else None
+            allowed = _mt_vids(cfg.get("allowed")) or sorted(declared)
+            for vid in allowed:
+                if vid != pvid: tagged.setdefault(vid, set()).add(port)
+            if pvid: untagged.setdefault(pvid, set()).add(port)
+            return f"add bridge=bridge interface={port}" + (f" pvid={pvid} frame-types=admit-all" if pvid else " frame-types=admit-only-vlan-tagged") + edge
+        if mode == "hybrid":
+            ut, tg = _mt_vids(cfg.get("untagged")), _mt_vids(cfg.get("tagged"))
+            pv = _mt_vids(cfg.get("pvid")); pvid = pv[0] if pv else (ut[0] if ut else 1)
+            for vid in tg: tagged.setdefault(vid, set()).add(port)
+            for vid in set(ut) | {pvid}: untagged.setdefault(vid, set()).add(port)
+            return f"add bridge=bridge interface={port} pvid={pvid} frame-types=admit-all{edge}"
+        return None
+
+    members = {m for ms in lag_members.values() for m in ms if m}
+    for i in ifs:
+        nm, mode = i["interface"], i.get("mode", "access")
+        if _MT_LAG.match(nm) and mode != "routed": continue
+        if mode == "routed" or not is_sw:
+            if mode in ("access", "trunk", "hybrid") and not is_sw:
+                W.append(f"{nm}: switch port modes need the CRS switch platform; treated as a routed port")
+            if i.get("dot1q"):
+                vid = _mt_vids(i["dot1q"]); parent = nm.split(".")[0]
+                if vid:
+                    vn = f"vlan{vid[0]}-{parent}"
+                    vlan_if.append(f"add interface={Q(parent)} name={Q(vn)} vlan-id={vid[0]}" + (f" comment={Q(i['description'])}" if i.get("description") else ""))
+                    l3name[nm] = vn
+                    continue
+            l3name[nm] = nm
+        elif nm not in members:
+            ln = l2(Q(nm), i)
+            if ln: bport.append(ln)
+        if i.get("description"): comments.append(f"set [ find name={Q(nm)} ] comment={Q(i['description'])}")
+        if i.get("shutdown"): comments.append(f"set [ find name={Q(nm)} ] disabled=yes")
+        if i.get("speed") or i.get("duplex"): W.append(f"{nm}: speed/duplex left on auto-negotiation")
+    if is_sw:
+        for lg, bn in bonds.items():
+            cfg = lag_cfg.get(lg) or next((i for i in ifs if _rj_s(i.get("lag")) == lg), {})
+            ln = l2(bn, cfg)
+            if ln: bport.append(ln)
+    svis = [s for s in data.get("svis", []) if s.get("vlan")]
+    for s in svis:
+        vid = _mt_vids(s["vlan"])
+        if not vid: continue
+        vid = vid[0]
+        if is_sw:
+            tagged.setdefault(vid, set()).add("bridge")
+            vlan_if.append(f"add interface=bridge name=vlan{vid} vlan-id={vid}" + (f" comment={Q(s['description'])}" if s.get("description") else ""))
+        else:
+            W.append(f"VLAN-interface {vid}: the router platform has no switch bridge; use a routed port with a dot1Q VLAN id instead; skipped")
+            continue
+        l3name[f"vlan{vid}"] = f"vlan{vid}"; s["_if"] = f"vlan{vid}"
+        if s.get("shutdown"): comments.append(f"set [ find name=vlan{vid} ] disabled=yes")
+
+    sec("/interface bridge", ([f"add name=bridge protocol-mode={'mstp' if sysd.get('stp_mode') == 'mstp' else 'rstp'} vlan-filtering=no" + " comment=" + Q("VLAN filtering is turned on at the end")] if is_sw else []) + loops)
+    if is_sw:
+        if sysd.get("stp_mode") == "pvst": W.append("PVST is not available in RouterOS; RSTP is used")
+    sec("/interface bonding", bond_l)
+    sec("/interface vlan", vlan_if)
+    if is_sw:
+        sec("/interface bridge port", bport)
+        groups = {}
+        for vid in sorted(set(tagged) | set(untagged)):
+            key = (tuple(sorted(tagged.get(vid, ()), key=lambda x: (x != "bridge", x))), tuple(sorted(untagged.get(vid, ()))))
+            groups.setdefault(key, []).append(vid)
+        vl = []
+        for (tg, ut), vids in groups.items():
+            ln = f"add bridge=bridge vlan-ids={_mt_ranges(vids)}"
+            if tg: ln += f" tagged={','.join(tg)}"
+            if ut: ln += f" untagged={','.join(ut)}"
+            if len(vids) == 1 and declared.get(vids[0]): ln += f" comment={Q(declared[vids[0]])}"
+            vl.append(ln)
+        sec("/interface bridge vlan", vl)
+        for vid, nmv in declared.items():
+            if vid not in tagged and vid not in untagged: W.append(f"VLAN {vid}{' (' + nmv + ')' if nmv else ''} has no ports or VLAN-interface; nothing to create")
+    sec("/interface", comments)
+    poe = [f"set [ find name={Q(i['interface'])} ] poe-out=auto-on" for i in ifs if i.get("poe")]
+    sec("/interface ethernet poe", poe)
+
+    # ---- IP addresses, DHCP client, relay, VRRP ----
+    addrs, dclient, relays, vrrp_if, nets = [], [], [], [], []
+    def vrrp_items(o):
+        it = o.get("vrrp")
+        if not isinstance(it, list): it = [{"id": o.get("vrrp_id"), "ip": o.get("vrrp_ip"), "priority": o.get("vrrp_prio")}] if o.get("vrrp_id") else []
+        return [v for v in it if isinstance(v, dict) and v.get("id") and v.get("ip")]
+    def l3(o, ifn, ip, dhcp_client, relay):
+        if dhcp_client:
+            dclient.append(f"add interface={Q(ifn)} disabled=no")
+        elif ip:
+            try:
+                n = ipaddress.ip_interface(_rj_s(ip)); addrs.append(f"add address={n.with_prefixlen} interface={Q(ifn)}" + (f" comment={Q(o['description'])}" if o.get("description") else ""))
+                nets.append((n.network, ifn))
+            except Exception:
+                W.append(f"{ifn}: '{_rj_s(ip)}' is not an IP/prefix; skipped")
+        if relay:
+            relays.append(f"add name={Q('relay-' + ifn)} interface={Q(ifn)} dhcp-server={Q(relay)} disabled=no")
+        for v in vrrp_items(o):
+            vn = f"vrrp{_rj_s(v['id'])}-{ifn}"
+            vrrp_if.append(f"add name={Q(vn)} interface={Q(ifn)} vrid={_rj_s(v['id'])}" + (f" priority={_rj_s(v['priority'])}" if v.get("priority") else ""))
+            addrs.append(f"add address={_rj_s(v['ip'])}/32 interface={Q(vn)}")
+    for s in svis:
+        if s.get("_if"):
+            dm = s.get("dhcp_mode", "none")
+            l3(s, s["_if"], s.get("ip"), dm == "client", s.get("dhcp_relay") if dm == "relay" else "")
+    for i in ifs:
+        ifn = l3name.get(i["interface"])
+        if not ifn or (i.get("mode", "access") != "routed" and is_sw): continue
+        ip = _rj_s(i.get("ip"))
+        l3(i, ifn, "" if ip.lower() == "dhcp" else ip, ip.lower() == "dhcp", i.get("dhcp_relay"))
+    sec("/interface vrrp", vrrp_if)
+    sec("/ip address", addrs)
+    sec("/ip dhcp-client", dclient)
+
+    # ---- DHCP server ----
+    pools = [p for p in data.get("dhcp_pools", []) if p.get("pool_name")]
+    pl, srv, dn, opts = [], [], [], []
+    for p in pools:
+        name = _rj_s(p["pool_name"]).replace(" ", "_")
+        try: pn = ipaddress.ip_network(f"{_rj_s(p.get('network'))}/{int(str(p.get('cidr')))}", strict=False)
+        except Exception: W.append(f"DHCP pool {name}: network/prefix missing or invalid; skipped"); continue
+        rng = _mt_pool_ranges(pn.network_address, pn.prefixlen, p.get("gateway"), p.get("forbidden_ips"))
+        if not rng: W.append(f"DHCP pool {name}: no usable addresses; skipped"); continue
+        pl.append(f"add name={Q(name)} ranges={rng}")
+        ifn = next((f for n, f in nets if pn.subnet_of(n) or n.subnet_of(pn)), None)
+        lease = []
+        try:
+            d, h = int(str(p.get("lease_days") or 0)), int(str(p.get("lease_hours") or 0))
+            if d or h: lease = [f"lease-time={d}d{h}h" if h else f"lease-time={d}d"]
+        except Exception: pass
+        if ifn: srv.append(" ".join([f"add name={Q('dhcp-' + name)} interface={Q(ifn)} address-pool={Q(name)}"] + lease + ["disabled=no"]))
+        else: W.append(f"DHCP pool {name}: no interface has an IP in {pn}; add the server with /ip dhcp-server add interface=... address-pool={name}")
+        ln = f"add address={pn.with_prefixlen}"
+        if p.get("gateway"): ln += f" gateway={Q(p['gateway'])}"
+        if p.get("dns"): ln += f" dns-server={Q(','.join(_rj_s(p['dns']).replace(',', ' ').split()))}"
+        if p.get("domain"): ln += f" domain={Q(p['domain'])}"
+        if p.get("ac_ip"):
+            try:
+                hx = "0x" + "".join(f"{int(o):02x}" for o in _rj_s(p["ac_ip"]).split("."))
+                opts.append(f"add name={Q('capwap-' + name)} code=138 value={hx}"); ln += f" dhcp-option={Q('capwap-' + name)}"
+            except Exception: W.append(f"DHCP pool {name}: AC IP is not an IPv4 address; option 138 skipped")
+        dn.append(ln)
+    sec("/ip pool", pl)
+    sec("/ip dhcp-server option", opts)
+    sec("/ip dhcp-server", srv)
+    sec("/ip dhcp-server network", dn)
+    sec("/ip dhcp-relay", relays)
+
+    # ---- routing ----
+    rts = []
+    for r in data.get("static_routes", []):
+        if not (r.get("network") and r.get("cidr") not in (None, "") and r.get("next_hop")): continue
+        try: dst = ipaddress.ip_network(f"{_rj_s(r['network'])}/{int(str(r['cidr']))}", strict=False).with_prefixlen
+        except Exception: W.append(f"route {_rj_s(r['network'])}: invalid prefix; skipped"); continue
+        ln = f"add dst-address={dst} gateway={Q(r['next_hop'])}"
+        if r.get("preference"): ln += f" distance={_rj_s(r['preference'])}"
+        if r.get("description"): ln += f" comment={Q(r['description'])}"
+        rts.append(ln)
+    sec("/ip route", rts)
+    ospf = data.get("ospf") or {}
+    if ospf.get("process_id"):
+        inst = f"ospf-{_rj_s(ospf['process_id'])}"
+        ln = f"add name={Q(inst)} version=2"
+        if ospf.get("router_id"): ln += f" router-id={Q(ospf['router_id'])}"
+        if ospf.get("default_originate"): ln += f" originate-default={'always' if ospf.get('default_originate') == 'always' else 'if-installed'}"
+        sec("/routing ospf instance", [ln])
+        areas = {}
+        for n in ospf.get("networks", []):
+            if n.get("network") and n.get("cidr") not in (None, ""):
+                ar = n.get("area", ospf.get("area"))
+                if ar in (None, ""): continue
+                try: areas.setdefault(format_area(ar), []).append(ipaddress.ip_network(f"{_rj_s(n['network'])}/{int(str(n['cidr']))}", strict=False).with_prefixlen)
+                except Exception: W.append(f"OSPF network {_rj_s(n.get('network'))}: invalid; skipped")
+        if not areas and ospf.get("area") not in (None, ""): areas[format_area(ospf["area"])] = []
+        aname = lambda a: "backbone" if a == "0.0.0.0" else "area-" + a
+        sec("/routing ospf area", [f"add name={Q(inst + '-' + aname(a))} area-id={a} instance={Q(inst)}" for a in areas])
+        tpl = []
+        first = next(iter(areas), None)
+        for pi in ospf.get("passive", []) or []:
+            ifn = l3name.get(_rj_s(pi)) or _rj_s(pi)
+            if first: tpl.append(f"add area={Q(inst + '-' + aname(first))} interfaces={Q(ifn)} passive")
+        for a, ns in areas.items():
+            if ns: tpl.append(f"add area={Q(inst + '-' + aname(a))} networks={','.join(ns)}")
+        sec("/routing ospf interface-template", tpl)
+
+    # ---- firewall: ACLs where they are applied, then NAT ----
+    acls = {}
+    for a in data.get("acls", []):
+        key = _rj_s(a.get("acl_name")) or _rj_s(a.get("acl_number"))
+        if key: acls[key] = a
+    used, flt = set(), []
+    def apply(acl_id, ifn, d):
+        a = acls.get(_rj_s(acl_id))
+        if not a: W.append(f"{ifn}: ACL {_rj_s(acl_id)} {d} is not defined; skipped"); return
+        used.add(_rj_s(acl_id)); side = "in-interface" if d == "in" else "out-interface"
+        for k, r in enumerate(a.get("rules", []), 1):
+            act = str(r.get("action", "")).lower()
+            if act not in ("permit", "deny") or not r.get("source"): continue
+            src, dst = _mt_addr(r["source"], r.get("wildcard")), _mt_addr(r.get("destination"), r.get("dest_wildcard"))
+            if src is None or dst is None: W.append(f"ACL {_rj_s(acl_id)} rule {k}: non-contiguous wildcard cannot be written in RouterOS; skipped"); continue
+            ln = f"add chain=forward {side}={Q(ifn)}"
+            proto = str(r.get("protocol") or "ip").lower()
+            if proto in ("tcp", "udp", "icmp"): ln += f" protocol={proto}"
+            elif proto not in ("ip", ""): ln += f" protocol={Q(proto)}"
+            if src: ln += f" src-address={src}"
+            if dst: ln += f" dst-address={dst}"
+            for fld, opt in (("src_port", "src-port"), ("dst_port", "dst-port")):
+                if r.get(fld):
+                    pv = _mt_port(r[fld])
+                    if pv is None or proto not in ("tcp", "udp"): W.append(f"ACL {_rj_s(acl_id)} rule {k}: port match '{_rj_s(r[fld])}' skipped")
+                    elif pv: ln += f" {opt}={pv}"
+            if r.get("icmp_type"): W.append(f"ACL {_rj_s(acl_id)} rule {k}: ICMP type not converted")
+            flt.append(ln + f" action={'accept' if act == 'permit' else 'drop'} comment={Q(f'ACL {_rj_s(acl_id)} rule {k}')}")
+        flt.append(f"add chain=forward {side}={Q(ifn)} action=drop comment={Q(f'ACL {_rj_s(acl_id)} implicit deny')}")
+    for s in svis:
+        if s.get("_if"):
+            if s.get("acl_in"): apply(s["acl_in"], s["_if"], "in")
+            if s.get("acl_out"): apply(s["acl_out"], s["_if"], "out")
+    for i in ifs:
+        ifn = l3name.get(i["interface"]) or i["interface"]
+        if i.get("acl_in"): apply(i["acl_in"], ifn, "in")
+        if i.get("acl_out"): apply(i["acl_out"], ifn, "out")
+    nat, nl = data.get("nat") or {}, []
+    wans = []
+    if nat.get("outside"): wans.append(l3name.get(_rj_s(nat["outside"])) or _rj_s(nat["outside"]))
+    for i in ifs:
+        if i.get("nat_outbound") or i.get("nat") == "outside":
+            w_ = l3name.get(i["interface"]) or i["interface"]
+            if w_ not in wans: wans.append(w_)
+    if wans and not is_sw:   # same idea as MikroTik's default firewall: nothing from the WAN side gets in unless it was asked for
+        base = ["add chain=input connection-state=established,related,untracked action=accept comment=" + Q("accept established, related"),
+                "add chain=input connection-state=invalid action=drop comment=" + Q("drop invalid"),
+                "add chain=input protocol=icmp action=accept comment=" + Q("accept ICMP")]
+        base += [f"add chain=input in-interface={Q(w_)} action=drop comment={Q('drop everything else from WAN ' + w_)}" for w_ in wans]
+        base += ["add chain=forward connection-state=established,related,untracked action=accept comment=" + Q("accept established, related"),
+                 "add chain=forward connection-state=invalid action=drop comment=" + Q("drop invalid")]
+        base += [f"add chain=forward connection-state=new connection-nat-state=!dstnat in-interface={Q(w_)} action=drop comment={Q('drop new from WAN ' + w_ + ' that is not port-forwarded')}" for w_ in wans]
+        flt = base + flt
+    sec("/ip firewall filter", flt)
+
+    def masq(ifn, srcs):
+        for s_ in (srcs or [""]): nl.append(f"add chain=srcnat out-interface={Q(ifn)}" + (f" src-address={s_}" if s_ else "") + " action=masquerade")
+    if nat.get("outside"):
+        out = l3name.get(_rj_s(nat["outside"])) or _rj_s(nat["outside"])
+        srcs = []
+        for n in nat.get("networks", []):
+            try: srcs.append(ipaddress.ip_network(f"{_rj_s(n['network'])}/{int(str(n['cidr']))}", strict=False).with_prefixlen)
+            except Exception: pass
+        masq(out, srcs)
+    for i in ifs:
+        if i.get("nat_outbound") or i.get("nat") == "outside":
+            if nat.get("outside") and (l3name.get(_rj_s(nat["outside"])) or _rj_s(nat["outside"])) == (l3name.get(i["interface"]) or i["interface"]): continue
+            srcs = []
+            a = acls.get(_rj_s(i.get("nat_outbound")))
+            if a:
+                used.add(_rj_s(i.get("nat_outbound")))
+                for r in a.get("rules", []):
+                    if str(r.get("action", "")).lower() == "permit":
+                        s_ = _mt_addr(r.get("source"), r.get("wildcard"))
+                        if s_: srcs.append(s_)
+            masq(l3name.get(i["interface"]) or i["interface"], srcs)
+    sec("/ip firewall nat", nl)
+    for k in acls:
+        if k not in used: W.append(f"ACL {k} is not applied to any interface; RouterOS has no standalone ACLs, so it was not written")
+
+    if is_sw and (tagged or untagged):
+        if not any(s.get("_if") and (s.get("ip") or s.get("dhcp_mode") == "client") for s in svis):
+            W.append("no VLAN-interface has an IP: after VLAN filtering is on, reach the switch through a port in a VLAN that the bridge is tagged in, or add a management VLAN-interface")
+        c += ["# VLAN filtering last, so the switch stays reachable while the script runs", "/interface bridge", "set [ find name=bridge ] vlan-filtering=yes", ""]
+    for w in W: c.append(f"# WARNING: {w}")
+    return "\n".join(c).rstrip() + "\n"
+
+def gen_mikrotik_switch(data): return gen_mikrotik_routeros(data, "switch")
+def gen_mikrotik_router(data): return gen_mikrotik_routeros(data, "router")
+
+def _mt_remap(data):
+    """Translator target MikroTik: rename the (H3C-style) interface names in the data to RouterOS ones.
+    -> (data, [(old, new)])"""
+    import copy
+    d = copy.deepcopy(data); cnt = {"ether": 0, "sfp-sfpplus": 0}; mp = {}
+    fam = lambda t: "sfp-sfpplus" if re.match(r"^(ten|te$|xge|xgigabit|twenty|twe|forty|fo$|fortyg|hundred|hu$|hge|25|40|100)", t) else "ether" if re.match(r"^(gigabit|gi$|ge$|fastethernet|fa$|ethernet|eth|e$)", t) else None
+    def name(old):
+        if old in mp: return mp[old]
+        m = re.match(r"^([A-Za-z-]+?)\s*(\d[\d/]*)(?:\.(\d+))?$", old)
+        if not m: mp[old] = old; return old
+        t, num, sub = m.group(1).lower().replace("-", ""), m.group(2), m.group(3)
+        base = m.group(1) + num
+        if sub: mp[old] = name(base) + "." + sub; return mp[old]
+        if re.match(r"^(bridgeaggregation|portchannel|aggregateport|bond)$", t): new = f"bond{num.split('/')[-1]}"
+        elif t.startswith("loopback"): new = f"loopback{num.split('/')[-1]}"
+        else:
+            f = fam(t)
+            if not f: mp[old] = old; return old
+            cnt[f] += 1; new = f"{f}{cnt[f]}"
+        mp[old] = new; return new
+    for i in d.get("interfaces", []) or []:
+        if isinstance(i, dict) and i.get("interface"):
+            old = _rj_s(i["interface"]); new = name(old)
+            if new != old: i["interface"] = new
+    nat = d.get("nat")
+    if isinstance(nat, dict) and nat.get("outside"): nat["outside"] = name(_rj_s(nat["outside"]))
+    o = d.get("ospf")
+    if isinstance(o, dict) and isinstance(o.get("passive"), list): o["passive"] = [name(_rj_s(x)) for x in o["passive"]]
+    loops = [i for i in d.get("interfaces", []) or [] if isinstance(i, dict) and str(i.get("interface", "")).startswith("loopback")]
+    for i in loops: i["mode"] = "routed"
+    return d, [(a, b) for a, b in mp.items() if a != b]
+
+# ============================================================
 # CONFIG TRANSLATOR: Cisco IOS / IOS-XE and Ruijie RGOS  ->  H3C Comware v7
 # Parser -> ConfigLabs data model -> gen_h3c_comware, plus a report of what
 # was translated, what needs review and what was not translated.
@@ -2111,18 +2625,501 @@ class _Translator:
         return {"total": self.total, "ok": self.ok, "review": review[:300], "skipped": skip[:400], "review_count": len(self.review), "skipped_count": len(self.skip) + getattr(self, "hidden", 0),
                 "interface_map": [{"from": a, "to": b} for a, b in self.if_map[:300]], "acl_map": [{"from": a, "to": b} for a, b in self.acl_map[:100]], "notes": self.notes}
 
-def translate_config(source, text, member=1, device="auto"):
-    """source: 'cisco' (IOS / IOS-XE) or 'ruijie' (RGOS). Returns (h3c_config, report, data)."""
-    tr = _Translator("ruijie" if source == "ruijie" else "cisco", member, device)
+class _MtImport:
+    """MikroTik RouterOS export (/export, v6 or v7, terse or not) -> the translator's data model for the H3C generator.
+    Same report shape as _Translator."""
+    CMDS = ("add", "set", "remove", "enable", "disable", "move", "unset", "comment")
+
+    def __init__(self, member=1, device="auto"):
+        try: self.member = max(1, min(int(member), 9))
+        except Exception: self.member = 1
+        self.dev = device if device in ("auto", "switch", "router") else "auto"
+        self.ok = 0; self.review = []; self.skip = []; self.if_map = []; self.acl_map = []; self.notes = []; self.total = 0; self.hidden = 0
+
+    @staticmethod
+    def _lines(text):
+        out, buf, start = [], "", 0
+        for n, raw in enumerate(str(text).replace("\r", "").split("\n"), 1):
+            ln = raw.rstrip()
+            if not buf: start = n
+            if ln.endswith("\\"): buf += ln[:-1].lstrip() if buf else ln[:-1]; continue
+            buf += ln.lstrip() if buf else ln
+            if buf.strip(): out.append((start, buf.strip()))
+            buf = ""
+        if buf.strip(): out.append((start, buf.strip()))
+        return out
+
+    @staticmethod
+    def _tokens(s):
+        toks, i, n = [], 0, len(s)
+        while i < n:
+            if s[i].isspace(): i += 1; continue
+            if s[i] == "[":
+                d, j = 0, i
+                while j < n:
+                    if s[j] == "[": d += 1
+                    elif s[j] == "]":
+                        d -= 1
+                        if d == 0: break
+                    j += 1
+                toks.append(s[i:j + 1]); i = j + 1; continue
+            j, cur, q = i, "", False
+            while j < n and (q or not s[j].isspace()):
+                ch = s[j]
+                if ch == "\\" and j + 1 < n: cur += s[j + 1]; j += 2; continue
+                if ch == '"': q = not q; j += 1; continue
+                cur += ch; j += 1
+            toks.append(cur); i = j
+        return toks
+
+    def _cmd(self, toks):
+        """-> (verb, args, selector); selector from '[ find default-name=ether1 ]' or a bare item name after set"""
+        verb, args, sel = toks[0] if toks else "", {}, {}
+        for t in toks[1:]:
+            if t.startswith("["):
+                for k, v in re.findall(r'([\w-]+)=("[^"]*"|[^\s\]]+)', t): sel[k] = v.strip('"')
+            elif "=" in t:
+                k, v = t.split("=", 1); args[k] = v
+            elif verb == "set" and not sel: sel["name"] = t
+            else: args[t] = True   # flags like 'passive'
+        return verb, args, sel
+
+    def _sk(self, n, line, note): self.skip.append({"line": n, "text": line[:300], "note": note})
+    def _rv(self, n, line, note): self.review.append({"line": n, "text": line[:300], "note": note})
+
+    def _h3c_if(self, mt):
+        name = self.rename.get(mt, mt)
+        if mt in self.loops: return f"LoopBack{self.loops[mt]}"
+        m = re.match(r"^(ether|sfp-sfpplus|sfp28-|sfp|qsfp28-|qsfpplus|combo)(\d+)(?:-(\d+))?$", name)
+        if m:
+            t, a = m.group(1), int(m.group(2))
+            base = "GigabitEthernet" if t in ("ether", "combo") else "Ten-GigabitEthernet" if t in ("sfp-sfpplus", "sfp") else "Twenty-FiveGigE" if t == "sfp28-" else "HundredGigE" if t.startswith("qsfp28") else "FortyGigE"
+            return f"{base}0/{a}" if self.is_router else f"{base}{self.member}/0/{a}"
+        m = re.match(r"^bond(?:ing)?(\d+)$", name)
+        if m: return f"Bridge-Aggregation{m.group(1)}"
+        return None
+
+    def run(self, text):
+        import ipaddress
+        cmds, path = [], []
+        for n, ln in self._lines(text):
+            if ln.startswith("#"): continue
+            if ln.startswith(":"): self._sk(n, ln, "script commands are not translated"); continue
+            toks = self._tokens(ln)
+            if toks and toks[0].startswith("/"):
+                p = [toks[0][1:]] if toks[0] != "/" else []
+                k = 1
+                while k < len(toks) and toks[k] not in self.CMDS and "=" not in toks[k] and not toks[k].startswith("["):
+                    p.append(toks[k]); k += 1
+                path = [x for x in " ".join(p).split() if x]
+                toks = toks[k:]
+                if not toks: continue
+            cmds.append((n, ln, " ".join(path), toks))
+        self.total = len(cmds)
+        P = lambda pth: [(n, ln) + self._cmd(t) for n, ln, p, t in cmds if p == pth]
+
+        # renames and loopbacks first, they change every name
+        self.rename, self.loops = {}, {}
+        for n, ln, verb, a, sel in P("interface ethernet"):
+            if verb == "set" and sel.get("default-name") and a.get("name"): self.rename[a["name"]] = sel["default-name"]
+        bridges = {}
+        for n, ln, verb, a, sel in P("interface bridge"):
+            if verb == "add" and a.get("name"): bridges[a["name"]] = (n, ln, a)
+        ports = {}
+        for n, ln, verb, a, sel in P("interface bridge port"):
+            if verb == "add" and a.get("interface"): ports[a["interface"]] = (n, ln, a)
+        bport_of = {}
+        for p_, (n, ln, a) in ports.items(): bport_of.setdefault(a.get("bridge", ""), []).append(p_)
+        k = 0
+        for b in bridges:
+            if not bport_of.get(b) and re.match(r"^(lo|loopback)", b, re.I):
+                m = re.search(r"(\d+)$", b); self.loops[b] = m.group(1) if m else str(k); k += 1
+        filt = [b for b, (n, ln, a) in bridges.items() if a.get("vlan-filtering") == "yes"]
+        self.is_router = self.dev == "router" or (self.dev == "auto" and not filt and not P("interface bridge vlan"))
+        sw_bridge = filt[0] if filt else next((b for b in bridges if b not in self.loops and bport_of.get(b)), None)
+        if len(filt) > 1: self.notes.append("More than one VLAN-filtering bridge: only '" + filt[0] + "' was translated")
+        self.notes.append("Device treated as a " + ("router (MikroTik ports become routed GigabitEthernet0/N)" if self.is_router
+                          else f"switch (etherN becomes GigabitEthernet{self.member}/0/N; change the member number if this unit is not member {self.member})"))
+
+        d = {"system": {}, "vlans": [], "svis": [], "interfaces": [], "dhcp_pools": [], "static_routes": [], "acls": [], "ospf": {}}
+        if self.is_router: d["system"]["device_type"] = "router"
+        sysd, ifx, done = d["system"], {}, set()
+        def IF(mt):
+            h = self._h3c_if(mt)
+            if not h: return None
+            if h not in ifx:
+                ifx[h] = {"interface": h, "description": "", "shutdown": False, "mode": "routed" if self.is_router or mt in self.loops else "access", "vrrp": []}
+                self.if_map.append((mt if mt not in self.rename else f"{mt} ({self.rename[mt]})", h))
+            return ifx[h]
+        def ok(n):
+            if n not in done: done.add(n); self.ok += 1
+
+        # ---- system ----
+        TZ = {"Asia/Jakarta": "WIB add 07:00:00", "Asia/Pontianak": "WIB add 07:00:00", "Asia/Makassar": "WITA add 08:00:00", "Asia/Jayapura": "WIT add 09:00:00",
+              "UTC": "UTC add 00:00:00", "Asia/Singapore": "SGT add 08:00:00", "Asia/Kuala_Lumpur": "MYT add 08:00:00"}
+        for n, ln, verb, a, sel in P("system identity"):
+            if a.get("name"): sysd["hostname"] = a["name"]; ok(n)
+        for n, ln, verb, a, sel in P("system clock"):
+            tz = a.get("time-zone-name")
+            if tz and tz in TZ: sysd["timezone"] = TZ[tz]; ok(n)
+            elif tz: self._rv(n, ln, f"time zone {tz}: set 'clock timezone' by hand"); done.add(n)
+            else: ok(n)
+        for pth in ("system ntp client", "system ntp client servers"):
+            for n, ln, verb, a, sel in P(pth):
+                srv = a.get("servers") or a.get("address") or a.get("primary-ntp")
+                if srv: sysd.setdefault("ntp", srv.split(",")[0]); ok(n)
+                elif a.get("enabled"): ok(n)
+        for n, ln, verb, a, sel in P("system note"):
+            if a.get("note"): sysd["banner"] = a["note"]; ok(n)
+        for n, ln, verb, a, sel in P("user"):
+            if verb == "add" and a.get("name"):
+                sysd["admin_user"] = a["name"]; self._rv(n, ln, "passwords are not in an export: set the local-user password by hand"); done.add(n)
+        for n, ln, verb, a, sel in P("ip service"):
+            if sel.get("name") == "ssh" and a.get("disabled") == "no": sysd["ssh"] = True
+            ok(n)
+        comms, hosts = [], []
+        for n, ln, verb, a, sel in P("snmp community"):
+            if verb == "add" and a.get("name"): comms.append({"name": a["name"], "mode": "write" if a.get("write-access") == "yes" else "read"}); ok(n)
+            elif verb == "set": ok(n)
+        for n, ln, verb, a, sel in P("snmp"):
+            if a.get("location"): sysd["snmp_location"] = a["location"]
+            if a.get("contact"): sysd["snmp_contact"] = a["contact"]
+            if a.get("trap-target"): hosts.append({"ip": a["trap-target"].split(",")[0], "community": a.get("trap-community", comms[0]["name"] if comms else "public")})
+            ok(n)
+        if comms: sysd["snmp_communities"] = comms
+        if hosts: sysd["snmp_hosts"] = hosts
+        for n, ln, verb, a, sel in P("system logging action"):
+            if a.get("target") == "remote" and a.get("remote"): sysd["syslog"] = a["remote"]; ok(n)
+        for n, ln, verb, a, sel in P("system logging"): ok(n)
+
+        # ---- bridge, bonding, VLANs ----
+        for b, (n, ln, a) in bridges.items():
+            if b in self.loops: IF(b); ok(n); continue
+            if b == sw_bridge:
+                if a.get("protocol-mode") in ("rstp", "mstp"): sysd["stp_mode"] = a["protocol-mode"]
+                ok(n)
+            else: self._sk(n, ln, "extra bridge: only one bridge maps to the H3C switch")
+        for n, ln, verb, a, sel in P("interface bridge"):
+            if verb == "set": ok(n)
+        bonds = {}
+        for n, ln, verb, a, sel in P("interface bonding"):
+            if verb != "add" or not a.get("name"): continue
+            h = IF(a["name"])
+            if not h: self._sk(n, ln, "bond name not understood (use bond1, bond2...)"); continue
+            lg = re.search(r"(\d+)$", h["interface"]).group(1)
+            if a.get("mode") == "802.3ad": h["lag_dynamic"] = True
+            elif a.get("mode") not in (None, "balance-xor"): self._rv(n, ln, f"bonding mode {a.get('mode')}: H3C aggregation is static or LACP; static was used")
+            for s_ in str(a.get("slaves", "")).split(","):
+                m_ = IF(s_.strip())
+                if m_: m_["lag"] = lg
+            bonds[a["name"]] = h; ok(n)
+        vt, vu, vnames = {}, {}, {}
+        for n, ln, verb, a, sel in P("interface bridge vlan"):
+            if verb != "add": continue
+            if a.get("bridge", sw_bridge) != sw_bridge: self._sk(n, ln, "VLAN entry on another bridge"); continue
+            for vid in _mt_vids(a.get("vlan-ids")):
+                for p_ in str(a.get("tagged", "")).split(","):
+                    if p_.strip(): vt.setdefault(p_.strip(), set()).add(vid)
+                for p_ in str(a.get("untagged", "")).split(","):
+                    if p_.strip(): vu.setdefault(p_.strip(), set()).add(vid)
+                vnames.setdefault(vid, a.get("comment", ""))
+            ok(n)
+        vlanifs = {}
+        for n, ln, verb, a, sel in P("interface vlan"):
+            if verb != "add" or not a.get("name"): continue
+            vid = _mt_vids(a.get("vlan-id"))
+            if not vid: self._sk(n, ln, "VLAN interface without vlan-id"); continue
+            vid = vid[0]
+            if a.get("interface") == sw_bridge and not self.is_router:
+                vnames.setdefault(vid, "")
+                svi = {"vlan": str(vid), "description": a.get("comment", ""), "dhcp_mode": "none", "vrrp": []}
+                d["svis"].append(svi); vlanifs[a["name"]] = ("svi", svi); ok(n)
+            else:
+                par = IF(a.get("interface", ""))
+                if not par: self._sk(n, ln, f"parent '{a.get('interface')}' is not a port that maps to H3C"); continue
+                par["mode"] = "routed"
+                sub = {"interface": f"{par['interface']}.{vid}", "description": a.get("comment", ""), "shutdown": False, "mode": "routed", "dot1q": str(vid), "vrrp": []}
+                ifx[sub["interface"]] = sub; vlanifs[a["name"]] = ("if", sub)
+                self.if_map.append((a["name"], sub["interface"])); ok(n)
+        if sw_bridge and not filt:   # a plain LAN bridge: its ports become VLAN 1 and its IP the Vlan-interface1
+            vlanifs[sw_bridge] = ("svi", {"vlan": "1", "description": "", "dhcp_mode": "none", "vrrp": []})
+        for p_, (n, ln, a) in ports.items():
+            if a.get("bridge") != sw_bridge: self._sk(n, ln, "port on another bridge"); continue
+            h = bonds.get(p_) or IF(p_)
+            if not h: self._sk(n, ln, f"'{p_}' is not a port that maps to H3C (wlan, tunnel...)"); continue
+            pv = (_mt_vids(a.get("pvid")) or [1])[0]
+            if not filt:
+                h["mode"] = "access"; h["vlan"] = "1"
+            else:
+                tg = sorted(vt.get(p_, set()) - {pv})
+                ut = sorted(vu.get(p_, set()) | ({pv} if a.get("frame-types", "admit-all") != "admit-only-vlan-tagged" else set()))
+                if not tg: h["mode"] = "access"; h["vlan"] = str(ut[0] if ut else pv)
+                elif not ut or ut == [pv]:
+                    h["mode"] = "trunk"; h["allowed"] = " ".join(map(str, sorted(set(tg) | set(ut))))
+                    if ut and ut != [1]: h["pvid"] = str(pv)
+                else:
+                    h["mode"] = "hybrid"; h["pvid"] = str(pv); h["untagged"] = " ".join(map(str, ut)); h["tagged"] = " ".join(map(str, tg))
+            if a.get("edge") in ("yes", "yes-discover"): h["stp_edge"] = True
+            ok(n)
+        for vid in sorted(vnames): d["vlans"].append({"vlan": str(vid), "name": _rj_s(vnames[vid]).replace(" ", "_")[:32]})
+        for pth in ("interface ethernet", "interface"):
+            for n, ln, verb, a, sel in P(pth):
+                if verb != "set" or n in done: continue
+                tgt = sel.get("default-name") or sel.get("name")
+                h = (bonds.get(tgt) or IF(tgt)) if tgt else None
+                if not h: self._sk(n, ln, "interface does not map to H3C"); continue
+                if a.get("comment"): h["description"] = a["comment"]
+                if a.get("disabled") == "yes": h["shutdown"] = True
+                if a.get("speed") or a.get("auto-negotiation"): self._rv(n, ln, "speed/duplex: set it on the H3C port by hand")
+                ok(n)
+        for n, ln, verb, a, sel in P("interface ethernet poe"):
+            h = IF(sel.get("name") or sel.get("default-name") or "")
+            if h and a.get("poe-out") in ("auto-on", "forced-on"): h["poe"] = True; ok(n)
+            else: self._sk(n, ln, "PoE line not understood")
+
+        # ---- addresses, DHCP client/relay, VRRP ----
+        def l3(ifname):
+            if ifname in vlanifs: return vlanifs[ifname]
+            h = bonds.get(ifname) or IF(ifname)
+            if h: h["mode"] = "routed"; return ("if", h)
+            return None
+        vrrp = {}
+        for n, ln, verb, a, sel in P("interface vrrp"):
+            if verb == "add" and a.get("name") and a.get("interface"): vrrp[a["name"]] = (a["interface"], a.get("vrid", "1"), a.get("priority", "")); ok(n)
+        for n, ln, verb, a, sel in P("ip address"):
+            if verb != "add" or not a.get("address"): continue
+            ifn = a.get("interface", "")
+            if ifn in vrrp:
+                t = l3(vrrp[ifn][0])
+                if not t: self._sk(n, ln, "VRRP on an interface that does not map"); continue
+                t[1].setdefault("vrrp", []).append({"id": vrrp[ifn][1], "ip": a["address"].split("/")[0], "priority": vrrp[ifn][2]}); ok(n); continue
+            t = l3(ifn)
+            if not t: self._sk(n, ln, f"address on '{ifn}', which does not map to H3C"); continue
+            kind, o = t
+            if kind == "svi" and o not in d["svis"]: d["svis"].append(o)
+            if o.get("ip"): self._rv(n, ln, f"second address on {ifn}: add it as 'ip address ... sub' by hand"); continue
+            o["ip"] = a["address"] if "/" in a["address"] else a["address"] + "/32"
+            if a.get("comment") and not o.get("description"): o["description"] = a["comment"]
+            ok(n)
+        if sw_bridge and not filt and any(s.get("vlan") == "1" for s in d["svis"]) and not any(v["vlan"] == "1" for v in d["vlans"]):
+            d["vlans"].insert(0, {"vlan": "1", "name": ""})
+        for n, ln, verb, a, sel in P("ip dhcp-client"):
+            t = l3(a.get("interface", "")) if verb == "add" else None
+            if not t: self._sk(n, ln, "DHCP client on an interface that does not map"); continue
+            if t[0] == "svi":
+                t[1]["dhcp_mode"] = "client"
+                if t[1] not in d["svis"]: d["svis"].append(t[1])
+            else: t[1]["ip"] = "dhcp"
+            ok(n)
+        for n, ln, verb, a, sel in P("ip dhcp-relay"):
+            t = l3(a.get("interface", "")) if verb == "add" else None
+            if not t or not a.get("dhcp-server"): self._sk(n, ln, "DHCP relay not understood"); continue
+            if t[0] == "svi": t[1]["dhcp_mode"] = "relay"
+            t[1]["dhcp_relay"] = a["dhcp-server"].split(",")[0]; ok(n)
+
+        # ---- DHCP server ----
+        pools = {}
+        for n, ln, verb, a, sel in P("ip pool"):
+            if verb == "add" and a.get("name"): pools[a["name"]] = (n, ln, a.get("ranges", ""))
+        srv = {}
+        for n, ln, verb, a, sel in P("ip dhcp-server"):
+            if verb == "add" and a.get("address-pool"): srv[a["address-pool"]] = (n, a)
+        for n, ln, verb, a, sel in P("ip dhcp-server network"):
+            if verb != "add" or not a.get("address"): continue
+            try: net = ipaddress.ip_network(a["address"], strict=False)
+            except Exception: self._sk(n, ln, "network not understood"); continue
+            pname, rng = None, ""
+            for pn, (pn_n, pn_ln, r) in pools.items():
+                try:
+                    if ipaddress.ip_address(r.split(",")[0].split("-")[0]) in net: pname, rng = pn, r; break
+                except Exception: pass
+            pool = {"pool_name": _rj_s(pname or f"POOL_{net.network_address}").replace(" ", "_"), "network": str(net.network_address), "cidr": str(net.prefixlen),
+                    "gateway": a.get("gateway", "").split(",")[0], "dns": " ".join(x for x in a.get("dns-server", "").split(",") if x), "domain": a.get("domain", ""), "lease_days": "", "forbidden_ips": ""}
+            if rng:   # what the pool does not hand out (gateway aside) becomes forbidden-ip ranges
+                inside = []
+                for part in rng.split(","):
+                    try:
+                        lo_, hi_ = (part.split("-") + [None])[:2]
+                        inside.append((int(ipaddress.ip_address(lo_)), int(ipaddress.ip_address(hi_ or lo_))))
+                    except Exception: pass
+                inside.sort(); gaps, cur = [], int(net.network_address) + 1
+                for lo_, hi_ in inside:
+                    if lo_ > cur: gaps.append((cur, lo_ - 1))
+                    cur = max(cur, hi_ + 1)
+                if cur <= int(net.broadcast_address) - 1: gaps.append((cur, int(net.broadcast_address) - 1))
+                try: gw = int(ipaddress.ip_address(pool["gateway"])) if pool["gateway"] else None
+                except Exception: gw = None
+                fb = []
+                for lo_, hi_ in gaps:
+                    if gw is not None and lo_ == hi_ == gw: continue
+                    fb.append(str(ipaddress.ip_address(lo_)) if lo_ == hi_ else f"{ipaddress.ip_address(lo_)}-{ipaddress.ip_address(hi_)}")
+                pool["forbidden_ips"] = " ".join(fb)
+                ok(pools[pname][0])
+            s_ = srv.get(pname)
+            if s_:
+                m = re.match(r"^(?:(\d+)w)?(?:(\d+)d)?(?:(\d+)h)?", s_[1].get("lease-time", ""))
+                if m and any(m.groups()):
+                    pool["lease_days"] = str(int(m.group(1) or 0) * 7 + int(m.group(2) or 0))
+                    if m.group(3): pool["lease_hours"] = m.group(3)
+                t = l3(s_[1].get("interface", ""))
+                if t and t[0] == "svi": t[1]["dhcp_mode"] = "server"; t[1]["dhcp_apply_pool"] = pool["pool_name"]
+                ok(s_[0])
+            d["dhcp_pools"].append(pool); ok(n)
+        for pth in ("ip pool", "ip dhcp-server"):
+            for n, ln, verb, a, sel in P(pth):
+                if n not in done: self._sk(n, ln, "no matching /ip dhcp-server network entry")
+
+        # ---- routing ----
+        for n, ln, verb, a, sel in P("ip route"):
+            if verb != "add" or not a.get("gateway"): continue
+            try: net = ipaddress.ip_network(a.get("dst-address", "0.0.0.0/0"), strict=False)
+            except Exception: self._sk(n, ln, "destination not understood"); continue
+            gw = a["gateway"].split(",")[0].split("%")[0]
+            try: ipaddress.ip_address(gw)
+            except Exception: self._rv(n, ln, f"route via interface '{gw}': add the H3C next hop by hand"); continue
+            d["static_routes"].append({"network": str(net.network_address), "cidr": str(net.prefixlen), "next_hop": gw, "preference": a.get("distance", ""), "description": a.get("comment", "")}); ok(n)
+        ospf, areas = d["ospf"], {}
+        for n, ln, verb, a, sel in P("routing ospf instance"):
+            if verb in ("add", "set"):
+                ospf.setdefault("process_id", "1")
+                rid = a.get("router-id")
+                if rid:
+                    try: ipaddress.ip_address(rid); ospf["router_id"] = rid
+                    except Exception: self._rv(n, ln, f"router-id '{rid}' is an ID object: set the H3C router-id by hand")
+                if a.get("originate-default") in ("always", "if-installed"): ospf["default_originate"] = "always" if a["originate-default"] == "always" else "yes"
+                ok(n)
+        for n, ln, verb, a, sel in P("routing ospf"):     # v6: /routing ospf set router-id=
+            if a.get("router-id"): ospf.setdefault("process_id", "1"); ospf["router_id"] = a["router-id"]; ok(n)
+        for n, ln, verb, a, sel in P("routing ospf area"):
+            if verb == "add" and a.get("name"): areas[a["name"]] = a.get("area-id", "0.0.0.0"); ospf.setdefault("process_id", "1"); ok(n)
+        areas.setdefault("backbone", "0.0.0.0")
+        for pth in ("routing ospf interface-template", "routing ospf network"):
+            for n, ln, verb, a, sel in P(pth):
+                if verb != "add": continue
+                ospf.setdefault("process_id", "1")
+                ar = areas.get(a.get("area", "backbone"), a.get("area", "0.0.0.0"))
+                nets = [x for x in str(a.get("networks") or a.get("network") or "").split(",") if x]
+                if a.get("passive") is True or a.get("passive") == "yes":
+                    for ifn in str(a.get("interfaces", "")).split(","):
+                        t = l3(ifn) if ifn else None
+                        if t: ospf.setdefault("passive", []).append("Vlan-interface" + t[1]["vlan"] if t[0] == "svi" else t[1]["interface"])
+                for x in nets:
+                    try:
+                        nn = ipaddress.ip_network(x, strict=False)
+                        ospf.setdefault("networks", []).append({"network": str(nn.network_address), "cidr": str(nn.prefixlen), "area": ar}); ospf.setdefault("area", ar)
+                    except Exception: pass
+                if nets or a.get("passive"): ok(n)
+                else: self._rv(n, ln, "interface-template without networks: add the OSPF network by hand")
+        if ospf.get("process_id") and not ospf.get("area"): ospf["area"] = "0.0.0.0"
+
+        # ---- firewall: forward rules on an interface -> advanced ACLs (stateless); srcnat masquerade -> nat outbound ----
+        acl_by, nxt = {}, [3000]
+        def acl_for(key):
+            if key not in acl_by:
+                acl_by[key] = {"acl_number": str(nxt[0]), "description": f"From MikroTik {key[1]} {key[0]}", "rules": []}
+                nxt[0] += 1; d["acls"].append(acl_by[key]); self.acl_map.append((f"filter {key[0]}-interface={key[1]}", acl_by[key]["acl_number"]))
+            return acl_by[key]
+        def wc(addr):
+            try:
+                nn = ipaddress.ip_network(addr, strict=False)
+                return str(nn.network_address), str(ipaddress.ip_address(int(nn.hostmask)))
+            except Exception: return None, None
+        for n, ln, verb, a, sel in P("ip firewall filter"):
+            if verb != "add": continue
+            if a.get("chain") != "forward": self._sk(n, ln, "router-protection (input/output) rule: protect the H3C uplink by hand"); continue
+            if a.get("connection-state") or a.get("connection-nat-state") or a.get("action") == "fasttrack-connection":
+                self._sk(n, ln, "stateful rule: H3C ACLs are stateless (consider ASPF or a zone-based policy)"); continue
+            side = ("in", a["in-interface"]) if a.get("in-interface") else ("out", a["out-interface"]) if a.get("out-interface") else None
+            t = l3(side[1]) if side else None
+            if not t: self._sk(n, ln, "rule without an in/out interface that maps: no ACL to put it in"); continue
+            act = {"accept": "permit", "drop": "deny", "reject": "deny"}.get(a.get("action", "accept"))
+            if not act: self._sk(n, ln, f"action {a.get('action')} has no ACL equivalent"); continue
+            if any(x in a for x in ("src-address-list", "dst-address-list", "layer7-protocol", "content", "tls-host")): self._sk(n, ln, "address lists / L7 matching have no ACL equivalent"); continue
+            r = {"action": act, "protocol": a["protocol"] if a.get("protocol") in ("tcp", "udp", "icmp") else "ip", "source": "any", "wildcard": ""}
+            if a.get("src-address"):
+                s_, w_ = wc(a["src-address"])
+                if s_: r["source"], r["wildcard"] = s_, w_
+            if a.get("dst-address"):
+                s_, w_ = wc(a["dst-address"])
+                if s_: r["destination"], r["dest_wildcard"] = s_, w_
+            if a.get("dst-port"):
+                if r["protocol"] in ("tcp", "udp") and re.fullmatch(r"\d+", a["dst-port"]): r["dst_port"] = "eq " + a["dst-port"]
+                elif r["protocol"] in ("tcp", "udp") and re.fullmatch(r"\d+-\d+", a["dst-port"]): r["dst_port"] = "range " + a["dst-port"].replace("-", " ")
+                else: self._rv(n, ln, "port list: split it into one ACL rule per port by hand")
+            acl = acl_for(side); acl["rules"].append(r)
+            t[1]["acl_" + side[0]] = acl["acl_number"]
+            if t[0] == "svi" and t[1] not in d["svis"]: d["svis"].append(t[1])
+            ok(n)
+        for acl in d["acls"]:   # MikroTik passes what no rule drops; an ACL denies it, so close with permit any unless the last rule already drops all
+            last = acl["rules"][-1] if acl["rules"] else None
+            if last and last["action"] == "deny" and last["source"] == "any" and not last.get("destination") and last["protocol"] == "ip": acl["rules"].pop()
+            else: acl["rules"].append({"action": "permit", "protocol": "ip", "source": "any", "wildcard": ""})
+        nat_acl = 3900
+        for n, ln, verb, a, sel in P("ip firewall nat"):
+            if verb != "add": continue
+            if a.get("chain") == "srcnat" and a.get("action") in ("masquerade", "src-nat") and a.get("out-interface"):
+                t = l3(a["out-interface"])
+                if not t or t[0] != "if": self._sk(n, ln, "NAT on an interface that does not map"); continue
+                s_, w_ = wc(a["src-address"]) if a.get("src-address") else ("any", "")
+                acl = {"acl_number": str(nat_acl), "description": "NAT inside", "rules": [{"action": "permit", "protocol": "ip", "source": s_ or "any", "wildcard": w_ or ""}]}
+                nat_acl += 1; d["acls"].append(acl); t[1]["nat_outbound"] = acl["acl_number"]
+                if a.get("action") == "src-nat": self._rv(n, ln, "src-nat to a fixed address: add an address group to 'nat outbound' by hand"); done.add(n)
+                else: ok(n)
+            elif a.get("chain") == "dstnat": self._sk(n, ln, "port forward: use 'nat server' on the WAN interface by hand")
+            else: self._sk(n, ln, "NAT rule not understood")
+        for n, ln, verb, a, sel in P("ip dns"):
+            if a.get("servers"): self._rv(n, ln, "DNS servers for the device itself: 'dns server' on H3C by hand"); done.add(n)
+
+        flagged = {x["line"] for x in self.skip + self.review}
+        for n, ln, p, t in cmds:
+            if n not in done and n not in flagged: self._sk(n, ln, "no H3C equivalent in the translator yet")
+        d["interfaces"] = list(ifx.values())
+        if not d["ospf"].get("process_id"): d["ospf"] = {}
+        return d
+
+    def report(self):
+        review = sorted(self.review, key=lambda x: x["line"]); skip = sorted(self.skip, key=lambda x: x["line"])
+        return {"total": self.total, "ok": self.ok, "review": review[:300], "skipped": skip[:400], "review_count": len(self.review), "skipped_count": len(self.skip),
+                "interface_map": [{"from": a, "to": b} for a, b in self.if_map[:300]], "acl_map": [{"from": a, "to": b} for a, b in self.acl_map[:100]], "notes": self.notes}
+
+def translate_config(source, text, member=1, device="auto", target="h3c"):
+    """source: 'cisco' (IOS / IOS-XE), 'ruijie' (RGOS) or 'mikrotik' (RouterOS export).
+    target: 'h3c' (Comware) or 'mikrotik' (RouterOS v7; Cisco and Ruijie sources). Returns (config, report, data)."""
+    if source == "mikrotik":
+        tr = _MtImport(member, device); target = "h3c"
+    else:
+        tr = _Translator("ruijie" if source == "ruijie" else "cisco", member, device)
     data = tr.run(text)
-    cfg = gen_h3c_comware(data)
     rep = tr.report()
+    if target == "mikrotik":
+        data, pairs = _mt_remap(data)
+        back = {m["to"]: m["from"] for m in rep.get("acl_map", [])}   # RouterOS has no ACL numbers to respect: keep the source's own names
+        for a_ in data.get("acls", []) or []:
+            if a_.get("acl_number") in back: a_["acl_number"] = back[a_["acl_number"]]
+        for o_ in (data.get("interfaces", []) or []) + (data.get("svis", []) or []):
+            for k_ in ("acl_in", "acl_out", "nat_outbound"):
+                if o_.get(k_) in back: o_[k_] = back[o_[k_]]
+        rep["acl_map"] = []
+        new = dict(pairs)
+        rep["interface_map"] = [{"from": m["from"], "to": new.get(m["to"], m["to"])} for m in rep["interface_map"]]
+        seen = {m["to"] for m in rep["interface_map"]}
+        rep["interface_map"] += [{"from": a, "to": b} for a, b in pairs if b not in seen]
+        for m_ in rep["interface_map"]:   # dot1Q sub-interfaces become /interface vlan entries named vlanN-parent
+            sm = re.match(r"^(.+)\.(\d+)$", m_["to"])
+            if sm: m_["to"] = f"vlan{sm.group(2)}-{sm.group(1)}"
+        is_r = (data.get("system") or {}).get("device_type") == "router"
+        rep["notes"] = [x for x in rep["notes"] if not x.startswith("Device treated")] + [
+            "Target MikroTik RouterOS v7 as a " + ("router" if is_r else "CRS switch (one VLAN-filtering bridge)") +
+            ": ports were renamed in order (GigabitEthernet -> etherN, 10G and up -> sfp-sfpplusN, port-channels -> bondN). Check them against the real ports."]
+        cfg = gen_mikrotik_routeros(data, "router" if is_r else "switch")
+    else:
+        cfg = gen_h3c_comware(data)
     todo = ["#", "# ===== NOT TRANSLATED: review these lines by hand ====="]
     for s in tr.skip[:200]: todo.append("# [" + str(s["line"]) + "] " + _rj_s(s["text"]) + "   <- " + s["note"])
     for r in tr.review[:200]: todo.append("# [CHECK " + str(r["line"]) + "] " + _rj_s(r["text"]) + "   <- " + r["note"])
     if len(todo) > 2:
         head, sep, tail = cfg.rpartition("\nreturn")
-        cfg = (head + "\n" + "\n".join(todo) + "\n#\nreturn") if sep else cfg + "\n" + "\n".join(todo)
+        cfg = (head + "\n" + "\n".join(todo) + "\n#\nreturn") if sep else cfg.rstrip("\n") + "\n" + "\n".join(todo) + "\n"
     return cfg, rep, data
 
 def generate_config(vendor, os_id, data):
@@ -2141,6 +3138,10 @@ def generate_config(vendor, os_id, data):
         return gen_ruijie_router(data)
     elif vendor == "ruijie" and os_id == "rgos_wlan":
         return gen_ruijie_wlan(data)
+    elif vendor == "mikrotik" and os_id == "routeros_router":
+        return gen_mikrotik_router(data)
+    elif vendor == "mikrotik" and os_id == "routeros_switch":
+        return gen_mikrotik_switch(data)
     else:
         return f"# Vendor '{vendor}' with OS '{os_id}' is not yet supported.\n# Coming soon!"
 
@@ -2642,6 +3643,100 @@ def _too_big(e):
     return jsonify({'success': False, 'error': 'Request too large (max 2 MB)'}), 413
 
 
+# =========== MIKROTIK ROUTEROS v7 ===========
+TEMPLATES.update({
+    "mikrotik_routeros_router_office": {
+        "vendor": "mikrotik", "os": "routeros_router",
+        "name": "🏠 Office Router",
+        "description": "WAN by DHCP, one LAN with DHCP server, NAT masquerade, admin user + SSH",
+        "data": {
+            "system": {"hostname": "MT-OFFICE", "ntp": "time.google.com", "timezone": "WIB 7:00", "admin_user": "netadmin", "admin_pass": "ChangeMe#2026", "ssh": True},
+            "interfaces": [
+                {"interface": "ether1", "mode": "routed", "ip": "dhcp", "description": "WAN ISP"},
+                {"interface": "ether2", "mode": "routed", "ip": "192.168.10.1/24", "description": "LAN"}
+            ],
+            "dhcp_pools": [{"pool_name": "LAN", "network": "192.168.10.0", "cidr": "24", "gateway": "192.168.10.1", "dns": "8.8.8.8 1.1.1.1", "lease_days": "1", "forbidden_ips": "192.168.10.2-192.168.10.20"}],
+            "nat": {"outside": "ether1", "networks": [{"network": "192.168.10.0", "cidr": "24"}]}
+        }
+    },
+    "mikrotik_routeros_router_vlans": {
+        "vendor": "mikrotik", "os": "routeros_router",
+        "name": "🧩 Router on a stick",
+        "description": "Staff, guest and CCTV VLANs on one trunk (dot1Q), DHCP per VLAN, guest isolated, NAT",
+        "data": {
+            "system": {"hostname": "MT-GW-01", "timezone": "WIB 7:00", "admin_user": "netadmin", "admin_pass": "ChangeMe#2026", "ssh": True},
+            "interfaces": [
+                {"interface": "ether1", "mode": "routed", "ip": "203.0.113.2/30", "description": "WAN"},
+                {"interface": "ether2.10", "mode": "routed", "dot1q": "10", "ip": "10.10.10.1/24", "description": "STAFF"},
+                {"interface": "ether2.20", "mode": "routed", "dot1q": "20", "ip": "10.10.20.1/24", "description": "GUEST", "acl_in": "120"},
+                {"interface": "ether2.30", "mode": "routed", "dot1q": "30", "ip": "10.10.30.1/24", "description": "CCTV"}
+            ],
+            "dhcp_pools": [
+                {"pool_name": "STAFF", "network": "10.10.10.0", "cidr": "24", "gateway": "10.10.10.1", "dns": "8.8.8.8", "lease_days": "1"},
+                {"pool_name": "GUEST", "network": "10.10.20.0", "cidr": "24", "gateway": "10.10.20.1", "dns": "8.8.8.8", "lease_days": "1"},
+                {"pool_name": "CCTV", "network": "10.10.30.0", "cidr": "24", "gateway": "10.10.30.1", "dns": "8.8.8.8", "lease_days": "7"}
+            ],
+            "acls": [{"acl_number": "120", "description": "Guest isolation", "rules": [
+                {"action": "deny", "protocol": "ip", "source": "10.10.20.0", "wildcard": "0.0.0.255", "destination": "10.10.0.0", "dest_wildcard": "0.0.255.255"},
+                {"action": "permit", "protocol": "ip", "source": "10.10.20.0", "wildcard": "0.0.0.255"}]}],
+            "static_routes": [{"network": "0.0.0.0", "cidr": "0", "next_hop": "203.0.113.1", "description": "ISP"}],
+            "nat": {"outside": "ether1", "networks": [{"network": "10.10.0.0", "cidr": "16"}]}
+        }
+    },
+    "mikrotik_routeros_router_ospf": {
+        "vendor": "mikrotik", "os": "routeros_router",
+        "name": "🛰️ OSPF Branch",
+        "description": "Branch router with a loopback, OSPF area 0 to the core and a static default route",
+        "data": {
+            "system": {"hostname": "MT-BRANCH-01", "timezone": "WIB 7:00", "snmp_community": "CKI-RO", "snmp_location": "Branch Office"},
+            "interfaces": [
+                {"interface": "loopback0", "mode": "routed", "ip": "10.255.0.11/32"},
+                {"interface": "ether1", "mode": "routed", "ip": "10.0.12.2/30", "description": "Uplink to core"},
+                {"interface": "ether2", "mode": "routed", "ip": "10.20.1.1/24", "description": "Branch LAN"}
+            ],
+            "ospf": {"process_id": "1", "router_id": "10.255.0.11", "area": "0", "networks": [{"network": "10.255.0.11", "cidr": "32"}, {"network": "10.0.12.0", "cidr": "30"}, {"network": "10.20.1.0", "cidr": "24"}]},
+            "static_routes": [{"network": "0.0.0.0", "cidr": "0", "next_hop": "10.0.12.1", "preference": "250"}]
+        }
+    },
+    "mikrotik_routeros_switch_access": {
+        "vendor": "mikrotik", "os": "routeros_switch",
+        "name": "🏢 CRS Access Switch",
+        "description": "Bridge VLAN filtering: user and voice VLANs, trunk uplink, management VLAN-interface",
+        "data": {
+            "system": {"hostname": "CRS-ACCESS-01", "timezone": "WIB 7:00", "admin_user": "netadmin", "admin_pass": "ChangeMe#2026", "ssh": True},
+            "vlans": [{"vlan": "10", "name": "USERS"}, {"vlan": "20", "name": "VOICE"}, {"vlan": "99", "name": "MGMT"}],
+            "svis": [{"vlan": "99", "description": "Management", "ip": "10.10.99.11/24"}],
+            "interfaces": [
+                {"interface": "ether1", "mode": "access", "vlan": "10", "description": "User", "stp_edge": True},
+                {"interface": "ether2", "mode": "access", "vlan": "10", "description": "User", "stp_edge": True},
+                {"interface": "ether3", "mode": "hybrid", "pvid": "10", "untagged": "10", "tagged": "20", "description": "Phone + PC", "stp_edge": True},
+                {"interface": "sfp-sfpplus1", "mode": "trunk", "allowed": "10 20 99", "description": "Uplink to core"}
+            ],
+            "static_routes": [{"network": "0.0.0.0", "cidr": "0", "next_hop": "10.10.99.1"}]
+        }
+    },
+    "mikrotik_routeros_switch_core": {
+        "vendor": "mikrotik", "os": "routeros_switch",
+        "name": "🏛️ CRS Core (L3)",
+        "description": "VLAN-interfaces as gateways, DHCP server, LACP bond to the access switch",
+        "data": {
+            "system": {"hostname": "CRS-CORE-01", "timezone": "WIB 7:00"},
+            "vlans": [{"vlan": "10", "name": "USERS"}, {"vlan": "20", "name": "SERVERS"}],
+            "svis": [
+                {"vlan": "10", "description": "Users gateway", "ip": "10.10.10.1/24", "dhcp_mode": "server", "dhcp_apply_pool": "USERS"},
+                {"vlan": "20", "description": "Servers gateway", "ip": "10.10.20.1/24"}
+            ],
+            "dhcp_pools": [{"pool_name": "USERS", "network": "10.10.10.0", "cidr": "24", "gateway": "10.10.10.1", "dns": "8.8.8.8", "lease_days": "1"}],
+            "interfaces": [
+                {"interface": "sfp-sfpplus1", "lag": "1", "lag_mode": "active", "description": "To access 1"},
+                {"interface": "sfp-sfpplus2", "lag": "1", "lag_mode": "active", "description": "To access 1"},
+                {"interface": "bond1", "mode": "trunk", "allowed": "10 20"},
+                {"interface": "ether1", "mode": "access", "vlan": "20", "description": "Server", "stp_edge": True}
+            ]
+        }
+    }
+})
+
 @app.route("/")
 def root():
     return jsonify({
@@ -2762,10 +3857,14 @@ def api_translate():
     try:
         payload = request.get_json(silent=True) or {}
         source = payload.get("source")
-        if source not in ("cisco", "ruijie"):
-            return jsonify({"success": False, "error": "Pick a source: Cisco or Ruijie"}), 400
+        if source not in ("cisco", "ruijie", "mikrotik"):
+            return jsonify({"success": False, "error": "Pick a source: Cisco, Ruijie or MikroTik"}), 400
+        _o = payload.get("options") if isinstance(payload.get("options"), dict) else {}
+        target = "mikrotik" if _o.get("target") == "mikrotik" else "h3c"
+        if source == "mikrotik" and target == "mikrotik":
+            return jsonify({"success": False, "error": "MikroTik to MikroTik is not a translation: pick H3C as the target"}), 400
         text = str(payload.get("config") or "")
-        lines = [l for l in text.replace("\r", "").split("\n") if l.strip() and not l.strip().startswith("!")]
+        lines = [l for l in text.replace("\r", "").split("\n") if l.strip() and not l.strip().startswith(("!", "#"))]
         lim = _tr_limits(key, email)
         if not lines:
             return jsonify({"success": False, "error": "Paste a config first"}), 400
@@ -2778,7 +3877,7 @@ def api_translate():
                 return jsonify({"success": False, "code": "limit_daily", "limits": _tr_limits(key, email),
                                 "error": f"Daily limit reached ({TR_FREE_DAILY} translations). It resets at 00:00 WIB."}), 429
         try:
-            cfg, rep, _data = translate_config(source, text, opts.get("member", 1), str(opts.get("device", "auto")))
+            cfg, rep, _data = translate_config(source, text, opts.get("member", 1), str(opts.get("device", "auto")), target)
         except Exception:
             if lim["plan"] == "free":   # give the use back when the translator itself failed
                 row = TranslateUse.query.filter_by(day=_wib_today(), key=key).first()
@@ -2786,7 +3885,7 @@ def api_translate():
             raise
         if lim["plan"] == "pro": _tr_bump(key)
         return jsonify({"success": True, "config": cfg, "report": rep, "data": _data, "lines": len(cfg.split("\n")), "limits": _tr_limits(key, email),
-                        "source": source, "target": "h3c_comware"})
+                        "source": source, "target": "mikrotik_routeros" if target == "mikrotik" else "h3c_comware"})
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "error": "Could not translate this config (" + type(e).__name__ + ")"}), 400

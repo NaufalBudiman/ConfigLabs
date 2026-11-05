@@ -91,6 +91,8 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--sans);font-si
 .vendor-pill{padding:10px 18px;border-radius:999px;border:1px solid var(--cl-line);background:var(--cl-glass);-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);box-shadow:inset 0 1px 0 var(--cl-rim),0 4px 18px rgba(0,0,0,.12);font-size:13px;display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);color:var(--text-dim);transition:all .2s var(--ease);cursor:pointer;font-weight:500}
 .vendor-pill:not(.disabled):hover{border-color:var(--cl-line-2);color:var(--text);transform:translateY(-1px)}
 .vendor-pill.active{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--cl-glass));box-shadow:inset 0 1px 0 var(--cl-rim),0 4px 16px color-mix(in srgb,var(--accent) 20%,transparent)}
+.vendor-pill[data-vendor="mikrotik"].active{border-color:#67e8f9;color:#67e8f9;background:color-mix(in srgb,#67e8f9 14%,var(--cl-glass))}
+[data-theme="light"] .vendor-pill[data-vendor="mikrotik"].active{border-color:#0e7490;color:#0e7490}
 .vendor-pill[data-vendor="ruijie"].active{border-color:var(--accent-ruijie);color:var(--accent-ruijie);background:color-mix(in srgb,var(--accent-ruijie) 14%,var(--cl-glass))}
 .vendor-pill[data-vendor="cisco"].active{border-color:var(--accent-cisco);color:var(--accent-cisco);background:color-mix(in srgb,var(--accent-cisco) 14%,var(--cl-glass))}
 .vendor-pill.disabled{opacity:.45;cursor:not-allowed}
@@ -143,11 +145,13 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--sans);font-si
 .panel-title .vendor-label{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:99px;background:var(--accent);color:var(--bg);font-weight:700;letter-spacing:.5px}
 .panel-title .vendor-label.cisco{background:var(--accent-cisco)}
 .panel-title .vendor-label.ruijie{background:var(--accent-ruijie)}
+.panel-title .vendor-label.mikrotik{background:#67e8f9}
 /* Ruijie-only controls */
 .rj-only,.rj-l2-only,.rj-rt-only{display:none}
 body.is-ruijie .rj-only{display:block}
 body.rj-l2 .rj-l2-only{display:block}
 body.rj-router .rj-rt-only{display:block}
+body.is-mt .not-mt{display:none}
 body.rj-router .i-l2opts{display:none}
 body.rj-router .mode-seg button[data-m="access"],body.rj-router .mode-seg button[data-m="trunk"],body.rj-router .mode-seg button[data-m="hybrid"]{display:none}
 .rj-sub{font-family:var(--mono);font-size:11px;color:var(--text-muted);margin:12px 0 6px;letter-spacing:.5px;text-transform:uppercase}
@@ -355,7 +359,7 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
 
   <!-- HERO -->
   <section class="hero">
-    <div class="hero-tag"><span class="live"></span> Config Builder · H3C + Cisco + Ruijie</div>
+    <div class="hero-tag"><span class="live"></span> Config Builder · H3C + Cisco + Ruijie + MikroTik</div>
     <h1>Network configuration,<br><span class="serif">without the pain.</span></h1>
     <p>Pick a vendor, fill in the form, get a clean config. H3C to NX-OS, VLAN to OSPF. Fewer typos, less guesswork.</p>
     <div class="vendor-pills" id="vendor-pills"></div>
@@ -417,7 +421,7 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
           </div>
           <div class="field"><label>Login Banner</label><input id="sys-banner" placeholder="Authorized users only"></div>
           <div class="rj-only">
-            <div class="rj-sub">Ruijie management</div>
+            <div class="rj-sub">Management</div>
             <div class="field-row">
               <div class="field"><label>Admin user</label><input id="sys-user" placeholder="admin" autocomplete="off"></div>
               <div class="field"><label>Admin password</label><input id="sys-pass" placeholder="use a strong one" autocomplete="off"></div>
@@ -482,7 +486,7 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
 
         <!-- ==================== ACL ==================== -->
         <div class="tab-panel" id="pane-acl">
-          <div class="info-banner rj-only"><span class="icon">🛡️</span><span>Ruijie: ACL 1-99 / 1300-1999 = standard (source only), 100-199 / 2000-2699 = extended. Apply them with the "ACL in/out" fields on a VLAN-int or interface.</span></div>
+          <div class="info-banner rj-only"><span class="icon">🛡️</span><span id="acl-banner-txt">Ruijie: ACL 1-99 / 1300-1999 = standard (source only), 100-199 / 2000-2699 = extended. Apply them with the "ACL in/out" fields on a VLAN-int or interface.</span></div>
           <div class="repeater" id="rep-acls"></div>
           <button class="btn-add" onclick="addAcl()">＋ Add ACL</button>
         </div>
@@ -493,7 +497,7 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
           <div class="info-banner"><span class="icon">🌐</span><span>Source NAT (PAT) for internet access. Set the <strong style="color:var(--text)">outside interface</strong> and the inside networks; mark the LAN interfaces as <em>NAT inside</em> on the Interfaces tab.</span></div>
           <div class="field-row">
             <div class="field"><label>Outside interface <span class="hint">WAN</span></label><input id="nat-out" placeholder="GigabitEthernet 0/0"></div>
-            <div class="field"><label>NAT ACL number <span class="hint">1-99</span></label><input id="nat-acl" placeholder="10"></div>
+            <div class="field not-mt"><label>NAT ACL number <span class="hint">1-99</span></label><input id="nat-acl" placeholder="10"></div>
           </div>
           <label style="margin-top:8px">Inside networks <span class="hint">allowed to be translated</span></label>
           <div class="repeater" id="rep-nat-nets"></div>
@@ -730,8 +734,8 @@ async function loadVendors() {
 
 function renderVendorPills() {
   const c = document.getElementById('vendor-pills');
-  const ORDER = ['h3c','cisco','ruijie','huawei','juniper','arista','mikrotik'];
-  const EMOJIS = {h3c:'🟢',cisco:'🔵',ruijie:'🟣',huawei:'🟡',juniper:'🟠',arista:'🔴',mikrotik:'⚪'};
+  const ORDER = ['h3c','cisco','ruijie','mikrotik','huawei','juniper','arista'];
+  const EMOJIS = {h3c:'🟢',cisco:'🔵',ruijie:'🟣',huawei:'🟡',juniper:'🟠',arista:'🔴',mikrotik:'🩵'};
   c.innerHTML = ORDER.map(k => {
     const v = state.vendors[k]; if (!v) return '';
     const live = v.status === 'available';
@@ -771,13 +775,17 @@ function updateVendorLabel() {
   const os = v.os_list.find(o => o.id === state.os);
   const lbl = document.getElementById('active-vendor-label');
   lbl.textContent = `${v.name} · ${os ? os.name : ''}`.toUpperCase();
-  lbl.className = 'vendor-label' + (state.vendor === 'cisco' ? ' cisco' : state.vendor === 'ruijie' ? ' ruijie' : '');
+  lbl.className = 'vendor-label' + (state.vendor === 'cisco' ? ' cisco' : state.vendor === 'ruijie' ? ' ruijie' : state.vendor === 'mikrotik' ? ' mikrotik' : '');
 }
 
-const isRj = () => state.vendor === 'ruijie';
+// Ruijie and MikroTik share the extended form (management user, SNMP, VRRP, ACL in/out, LAG, routed ports, NAT)
+const isRj = () => state.vendor === 'ruijie' || state.vendor === 'mikrotik';
+const isMt = () => state.vendor === 'mikrotik';
+const isRtr = () => state.os === 'rgos_router' || state.os === 'routeros_router';
 function updateRuijieUI() {
-  const rj = isRj(), rt = rj && state.os === 'rgos_router', wl = rj && state.os === 'rgos_wlan';
+  const rj = isRj(), rt = rj && isRtr(), wl = rj && state.os === 'rgos_wlan';
   document.body.classList.toggle('is-ruijie', rj);
+  document.body.classList.toggle('is-mt', isMt());
   document.body.classList.toggle('rj-router', rt);
   document.body.classList.toggle('rj-l2', rj && !rt);
   const show = (id, on) => { const t = document.getElementById(id); if (!t) return; t.style.display = on ? '' : 'none'; if (!on && t.classList.contains('active')) document.querySelector('.tab[data-tab="system"]').click(); };
@@ -788,7 +796,10 @@ function updateHints() {
   document.getElementById('hint-hostname').textContent = state.vendor === 'h3c' ? 'sysname' : 'hostname';
   const extra = document.getElementById('svi-hint-extra');
   if (state.vendor === 'h3c') extra.textContent = 'H3C: link pool via "Apply Pool".';
+  else if (isMt()) extra.textContent = 'MikroTik: VLAN-interfaces sit on the bridge; VRRP and ACL in/out become /interface vrrp and firewall rules.';
   else if (isRj()) extra.textContent = 'Ruijie: gateway redundancy with VRRP; ACLs apply with ACL in/out.';
+  const ab = document.getElementById('acl-banner-txt');
+  if (ab) ab.textContent = isMt() ? 'MikroTik: there are no standalone ACLs. Rules become /ip firewall filter rules (chain=forward) on the interface where you set ACL in/out, ending with a drop like an ACL\'s implicit deny.' : 'Ruijie: ACL 1-99 / 1300-1999 = standard (source only), 100-199 / 2000-2699 = extended. Apply them with the "ACL in/out" fields on a VLAN-int or interface.';
   else if (state.os === 'nxos') extra.textContent = 'NX-OS: use prefix notation (10.0.0.1/24) for IPs.';
   else extra.textContent = 'Cisco: use "ip helper-address" for DHCP relay.';
 }
@@ -850,7 +861,7 @@ function addSvi(data = {}) {
   </div>
   <div class="field s-server-wrap" style="display:${mode==='server'?'block':'none'}"><label>Apply Pool</label><select class="s-pool" data-sel="${escA(data.dhcp_apply_pool||'')}"><option value="">— select pool —</option></select></div>
   <div class="field s-relay-wrap"  style="display:${mode==='relay' ?'block':'none'}"><label>Relay IP</label><input class="s-relay" value="${escA(data.dhcp_relay||'')}" placeholder="10.10.100.10"></div>
-  <div class="rj-only"><div class="rj-sub">Ruijie · VRRP + ACL</div>${rjVrrpHtml(data,'s')}${rjAclHtml(data,'s')}</div>
+  <div class="rj-only"><div class="rj-sub">VRRP + ACL</div>${rjVrrpHtml(data,'s')}${rjAclHtml(data,'s')}</div>
   <label class="check" style="margin-top:8px"><input type="checkbox" class="s-shut" ${data.shutdown?'checked':''}> Shutdown</label>`;
   const el = makeItem('VLAN-interface', html);
   document.getElementById('rep-svis').appendChild(el);
@@ -883,8 +894,8 @@ function refreshSviDropdowns() {
 }
 
 function addIntf(data = {}) {
-  const mode = data.mode || (isRj() && state.os === 'rgos_router' ? 'routed' : 'access');
-  const ifEx = isRj() ? 'GigabitEthernet 0/1' : state.vendor==='cisco' && state.os==='nxos' ? 'Ethernet1/1' : state.vendor==='cisco' ? 'GigabitEthernet0/1' : 'GigabitEthernet1/0/1';
+  const mode = data.mode || (isRj() && isRtr() ? 'routed' : 'access');
+  const ifEx = isMt() ? 'ether1' : isRj() ? 'GigabitEthernet 0/1' : state.vendor==='cisco' && state.os==='nxos' ? 'Ethernet1/1' : state.vendor==='cisco' ? 'GigabitEthernet0/1' : 'GigabitEthernet1/0/1';
   const html = `<div class="field-row">
     <div class="field"><label>Interface</label><input class="i-name" value="${escA(data.interface||'')}" placeholder="${ifEx}"></div>
     <div class="field"><label>Description</label><input class="i-desc" value="${escA(data.description||'')}" placeholder="Uplink"></div>
@@ -910,8 +921,8 @@ function addIntf(data = {}) {
     <div class="field-row"><div class="field"><label>Dot1Q VLAN <span class="hint">sub-interface only</span></label><input class="i-dot1q" value="${escA(data.dot1q||'')}" placeholder="10"></div><div class="field"><label>DHCP relay</label><input class="i-relay" value="${escA(data.dhcp_relay||'')}" placeholder="10.10.20.10"></div></div>
     ${rjVrrpHtml(data,'i')}
   </div>
-  <div class="rj-only"><div class="rj-sub">Ruijie · LAG + ACL</div>
-    <div class="rj-l2-only" style="margin-bottom:8px"><div class="field-row"><div class="field"><label>Port-group (LAG) <span class="hint">AggregatePort id</span></label><input class="i-lag" value="${escA(data.lag||'')}" placeholder="1"></div><div class="field"><label>LAG mode</label><select class="i-lag-mode"><option value="static">static</option><option value="active" ${data.lag_mode==='active'?'selected':''}>LACP active</option><option value="passive" ${data.lag_mode==='passive'?'selected':''}>LACP passive</option></select></div></div></div>
+  <div class="rj-only"><div class="rj-sub">LAG + ACL</div>
+    <div class="rj-l2-only" style="margin-bottom:8px"><div class="field-row"><div class="field"><label>Port-group (LAG) <span class="hint">AggregatePort / bond id</span></label><input class="i-lag" value="${escA(data.lag||'')}" placeholder="1"></div><div class="field"><label>LAG mode</label><select class="i-lag-mode"><option value="static">static</option><option value="active" ${data.lag_mode==='active'?'selected':''}>LACP active</option><option value="passive" ${data.lag_mode==='passive'?'selected':''}>LACP passive</option></select></div></div></div>
     ${rjAclHtml(data,'i')}
   </div>
   <div class="i-l2opts" style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap">
@@ -1237,7 +1248,7 @@ function collectData() {
       })).filter(r => r.source)
     })).filter(a => a.acl_number),
     pbr: (state.vendor === 'h3c' && state.os === 'comware') ? collectPbr() : undefined,
-    nat: (isRj() && state.os === 'rgos_router') ? {
+    nat: (isRj() && isRtr()) ? {
       acl_number: val('nat-acl'), outside: val('nat-out'),
       networks: [...document.querySelectorAll('#rep-nat-nets .repeater-item')].map(el => ({ network: el.querySelector('.n-net').value.trim(), cidr: el.querySelector('.n-cidr').value.trim() })).filter(n => n.network)
     } : undefined,
@@ -1359,10 +1370,10 @@ function lint() {
       if (nm && !it.querySelector('.w-vlan').value.trim()) W('wlan', it.querySelector('.w-vlan'), `SSID ${nm} has no VLAN mapping`);
     });
     if (state.os === 'rgos_wlan' && document.querySelectorAll('#rep-ssids .repeater-item').length && !document.getElementById('wl-acip').value.trim()) W('wlan', document.getElementById('wl-acip'), 'No AC IP: the "ac-controller" block will be skipped');
-    if (state.os === 'rgos_router') {
+    if (isRtr()) {
       const o = document.getElementById('nat-out'), has = document.querySelectorAll('#rep-nat-nets .repeater-item').length;
       if (has && !o.value.trim()) E('nat', o, 'NAT needs an outside interface');
-      const na = parseInt(document.getElementById('nat-acl').value, 10); if (na && !(na >= 1 && na <= 99)) E('nat', document.getElementById('nat-acl'), 'NAT ACL must be a standard ACL (1-99)');
+      const na = parseInt(document.getElementById('nat-acl').value, 10); if (!isMt() && na && !(na >= 1 && na <= 99)) E('nat', document.getElementById('nat-acl'), 'NAT ACL must be a standard ACL (1-99)');
     }
     q(document, '#rep-intfs .repeater-item').forEach(it => {
       if (it.querySelector('.i-mode').value !== 'routed') return;
