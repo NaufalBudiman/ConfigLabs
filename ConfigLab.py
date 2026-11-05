@@ -325,6 +325,29 @@ def _h3c_vl(v):
     t = " ".join(str(v).replace(",", " ").split())
     return _re.sub(r"(\d+)\s*-\s*(\d+)", r"\1 to \2", t)
 
+def _h3c_vl_lines(v, per_line=10):
+    """VLAN list -> Comware chunks of at most 10 items (a VLAN or an 'a to b' range) per command.
+    Accepts '2 8 25 to 26', '2,8,25-26' ...; sorts, dedupes and merges consecutive VLANs.
+    Anything that is not a valid VLAN list is passed through unchanged as a single chunk."""
+    import re as _re
+    t = _re.sub(r"\s*(?:-|\bto\b)\s*", "-", str(v).replace(",", " "), flags=_re.I).split()
+    ids = set()
+    for tok in t:
+        m = _re.fullmatch(r"(\d+)(?:-(\d+))?", tok)
+        if not m: return [_h3c_vl(v)] if str(v).strip() else []
+        a = int(m.group(1)); b = int(m.group(2) or a)
+        if a > b: a, b = b, a
+        if a < 1 or b > 4094: return [_h3c_vl(v)]
+        ids.update(range(a, b + 1))
+    items, s = [], sorted(ids)
+    i = 0
+    while i < len(s):
+        j = i
+        while j + 1 < len(s) and s[j + 1] == s[j] + 1: j += 1
+        items.append(str(s[i]) if i == j else f"{s[i]} to {s[j]}")
+        i = j + 1
+    return [" ".join(items[k:k + per_line]) for k in range(0, len(items), per_line)]
+
 def _h3c_pf(o):
     r = []
     for key, d in (("acl_in", "inbound"), ("acl_out", "outbound")):
@@ -521,13 +544,13 @@ def gen_h3c_comware(data):
         elif mode == "trunk":
             config.append(" port link-type trunk")
             config.append(" undo port trunk permit vlan 1")
-            if i.get("allowed"): config.append(f" port trunk permit vlan {_h3c_vl(i['allowed'])}")
+            for _c in _h3c_vl_lines(i.get("allowed") or ""): config.append(f" port trunk permit vlan {_c}")
             if i.get("pvid"): config.append(f" port trunk pvid vlan {i['pvid']}")
         elif mode == "hybrid":
             config.append(" port link-type hybrid")
             config.append(" undo port hybrid vlan 1")
-            if i.get("untagged"): config.append(f" port hybrid vlan {_h3c_vl(i['untagged'])} untagged")
-            if i.get("tagged"): config.append(f" port hybrid vlan {_h3c_vl(i['tagged'])} tagged")
+            for _c in _h3c_vl_lines(i.get("untagged") or ""): config.append(f" port hybrid vlan {_c} untagged")
+            for _c in _h3c_vl_lines(i.get("tagged") or ""): config.append(f" port hybrid vlan {_c} tagged")
             if i.get("pvid"): config.append(f" port hybrid pvid vlan {i['pvid']}")
         elif mode == "routed":
             _loop = _low.startswith("loopback")
