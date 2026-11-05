@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>ConfigLabs — Network Config Generator &amp; WiFi Planner</title>
-<meta name="description" content="Free network config generator for H3C Comware, Cisco IOS, IOS-XE, NX-OS and Ruijie RGOS, plus a WiFi heatmap planner with Word reports. No login needed."/>
-<meta name="keywords" content="H3C config generator, Cisco IOS config, NX-OS config, Comware CLI, VLAN generator, OSPF config, WiFi heatmap planner, WiFi site survey, H3C access point"/>
+<title>ConfigLabs — Network Config Generator, Cisco to H3C Translator &amp; WiFi Planner</title>
+<meta name="description" content="Free network config generator for H3C Comware, Cisco and Ruijie, a Cisco and Ruijie to H3C config translator, a WiFi heatmap planner, topology and rack tools. No login needed."/>
+<meta name="keywords" content="H3C config generator, Cisco to H3C config converter, Cisco to H3C command translation, Ruijie to H3C, migrate Cisco to H3C Comware, Cisco IOS config, NX-OS config, Comware CLI, VLAN generator, OSPF config, WiFi heatmap planner, WiFi site survey, H3C access point"/>
 <meta name="author" content="ConfigLabs"/>
-<meta property="og:title" content="ConfigLabs — Network Config Generator &amp; WiFi Planner"/>
-<meta property="og:description" content="Generate H3C and Cisco configs in seconds, and plan WiFi coverage with heatmaps and ready-to-send reports. Free."/>
+<meta property="og:title" content="ConfigLabs — Network Config Generator, Cisco to H3C Translator &amp; WiFi Planner"/>
+<meta property="og:description" content="Generate H3C, Cisco and Ruijie configs in seconds, translate Cisco and Ruijie configs to H3C Comware, and plan WiFi coverage with heatmaps and reports. Free to start."/>
 <meta property="og:type" content="website"/>
 <link rel="canonical" href="https://configlabs.online/"/>
 <meta property="og:url" content="https://configlabs.online/"/>
@@ -30,7 +30,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{
+:root{--tr:#67e8f9;
   --bg:#0b0d10;--bg-2:#111418;--surface:#15191f;--surface-2:#1b2027;
   --surface-hover:#222831;--border:#232a34;--border-strong:#2e3744;
   --text:#e6e9ee;--text-dim:#9aa3af;--text-muted:#5b6472;
@@ -44,7 +44,7 @@
   --radius:12px;--radius-lg:20px;
   --ease:cubic-bezier(.22,1,.36,1)
 }
-[data-theme="light"]{
+[data-theme="light"]{--tr:#0e7490;
   --bg:#f8f6f1;--bg-2:#fff;--surface:#fff;--surface-2:#f1ede3;
   --surface-hover:#ebe6d8;--border:#e4dfd0;--border-strong:#d0c9b5;
   --text:#1a1a1a;--text-dim:#5a5a5a;--text-muted:#8a8a8a;
@@ -80,12 +80,39 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 
 /* STATS */
-.stats-bar{max-width:1100px;width:calc(100% - 32px);margin:0 auto 80px;padding:24px 32px;border-radius:22px;display:grid;grid-template-columns:repeat(3,1fr);gap:0;position:relative;z-index:1;animation:fadeUp .7s var(--ease) .4s both}
+.stats-bar{max-width:1100px;width:calc(100% - 32px);margin:0 auto 80px;padding:24px 32px;border-radius:22px;display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative;z-index:1;animation:fadeUp .7s var(--ease) .4s both}
 .stat-item{text-align:center;padding:8px 16px;border-right:1px solid var(--cl-line-2)}
 .stat-item:last-child{border-right:none}
 .stat-num{font-size:32px;font-weight:600;letter-spacing:-1px;background:linear-gradient(135deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
 .stat-label{font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px;margin-top:8px}
 @media(max-width:768px){.stats-bar{grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:56px;padding:20px}.stat-item{border-right:none;border-bottom:1px solid var(--cl-line-2);padding-bottom:16px}.stat-item:nth-child(3),.stat-item:nth-child(4){border-bottom:none}}
+
+/* TRANSLATOR SPOTLIGHT */
+.tr-spot{display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,1.45fr);gap:36px;align-items:center;padding:40px;border-radius:24px;margin-bottom:80px;position:relative;z-index:1;
+  background:var(--cl-glass);border:1px solid var(--cl-line);-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);box-shadow:inset 0 1px 0 var(--cl-rim),var(--cl-shadow)}
+.tr-spot .eyebrow{font-family:var(--mono);font-size:11px;color:var(--tr);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;font-weight:500}
+.tr-spot h2{font-size:34px;font-weight:600;letter-spacing:-1px;line-height:1.15;margin-bottom:14px}
+.tr-spot h2 em{font-family:var(--serif);font-style:italic;color:var(--accent);font-weight:400}
+.tr-spot p{color:var(--text-dim);font-size:15px;line-height:1.65;margin-bottom:18px}
+.tr-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:24px}
+.tr-free{font:12px var(--mono);color:var(--text-muted);align-self:center}
+.tr-tags span{font:500 11.5px var(--mono);padding:5px 10px;border-radius:999px;background:var(--cl-item);border:1px solid var(--cl-item-line);color:var(--text-dim)}
+.tr-spot .hero-cta-row{justify-content:flex-start;margin:0}
+.tr-demo{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:10px;align-items:center}
+.tr-code{border-radius:16px;background:var(--cl-solid);border:1px solid var(--cl-solid-line);overflow:hidden;min-width:0;align-self:stretch}
+.tr-code .hd{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--cl-solid-line);font:600 10.5px var(--mono);letter-spacing:1px;text-transform:uppercase;color:var(--text-muted)}
+.tr-code .hd i{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.tr-code pre{margin:0;padding:12px 12px;font:11px/1.7 var(--mono);color:var(--text-dim);overflow-x:auto;white-space:pre}
+.tr-code pre b{color:var(--tr);font-weight:500}
+.tr-arrow{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--tr);color:#06130e;box-shadow:0 6px 22px color-mix(in srgb,var(--tr) 35%,transparent)}
+[data-theme="light"] .tr-arrow{color:#fff}
+@media(max-width:1000px){.tr-spot{grid-template-columns:1fr;padding:28px;gap:28px}}
+@media(max-width:700px){.tr-demo{grid-template-columns:1fr}.tr-arrow{transform:rotate(90deg);justify-self:center}.tr-spot h2{font-size:28px}.tr-spot{padding:22px}}
+.feature-card.translator:hover{border-color:var(--tr)}
+.feature-card.translator .feature-icon{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tr) 30%,transparent)}
+.feature-card.translator .feature-cta{color:var(--tr)}
+.feature-card.translator .feature-benefits li::before{background:color-mix(in srgb,var(--tr) 15%,transparent);border-color:var(--tr)}
+.feature-card.translator .feature-benefits li::after{border-color:var(--tr)}
 
 /* FEATURES */
 .container{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:0 32px}
@@ -336,14 +363,18 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--cl-line-2);position:rel
 <section class="hero">
   <div class="hero-tag">
     <span class="live"></span>
-    <span><b data-cl-version>v6.0.0</b> · Config Builder + WiFi Planner · H3C + Cisco + Ruijie</span>
+    <span><b data-cl-version>v6.0.0</b> · Builder · Translator · WiFi Planner · H3C + Cisco + Ruijie</span>
   </div>
   <h1>Network configuration,<br><span class="serif">without the pain.</span></h1>
-  <p>A multi-vendor config generator and a WiFi heatmap planner in one place. H3C to NX-OS, VLAN to OSPF, floor plan to report. Fewer typos, less guesswork.</p>
+  <p>Generate configs for H3C, Cisco and Ruijie, translate Cisco and Ruijie configs to H3C, and plan the WiFi that connects to them. VLAN to OSPF, floor plan to report. Fewer typos, less guesswork.</p>
   <div class="hero-cta-row">
     <a href="/builder.html" class="btn-primary">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
       Start Building
+    </a>
+    <a href="/translate.html" class="btn-secondary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13l-3-3M20 17H7l3 3"/></svg>
+      Translate a config
     </a>
     <a href="/wifi.html" class="btn-secondary">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>
@@ -354,17 +385,53 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--cl-line-2);position:rel
 
 <!-- STATS -->
 <div class="stats-bar">
+  <div class="stat-item"><div class="stat-num">5</div><div class="stat-label">Tools</div></div>
+  <div class="stat-item"><div class="stat-num">3</div><div class="stat-label">Vendors</div></div>
   <div class="stat-item"><div class="stat-num">18</div><div class="stat-label">Templates</div></div>
-  <div class="stat-item"><div class="stat-num">4</div><div class="stat-label">Platforms</div></div>
-  <div class="stat-item"><div class="stat-num">100%</div><div class="stat-label">Free Forever</div></div>
+  <div class="stat-item"><div class="stat-num">Free</div><div class="stat-label">To start</div></div>
 </div>
 
 <div class="container">
 
+  <!-- TRANSLATOR SPOTLIGHT -->
+  <section class="tr-spot" aria-labelledby="tr-spot-h">
+    <div>
+      <div class="eyebrow">Migrating to H3C?</div>
+      <h2 id="tr-spot-h">Paste Cisco or Ruijie,<br>get <em>H3C Comware</em> back.</h2>
+      <p>The Config Translator turns a running-config into an H3C Comware config in seconds, renames interfaces and ACLs for you, and lists every line that needs a second look, so nothing is lost on the way.</p>
+      <div class="tr-tags"><span>VLANs &amp; trunks</span><span>LAG</span><span>SVIs &amp; DHCP</span><span>OSPF</span><span>ACLs</span><span>VRRP / HSRP</span><span>NAT</span><span>SNMP &amp; SSH</span></div>
+      <div class="hero-cta-row">
+        <a href="/translate.html" class="btn-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13l-3-3M20 17H7l3 3"/></svg>Try the Translator</a>
+        <span class="tr-free">3 free translations a day</span>
+      </div>
+    </div>
+    <div class="tr-demo" aria-label="Example: a Cisco config and its H3C translation">
+      <div class="tr-code" style="--c:#a8b5ff"><div class="hd"><i></i>Cisco IOS</div><pre>interface Vlan10
+ ip address 10.10.10.1 255.255.255.0
+ ip helper-address 10.0.0.5
+!
+interface GigabitEthernet1/0/24
+ description Uplink-Core
+ switchport mode trunk
+ switchport trunk allowed vlan 10,20,30-40</pre></div>
+      <span class="tr-arrow" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="tr-code" style="--c:var(--tr)"><div class="hd"><i></i>H3C Comware</div><pre><b>interface Vlan-interface10</b>
+ ip address 10.10.10.1 255.255.255.0
+<b> dhcp select relay
+ dhcp relay server-address 10.0.0.5</b>
+#
+interface GigabitEthernet1/0/24
+ description Uplink-Core
+<b> port link-type trunk
+ undo port trunk permit vlan 1
+ port trunk permit vlan 10 20 30 to 40</b></pre></div>
+    </div>
+  </section>
+
   <div class="section-head-center">
-    <div class="eyebrow">Two tools, one workflow</div>
+    <div class="eyebrow">Five tools, one workflow</div>
     <h2>Everything you need to <em>ship faster</em></h2>
-    <p>Generate the switch and router configs, then plan the WiFi that connects to them.</p>
+    <p>Generate configs, migrate Cisco and Ruijie to H3C, plan the WiFi, draw the topology and lay out the racks.</p>
   </div>
 
   <div class="features-grid">
@@ -389,6 +456,29 @@ footer{padding:48px 32px 30px;border-top:1px solid var(--cl-line-2);position:rel
       </ul>
       <span class="feature-cta">Start Building</span>
     </a>
+
+    <!-- TRANSLATOR -->
+    <a href="/translate.html" class="feature-card translator">
+      <div class="feature-icon">
+        <svg viewBox="0 0 64 64" fill="none">
+          <path d="M10 20h36l-8-8" stroke="#67e8f9" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M54 44H18l8 8" stroke="#67e8f9" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="22" y="27" width="20" height="10" rx="3" fill="#67e8f9" opacity="0.15" stroke="#67e8f9" stroke-width="2"/>
+        </svg>
+      </div>
+      <div class="feature-status live"><span class="dot"></span>New · Live</div>
+      <h2>Config Translator</h2>
+      <div class="subtitle">Migrate to H3C</div>
+      <p>Paste a Cisco IOS / IOS-XE or Ruijie RGOS config and get H3C Comware back, with a report of every line that was renamed, needs a check or could not be translated.</p>
+      <ul class="feature-benefits">
+        <li>Cisco IOS / IOS-XE and Ruijie RGOS to H3C</li>
+        <li>VLANs, LAG, SVIs, OSPF, ACLs, VRRP, NAT</li>
+        <li>Line-by-line report of what to check</li>
+        <li>Save to My Files and keep editing in the Builder</li>
+      </ul>
+      <span class="feature-cta">Translate a config</span>
+    </a>
+
 
     <!-- WIFI -->
     <a href="/wifi.html" class="feature-card wifi">
