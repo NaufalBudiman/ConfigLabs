@@ -1712,7 +1712,7 @@ function saveConfigFile() {
     alert('Generate a config first before saving!'); return;
   }
   _pendingSaveType = 'config';
-  const h = document.getElementById('hostname')?.value || 'My Config';
+  const h = document.getElementById('sys-hostname')?.value.trim() || 'My Config';
   document.getElementById('savename-input').value = h + ' Config';
   document.getElementById('savename-modal').classList.add('open');
   setTimeout(() => document.getElementById('savename-input').select(), 100);
@@ -1727,14 +1727,9 @@ async function confirmSave() {
   if (!name) return;
   closeSaveName();
 
-  // Collect current form state
-  const formData = {};
-  document.querySelectorAll('input, select, textarea').forEach(el => {
-    if (el.id) formData[el.id] = el.value;
-  });
-  // Also save the generated config text
-  const out = document.getElementById('output');
-  formData['__generated__'] = out ? out.innerText : '';
+  // Save the whole builder state (every VLAN / SVI / interface / pool row), not just the id'd fields,
+  // so loadFile can rebuild the form; the generated text is kept too
+  const formData = { __v: 2, vendor: state.vendor, os: state.os, form: collectData(), __generated__: lastConfig || '' };
 
   try {
     const res = await fetch('/api/files', {
@@ -1744,8 +1739,8 @@ async function confirmSave() {
         name:      name,
         file_type: 'config',
         data:      formData,
-        vendor:    document.getElementById('vendor')?.value || '',
-        hostname:  document.getElementById('hostname')?.value || '',
+        vendor:    state.vendor,
+        hostname:  document.getElementById('sys-hostname')?.value.trim() || '',
       })
     });
     if (res.ok) {
@@ -1816,19 +1811,39 @@ async function loadFile(id) {
     const res = await fetch('/api/files/' + id, { headers: { 'Authorization': 'Bearer ' + getToken() } });
     if (!res.ok) { alert('Could not load file'); return; }
     const file = await res.json();
-    const data = file.data;
+    const data = file.data || {};
+    closeMyFiles();
 
-    // Restore form fields
+    if (data.form) {
+      const vd = state.vendors[data.vendor];
+      if (vd && state.vendor !== data.vendor) selectVendor(data.vendor);
+      if (vd && state.os !== data.os && vd.os_list.some(o => o.id === data.os && o.status === 'available')) selectOS(data.os);
+      applyTemplate(data.form);
+      generate();
+      toast('✅ Loaded: ' + file.name);
+      return;
+    }
+
+    // Older saves only kept the id'd fields and the generated text, so show that text
+    // instead of regenerating from a form that has none of the saved rows
     Object.keys(data).forEach(key => {
       if (key === '__generated__') return;
       const el = document.getElementById(key);
       if (el) el.value = data[key];
     });
-
-    closeMyFiles();
-    // Re-generate with loaded data
-    if (typeof generate === 'function') generate();
-    if (typeof toast === 'function') toast('✅ Loaded: ' + file.name);
+    // that text was the output pane's innerText, so with line numbers on it alternates "1", line, "2", line ...
+    let L = String(data.__generated__ || '').replace(/\n+$/, '').split('\n');
+    if (L[0] === '1' && L[2] === '2') L = L.filter((_, i) => i % 2 === 1);
+    const txt = L.join('\n');
+    if (txt.trim()) {
+      lastConfig = txt;
+      renderOutput(lastConfig);
+      document.getElementById('line-info').textContent = `${lastConfig.split('\n').length} lines`;
+      setStatus('Loaded saved output · ' + file.name, 'ok');
+      toast('Loaded the saved output. This file was saved before form rows were stored; save it again after re-entering the form to keep the rows.', 'warn');
+    } else {
+      toast('This file was saved by an older version and has no config rows to restore', true);
+    }
   } catch(e) {
     alert('Load failed: ' + e.message);
   }
