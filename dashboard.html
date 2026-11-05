@@ -24,7 +24,7 @@
   --ease:cubic-bezier(.22,1,.36,1);color-scheme:dark;
   /* site tokens; the two text greys are a step lighter so they keep 4.5:1 on glass over the orbs */
   --bg:#0b0d10;--text:#e6e9ee;--text-dim:#b3bcc8;--text-muted:#9ca5b3;
-  --accent:#7cf4c7;--accent-2:#a8b5ff;--accent-3:#ffb86b;--accent-4:#f9a8d4;--danger:#ff8a9a;--on-accent:#06130e;
+  --accent:#7cf4c7;--accent-2:#a8b5ff;--accent-3:#ffb86b;--accent-4:#f9a8d4;--accent-5:#67e8f9;--danger:#ff8a9a;--on-accent:#06130e;
   --glass:rgba(18,22,28,.66);--glass-strong:rgba(14,17,22,.78);--glass-solid:#13171d;
   --line:rgba(255,255,255,.10);--line-2:rgba(255,255,255,.15);--rim:rgba(255,255,255,.14);--sheen:rgba(255,255,255,.06);
   --shadow:0 10px 40px rgba(0,0,0,.35);
@@ -36,7 +36,7 @@
 [data-theme="light"]{
   color-scheme:light;
   --bg:#f8f6f1;--text:#1a1a1a;--text-dim:#4a4d53;--text-muted:#5a5e66;
-  --accent:#0f766e;--accent-2:#4f46e5;--accent-3:#ea580c;--accent-4:#be185d;--danger:#c81e3a;--on-accent:#fff;
+  --accent:#0f766e;--accent-2:#4f46e5;--accent-3:#ea580c;--accent-4:#be185d;--accent-5:#0e7490;--danger:#c81e3a;--on-accent:#fff;
   --glass:rgba(255,255,255,.62);--glass-strong:rgba(255,255,255,.8);--glass-solid:#fff;
   --line:rgba(255,255,255,.75);--line-2:rgba(26,26,26,.14);--rim:rgba(255,255,255,.95);--sheen:rgba(255,255,255,.4);
   --shadow:0 10px 36px rgba(60,50,20,.12),0 1px 0 rgba(0,0,0,.04);
@@ -121,11 +121,11 @@ h1{font-size:clamp(30px,4.6vw,46px);font-weight:600;letter-spacing:-1.2px;line-h
 
 /* grid */
 .grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
-.c-resume{grid-column:span 7}.c-usage{grid-column:span 5}.c-stat{grid-column:span 3}
+.c-resume{grid-column:span 7}.c-usage{grid-column:span 5}.c-stats{grid-column:span 12;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px}
 .tool-ico{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;flex-shrink:0;color:#071014;background:linear-gradient(135deg,var(--c),color-mix(in srgb,var(--c) 55%,#fff))}
 .tool-ico.lg{width:52px;height:52px;border-radius:16px}
 [data-theme="light"] .tool-ico{color:var(--c);background:color-mix(in srgb,var(--c) 12%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 22%,transparent)}
-.t-config{--c:var(--accent)}.t-wifi{--c:var(--accent-2)}.t-topo{--c:var(--accent-3)}.t-rack{--c:var(--accent-4)}
+.t-config{--c:var(--accent)}.t-wifi{--c:var(--accent-2)}.t-topo{--c:var(--accent-3)}.t-rack{--c:var(--accent-4)}.t-tr{--c:var(--accent-5)}
 .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--c)}
 
 /* continue where you left off */
@@ -155,6 +155,10 @@ h1{font-size:clamp(30px,4.6vw,46px);font-weight:600;letter-spacing:-1.2px;line-h
 .u-txt h2{font-size:16px;font-weight:600;letter-spacing:-.1px}
 .u-txt p{font-size:13.5px;color:var(--text-dim);margin:4px 0 14px}
 .u-txt .wl{margin:0;color:var(--text)}
+.u-act{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.u-last{font-size:13px!important;margin:-6px 0 14px!important}
+.u-last a{color:var(--text);font-weight:600}
+.u-last a:hover{text-decoration:underline;text-underline-offset:2px}
 .u-txt .wl.err{color:var(--danger);margin-top:10px;font-size:13px}
 .nw{white-space:nowrap}
 
@@ -221,7 +225,7 @@ h1{font-size:clamp(30px,4.6vw,46px);font-weight:600;letter-spacing:-1.2px;line-h
 .sk-b2{width:118px;height:40px;border-radius:999px}
 
 /* responsive */
-@media (max-width:980px){.c-resume,.c-usage{grid-column:span 12}.c-stat{grid-column:span 6}.resume,.usage{min-height:0}}
+@media (max-width:980px){.c-resume,.c-usage{grid-column:span 12}.c-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.resume,.usage{min-height:0}}
 @media (max-width:640px){
   .wrap{padding:10px 14px 44px}
   .glass{-webkit-backdrop-filter:blur(12px) saturate(150%);backdrop-filter:blur(12px) saturate(150%);border-radius:18px}
@@ -234,6 +238,7 @@ h1{font-size:clamp(30px,4.6vw,46px);font-weight:600;letter-spacing:-1.2px;line-h
   .actions .btn{flex:1 1 auto}
   .usage{gap:16px}
   .ring{width:78px;height:78px}.ring span{width:60px;height:60px;font-size:16px}
+  .c-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
   .stat{padding:16px}
   .stat .n{font-size:28px;min-height:28px}
   .quick .q{flex-basis:140px;padding:11px 12px}
@@ -286,14 +291,16 @@ h1{font-size:clamp(30px,4.6vw,46px);font-weight:600;letter-spacing:-1.2px;line-h
     config: '<path d="M8 6l-6 6 6 6M16 6l6 6-6 6"/>',
     wifi: '<path d="M2 9a15 15 0 0 1 20 0M5 13a10 10 0 0 1 14 0M8.5 16.5a5 5 0 0 1 7 0"/><circle cx="12" cy="20" r="1"/>',
     topo: '<circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M11 7.3L6 16.7M13 7.3l5 9.4M7.5 19h9"/>',
-    rack: '<rect x="5" y="2" width="14" height="20" rx="1.5"/><path d="M5 7h14M5 12h14M5 17h14"/>'
+    rack: '<rect x="5" y="2" width="14" height="20" rx="1.5"/><path d="M5 7h14M5 12h14M5 17h14"/>',
+    tr: '<path d="M4 7h13l-3-3M20 17H7l3 3"/>'
   };
   const CLOUD = svg('<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>', 12);
   const TOOL = {
     config: { tag: 'Config', app: 'Builder', href: '/builder.html?file=', lib: '#recent', libText: 'All saved configs' },
     wifi: { tag: 'WiFi', app: 'WiFi Planner', href: '/wifi.html#p=', lib: '/wifi.html', libText: 'All WiFi projects' },
     topo: { tag: 'Diagram', app: 'Topology', href: '/topology-editor.html?d=', lib: '/topology.html', libText: 'All diagrams' },
-    rack: { tag: 'Rack', app: 'Rack Builder', href: '/rack-editor.html?p=', lib: '/rack.html', libText: 'All rack projects' }
+    rack: { tag: 'Rack', app: 'Rack Builder', href: '/rack-editor.html?p=', lib: '/rack.html', libText: 'All rack projects' },
+    tr: { tag: 'Translation', app: 'Translator', href: '/translate.html?t=', lib: '/translate.html', libText: 'Translate another' }
   };
   const WHERE = { synced: 'synced', local: 'this browser', cloud: 'in your account' };
   const VENDOR = { h3c: 'H3C', cisco: 'Cisco', ruijie: 'Ruijie' };
@@ -306,10 +313,10 @@ h1{font-size:clamp(30px,4.6vw,46px);font-weight:600;letter-spacing:-1.2px;line-h
   // auth: out | check | in | error (token kept, account not reachable). Source st: off | loading | ok | error
   const S = {
     auth: 'out', user: null, tok: '', epoch: 0, expired: false,
-    src: { files: { st: 'off', items: [] }, wcloud: { st: 'off', items: [] }, wlocal: { st: 'loading', items: [] }, topo: { st: 'loading', items: [] }, rack: { st: 'loading', items: [] }, lim: { st: 'loading', data: null } },
+    src: { files: { st: 'off', items: [] }, wcloud: { st: 'off', items: [] }, wlocal: { st: 'loading', items: [] }, topo: { st: 'loading', items: [] }, rack: { st: 'loading', items: [] }, tr: { st: 'loading', items: [] }, lim: { st: 'loading', data: null } },
     filter: 'all', q: '', all: false, wl: '', wlMsg: '', grace: false
   };
-  const KIND = { files: 'config', wcloud: 'wifi', wlocal: 'wifi', topo: 'topo', rack: 'rack' };
+  const KIND = { files: 'config', wcloud: 'wifi', wlocal: 'wifi', topo: 'topo', rack: 'rack', tr: 'tr' };
   const pending = () => Object.keys(KIND).filter(k => S.src[k].st === 'loading');
   const failedSources = () => ['files', 'wcloud', 'wlocal'].filter(k => S.src[k].st === 'error');
   let ready = false, queued = false, PILLS = '';
@@ -357,7 +364,7 @@ h1{font-size:clamp(30px,4.6vw,46px);font-weight:600;letter-spacing:-1.2px;line-h
     S.auth = on ? 'check' : 'out';
     S.src.files = { st: on ? 'loading' : 'off', items: [] }; S.src.wcloud = { st: on ? 'loading' : 'off', items: [] };
     if (on) { loadMe(); loadList('files'); loadList('wcloud'); }
-    loadLimits(); loadTopo(); loadRack(); loadWlocal();
+    loadLimits(); loadTopo(); loadRack(); loadTr(); loadWlocal();
   }
   function signOut(expired) {   // logged out here, or the server rejected the token
     if (token() === S.tok) ls.del('clab_token');   // keep a newer login made in another tab
@@ -437,6 +444,13 @@ h1{font-size:clamp(30px,4.6vw,46px);font-weight:600;letter-spacing:-1.2px;line-h
     paint();
   }
 
+  function loadTr() {   // translations saved by translate.html in this browser
+    const SRC = { cisco: 'Cisco', ruijie: 'Ruijie' };
+    S.src.tr = { st: 'ok', items: readIndex('cl_tr_idx').map(x => { const from = SRC[x.src] || 'Cisco', chk = num(x.rv) + num(x.sk);
+      return item('tr', String(x.id), str(x.name, 160) || from + ' config', '', [from + ' → H3C', pl(num(x.lines), 'line'), chk ? chk + ' to check' : 'all translated'], 'local', ts(x.updated) || ts(x.created)); }) };
+    paint();
+  }
+
   /* ---------- this browser: WiFi projects (IndexedDB 'configlabs-wifi', owned by wifi.html) ----------
      Read only. Opened without a version so this page can never create or upgrade the database:
      if onupgradeneeded fires the database did not exist, so the creation is aborted and the list is empty. */
@@ -492,7 +506,7 @@ h1{font-size:clamp(30px,4.6vw,46px);font-weight:600;letter-spacing:-1.2px;line-h
   }
   function allItems() {
     const ok = k => S.src[k].st === 'ok' ? S.src[k].items : [];
-    return ok('files').concat(wifiItems(), ok('topo'), ok('rack')).sort((a, b) => b.t - a.t);
+    return ok('files').concat(wifiItems(), ok('topo'), ok('rack'), ok('tr')).sort((a, b) => b.t - a.t);
   }
 
   /* ---------- render ---------- */
@@ -544,7 +558,7 @@ h1{font-size:clamp(30px,4.6vw,46px);font-weight:600;letter-spacing:-1.2px;line-h
   }
   function waitlistHTML() {
     const u = S.user || {};
-    if (S.auth !== 'in' || !str(u.email, 254)) return '<a class="btn ghost sm" href="/translate.html">Open the Translator</a>';
+    if (S.auth !== 'in' || !str(u.email, 254)) return '';
     if (S.wl === 'done') return '<p class="wl">' + esc(S.wlMsg) + '</p>';
     if (S.wl === 'no') return '<p class="wl err">' + esc(S.wlMsg) + '</p>';
     if (ls.get('cl_pro_wl') === String(u.id)) return '<p class="wl">You are on the Pro waitlist. We will email you when Pro opens.</p>';
@@ -561,9 +575,13 @@ h1{font-size:clamp(30px,4.6vw,46px);font-weight:600;letter-spacing:-1.2px;line-h
       $('ring-n').textContent = d.pro ? '∞' : d.used + '/' + d.daily;
     } else $('ring-n').textContent = '';
     setHTML($('u-txt'), st === 'loading' ? SK_USAGE
-      : st === 'error' ? '<h2>Translator usage</h2><p>Could not load today’s usage.</p><button class="btn ghost sm" type="button" data-retry="lim">Retry</button>'
-      : d.pro ? '<h2>Translator · Pro</h2><p>Pro plan · unlimited translations. Up to ' + d.lines.toLocaleString('en-US') + ' lines each.</p><a class="btn ghost sm" href="/translate.html">Open the Translator</a>'
-      : '<h2>Translator · free plan</h2><p><b>' + d.left + '</b> of ' + d.daily + ' translations left today. Up to ' + d.lines.toLocaleString('en-US') + ' lines each. Resets at <span class="nw">' + esc(d.resets) + '</span>.</p>' + waitlistHTML());
+      : st === 'error' ? '<h2>Config Translator</h2><p>Could not load today’s usage.</p><button class="btn ghost sm" type="button" data-retry="lim">Retry</button>'
+      : d.pro ? '<h2>Config Translator · Pro</h2><p>Cisco and Ruijie to H3C. Unlimited translations, up to ' + d.lines.toLocaleString('en-US') + ' lines each.</p>' + lastTrHTML() + '<div class="u-act"><a class="btn primary sm" href="/translate.html">Translate a config</a></div>'
+      : '<h2>Config Translator</h2><p>Cisco and Ruijie to H3C. <b>' + d.left + '</b> of ' + d.daily + ' free translations left today, up to ' + d.lines.toLocaleString('en-US') + ' lines each. Resets at <span class="nw">' + esc(d.resets) + '</span>.</p>' + lastTrHTML() + '<div class="u-act"><a class="btn primary sm" href="/translate.html">Translate a config</a>' + waitlistHTML() + '</div>');
+  }
+  function lastTrHTML() {
+    const t = S.src.tr.st === 'ok' ? S.src.tr.items[0] : null;
+    return t ? '<p class="u-last">Last: <a href="' + esc(t.href) + '">' + esc(t.name) + '</a> · ' + esc(t.meta[0]) + ' · <span data-ago="' + t.t + '">' + esc(ago(t.t)) + '</span></p>' : '';
   }
   const anim = new WeakMap();
   function countTo(el, to) {   // count-up, skipped when the user prefers reduced motion
@@ -593,6 +611,7 @@ h1{font-size:clamp(30px,4.6vw,46px);font-weight:600;letter-spacing:-1.2px;line-h
       wl.st === 'error' ? again('wlocal', 'Browser list not read') : wc.st === 'error' ? again('wcloud', 'Account list not loaded') : wc.st === 'off' ? 'this browser' : 'this browser + account');
     stat('topo', n('topo'), 'this browser');
     stat('rack', n('rack'), 'this browser');
+    stat('tr', n('tr'), 'this browser');
   }
   const ERR = { files: 'Could not load your saved configs.', wcloud: 'Could not load the WiFi projects in your account.', wlocal: 'Could not read the WiFi projects saved in this browser.' };
   function itemHTML(i) {
@@ -608,11 +627,12 @@ h1{font-size:clamp(30px,4.6vw,46px);font-weight:600;letter-spacing:-1.2px;line-h
       wifi: 'No WiFi projects yet. <a class="lnk" href="/wifi.html">Start a WiFi plan</a>.' + (out ? ' ' + login + ' to see the ones in your account.' : ''),
       topo: 'No diagrams in this browser yet. <a class="lnk" href="/topology.html">Draw one</a>.',
       rack: 'No rack projects in this browser yet. <a class="lnk" href="/rack.html">Lay out a rack</a>.',
-      all: 'Nothing here yet. The configs, WiFi plans, diagrams and racks you make show up here.' + (out ? ' ' + login + ' to include what is saved in your account.' : '')
+      tr: 'No translations in this browser yet. <a class="lnk" href="/translate.html">Translate a Cisco or Ruijie config</a>.',
+      all: 'Nothing here yet. The configs, translations, WiFi plans, diagrams and racks you make show up here.' + (out ? ' ' + login + ' to include what is saved in your account.' : '')
     }[S.filter];
   }
   function renderRecent(items, pend) {
-    const q = S.q.trim().toLowerCase(), hit = q ? items.filter(i => i.hay.includes(q)) : items, c = { all: hit.length, config: 0, wifi: 0, topo: 0, rack: 0 };
+    const q = S.q.trim().toLowerCase(), hit = q ? items.filter(i => i.hay.includes(q)) : items, c = { all: hit.length, config: 0, wifi: 0, topo: 0, rack: 0, tr: 0 };
     hit.forEach(i => { c[i.k]++; });
     document.querySelectorAll('#chips .cn').forEach(e => { e.textContent = c[e.dataset.c]; });
     const mine = k => S.filter === 'all' || KIND[k] === S.filter, rows = S.filter === 'all' ? hit : hit.filter(i => i.k === S.filter);
@@ -646,7 +666,7 @@ h1{font-size:clamp(30px,4.6vw,46px);font-weight:600;letter-spacing:-1.2px;line-h
   function refresh() {   // back/forward cache restore or back from another tab: same session, newer data
     if (token() !== S.tok) return boot();
     if (S.tok) { loadMe(); loadList('files'); loadList('wcloud'); }
-    loadLimits(); loadTopo(); loadRack(); loadWlocal();
+    loadLimits(); loadTopo(); loadRack(); loadTr(); loadWlocal();
   }
   function setFilter(f) { S.filter = f; document.querySelectorAll('#chips .chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.f === f ? 'true' : 'false')); paint(); }
   function bind() {
@@ -668,6 +688,7 @@ h1{font-size:clamp(30px,4.6vw,46px);font-weight:600;letter-spacing:-1.2px;line-h
     document.addEventListener('keydown', e => { const m = $('acct-menu'); if (e.key === 'Escape' && m && !m.hidden) { menu(false); $('acct-btn').focus(); } });
     addEventListener('storage', e => {   // another tab changed something this page shows
       if (e.key === 'cl_tg_idx' || e.key === null) loadTopo();
+      if (e.key === 'cl_tr_idx' || e.key === null) loadTr();
       if (e.key === 'cl_rk_idx' || e.key === null) loadRack();
       if (e.key === 'clab_theme') setTheme(e.newValue);
       if ((e.key === 'clab_token' || e.key === null) && token() !== S.tok) { S.expired = false; boot(); }
@@ -724,10 +745,13 @@ h1{font-size:clamp(30px,4.6vw,46px);font-weight:600;letter-spacing:-1.2px;line-h
     <section class="grid" aria-label="Overview">
       <article class="c-resume glass strong resume" id="resume" aria-busy="true"><p class="eyebrow">Continue where you left off</p><div class="row" aria-hidden="true"><span class="tool-ico lg sk"></span><span class="rt"><i class="sk sk-h"></i><i class="sk sk-m"></i></span></div><div class="actions" aria-hidden="true"><i class="sk sk-b"></i><i class="sk sk-b2"></i></div><span class="sr">Loading your recent work</span></article>
       <article class="c-usage glass usage" id="usage" data-st="loading" aria-busy="true"><div class="ring" id="ring" aria-hidden="true"><span id="ring-n"></span></div><div class="u-txt" id="u-txt"><i class="sk sk-h"></i><i class="sk sk-l"></i><i class="sk sk-m"></i><span class="sr">Loading Translator usage</span></div></article>
+      <div class="c-stats">
       <article class="c-stat glass soft stat" aria-busy="true"><div class="n sk" id="n-config"></div><div class="l"><i class="dot t-config"></i>Saved configs</div><div class="s" id="s-config"></div></article>
+      <article class="c-stat glass soft stat" aria-busy="true"><div class="n sk" id="n-tr"></div><div class="l"><i class="dot t-tr"></i>Translations</div><div class="s" id="s-tr"></div></article>
       <article class="c-stat glass soft stat" aria-busy="true"><div class="n sk" id="n-wifi"></div><div class="l"><i class="dot t-wifi"></i>WiFi projects</div><div class="s" id="s-wifi"></div></article>
       <article class="c-stat glass soft stat" aria-busy="true"><div class="n sk" id="n-topo"></div><div class="l"><i class="dot t-topo"></i>Topology diagrams</div><div class="s" id="s-topo"></div></article>
       <article class="c-stat glass soft stat" aria-busy="true"><div class="n sk" id="n-rack"></div><div class="l"><i class="dot t-rack"></i>Rack projects</div><div class="s" id="s-rack"></div></article>
+      </div>
     </section>
 
     <nav class="quick" id="quick" aria-label="Quick actions">
@@ -744,6 +768,7 @@ h1{font-size:clamp(30px,4.6vw,46px);font-weight:600;letter-spacing:-1.2px;line-h
         <div class="chips" id="chips" role="group" aria-label="Filter by tool">
           <button class="chip" type="button" data-f="all" aria-pressed="true">All <span class="cn" data-c="all"></span></button>
           <button class="chip" type="button" data-f="config" aria-pressed="false">Configs <span class="cn" data-c="config"></span></button>
+          <button class="chip" type="button" data-f="tr" aria-pressed="false">Translations <span class="cn" data-c="tr"></span></button>
           <button class="chip" type="button" data-f="wifi" aria-pressed="false">WiFi <span class="cn" data-c="wifi"></span></button>
           <button class="chip" type="button" data-f="topo" aria-pressed="false">Diagrams <span class="cn" data-c="topo"></span></button>
           <button class="chip" type="button" data-f="rack" aria-pressed="false">Racks <span class="cn" data-c="rack"></span></button>

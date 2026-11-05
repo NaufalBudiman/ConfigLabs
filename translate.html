@@ -429,7 +429,7 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
 
     <section class="output-wrap">
       <div class="panel-head"><div class="panel-title"><span class="num">02</span>H3C Comware output</div></div>
-      <div class="output-toolbar"><div class="output-toolbar-left"><button class="tool-btn" onclick="copyOut()">📋 Copy</button><button class="tool-btn" onclick="dlOut()">⬇ Download</button></div><span class="tr-meta" style="margin:0" id="tr-outinfo"></span></div>
+      <div class="output-toolbar"><div class="output-toolbar-left"><button class="tool-btn" onclick="copyOut()">📋 Copy</button><button class="tool-btn" onclick="dlOut()">⬇ Download</button><button class="tool-btn" id="tr-save" type="button" onclick="saveFile()">💾 Save to My Files</button></div><span class="tr-meta" style="margin:0" id="tr-outinfo"></span></div>
       <div class="output empty" id="tr-out"><div>Paste a config and click <strong>Translate</strong></div></div>
       <div class="status-bar" id="status"><span><span class="s-dot"></span> <span id="status-text">Ready</span></span><span id="line-info"></span></div>
     </section>
@@ -573,7 +573,7 @@ document.addEventListener('keydown', e => {
    BOOT
    ============================================================ */
 
-let src='cisco', last='', lastName='h3c';
+let src='cisco', last='', lastName='h3c', lastData=null;
 const $=id=>document.getElementById(id);
 document.querySelectorAll('#tr-src button').forEach(b=>b.addEventListener('click',()=>{src=b.dataset.s;document.querySelectorAll('#tr-src button').forEach(x=>x.classList.toggle('on',x===b));$('tr-in').placeholder=src==='ruijie'?"Paste the output of 'show running-config' from the Ruijie device...":"Paste the output of 'show running-config' here...";}));
 let LIM=null;
@@ -680,30 +680,82 @@ async function run(){
     const res=await fetch(API+'/api/translate',{method:'POST',headers:hdrs(),body:JSON.stringify({source:src,config:text,options:{device:$('tr-dev').value,member:parseInt($('tr-mem').value,10)||1}})});
     const j=await res.json();
     if(!j.success){setStatus(j.error||'Error','err');toast(j.error||'Could not translate',true);showLim(j.limits,true);return;}
-    last=j.config;const m=/^sysname\s+(\S+)/m.exec(last);lastName=(m?m[1]:'h3c');
-    const o=$('tr-out');o.className='output tr-out';o.innerHTML=colorize(last);
-    $('line-info').textContent=j.lines+' lines';
-    const r=j.report;$('tr-report').style.display='block';
-    $('s-ok').textContent=r.ok;$('s-rv').textContent=r.review_count;$('s-sk').textContent=r.skipped_count;
-    const tot=Math.max(r.ok+r.review_count+r.skipped_count,1);
-    $('tr-bar').innerHTML='<i style="width:'+(r.ok/tot*100)+'%;background:var(--success)"></i><i style="width:'+(r.review_count/tot*100)+'%;background:var(--warning)"></i><i style="width:'+(r.skipped_count/tot*100)+'%;background:var(--danger)"></i>';
-    $('tr-rcount').textContent=r.total+' source lines';
-    $('b-sk').innerHTML=rows(r.skipped);$('c-sk').textContent=r.skipped_count;$('d-sk').open=r.skipped_count>0;
-    $('b-rv').innerHTML=rows(r.review);$('c-rv').textContent=r.review_count;$('d-rv').open=r.review_count>0;
-    $('b-if').innerHTML=maps(r.interface_map);$('c-if').textContent=r.interface_map.length;
-    $('b-acl').innerHTML=maps(r.acl_map);$('c-acl').textContent=r.acl_map.length;
-    $('b-nt').innerHTML=r.notes.map(n=>'<div style="padding:4px 0">• '+escH(n)+'</div>').join('')||'—';$('c-nt').textContent=r.notes.length;
+    lastData=j.data&&typeof j.data==='object'?j.data:null;show(j.config,j.report,j.lines);
     setStatus('Translated '+new Date().toLocaleTimeString()+' · '+(src==='ruijie'?'RUIJIE':'CISCO')+' → H3C','ok');
-    showLim(j.limits);
+    showLim(j.limits);saveHist(text,j);
+    const r=j.report||{};
     if(r.skipped_count||r.review_count)toast((r.skipped_count+r.review_count)+' lines need your attention, see the report','warn');else toast('Translated');
     $('tr-report').scrollIntoView({behavior:'smooth',block:'nearest'});
   }catch(e){setStatus('Server unreachable, try again in a moment','err');toast('Cannot reach backend',true);}
   finally{btn.disabled=false;}
 }
+// render one result (a fresh translation or one reopened from this browser's history)
+function show(cfg,r,lines){
+  const A=x=>Array.isArray(x)?x:[];r=r||{};
+  last=String(cfg||'');const m=/^sysname\s+(\S+)/m.exec(last);lastName=(m?m[1]:'h3c');
+  const o=$('tr-out');o.className='output tr-out';o.innerHTML=colorize(last);
+  $('line-info').textContent=(lines||last.split('\n').length)+' lines';
+  const ok=+r.ok||0,rv=+r.review_count||0,sk=+r.skipped_count||0;$('tr-report').style.display='block';
+  $('s-ok').textContent=ok;$('s-rv').textContent=rv;$('s-sk').textContent=sk;
+  const tot=Math.max(ok+rv+sk,1);
+  $('tr-bar').innerHTML='<i style="width:'+(ok/tot*100)+'%;background:var(--success)"></i><i style="width:'+(rv/tot*100)+'%;background:var(--warning)"></i><i style="width:'+(sk/tot*100)+'%;background:var(--danger)"></i>';
+  $('tr-rcount').textContent=(+r.total||0)+' source lines';
+  $('b-sk').innerHTML=rows(A(r.skipped));$('c-sk').textContent=sk;$('d-sk').open=sk>0;
+  $('b-rv').innerHTML=rows(A(r.review));$('c-rv').textContent=rv;$('d-rv').open=rv>0;
+  $('b-if').innerHTML=maps(A(r.interface_map));$('c-if').textContent=A(r.interface_map).length;
+  $('b-acl').innerHTML=maps(A(r.acl_map));$('c-acl').textContent=A(r.acl_map).length;
+  $('b-nt').innerHTML=A(r.notes).map(n=>'<div style="padding:4px 0">• '+escH(n)+'</div>').join('')||'—';$('c-nt').textContent=A(r.notes).length;
+  const b=$('tr-save');b.textContent='💾 Save to My Files';b.onclick=saveFile;
+}
+
+/* ---- translation history, kept in this browser (the Dashboard lists it): cl_tr_idx + cl_tr_d_<id> ---- */
+const TR_ID=/^t[a-z0-9]{4,24}$/,TR_MAX=30;
+function trIdx(){try{const a=JSON.parse(localStorage.getItem('cl_tr_idx')||'[]');return Array.isArray(a)?a.filter(x=>x&&TR_ID.test(String(x.id))):[];}catch(e){return [];}}
+function saveHist(input,j){
+  const id='t'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),now=Date.now(),r=j.report||{};
+  const doc={id,src,input,config:j.config,report:r,data:lastData,lines:j.lines,dev:$('tr-dev').value,mem:$('tr-mem').value};
+  let a=trIdx();a.unshift({id,name:lastName==='h3c'?'':lastName,src,lines:j.lines,ok:+r.ok||0,rv:+r.review_count||0,sk:+r.skipped_count||0,created:now,updated:now});
+  for(;;){   // storage full: drop the oldest translations until this one fits
+    try{localStorage.setItem('cl_tr_d_'+id,JSON.stringify(doc));break;}
+    catch(e){const old=a.length>1?a.pop():null;if(!old)return;try{localStorage.removeItem('cl_tr_d_'+old.id);}catch(x){}}
+  }
+  a.slice(TR_MAX).forEach(x=>{try{localStorage.removeItem('cl_tr_d_'+x.id);}catch(e){}});
+  try{localStorage.setItem('cl_tr_idx',JSON.stringify(a.slice(0,TR_MAX)));}catch(e){}
+  history.replaceState(null,'','?t='+id);
+}
+function openHist(id){
+  if(!TR_ID.test(id||''))return false;
+  let d=null;try{d=JSON.parse(localStorage.getItem('cl_tr_d_'+id)||'null');}catch(e){}
+  if(!d||typeof d.config!=='string')return false;
+  src=d.src==='ruijie'?'ruijie':'cisco';document.querySelectorAll('#tr-src button').forEach(x=>x.classList.toggle('on',x.dataset.s===src));
+  $('tr-in').value=String(d.input||'');
+  if(d.dev&&[...$('tr-dev').options].some(o=>o.value===d.dev))$('tr-dev').value=d.dev;
+  if(d.mem)$('tr-mem').value=String(parseInt(d.mem,10)||1);
+  upd();lastData=d.data&&typeof d.data==='object'?d.data:null;show(d.config,d.report,d.lines);
+  setStatus('Opened a saved translation','ok');return true;
+}
+
+/* ---- Save to My Files: the result becomes an H3C config in the account that opens (and can be edited) in the Builder ---- */
+async function saveFile(){
+  if(!last){toast('Translate a config first',true);return;}
+  if(!token()){if(typeof authOpenModal==='function')authOpenModal();toast('Log in to save it to My Files',true);return;}
+  const b=$('tr-save');b.disabled=true;
+  try{
+    const nm=(lastName==='h3c'?'Translated config':lastName)+' (from '+(src==='ruijie'?'Ruijie':'Cisco')+')';
+    const res=await fetch(API+'/api/files',{method:'POST',headers:hdrs(),body:JSON.stringify({name:nm,file_type:'config',vendor:'h3c',hostname:lastName==='h3c'?'':lastName,
+      data:{__v:2,vendor:'h3c',os:'comware',form:lastData||{},translated:true,__generated__:last}})});
+    const j=await res.json().catch(()=>({}));
+    if(res.ok&&/^\d+$/.test(String(j.id))){toast('Saved to My Files');b.textContent='↗ Open in Builder';b.onclick=()=>{location.href='/builder.html?file='+j.id;};}
+    else if(res.status===401)toast('Your session expired, log in again',true);
+    else toast(j.error||'Could not save',true);
+  }catch(e){toast('Cannot reach backend',true);}
+  finally{b.disabled=false;}
+}
 function copyOut(){if(!last){toast('Nothing to copy',true);return;}navigator.clipboard.writeText(last).then(()=>toast('Copied to clipboard!'),()=>toast('Copy failed',true));}
 function dlOut(){if(!last){toast('Nothing to download',true);return;}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([last],{type:'text/plain'}));a.download=lastName+'-h3c-comware.txt';a.click();}
 $('year').textContent=new Date().getFullYear();
 loadLim();upd();
+{const qt=new URLSearchParams(location.search).get('t');if(qt&&!openHist(qt)){toast('That translation is not saved in this browser',true);history.replaceState(null,'',location.pathname);}}
 </script>
 <script>
 (function(){var _u=null,_t=localStorage.getItem("clab_token")||"";;window.authOpenModal=function(){document.getElementById("auth-modal").classList.add("open")};window.authCloseModal=function(){document.getElementById("auth-modal").classList.remove("open")};document.addEventListener("keydown",function(e){if(e.key==="Escape")authCloseModal()});window.authToggleDropdown=function(){var d=document.getElementById("auth-dd");if(d)d.classList.toggle("open")};document.addEventListener("click",function(e){var w=document.getElementById("auth-nav");if(w&&!w.contains(e.target)){var d=document.getElementById("auth-dd");if(d)d.classList.remove("open")}});window.authLogout=function(){localStorage.removeItem("clab_token");_u=null;_t="";rAN();if(typeof toast==="function")toast("Logged out")};function X(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}function rAN(){var el=document.getElementById("auth-nav");if(!el)return;if(_u){var av=_u.avatar_url?"<img class='auth-avatar' src='"+(/^https:\/\//.test(_u.avatar_url)?X(_u.avatar_url):"")+"' alt=''  onclick='authToggleDropdown()'>": "<button class='auth-avatar' onclick='authToggleDropdown()' style='background:var(--accent);color:var(--bg);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center'>"+X((_u.name||"?")[0].toUpperCase())+"</button>";el.innerHTML="<div class='auth-user-wrap'>"+av+"<div class='auth-dropdown' id='auth-dd'><div class='auth-dropdown-header'><div class='auth-dropdown-name'>"+X(_u.name)+"</div><div class='auth-dropdown-email'>"+X(_u.email)+"</div><div class='auth-dropdown-provider'>via "+X(_u.provider)+"</div></div><button class='auth-dropdown-item danger' onclick='authLogout()'>Logout</button></div></div>";}else{el.innerHTML="<button class='auth-login-btn' onclick='authOpenModal()'>Login</button>";}}async function fetchMe(){if(!_t){rAN();return;}try{var r=await fetch("/api/me",{headers:{"Authorization":"Bearer "+_t}});if(r.ok){_u=await r.json();}else{localStorage.removeItem("clab_token");_t="";_u=null;}}catch(e){_u=null;}rAN();}var p=new URLSearchParams(window.location.search);var tk=p.get("auth_token"),er=p.get("auth_error");if(tk&&/^[\w-]+\.[\w-]+\.[\w-]+$/.test(tk)){localStorage.setItem("clab_token",tk);_t=tk;window.history.replaceState({},"",window.location.pathname);}else if(tk){window.history.replaceState({},"",window.location.pathname);}if(er){window.history.replaceState({},"",window.location.pathname);}fetchMe();})();

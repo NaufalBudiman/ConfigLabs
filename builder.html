@@ -1881,6 +1881,16 @@ async function loadFile(id) {
       if (vd && state.vendor !== data.vendor) selectVendor(data.vendor);
       if (vd && state.os !== data.os && vd.os_list.some(o => o.id === data.os && o.status === 'available')) selectOS(data.os);
       applyTemplate(data.form);
+      // a config saved from the Translator keeps its translated text: the form cannot hold every line (SSH, SNMP, ...),
+      // so show that text and let Generate rebuild from the form only when the user asks
+      if (data.translated && typeof data.__generated__ === 'string' && data.__generated__.trim()) {
+        lastConfig = data.__generated__;
+        renderOutput(lastConfig);
+        document.getElementById('line-info').textContent = `${lastConfig.split('\n').length} lines`;
+        setStatus('Loaded translated config · ' + file.name, 'ok');
+        toast('✅ Loaded: ' + file.name + '. Generate rebuilds it from the form; lines the form has no field for stay only in this saved text.', 'warn');
+        return;
+      }
       generate();
       toast('✅ Loaded: ' + file.name);
       return;

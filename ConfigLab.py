@@ -120,7 +120,7 @@ def init_db_once():
         with_app_context_done = True
 
 APP_NAME = "ConfigLabs"
-APP_VERSION = "7.9.0"
+APP_VERSION = "7.10.0"
 
 # ==========================================================
 # VENDOR / OS REGISTRY
@@ -2785,7 +2785,7 @@ def api_translate():
                 if row and row.count > 0: row.count -= 1; db.session.commit()
             raise
         if lim["plan"] == "pro": _tr_bump(key)
-        return jsonify({"success": True, "config": cfg, "report": rep, "lines": len(cfg.split("\n")), "limits": _tr_limits(key, email),
+        return jsonify({"success": True, "config": cfg, "report": rep, "data": _data, "lines": len(cfg.split("\n")), "limits": _tr_limits(key, email),
                         "source": source, "target": "h3c_comware"})
     except Exception as e:
         db.session.rollback()
