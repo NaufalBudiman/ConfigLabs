@@ -514,7 +514,8 @@ def gen_h3c_comware(data):
                 config.append(f" ip address {ip_addr} {cidr_to_mask(cidr)}")
             except: pass
         if dhcp_mode == "server":
-            pass  # common pools are matched to the interface subnet automatically (dhcp select server global-pool is the default)
+            config.append(" dhcp select server")
+            if s.get("dhcp_apply_pool"): config.append(f" dhcp server apply ip-pool {_rj_s(s['dhcp_apply_pool'])}")
         elif dhcp_mode == "relay" and s.get("dhcp_relay"):
             config.append(" dhcp select relay")
             config.append(f" dhcp relay server-address {s['dhcp_relay']}")
