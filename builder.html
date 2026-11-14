@@ -149,6 +149,10 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--sans);font-si
 /* Ruijie-only controls */
 .rj-only,.rj-l2-only,.rj-rt-only{display:none}
 body.is-ruijie .rj-only{display:block}
+.acl-only{display:none}
+body.is-ruijie .acl-only,body.is-h3c .acl-only{display:block}
+.info-banner.acl-only{display:none}
+body.is-ruijie .info-banner.acl-only,body.is-h3c .info-banner.acl-only{display:flex}   /* .info-banner sets display:flex, which would otherwise show it for every vendor */
 body.rj-l2 .rj-l2-only{display:block}
 body.rj-router .rj-rt-only{display:block}
 body.is-mt .not-mt{display:none}
@@ -486,7 +490,7 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
 
         <!-- ==================== ACL ==================== -->
         <div class="tab-panel" id="pane-acl">
-          <div class="info-banner rj-only"><span class="icon">🛡️</span><span id="acl-banner-txt">Ruijie: ACL 1-99 / 1300-1999 = standard (source only), 100-199 / 2000-2699 = extended. Apply them with the "ACL in/out" fields on a VLAN-int or interface.</span></div>
+          <div class="info-banner acl-only"><span class="icon">🛡️</span><span id="acl-banner-txt">Ruijie: ACL 1-99 / 1300-1999 = standard (source only), 100-199 / 2000-2699 = extended. Apply them with the "ACL in/out" fields on a VLAN-int or interface.</span></div>
           <div class="repeater" id="rep-acls"></div>
           <button class="btn-add" onclick="addAcl()">＋ Add ACL</button>
         </div>
@@ -786,6 +790,7 @@ function updateRuijieUI() {
   const rj = isRj(), rt = rj && isRtr(), wl = rj && state.os === 'rgos_wlan';
   document.body.classList.toggle('is-ruijie', rj);
   document.body.classList.toggle('is-mt', isMt());
+  document.body.classList.toggle('is-h3c', state.vendor === 'h3c');
   document.body.classList.toggle('rj-router', rt);
   document.body.classList.toggle('rj-l2', rj && !rt);
   const show = (id, on) => { const t = document.getElementById(id); if (!t) return; t.style.display = on ? '' : 'none'; if (!on && t.classList.contains('active')) document.querySelector('.tab[data-tab="system"]').click(); };
@@ -795,13 +800,16 @@ function updateHints() {
   updatePbrTab(); updateRuijieUI();
   document.getElementById('hint-hostname').textContent = state.vendor === 'h3c' ? 'sysname' : 'hostname';
   const extra = document.getElementById('svi-hint-extra');
-  if (state.vendor === 'h3c') extra.textContent = 'H3C: link pool via "Apply Pool".';
+  if (state.vendor === 'h3c') extra.textContent = 'H3C: link pool via "Apply Pool"; bind an ACL with ACL in/out.';
   else if (isMt()) extra.textContent = 'MikroTik: VLAN-interfaces sit on the bridge; VRRP and ACL in/out become /interface vrrp and firewall rules.';
   else if (isRj()) extra.textContent = 'Ruijie: gateway redundancy with VRRP; ACLs apply with ACL in/out.';
-  const ab = document.getElementById('acl-banner-txt');
-  if (ab) ab.textContent = isMt() ? 'MikroTik: there are no standalone ACLs. Rules become /ip firewall filter rules (chain=forward) on the interface where you set ACL in/out, ending with a drop like an ACL\'s implicit deny.' : 'Ruijie: ACL 1-99 / 1300-1999 = standard (source only), 100-199 / 2000-2699 = extended. Apply them with the "ACL in/out" fields on a VLAN-int or interface.';
   else if (state.os === 'nxos') extra.textContent = 'NX-OS: use prefix notation (10.0.0.1/24) for IPs.';
   else extra.textContent = 'Cisco: use "ip helper-address" for DHCP relay.';
+  // ACL guide, per vendor (the banner is shown for H3C, Ruijie and MikroTik, the vendors with ACL in/out fields)
+  const ab = document.getElementById('acl-banner-txt');
+  if (ab) ab.textContent = state.vendor === 'h3c' ? 'H3C: ACL 2000-2999 = basic (source only), 3000-3999 = advanced. Bind it with the "ACL in/out" fields on a VLAN-int or interface; the Builder writes packet-filter <ACL> inbound / outbound there.'
+    : isMt() ? 'MikroTik: there are no standalone ACLs. Rules become /ip firewall filter rules (chain=forward) on the interface where you set ACL in/out, ending with a drop like an ACL\'s implicit deny.'
+    : 'Ruijie: ACL 1-99 / 1300-1999 = standard (source only), 100-199 / 2000-2699 = extended. Apply them with the "ACL in/out" fields on a VLAN-int or interface.';
 }
 
 /* ============================================================
@@ -828,7 +836,7 @@ function makeItem(title, html) {
 }
 
 function rjAclHtml(d, pfx) {
-  return `<div class="field-row"><div class="field"><label>ACL in <span class="hint">number</span></label><input class="${pfx}-acl-in" value="${escA(d.acl_in||'')}" placeholder="100"></div><div class="field"><label>ACL out <span class="hint">number</span></label><input class="${pfx}-acl-out" value="${escA(d.acl_out||'')}" placeholder=""></div></div>`;
+  return `<div class="field-row"><div class="field"><label>ACL in <span class="hint">number</span></label><input class="${pfx}-acl-in" value="${escA(d.acl_in||'')}" placeholder="${state.vendor === 'h3c' ? '3000' : '100'}"></div><div class="field"><label>ACL out <span class="hint">number</span></label><input class="${pfx}-acl-out" value="${escA(d.acl_out||'')}" placeholder=""></div></div>`;
 }
 function rjVrrpHtml(d, pfx) {
   return `<div class="field-row-3"><div class="field"><label>VRRP group</label><input class="${pfx}-vrrp-id" value="${escA(d.vrrp_id||'')}" placeholder="10"></div><div class="field"><label>Virtual IP</label><input class="${pfx}-vrrp-ip" value="${escA(d.vrrp_ip||'')}" placeholder="10.10.10.1"></div><div class="field"><label>Priority</label><input class="${pfx}-vrrp-prio" value="${escA(d.vrrp_prio||'')}" placeholder="120"></div></div>`;
@@ -861,7 +869,8 @@ function addSvi(data = {}) {
   </div>
   <div class="field s-server-wrap" style="display:${mode==='server'?'block':'none'}"><label>Apply Pool</label><select class="s-pool" data-sel="${escA(data.dhcp_apply_pool||'')}"><option value="">— select pool —</option></select></div>
   <div class="field s-relay-wrap"  style="display:${mode==='relay' ?'block':'none'}"><label>Relay IP</label><input class="s-relay" value="${escA(data.dhcp_relay||'')}" placeholder="10.10.100.10"></div>
-  <div class="rj-only"><div class="rj-sub">VRRP + ACL</div>${rjVrrpHtml(data,'s')}${rjAclHtml(data,'s')}</div>
+  <div class="rj-only"><div class="rj-sub">VRRP</div>${rjVrrpHtml(data,'s')}</div>
+  <div class="acl-only"><div class="rj-sub">ACL</div>${rjAclHtml(data,'s')}</div>
   <label class="check" style="margin-top:8px"><input type="checkbox" class="s-shut" ${data.shutdown?'checked':''}> Shutdown</label>`;
   const el = makeItem('VLAN-interface', html);
   document.getElementById('rep-svis').appendChild(el);
@@ -921,10 +930,10 @@ function addIntf(data = {}) {
     <div class="field-row"><div class="field"><label>Dot1Q VLAN <span class="hint">sub-interface only</span></label><input class="i-dot1q" value="${escA(data.dot1q||'')}" placeholder="10"></div><div class="field"><label>DHCP relay</label><input class="i-relay" value="${escA(data.dhcp_relay||'')}" placeholder="10.10.20.10"></div></div>
     ${rjVrrpHtml(data,'i')}
   </div>
-  <div class="rj-only"><div class="rj-sub">LAG + ACL</div>
+  <div class="rj-l2-only"><div class="rj-sub">LAG</div>
     <div class="rj-l2-only" style="margin-bottom:8px"><div class="field-row"><div class="field"><label>Port-group (LAG) <span class="hint">AggregatePort / bond id</span></label><input class="i-lag" value="${escA(data.lag||'')}" placeholder="1"></div><div class="field"><label>LAG mode</label><select class="i-lag-mode"><option value="static">static</option><option value="active" ${data.lag_mode==='active'?'selected':''}>LACP active</option><option value="passive" ${data.lag_mode==='passive'?'selected':''}>LACP passive</option></select></div></div></div>
-    ${rjAclHtml(data,'i')}
   </div>
+  <div class="acl-only"><div class="rj-sub">ACL</div>${rjAclHtml(data,'i')}</div>
   <div class="i-l2opts" style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap">
     <label class="check"><input type="checkbox" class="i-edge" ${data.stp_edge?'checked':''}> STP Edge/PortFast</label>
     <label class="check"><input type="checkbox" class="i-poe"  ${data.poe?'checked':''}>      PoE</label>
