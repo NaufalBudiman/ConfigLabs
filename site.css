@@ -99,3 +99,7 @@
   .cl-orbs i{animation:none}
 }
 @media (prefers-reduced-motion:reduce){.cl-orbs i{animation:none}.cl-link,.cl-ibtn{transition:none}}
+
+/* icons: <svg class="cl-ic"><use href="/icons.svg#i-NAME"/></svg> (Lucide, ISC) or clIcon('NAME') from site.js */
+.cl-ic{display:inline-block;width:16px;height:16px;flex-shrink:0;vertical-align:-3px;overflow:visible}
+.support-hero .cl-ic{color:var(--cl-accent)}

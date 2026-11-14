@@ -125,7 +125,12 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--sans);font-si
 .templates-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
 .tpl{background:var(--cl-glass);border:1px solid var(--cl-line);box-shadow:inset 0 1px 0 var(--cl-rim);border-radius:18px;padding:16px;cursor:pointer;transition:all .2s var(--ease);position:relative;overflow:hidden}
 .tpl:hover{border-color:var(--accent);transform:translateY(-2px)}
-.tpl-emoji{font-size:26px;margin-bottom:10px;display:block}
+.tpl-ico{--vc:var(--accent);width:40px;height:40px;border-radius:12px;display:grid;place-items:center;margin-bottom:12px;color:var(--vc);background:color-mix(in srgb,var(--vc) 14%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--vc) 28%,transparent)}
+.tpl[data-v="cisco"] .tpl-ico{--vc:var(--accent-cisco)}.tpl[data-v="ruijie"] .tpl-ico{--vc:var(--accent-ruijie)}.tpl[data-v="mikrotik"] .tpl-ico{--vc:#67e8f9}
+[data-theme="light"] .tpl[data-v="mikrotik"] .tpl-ico{--vc:#0e7490}
+.vp-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:8px;vertical-align:1px}
+.info-banner .icon .cl-ic{color:var(--accent-2);vertical-align:-3px}
+.support-hero .cl-ic{color:var(--accent)}
 .tpl-name{font-weight:500;font-size:14px;margin-bottom:4px}
 .tpl-desc{font-size:12px;color:var(--text-dim);line-height:1.5}
 .tpl-vendor-tag{position:absolute;top:10px;right:10px;font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:99px;background:color-mix(in srgb,var(--text) 8%,transparent);color:var(--text-muted);letter-spacing:.5px;text-transform:uppercase}
@@ -394,9 +399,9 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
           <span class="vendor-label" id="active-vendor-label">H3C · COMWARE</span>
         </div>
         <div class="panel-head-actions">
-          <button class="icon-btn" onclick="openFeedback()" title="Feedback">💬</button>
-          <button class="icon-btn" onclick="toggleHistory()" title="History">🕐</button>
-          <button class="icon-btn" onclick="clearAll()" title="Clear all">🗑️</button>
+          <button class="icon-btn" onclick="openFeedback()" title="Feedback" aria-label="Feedback"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-message-square"/></svg></button>
+          <button class="icon-btn" onclick="toggleHistory()" title="History" aria-label="History"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-history"/></svg></button>
+          <button class="icon-btn" onclick="clearAll()" title="Clear all" aria-label="Clear all"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-trash-2"/></svg></button>
         </div>
       </div>
 
@@ -452,7 +457,7 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
 
         <!-- ==================== SVI ==================== -->
         <div class="tab-panel" id="pane-svi">
-          <div class="info-banner"><span class="icon">🌐</span><span>Layer 3 gateway for each VLAN (SVI). <span id="svi-hint-extra"></span></span></div>
+          <div class="info-banner"><span class="icon"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-network"/></svg></span><span>Layer 3 gateway for each VLAN (SVI). <span id="svi-hint-extra"></span></span></div>
           <div class="repeater" id="rep-svis"></div>
           <button class="btn-add" onclick="addSvi()">＋ Add VLAN-interface</button>
         </div>
@@ -465,7 +470,7 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
 
         <!-- ==================== DHCP ==================== -->
         <div class="tab-panel" id="pane-dhcp">
-          <div class="info-banner"><span class="icon">💡</span><span>Define DHCP pools. H3C: link pools to SVIs via "Apply Pool". Cisco: SVI IP must be inside pool subnet.</span></div>
+          <div class="info-banner"><span class="icon"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-info"/></svg></span><span>Define DHCP pools. H3C: link pools to SVIs via "Apply Pool". Cisco: SVI IP must be inside pool subnet.</span></div>
           <div class="repeater" id="rep-dhcp"></div>
           <button class="btn-add" onclick="addDhcp()">＋ Add DHCP Pool</button>
         </div>
@@ -490,7 +495,7 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
 
         <!-- ==================== ACL ==================== -->
         <div class="tab-panel" id="pane-acl">
-          <div class="info-banner acl-only"><span class="icon">🛡️</span><span id="acl-banner-txt">Ruijie: ACL 1-99 / 1300-1999 = standard (source only), 100-199 / 2000-2699 = extended. Apply them with the "ACL in/out" fields on a VLAN-int or interface.</span></div>
+          <div class="info-banner acl-only"><span class="icon"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-shield"/></svg></span><span id="acl-banner-txt">Ruijie: ACL 1-99 / 1300-1999 = standard (source only), 100-199 / 2000-2699 = extended. Apply them with the "ACL in/out" fields on a VLAN-int or interface.</span></div>
           <div class="repeater" id="rep-acls"></div>
           <button class="btn-add" onclick="addAcl()">＋ Add ACL</button>
         </div>
@@ -498,7 +503,7 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
 
         <!-- ==================== NAT (Ruijie router) ==================== -->
         <div class="tab-panel" id="pane-nat">
-          <div class="info-banner"><span class="icon">🌐</span><span>Source NAT (PAT) for internet access. Set the <strong style="color:var(--text)">outside interface</strong> and the inside networks; mark the LAN interfaces as <em>NAT inside</em> on the Interfaces tab.</span></div>
+          <div class="info-banner"><span class="icon"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-globe"/></svg></span><span>Source NAT (PAT) for internet access. Set the <strong style="color:var(--text)">outside interface</strong> and the inside networks; mark the LAN interfaces as <em>NAT inside</em> on the Interfaces tab.</span></div>
           <div class="field-row">
             <div class="field"><label>Outside interface <span class="hint">WAN</span></label><input id="nat-out" placeholder="GigabitEthernet 0/0"></div>
             <div class="field not-mt"><label>NAT ACL number <span class="hint">1-99</span></label><input id="nat-acl" placeholder="10"></div>
@@ -510,7 +515,7 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
 
         <!-- ==================== WLAN (Ruijie AC + fit AP) ==================== -->
         <div class="tab-panel" id="pane-wlan">
-          <div class="info-banner"><span class="icon">📶</span><span>Ruijie AC + fit AP. Give the AP a VLAN with DHCP <strong style="color:var(--text)">option 138</strong> (DHCP tab, "AC IP") so it can find the AC, then add SSIDs here. WPA2-PSK only for now.</span></div>
+          <div class="info-banner"><span class="icon"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-wifi"/></svg></span><span>Ruijie AC + fit AP. Give the AP a VLAN with DHCP <strong style="color:var(--text)">option 138</strong> (DHCP tab, "AC IP") so it can find the AC, then add SSIDs here. WPA2-PSK only for now.</span></div>
           <div class="field-row">
             <div class="field"><label>AC IP <span class="hint">CAPWAP control address</span></label><input id="wl-acip" placeholder="10.10.10.1"></div>
             <div class="field"><label>AP group</label><input id="wl-group" placeholder="default"></div>
@@ -522,7 +527,7 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
 
         <!-- ==================== ISP / PBR (H3C Comware) ==================== -->
         <div class="tab-panel" id="pane-pbr">
-          <div class="info-banner"><span class="icon">🌐</span><span>Multi-ISP failover with Policy-Based Routing + NQA/Track (H3C Comware, 2–3 ISPs). Add ISPs in priority order.</span></div>
+          <div class="info-banner"><span class="icon"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-git-fork"/></svg></span><span>Multi-ISP failover with Policy-Based Routing + NQA/Track (H3C Comware, 2–3 ISPs). Add ISPs in priority order.</span></div>
           <div class="field-row">
             <div class="field"><label>Mode</label><select id="pbr-mode"><option value="failover">Failover: all LANs prefer ISP-A → B → C</option><option value="mutual">Mutual backup: each LAN has its own primary ISP</option></select></div>
             <div class="field"><label>Policy name</label><input id="pbr-name" placeholder="PBR-ISP"></div>
@@ -550,8 +555,8 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
       </div><!-- /panel-body -->
 
       <div class="panel-footer">
-        <button class="btn btn-secondary" onclick="loadExample()">✨ Example</button>
-        <button class="btn btn-primary" onclick="generate()">⚡ Generate Config <span style="font-family:var(--mono);font-size:11px;opacity:.65">⌘↵</span></button>
+        <button class="btn btn-secondary" onclick="loadExample()"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-wand-sparkles"/></svg> Example</button>
+        <button class="btn btn-primary" onclick="generate()"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-play"/></svg> Generate Config <span style="font-family:var(--mono);font-size:11px;opacity:.65">⌘↵</span></button>
       </div>
     </section>
 
@@ -560,8 +565,8 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
       <div class="panel-head"><div class="panel-title"><span class="num">02</span>CLI Output</div></div>
       <div class="output-toolbar">
         <div class="output-toolbar-left">
-          <button class="tool-btn" onclick="copyConfig()">📋 Copy</button>
-          <button class="tool-btn" onclick="downloadConfig()">⬇ Download</button>
+          <button class="tool-btn" onclick="copyConfig()"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-copy"/></svg> Copy</button>
+          <button class="tool-btn" onclick="downloadConfig()"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-download"/></svg> Download</button>
           <button class="tool-btn" onclick="saveConfigFile()" id="btn-save-cfg" style="color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,var(--border))">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-1px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
             Save
@@ -572,8 +577,8 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
           </button>
         </div>
         <div class="output-toolbar-right">
-          <button class="tool-btn active" id="toggle-ln" onclick="toggleLineNumbers()"># Lines</button>
-          <button class="tool-btn active" id="toggle-hl" onclick="toggleHighlight()">✨ Highlight</button>
+          <button class="tool-btn active" id="toggle-ln" onclick="toggleLineNumbers()"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-list-ordered"/></svg> Lines</button>
+          <button class="tool-btn active" id="toggle-hl" onclick="toggleHighlight()"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-highlighter"/></svg> Highlight</button>
         </div>
       </div>
       <div class="output empty" id="output">
@@ -600,7 +605,7 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
         <a href="/about.html">About</a>
         <a onclick="document.querySelector('.templates-section').scrollIntoView({behavior:'smooth'})">Templates</a>
         <a onclick="openFeedback()">Send feedback</a>
-        <a onclick="openSupport()">☕ Support us</a>
+        <a onclick="openSupport()"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-heart"/></svg> Support us</a>
         <a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" rel="noopener noreferrer">GitHub</a>
       </div>
       <div class="footer-col">
@@ -630,7 +635,7 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
 <!-- ============================================================
      SUPPORT FAB
      ============================================================ -->
-<button class="support-fab" onclick="openSupport()">☕ Support us</button>
+<button class="support-fab" onclick="openSupport()"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-heart"/></svg> Support us</button>
 
 <!-- ============================================================
      DRAWERS & OVERLAYS
@@ -648,7 +653,7 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
     <p>Found a bug? Want a feature? I'm listening.</p>
     <div class="field" style="margin-top:16px"><label>Email <span class="hint">optional</span></label><input id="fb-email" type="email" placeholder="you@example.com"></div>
     <div class="field"><label>Message</label><textarea id="fb-message" placeholder="What's on your mind?"></textarea></div>
-    <div class="modal-actions"><button class="btn btn-secondary" onclick="closeFeedback()">Cancel</button><button class="btn btn-primary" onclick="submitFeedback()">Send 💚</button></div>
+    <div class="modal-actions"><button class="btn btn-secondary" onclick="closeFeedback()">Cancel</button><button class="btn btn-primary" onclick="submitFeedback()"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-send"/></svg> Send</button></div>
   </div>
 </div>
 
@@ -670,15 +675,15 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
 
 <div class="modal-overlay" id="support-modal" onclick="if(event.target===this)closeSupport()">
   <div class="modal">
-    <div class="support-hero">☕</div>
+    <div class="support-hero"><svg class="cl-ic" aria-hidden="true" style="width:30px;height:30px"><use href="/icons.svg#i-heart"/></svg></div>
     <h2 style="text-align:center">Support <em>ConfigLabs</em></h2>
     <p style="text-align:center;margin:8px 0 0">ConfigLabs is free and will stay free. No ads, no tracking.</p>
     <div class="support-reasons">
       <h4>Your support helps:</h4>
       <ul><li>Cover server &amp; database hosting</li><li>Keep the domain alive</li><li>Stay completely ad-free</li><li>Add more vendors &amp; features</li></ul>
     </div>
-    <a href="https://saweria.co/configlabs" target="_blank" rel="noopener noreferrer" class="btn-saweria">💚 Support via <span class="saweria-pill">SAWERIA</span></a>
-    <p style="text-align:center;font-family:var(--mono);font-size:12px;color:var(--text-muted);margin-top:14px">Terima kasih banyak! 🙏</p>
+    <a href="https://saweria.co/configlabs" target="_blank" rel="noopener noreferrer" class="btn-saweria"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-heart"/></svg> Support via <span class="saweria-pill">SAWERIA</span></a>
+    <p style="text-align:center;font-family:var(--mono);font-size:12px;color:var(--text-muted);margin-top:14px">Terima kasih banyak!</p>
     <div class="modal-actions" style="justify-content:center"><button class="btn btn-secondary" onclick="closeSupport()">Maybe later</button></div>
   </div>
 </div>
@@ -736,14 +741,16 @@ async function loadVendors() {
   }
 }
 
+// icons from the shared sprite; site.js is deferred, so build the tag here if its helper is not there yet
+const ICO = (n, sz) => window.clIcon ? clIcon(n, sz) : '<svg class="cl-ic" aria-hidden="true"' + (sz ? ` style="width:${sz}px;height:${sz}px"` : '') + '><use href="/icons.svg#i-' + n + '"/></svg>';
 function renderVendorPills() {
   const c = document.getElementById('vendor-pills');
   const ORDER = ['h3c','cisco','ruijie','mikrotik','huawei','juniper','arista'];
-  const EMOJIS = {h3c:'🟢',cisco:'🔵',ruijie:'🟣',huawei:'🟡',juniper:'🟠',arista:'🔴',mikrotik:'🩵'};
+  const DOT = {h3c:'var(--accent)',cisco:'var(--accent-cisco)',ruijie:'var(--accent-ruijie)',mikrotik:'#67e8f9',huawei:'#facc15',juniper:'#fb923c',arista:'#f87171'};
   c.innerHTML = ORDER.map(k => {
     const v = state.vendors[k]; if (!v) return '';
     const live = v.status === 'available';
-    return `<button class="vendor-pill ${k===state.vendor?'active':''} ${!live?'disabled':''}" data-vendor="${k}" ${live?`onclick="selectVendor('${k}')"`:''}>${EMOJIS[k]||'●'} ${v.name}<span class="soon-badge">${live?'LIVE':'SOON'}</span></button>`;
+    return `<button class="vendor-pill ${k===state.vendor?'active':''} ${!live?'disabled':''}" data-vendor="${k}" ${live?`onclick="selectVendor('${k}')"`:''}><span class="vp-dot" style="--c:${DOT[k]||'var(--text-muted)'}"></span>${v.name}<span class="soon-badge">${live?'LIVE':'SOON'}</span></button>`;
   }).join('');
 }
 
@@ -1540,13 +1547,11 @@ async function loadTemplates() {
     const keys = Object.keys(data);
     document.getElementById('tpl-count').textContent = `${keys.length} templates for ${state.vendor.toUpperCase()}/${state.os.toUpperCase()}`;
     const grid = document.getElementById('templates-grid');
-    if (!keys.length) { grid.innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--text-muted);background:var(--surface);border-radius:12px">No templates yet for this vendor/OS. More coming soon! 🚀</div>'; return; }
+    if (!keys.length) { grid.innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--text-muted);background:var(--surface);border-radius:12px">No templates yet for this vendor/OS. More coming soon.</div>'; return; }
     grid.innerHTML = keys.map(k => {
       const t = data[k];
-      const emojiMatch = t.name.match(/\p{Emoji}/u);
-      const emoji = emojiMatch ? emojiMatch[0] : '📋';
-      const name = t.name.replace(/\p{Emoji}/u, '').trim();
-      return `<div class="tpl" data-k="${k}"><span class="tpl-vendor-tag">${t.vendor}·${t.os}</span><span class="tpl-emoji">${emoji}</span><div class="tpl-name">${name}</div><div class="tpl-desc">${t.description}</div></div>`;
+      const ic = /^[a-z0-9-]{1,30}$/.test(t.icon || '') ? t.icon : 'network';
+      return `<div class="tpl" data-k="${escA(k)}" data-v="${escA(t.vendor)}"><span class="tpl-vendor-tag">${escH(t.vendor)}·${escH(t.os)}</span><span class="tpl-ico">${ICO(ic, 20)}</span><div class="tpl-name">${escH(t.name)}</div><div class="tpl-desc">${escH(t.description)}</div></div>`;
     }).join('');
     document.querySelectorAll('.tpl').forEach(el => {
       el.addEventListener('click', () => {
@@ -1555,7 +1560,7 @@ async function loadTemplates() {
     });
   } catch(e) {
     document.getElementById('tpl-count').textContent = 'backend offline';
-    document.getElementById('templates-grid').innerHTML = '<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--text-muted)">⚠️ Backend waking up... refresh in 30 seconds.</div>';
+    document.getElementById('templates-grid').innerHTML = '<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--text-muted)">' + ICO('triangle-alert') + ' Backend waking up... refresh in 30 seconds.</div>';
   }
 }
 
@@ -1581,7 +1586,7 @@ async function submitFeedback() {
     document.getElementById('fb-email').value = '';
     document.getElementById('fb-message').value = '';
     closeFeedback();
-    toast('Thanks for the feedback! 💚');
+    toast('Thanks for the feedback!');
   } catch(e) { toast('Could not send — try again later', true); }
 }
 function openDisclaimer() { document.getElementById('disclaimer-modal').classList.add('show'); }
@@ -1673,7 +1678,7 @@ document.addEventListener('keydown', e => {
       width:100%;padding:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));
       color:var(--bg);border:none;border-radius:10px;font-weight:700;font-size:14px;
       cursor:pointer;font-family:var(--sans)
-    ">💾 Save File</button>
+    "><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-save"/></svg> Save File</button>
   </div>
 </div>
 
@@ -1724,7 +1729,7 @@ async function confirmSave() {
       })
     });
     if (res.ok) {
-      if (typeof toast === 'function') toast('✅ Saved: ' + name);
+      if (typeof toast === 'function') toast('Saved: ' + name);
       else alert('Saved: ' + name);
     } else {
       alert('Save failed. Please try again.');
@@ -1908,11 +1913,11 @@ async function loadFile(id) {
         renderOutput(lastConfig);
         document.getElementById('line-info').textContent = `${lastConfig.split('\n').length} lines`;
         setStatus('Loaded translated config · ' + file.name, 'ok');
-        toast('✅ Loaded: ' + file.name + '. Generate rebuilds it from the form; lines the form has no field for stay only in this saved text.', 'warn');
+        toast('Loaded: ' + file.name + '. Generate rebuilds it from the form; lines the form has no field for stay only in this saved text.', 'warn');
         return;
       }
       generate();
-      toast('✅ Loaded: ' + file.name);
+      toast('Loaded: ' + file.name);
       return;
     }
 
@@ -1936,7 +1941,7 @@ async function loadFile(id) {
         applyTemplate(p.data);
         if (!p.skipped.length) {
           generate();
-          toast('✅ Loaded: ' + file.name + ' (form rebuilt from the saved config)');
+          toast('Loaded: ' + file.name + ' (form rebuilt from the saved config)');
           return;
         }
       }

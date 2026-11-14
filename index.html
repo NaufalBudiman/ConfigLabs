@@ -751,13 +751,13 @@ interface GigabitEthernet1/0/24
 
 <!-- Support FAB -->
 <button class="support-fab" onclick="openSupport()" title="Support ConfigLabs">
-  ☕ <span>Support us</span>
+  <svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-heart"/></svg> <span>Support us</span>
 </button>
 
 <!-- Support Modal -->
 <div class="modal-overlay" id="support-modal" onclick="if(event.target===this)closeSupport()">
   <div class="modal">
-    <div class="support-hero">☕</div>
+    <div class="support-hero"><svg class="cl-ic" aria-hidden="true" style="width:30px;height:30px"><use href="/icons.svg#i-heart"/></svg></div>
     <h2 style="text-align:center">Support <em>ConfigLabs</em></h2>
     <p style="text-align:center;margin:8px 0 0">ConfigLabs is free and will stay free. No ads, no tracking.</p>
     <div class="support-reasons">
@@ -769,8 +769,8 @@ interface GigabitEthernet1/0/24
         <li>Add more vendors &amp; features</li>
       </ul>
     </div>
-    <a href="https://saweria.co/configlabs" target="_blank" rel="noopener noreferrer" class="btn-saweria">💚 Support via <span class="saweria-pill">SAWERIA</span></a>
-    <p style="text-align:center;font-family:var(--mono);font-size:12px;color:var(--text-muted);margin-top:14px">Terima kasih banyak! 🙏</p>
+    <a href="https://saweria.co/configlabs" target="_blank" rel="noopener noreferrer" class="btn-saweria"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-heart"/></svg> Support via <span class="saweria-pill">SAWERIA</span></a>
+    <p style="text-align:center;font-family:var(--mono);font-size:12px;color:var(--text-muted);margin-top:14px">Terima kasih banyak!</p>
     <div class="modal-actions" style="justify-content:center"><button class="btn btn-secondary" onclick="closeSupport()">Maybe later</button></div>
   </div>
 </div>

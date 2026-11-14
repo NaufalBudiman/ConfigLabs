@@ -419,7 +419,7 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
 
   <div class="main-layout">
     <section class="builder">
-      <div class="panel-head"><div class="panel-title"><span class="num">01</span>Source config</div><div class="panel-head-actions"><button class="icon-btn" onclick="openFeedback()" title="Feedback">💬</button><button class="icon-btn" onclick="clearIn()" title="Clear">🗑️</button></div></div>
+      <div class="panel-head"><div class="panel-title"><span class="num">01</span>Source config</div><div class="panel-head-actions"><button class="icon-btn" onclick="openFeedback()" title="Feedback" aria-label="Feedback"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-message-square"/></svg></button><button class="icon-btn" onclick="clearIn()" title="Clear" aria-label="Clear"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-trash-2"/></svg></button></div></div>
       <div class="panel-body">
         <div class="tr-src" id="tr-src">
           <button type="button" data-s="cisco" class="on"><b>Cisco</b>IOS / IOS-XE (Catalyst, ISR)</button>
@@ -435,12 +435,12 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
         </div>
         <div class="tr-lim" id="tr-lim">Loading limits…</div>
       </div>
-      <div class="panel-footer"><button class="btn btn-primary" id="tr-go" onclick="run()">⚡ Translate to H3C</button></div>
+      <div class="panel-footer"><button class="btn btn-primary" id="tr-go" onclick="run()"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-arrow-right-left"/></svg> <span id="tr-go-t">Translate to H3C</span></button></div>
     </section>
 
     <section class="output-wrap">
       <div class="panel-head"><div class="panel-title"><span class="num">02</span><span id="tr-out-title">H3C Comware output</span></div></div>
-      <div class="output-toolbar"><div class="output-toolbar-left"><button class="tool-btn" onclick="copyOut()">📋 Copy</button><button class="tool-btn" onclick="dlOut()">⬇ Download</button><button class="tool-btn" id="tr-save" type="button" onclick="saveFile()">💾 Save to My Files</button></div><span class="tr-meta" style="margin:0" id="tr-outinfo"></span></div>
+      <div class="output-toolbar"><div class="output-toolbar-left"><button class="tool-btn" onclick="copyOut()"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-copy"/></svg> Copy</button><button class="tool-btn" onclick="dlOut()"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-download"/></svg> Download</button><button class="tool-btn" id="tr-save" type="button" onclick="saveFile()"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-save"/></svg> Save to My Files</button></div><span class="tr-meta" style="margin:0" id="tr-outinfo"></span></div>
       <div class="output empty" id="tr-out"><div>Paste a config and click <strong>Translate</strong></div></div>
       <div class="status-bar" id="status"><span><span class="s-dot"></span> <span id="status-text">Ready</span></span><span id="line-info"></span></div>
     </section>
@@ -471,7 +471,7 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
         <div class="footer-tagline">Built with care for network engineers.<br>Free, open, always improving.</div>
         <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted)"><span data-cl-version>v7.7.0</span> · Multi-vendor</div>
       </div>
-      <div class="footer-col"><h4>Product</h4><a href="/about.html">About</a><a href="/builder.html">Config Builder</a><a onclick="openFeedback()">Send feedback</a><a onclick="openSupport()">☕ Support us</a><a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" rel="noopener noreferrer">GitHub</a></div>
+      <div class="footer-col"><h4>Product</h4><a href="/about.html">About</a><a href="/builder.html">Config Builder</a><a onclick="openFeedback()">Send feedback</a><a onclick="openSupport()"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-heart"/></svg> Support us</a><a href="https://github.com/NaufalBudiman/ConfigLabs" target="_blank" rel="noopener noreferrer">GitHub</a></div>
       <div class="footer-col"><h4>Vendors</h4><a href="https://www.h3c.com" target="_blank" rel="noopener noreferrer">H3C Official</a><a href="https://www.cisco.com" target="_blank" rel="noopener noreferrer">Cisco Official</a><a href="https://www.ruijienetworks.com" target="_blank" rel="noopener noreferrer">Ruijie Official</a></div>
       <div class="footer-col"><h4>Legal</h4><a onclick="openDisclaimer()">Disclaimer</a><a onclick="openTerms()">Terms of Use</a></div>
     </div>
@@ -484,7 +484,7 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
   </footer>
 </div>
 
-<button class="support-fab" onclick="openSupport()">☕ Support us</button>
+<button class="support-fab" onclick="openSupport()"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-heart"/></svg> Support us</button>
 
 <!-- Modals -->
 <div class="modal-overlay" id="feedback-modal" onclick="if(event.target===this)closeFeedback()">
@@ -493,7 +493,7 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
     <p>Found a bug? Want a feature? I'm listening.</p>
     <div class="field" style="margin-top:16px"><label>Email <span class="hint">optional</span></label><input id="fb-email" type="email" placeholder="you@example.com"></div>
     <div class="field"><label>Message</label><textarea id="fb-message" placeholder="What's on your mind?"></textarea></div>
-    <div class="modal-actions"><button class="btn btn-secondary" onclick="closeFeedback()">Cancel</button><button class="btn btn-primary" onclick="submitFeedback()">Send 💚</button></div>
+    <div class="modal-actions"><button class="btn btn-secondary" onclick="closeFeedback()">Cancel</button><button class="btn btn-primary" onclick="submitFeedback()"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-send"/></svg> Send</button></div>
   </div>
 </div>
 
@@ -515,15 +515,15 @@ footer{position:relative;z-index:1;margin-top:80px;padding:40px 0 30px;border-to
 
 <div class="modal-overlay" id="support-modal" onclick="if(event.target===this)closeSupport()">
   <div class="modal">
-    <div class="support-hero">☕</div>
+    <div class="support-hero"><svg class="cl-ic" aria-hidden="true" style="width:30px;height:30px"><use href="/icons.svg#i-heart"/></svg></div>
     <h2 style="text-align:center">Support <em>ConfigLabs</em></h2>
     <p style="text-align:center;margin:8px 0 0">ConfigLabs is free and will stay free. No ads, no tracking.</p>
     <div class="support-reasons">
       <h4>Your support helps:</h4>
       <ul><li>Cover server &amp; database hosting</li><li>Keep the domain alive</li><li>Stay completely ad-free</li><li>Add more vendors &amp; features</li></ul>
     </div>
-    <a href="https://saweria.co/configlabs" target="_blank" rel="noopener noreferrer" class="btn-saweria">💚 Support via <span class="saweria-pill">SAWERIA</span></a>
-    <p style="text-align:center;font-family:var(--mono);font-size:12px;color:var(--text-muted);margin-top:14px">Terima kasih banyak! 🙏</p>
+    <a href="https://saweria.co/configlabs" target="_blank" rel="noopener noreferrer" class="btn-saweria"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-heart"/></svg> Support via <span class="saweria-pill">SAWERIA</span></a>
+    <p style="text-align:center;font-family:var(--mono);font-size:12px;color:var(--text-muted);margin-top:14px">Terima kasih banyak!</p>
     <div class="modal-actions" style="justify-content:center"><button class="btn btn-secondary" onclick="closeSupport()">Maybe later</button></div>
   </div>
 </div>
@@ -560,7 +560,7 @@ async function submitFeedback() {
     document.getElementById('fb-email').value = '';
     document.getElementById('fb-message').value = '';
     closeFeedback();
-    toast('Thanks for the feedback! 💚');
+    toast('Thanks for the feedback!');
   } catch(e) { toast('Could not send — try again later', true); }
 }
 function openDisclaimer() { document.getElementById('disclaimer-modal').classList.add('show'); }
@@ -591,7 +591,7 @@ const SRCN={cisco:'Cisco',ruijie:'Ruijie',mikrotik:'MikroTik'},TGTN={h3c:'H3C',m
 function setSrc(k){src=SRCN[k]?k:'cisco';document.querySelectorAll('#tr-src button').forEach(x=>x.classList.toggle('on',x.dataset.s===src));
   $('tr-in').placeholder=src==='ruijie'?"Paste the output of 'show running-config' from the Ruijie device...":src==='mikrotik'?"Paste the output of '/export' (or '/export terse') from the MikroTik...":"Paste the output of 'show running-config' here...";
   const mt=document.querySelector('#tr-tgt [data-t="mikrotik"]');mt.disabled=src==='mikrotik';mt.title=src==='mikrotik'?'MikroTik to MikroTik is not a translation':'';if(src==='mikrotik')setTgt('h3c');}
-function setTgt(k){tgt=k==='mikrotik'&&src!=='mikrotik'?'mikrotik':'h3c';document.querySelectorAll('#tr-tgt button').forEach(x=>x.classList.toggle('on',x.dataset.t===tgt));$('tr-out-title').textContent=tgt==='mikrotik'?'MikroTik RouterOS output':'H3C Comware output';}
+function setTgt(k){tgt=k==='mikrotik'&&src!=='mikrotik'?'mikrotik':'h3c';document.querySelectorAll('#tr-tgt button').forEach(x=>x.classList.toggle('on',x.dataset.t===tgt));$('tr-out-title').textContent=tgt==='mikrotik'?'MikroTik RouterOS output':'H3C Comware output';$('tr-go-t').textContent='Translate to '+(tgt==='mikrotik'?'MikroTik':'H3C');}
 document.querySelectorAll('#tr-src button').forEach(b=>b.addEventListener('click',()=>setSrc(b.dataset.s)));
 document.querySelectorAll('#tr-tgt button').forEach(b=>b.addEventListener('click',()=>setTgt(b.dataset.t)));
 let LIM=null;
@@ -771,7 +771,7 @@ function show(cfg,r,lines){
   $('b-if').innerHTML=maps(A(r.interface_map));$('c-if').textContent=A(r.interface_map).length;
   $('b-acl').innerHTML=maps(A(r.acl_map));$('c-acl').textContent=A(r.acl_map).length;
   $('b-nt').innerHTML=A(r.notes).map(n=>'<div style="padding:4px 0">• '+escH(n)+'</div>').join('')||'—';$('c-nt').textContent=A(r.notes).length;
-  const b=$('tr-save');b.textContent='💾 Save to My Files';b.onclick=saveFile;
+  const b=$('tr-save');b.innerHTML=clIcon('save')+' Save to My Files';b.onclick=saveFile;
 }
 
 /* ---- translation history, kept in this browser (the Dashboard lists it): cl_tr_idx + cl_tr_d_<id> ---- */
@@ -812,7 +812,7 @@ async function saveFile(){
     const res=await fetch(API+'/api/files',{method:'POST',headers:hdrs(),body:JSON.stringify({name:nm,file_type:'config',vendor:isMt?'mikrotik':'h3c',hostname:lastName==='h3c'?'':lastName,
       data:{__v:2,vendor:isMt?'mikrotik':'h3c',os,form:lastData||{},translated:true,__generated__:last}})});
     const j=await res.json().catch(()=>({}));
-    if(res.ok&&/^\d+$/.test(String(j.id))){toast('Saved to My Files');b.textContent='↗ Open in Builder';b.onclick=()=>{location.href='/builder.html?file='+j.id;};}
+    if(res.ok&&/^\d+$/.test(String(j.id))){toast('Saved to My Files');b.innerHTML=clIcon('external-link')+' Open in Builder';b.onclick=()=>{location.href='/builder.html?file='+j.id;};}
     else if(res.status===401)toast('Your session expired, log in again',true);
     else toast(j.error||'Could not save',true);
   }catch(e){toast('Cannot reach backend',true);}

@@ -96,7 +96,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);display:flex
 .canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--bg-2)}
 #floor-canvas{position:absolute;top:0;left:0;cursor:crosshair}
 .canvas-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;pointer-events:none}
-.canvas-empty-icon{font-size:48px;opacity:.3}
+.canvas-empty-icon{font-size:48px;opacity:.35;color:var(--text-dim)}
 .canvas-empty h3{font-size:18px;font-weight:500;color:var(--text-dim)}
 .canvas-empty p{font-size:13px;color:var(--text-muted);text-align:center;max-width:280px;line-height:1.6}
 .upload-btn-big{padding:10px 20px;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--bg);border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;pointer-events:auto;font-family:var(--sans)}
@@ -497,7 +497,7 @@ body>#cl-nav{flex-shrink:0}
 <body data-theme="dark">
 <div class="cl-orbs" aria-hidden="true"><i></i><i></i><i></i></div>
 <div id="cl-nav"></div>
-<div class="phone-block"><div style="font-size:40px">📶</div><h2>WiFi Planner needs a bigger screen</h2><p>The planner is built for laptop or tablet. Please open this page on a larger screen to plan floors and place access points.</p><div class="row"><a href="/">Home</a><a class="alt" href="/builder.html">Config Builder</a></div></div>
+<div class="phone-block"><div><svg class="cl-ic" aria-hidden="true" style="width:40px;height:40px"><use href="/icons.svg#i-wifi"/></svg></div><h2>WiFi Planner needs a bigger screen</h2><p>The planner is built for laptop or tablet. Please open this page on a larger screen to plan floors and place access points.</p><div class="row"><a href="/">Home</a><a class="alt" href="/builder.html">Config Builder</a></div></div>
 
 
 <!-- LOGIN MODAL -->
@@ -520,7 +520,7 @@ body>#cl-nav{flex-shrink:0}
     <button class="auth-modal-close" onclick="closeSavePlan()">✕</button>
     <h2 class="auth-modal-title" style="font-size:20px;margin-bottom:16px">Save WiFi Plan</h2>
     <input id="saveplan-input" type="text" class="modal-input" placeholder="e.g. Office Floor 2 — WiFi Plan" onkeydown="if(event.key==='Enter')confirmSavePlan()">
-    <button onclick="confirmSavePlan()" class="btn-primary-modal">💾 Save Plan</button>
+    <button onclick="confirmSavePlan()" class="btn-primary-modal"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-save"/></svg> Save Plan</button>
   </div>
 </div>
 
@@ -575,7 +575,7 @@ body>#cl-nav{flex-shrink:0}
   <div class="left-panel" id="left-panel">
     <div class="lp-sec">
       <button class="lp-head" onclick="toggleSec(this)">Wall material <i>▾</i></button>
-      <div class="lp-body"><div id="mat-list"></div><button class="btn-secondary-modal" style="width:100%;margin-top:8px;padding:7px;font-size:12px" onclick="openMatLib()" title="Edit wall types, thickness and loss per band">✎ Edit wall library</button></div>
+      <div class="lp-body"><div id="mat-list"></div><button class="btn-secondary-modal" style="width:100%;margin-top:8px;padding:7px;font-size:12px" onclick="openMatLib()" title="Edit wall types, thickness and loss per band"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-pencil"/></svg> Edit wall library</button></div>
     </div>
     <div class="lp-sec">
       <button class="lp-head" onclick="toggleSec(this)">Doors <i>▾</i></button>
@@ -646,10 +646,10 @@ body>#cl-nav{flex-shrink:0}
       <div class="floor-tabs" id="floor-tabs"></div>
       <button class="pb-add" onclick="addFloor()" title="Add floor">+</button>
       <div class="tgrow"></div>
-      <span class="ro-banner" id="ro-banner">👁 Shared view · read-only</span><button class="tt ro-only" id="ro-copy" onclick="copyShared()">Save a copy</button>
+      <span class="ro-banner" id="ro-banner"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg> Shared view · read-only</span><button class="tt ro-only" id="ro-copy" onclick="copyShared()">Save a copy</button>
       <span class="save-state" id="save-state"></span>
       <div class="filemenu" id="savemenu" style="display:flex;gap:0">
-        <button class="tt" id="btn-save" onclick="saveNow()" title="Save now (Ctrl+S)" style="border-radius:8px 0 0 8px">💾 Save</button>
+        <button class="tt" id="btn-save" onclick="saveNow()" title="Save now (Ctrl+S)" style="border-radius:8px 0 0 8px"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-save"/></svg> Save</button>
         <button class="tt" onclick="toggleMenu(event,'savemenu')" title="More save options" style="border-radius:0 8px 8px 0;padding:0 7px;border-left:1px solid var(--border)">▾</button>
         <div class="filemenu-pop">
           <button onclick="saveNow()">Save to this browser</button>
@@ -743,8 +743,8 @@ body>#cl-nav{flex-shrink:0}
       <div class="filemenu" id="filemenu">
         <button class="tt" onclick="toggleFileMenu(event)">File ▾</button>
         <div class="filemenu-pop">
-          <button onclick="fileAct('cloud')" id="fm-cloud">☁ Sync to my account</button>
-          <button onclick="fileAct('share')">🔗 Share link (read-only)…</button>
+          <button onclick="fileAct('cloud')" id="fm-cloud"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-cloud"/></svg> Sync to my account</button>
+          <button onclick="fileAct('share')"><svg class="cl-ic" aria-hidden="true"><use href="/icons.svg#i-link"/></svg> Share link (read-only)…</button>
           <button onclick="fileAct('upload')">Upload floor plan…</button>
           <button onclick="fileAct('scale')">Set scale by plan width…</button>
           <button onclick="fileAct('png')">Export PNG (this floor)</button>
@@ -764,7 +764,7 @@ body>#cl-nav{flex-shrink:0}
     <div class="canvas-wrap" id="canvas-wrap">
       <canvas id="floor-canvas"></canvas>
       <div class="canvas-empty" id="canvas-empty">
-        <div class="canvas-empty-icon">📡</div>
+        <div class="canvas-empty-icon"><svg class="cl-ic" aria-hidden="true" style="width:44px;height:44px"><use href="/icons.svg#i-radio-tower"/></svg></div>
         <h3>WiFi Heatmap Planner</h3>
         <p>Upload a floor plan image to get started, or start on a blank canvas.</p>
         <div style="display:flex;gap:8px;pointer-events:auto">
@@ -2362,7 +2362,7 @@ function renderPropsPanel() {
   const el = document.getElementById('props-content');
   document.getElementById('wifi-props').classList.toggle('show', !!wifi.sel);
   if (!wifi.sel) {
-    el.innerHTML = `<div class="no-sel"><span class="no-sel-icon">📡</span>Select an AP or wall to edit properties.</div>`;
+    el.innerHTML = `<div class="no-sel"><span class="no-sel-icon">${clIcon('radio-tower', 28)}</span>Select an AP or wall to edit properties.</div>`;
     return;
   }
 
@@ -2378,7 +2378,7 @@ function renderPropsPanel() {
     const radHTML = rads.map(r => {
       const used = new Set();
       wifi.aps.forEach(a => { if (a.id === ap.id) return; const mm = getAPModel(a.vendor, a.model); if (!mm) return; apRadios(a, mm).forEach(x => { if (x.band === r.band) used.add(x.ch); }); });
-      const opts = CH_OPTS[r.band].map(c => `<option value="${c}" ${c === r.ch ? 'selected' : ''}>${c}${used.has(c) ? '  ⚠ used by another AP' : ''}</option>`).join('');
+      const opts = CH_OPTS[r.band].map(c => `<option value="${c}" ${c === r.ch ? 'selected' : ''}>${c}${used.has(c) ? '  (used by another AP)' : ''}</option>`).join('');
       const mx = mTx(m, r.band), g = mGain(m, r.band);
       return `<div class="rad-box">
         <div class="rb-h"><span>Radio ${r.i + 1} · <b>${r.band} GHz</b></span></div><div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">max ${mx} dBm · antenna gain ${g} dBi</div>
@@ -2483,7 +2483,7 @@ function renderPropsPanel() {
         <div class="props-sub">${a.name ? esc(a.name) + ' · ' : ''}${a.pts.length} corners · ≈ ${m2} m²</div>
       </div>
       ${(() => { const r = a.cap ? capCalc(a) : null; return r && r.clients ? `<div class="pf" style="font-size:11px;line-height:1.7;color:var(--text-dim)"><div>Clients <b style="color:var(--text)">${r.clients}</b> · traffic <b style="color:var(--text)">${Math.round(r.demand)} Mbps</b></div><div>APs inside <b style="color:var(--text)">${r.placed}</b> · needed <b style="color:var(--text)">${r.need}</b> (${r.limit} limit)</div><div>${capStatusHTML(r)}</div></div>` : ''; })()}
-      <div class="pf"><button class="btn-secondary-modal" style="width:100%;font-size:12px" onclick="openCapacity()">👥 Capacity settings…</button></div>
+      <div class="pf"><button class="btn-secondary-modal" style="width:100%;font-size:12px" onclick="openCapacity()">${clIcon('users')} Capacity settings…</button></div>
       <div class="pf"><div style="font-size:12px;color:var(--text-dim);line-height:1.6">The heatmap and the coverage statistics are computed <b>only inside</b> this region. Delete it to render the whole floor plan again.</div></div>
       <button class="delete-btn" onclick="deleteSelected()">Delete render area</button>`;
   }
@@ -3537,8 +3537,8 @@ async function openConflicts() {
   const rows = r.list.slice(0, 12).map(e => `<tr><td><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${INTF_PAL[e.i % INTF_PAL.length]};margin-right:6px"></i>${nm(e.i)} <span style="color:var(--text-muted)">ch ${chOf(e.i)}</span></td><td>${nm(e.s)} <span style="color:var(--text-muted)">ch ${chOf(e.s)}</span></td><td><b>${pct(e.n)}</b></td><td>${e.worst.toFixed(1)} dB</td></tr>`).join('');
   const html = `<div style="font-size:12px;color:var(--text-dim);line-height:1.6;margin-bottom:10px">${band} GHz · area where the signal of the serving AP is at least ${wifi.covTarget} dBm. A spot is counted as <b>disturbed</b> when its SINR (signal vs. co-channel APs and noise) is below <b>${T} dB</b>.</div>
     <div style="font-size:13px;margin-bottom:10px">Disturbed area: <b style="color:${r.bad / r.total > 0.15 ? 'var(--danger)' : 'var(--accent)'}">${pct(r.bad)}</b> of the covered area</div>
-    ${rows ? `<table class="cal-tbl"><tr><th>Interferer</th><th>Disturbs (serving AP)</th><th>Area</th><th>Worst SINR</th></tr>${rows}</table>` : '<p style="font-size:13px">No AP pair interferes below the threshold. 👍</p>'}
-    <div style="font-size:11px;color:var(--text-muted);margin-top:10px">Tip: pick the mode <b>Interference (who disturbs)</b> to see these areas on the map. ✨ Optimize can re-plan channels and power to reduce them.</div>`;
+    ${rows ? `<table class="cal-tbl"><tr><th>Interferer</th><th>Disturbs (serving AP)</th><th>Area</th><th>Worst SINR</th></tr>${rows}</table>` : '<p style="font-size:13px">No AP pair interferes below the threshold.</p>'}
+    <div style="font-size:11px;color:var(--text-muted);margin-top:10px">Tip: pick the mode <b>Interference (who disturbs)</b> to see these areas on the map. Optimize can re-plan channels and power to reduce them.</div>`;
   const m = await dialog({ title: 'Interference <em>conflicts</em>', html, ok: r.bad ? 'Open Optimize' : 'Close', cancel: r.bad ? 'Close' : null, hideCancel: !r.bad, wide: true });
   if (m && r.bad) openOptimize();
 }
@@ -3684,7 +3684,7 @@ function pwrRender(root) {
   const cfg = { buf: isNaN(buf) ? PWR_DEF.buf : Math.max(0, Math.min(200, buf)), sw: PWR_DEF.sw.map((s, i) => ({ ports: s.ports, w: sw[i] > 0 ? sw[i] : s.w })) };
   const R = pwrCalc(pwrProjectList(), cfg), t = R.tot;
   const best = r => r.best ? `${r.best.units} × ${r.best.ports}-port` + (r.sw ? ` <span style="color:var(--text-muted);font-size:10px">(${r.sw.find(s => s.ports === r.best.ports).by || 'ports'} limit)</span>` : '') : '—';
-  const fr = R.rows.map(r => `<tr><td>${esc(r.name)}</td><td>${r.n}${r.nodata ? ` <span style="color:var(--warn,#ffb86b)" title="No watt data for ${r.nodata} AP">⚠${r.nodata}</span>` : ''}</td><td>${fmtW(r.w)}</td><td>${fmtW(r.wb)}</td><td>${r.ports}</td><td style="font-size:11px">${pwrClsText(r.cls)}</td><td>${best(r)}</td></tr>`).join('');
+  const fr = R.rows.map(r => `<tr><td>${esc(r.name)}</td><td>${r.n}${r.nodata ? ` <span style="color:var(--warn,#ffb86b)" title="No watt data for ${r.nodata} AP">${clIcon('triangle-alert', 13)}${r.nodata}</span>` : ''}</td><td>${fmtW(r.w)}</td><td>${fmtW(r.wb)}</td><td>${r.ports}</td><td style="font-size:11px">${pwrClsText(r.cls)}</td><td>${best(r)}</td></tr>`).join('');
   const mr = R.models.map(m => `<tr><td>${esc(m.model)}</td><td>${m.n}</td><td>${m.w ? fmtW(m.w) : '<span style="color:var(--text-muted)">no data</span>'}</td><td>${m.w ? fmtW(m.w * m.n) : '—'}</td><td>${m.w ? pwrClass(m.w) === 'bt3' ? 'bt (60 W)' : pwrClass(m.w) === 'bt4' ? 'bt (90 W)' : pwrClass(m.w) : '—'}</td></tr>`).join('');
   const warn = [];
   if (t.nodata) warn.push(`<b>${t.nodata}</b> AP without watt data in the catalog, <b>not</b> counted. Add the watts in the AP catalog.`);
@@ -3730,7 +3730,7 @@ async function openMatLib() {
       <button class="btn-secondary-modal" style="flex:1;padding:7px" onclick="document.querySelectorAll('#ml-tbl tr[data-id]').forEach(r => r.remove());document.getElementById('ml-tbl').insertAdjacentHTML('beforeend', WALL_DEFAULT.map(matRowHTML).join(''))">Reset to factory defaults</button></div>
     ${userMatLib() ? `<button class="btn-secondary-modal" style="width:100%;padding:7px;margin-top:8px" onclick="document.querySelectorAll('#ml-tbl tr[data-id]').forEach(r => r.remove());document.getElementById('ml-tbl').insertAdjacentHTML('beforeend', userMatLib().map(q => matRowHTML(matNorm(q))).join(''))">Load my saved default library</button>` : ''}
     <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:10px"><input type="checkbox" id="ml-global" checked style="width:auto"> Also save as my default library for new projects</label>
-    <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${cl_token() ? '☁ Synced to your account: the same library on every device you log in.' : 'Stored in this browser only. <a href="#" onclick="event.preventDefault();authOpenModal()" style="color:var(--accent)">Log in</a> to sync it to your account.'}</div>`;
+    <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${cl_token() ? clIcon('cloud', 13) + ' Synced to your account: the same library on every device you log in.' : 'Stored in this browser only. <a href="#" onclick="event.preventDefault();authOpenModal()" style="color:var(--accent)">Log in</a> to sync it to your account.'}</div>`;
   const m = await dialog({ title: 'Wall <em>library</em>', html, ok: 'Save library', wide: true });
   if (!m) return;
   const rows = [...m.querySelectorAll('#ml-tbl tr[data-id]')];
@@ -4303,7 +4303,7 @@ async function openApCat() {
     <div style="max-height:46vh;overflow:auto"><table class="cal-tbl" id="apc-tbl">${apcRowsBuilt('h3c')}</table></div>
     <div style="display:flex;gap:8px;margin-top:10px"><button id="apc-add" class="btn-secondary-modal" style="display:none;flex:1;padding:7px" onclick="apcAdd(this.closest('.modal'))">+ Add my own AP</button>
       <button class="btn-secondary-modal" style="flex:1;padding:7px" onclick="apcReset(this.closest('.modal'))">Reset this list to defaults</button></div>
-    <div style="font-size:11px;color:var(--text-muted);margin-top:8px">${cl_token() ? '☁ Synced to your account.' : 'Stored in this browser only. <a href="#" onclick="event.preventDefault();authOpenModal()" style="color:var(--accent)">Log in</a> to sync across devices.'} Watt values are the maximum power draw from the H3C installation guides.</div>`;
+    <div style="font-size:11px;color:var(--text-muted);margin-top:8px">${cl_token() ? clIcon('cloud', 13) + ' Synced to your account.' : 'Stored in this browser only. <a href="#" onclick="event.preventDefault();authOpenModal()" style="color:var(--accent)">Log in</a> to sync across devices.'} Watt values are the maximum power draw from the H3C installation guides.</div>`;
   const m = await dialog({ title: 'AP <em>catalog</em>', html, ok: 'Save catalog', wide: true });
   if (!m) return;
   apcCollect(m);
@@ -4385,7 +4385,7 @@ function exportPNG() {
   link.download = (curProj ? safeName(curProj.name) + '-' + safeName(curFloorObj()?.name || 'floor') : 'wifi-heatmap') + '.png';
   link.href = off.toDataURL('image/png');
   link.click();
-  toast('✅ Exported as PNG');
+  toast('Exported as PNG');
 }
 
 // ============================================================
@@ -4423,7 +4423,7 @@ async function confirmSavePlan() {
         device_count: wifi.aps.length,
       })
     });
-    if (res.ok) toast('✅ Plan saved: ' + name);
+    if (res.ok) toast('Plan saved: ' + name);
     else toast('Save failed — try again', 'error');
   } catch(err) { toast('Error: '+err.message, 'error'); }
 }
@@ -4652,7 +4652,7 @@ async function saveCurrent() {
     _lastSaved = sig; _dirty = false;
     _savedAt = new Date().toTimeString().slice(0, 5);
     setSaveState('Saved ✓ ' + _savedAt);
-  } catch (e) { setSaveState('⚠ Not saved'); toast('Could not save to browser storage', 'error'); }
+  } catch (e) { setSaveState('Not saved'); toast('Could not save to browser storage', 'error'); }
 }
 async function saveNow() {
   document.querySelectorAll('.projbar .filemenu.open').forEach(x => x.classList.remove('open'));
@@ -4781,24 +4781,24 @@ function renderHome(list) {
     return `<div class="pcard" onclick="nav('#p=${p.id}')">
       <button class="dots" onclick="event.stopPropagation();toggleCardMenu('${p.id}')" title="More">⋯</button>
       <div class="pmenu" id="pm-${p.id}">
-        ${p.cloud ? `<button onclick="event.stopPropagation();cloudRemove('${p.id}')">☁ Remove from my account…</button>` : `<button onclick="event.stopPropagation();cloudEnable('${p.id}')">☁ Sync to my account</button>`}
+        ${p.cloud ? `<button onclick="event.stopPropagation();cloudRemove('${p.id}')">${clIcon('cloud')} Remove from my account…</button>` : `<button onclick="event.stopPropagation();cloudEnable('${p.id}')">${clIcon('cloud')} Sync to my account</button>`}
         <button onclick="event.stopPropagation();editProjectInfo('${p.id}')">Rename / info…</button>
         <button onclick="event.stopPropagation();duplicateProject('${p.id}')">Duplicate</button>
-        <button onclick="event.stopPropagation();projDownload('${p.id}','report')">⬇ Download report (.docx)</button>
-        <button onclick="event.stopPropagation();projDownload('${p.id}','csv')">⬇ Download AP list (.csv)</button>
-        <button onclick="event.stopPropagation();exportProject('${p.id}')">⬇ Project file (backup)</button>
+        <button onclick="event.stopPropagation();projDownload('${p.id}','report')">${clIcon('download')} Download report (.docx)</button>
+        <button onclick="event.stopPropagation();projDownload('${p.id}','csv')">${clIcon('download')} Download AP list (.csv)</button>
+        <button onclick="event.stopPropagation();exportProject('${p.id}')">${clIcon('download')} Project file (backup)</button>
         <button class="danger" onclick="event.stopPropagation();deleteProject('${p.id}')">Delete…</button>
       </div>
       <h3>${esc(p.name)}</h3>
       <div class="sub">${esc(sub) || '&nbsp;'}</div>
-      <div class="meta"><span><b>${p.floors.length}</b> floor${p.floors.length === 1 ? '' : 's'}</span><span><b>${aps}</b> AP</span><span>${new Date(p.updated).toLocaleDateString()}</span>${p.cloud ? '<span title="Synced to your account">☁</span>' : ''}</div>
+      <div class="meta"><span><b>${p.floors.length}</b> floor${p.floors.length === 1 ? '' : 's'}</span><span><b>${aps}</b> AP</span><span>${new Date(p.updated).toLocaleDateString()}</span>${p.cloud ? '<span title="Synced to your account">' + clIcon('cloud', 13) + '</span>' : ''}</div>
     </div>`;
   }).join('');
   const localIds = new Set(list.map(p => p.id));
   const cloudOnly = (_cloudList || []).filter(c => !localIds.has(c.id)).map(c => `<div class="pcard" onclick="openCloudProject('${c.id}')">
       <h3>${esc(c.name)}</h3>
       <div class="sub">${esc([c.client, c.location].filter(Boolean).join(' · ')) || '&nbsp;'}</div>
-      <div class="meta"><span><b>${c.floors}</b> floor${c.floors === 1 ? '' : 's'}</span><span><b>${c.aps}</b> AP</span><span>☁ In your account</span>${c.shared ? '<span title="Share link active">🔗</span>' : ''}</div>
+      <div class="meta"><span><b>${c.floors}</b> floor${c.floors === 1 ? '' : 's'}</span><span><b>${c.aps}</b> AP</span><span>${clIcon('cloud', 13)} In your account</span>${c.shared ? '<span title="Share link active">' + clIcon('link', 13) + '</span>' : ''}</div>
     </div>`).join('');
   grid.innerHTML = cards + cloudOnly + `<div class="pcard newcard" onclick="newProject()">+ New project</div>`;
 }
@@ -4826,7 +4826,7 @@ function readInfo(m) {
            location: m.querySelector('#pi-loc').value.trim(), engineer: m.querySelector('#pi-eng').value.trim(), notes: m.querySelector('#pi-notes').value.trim() };
 }
 async function newProject() {
-  const m = await dialog({ title: 'New <em>project</em>', html: infoHTML({ name: '', client: '', location: '', engineer: '', notes: '' }) + (cl_token() ? '<label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:4px"><input type="checkbox" id="pi-cloud" checked style="width:auto"> ☁ Sync this project to my account</label>' : ''), ok: 'Create project' });
+  const m = await dialog({ title: 'New <em>project</em>', html: infoHTML({ name: '', client: '', location: '', engineer: '', notes: '' }) + (cl_token() ? '<label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:4px"><input type="checkbox" id="pi-cloud" checked style="width:auto"> ' + clIcon('cloud') + ' Sync this project to my account</label>' : ''), ok: 'Create project' });
   if (!m) return;
   const i = readInfo(m);
   if (!i.name) { toast('Give the project a name', 'error'); return newProject(); }
@@ -4887,7 +4887,7 @@ async function cfetch(path, opts) {
 }
 function cloudStrip(p) { const c = JSON.parse(JSON.stringify(p)); delete c.cloud; delete c.cloudRev; delete c.cloudPlans; return c; }
 function setCloud(s) {
-  _cloudBadge = s === 'ok' ? '☁ synced' : s === 'busy' ? '☁ syncing…' : s === 'login' ? '☁ log in again' : s === 'off' ? '' : '☁ sync failed';
+  _cloudBadge = s === 'ok' ? 'synced' : s === 'busy' ? 'syncing…' : s === 'login' ? 'log in again' : s === 'off' ? '' : 'sync failed';
   setSaveState(_lastStateTxt, _lastStateDirty);
 }
 async function compressPlan(blob) {
@@ -4973,7 +4973,7 @@ async function cloudEnable(id) {
   let ok = res === 'ok' && await cloudUploadPlans(p);
   _cloudInternal = true; try { await dbPut('projects', p); } finally { _cloudInternal = false; }
   hideBusy();
-  if (ok) { toast('☁ Project synced to your account'); setCloud('ok'); } else { toast(res === 'login' ? 'Please log in again' : 'Upload failed, try again', 'error'); setCloud(res === 'login' ? 'login' : 'fail'); }
+  if (ok) { toast('Project synced to your account'); setCloud('ok'); } else { toast(res === 'login' ? 'Please log in again' : 'Upload failed, try again', 'error'); setCloud(res === 'login' ? 'login' : 'fail'); }
   if (!curProj) renderHome(await dbAll('projects'));
 }
 async function cloudRemove(id) {
@@ -5528,7 +5528,7 @@ async function openCalibration() {
       <div class="plc-d" style="margin-top:6px">Offset ${f.cand.a >= 0 ? '+' : ''}${f.cand.a} dB · slope ${f.cand.b >= 0 ? '+' : ''}${f.cand.b}${mats.length ? ' · wall corrections: ' + mats.map(id => `${esc(matName(id))} ${f.cand.m[id] >= 0 ? '+' : ''}${f.cand.m[id]} dB`).join(', ') : (f.n < 8 ? ' · fewer than 8 points, wall materials not fitted' : ' · no wall material needed a correction')}</div>
       ${f.rms1 > f.rms0 + 0.05 ? '<div class="plc-d" style="color:var(--warning)">The fit does not improve the error, so it is not selected.</div>' : ''}
       ${f.n < 4 ? '<div class="plc-d" style="color:var(--warning)">Very few points: treat this as a rough correction.</div>' : ''}
-      <details style="margin-top:6px"><summary style="cursor:pointer;font-size:12px;color:var(--text-dim)">Points${outl.length ? ` · ${outl.length} possible outlier${outl.length > 1 ? 's' : ''}` : ''}</summary><table class="cal-tbl" style="margin-top:6px"><tr><th>#</th><th>Measured</th><th>Predicted</th><th>Calibrated</th><th>Error</th></tr>${f.rows.map(r => { const e = r.meas - r.p1, bad = Math.abs(e) > Math.max(8, 2 * f.rms1); return `<tr${bad ? ' style="color:var(--warning)"' : ''}><td>${r.i + 1}${bad ? ' ⚠' : ''}</td><td>${r.meas}</td><td>${Math.round(r.p0)}</td><td>${Math.round(r.p1)}</td><td>${e >= 0 ? '+' : ''}${e.toFixed(1)}</td></tr>`; }).join('')}</table></details></div>`;
+      <details style="margin-top:6px"><summary style="cursor:pointer;font-size:12px;color:var(--text-dim)">Points${outl.length ? ` · ${outl.length} possible outlier${outl.length > 1 ? 's' : ''}` : ''}</summary><table class="cal-tbl" style="margin-top:6px"><tr><th>#</th><th>Measured</th><th>Predicted</th><th>Calibrated</th><th>Error</th></tr>${f.rows.map(r => { const e = r.meas - r.p1, bad = Math.abs(e) > Math.max(8, 2 * f.rms1); return `<tr${bad ? ' style="color:var(--warning)"' : ''}><td>${r.i + 1}${bad ? ' ' + clIcon('triangle-alert', 13) : ''}</td><td>${r.meas}</td><td>${Math.round(r.p0)}</td><td>${Math.round(r.p1)}</td><td>${e >= 0 ? '+' : ''}${e.toFixed(1)}</td></tr>`; }).join('')}</table></details></div>`;
   });
   const m2 = await dialog({ title: 'Calibration <em>quality</em>', html: h, ok: 'Apply selected', wide: true });
   if (!m2) { toast('Calibration not applied. The readings were kept.'); return; }
@@ -6423,7 +6423,7 @@ function toggleTbMenu(e, id) {
   const pop = m.querySelector('.filemenu-pop'), r = m.getBoundingClientRect(), w = pop.offsetWidth || 260;
   if (r.left + w > window.innerWidth - 8) { pop.style.left = 'auto'; pop.style.right = '0'; } else { pop.style.left = '0'; pop.style.right = 'auto'; }
 }
-function toggleFileMenu(e) { e.stopPropagation(); const fc = document.getElementById('fm-cloud'); if (fc && curProj) fc.textContent = curProj.cloud ? '☁ Remove from my account…' : '☁ Sync to my account'; document.getElementById('filemenu').classList.toggle('open'); }
+function toggleFileMenu(e) { e.stopPropagation(); const fc = document.getElementById('fm-cloud'); if (fc && curProj) fc.innerHTML = clIcon('cloud') + (curProj.cloud ? ' Remove from my account…' : ' Sync to my account'); document.getElementById('filemenu').classList.toggle('open'); }
 function fileAct(a) {
   document.getElementById('filemenu').classList.remove('open');
   if (a === 'upload') document.getElementById('floor-upload').click();

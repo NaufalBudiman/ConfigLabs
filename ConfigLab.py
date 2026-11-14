@@ -3152,7 +3152,8 @@ TEMPLATES = {
     # =========== H3C COMWARE ===========
     "h3c_comware_access_switch": {
         "vendor": "h3c", "os": "comware",
-        "name": "🏢 Access Switch",
+        "name": "Access Switch",
+        "icon": "network",
         "description": "Standard access switch with user VLAN and uplink trunk",
         "data": {
             "system": {"hostname": "SW-ACCESS-01"},
@@ -3168,7 +3169,8 @@ TEMPLATES = {
     },
     "h3c_comware_core_switch": {
         "vendor": "h3c", "os": "comware",
-        "name": "🏛️ Core Switch (L3)",
+        "name": "Core Switch (L3)",
+        "icon": "layers",
         "description": "Layer 3 core with SVI gateways, OSPF and static routes",
         "data": {
             "system": {"hostname": "SW-CORE-01"},
@@ -3196,7 +3198,8 @@ TEMPLATES = {
     },
     "h3c_comware_trunk": {
         "vendor": "h3c", "os": "comware",
-        "name": "🔗 Trunk Uplink",
+        "name": "Trunk Uplink",
+        "icon": "cable",
         "description": "Simple trunk link between switches",
         "data": {
             "interfaces": [
@@ -3206,7 +3209,8 @@ TEMPLATES = {
     },
     "h3c_comware_dhcp_on_vlan": {
         "vendor": "h3c", "os": "comware",
-        "name": "📡 DHCP on VLAN",
+        "name": "DHCP on VLAN",
+        "icon": "server",
         "description": "VLAN + SVI + DHCP pool — full L3 server setup",
         "data": {
             "vlans": [{"vlan": "10", "name": "USERS", "description": "Office users"}],
@@ -3223,7 +3227,8 @@ TEMPLATES = {
     },
     "h3c_comware_guest_wifi": {
         "vendor": "h3c", "os": "comware",
-        "name": "📶 Guest WiFi VLAN",
+        "name": "Guest WiFi VLAN",
+        "icon": "wifi",
         "description": "Isolated guest VLAN with DHCP and ACL",
         "data": {
             "vlans": [{"vlan": "200", "name": "GUEST_WIFI", "description": "Guest isolation"}],
@@ -3247,7 +3252,8 @@ TEMPLATES = {
     },
     "h3c_comware_ospf": {
         "vendor": "h3c", "os": "comware",
-        "name": "🧭 OSPF Router",
+        "name": "OSPF Router",
+        "icon": "route",
         "description": "OSPF area 0 with multiple networks",
         "data": {
             "system": {"hostname": "RTR-OSPF-01"},
@@ -3262,7 +3268,8 @@ TEMPLATES = {
     },
     "h3c_comware_multi_isp_pbr": {
         "vendor": "h3c", "os": "comware",
-        "name": "🌐 Multi-ISP PBR (up to 5 ISP)",
+        "name": "Multi-ISP PBR (up to 5 ISP)",
+        "icon": "globe",
         "description": "Policy-based routing with NQA/Track failover across up to 5 ISPs",
         "data": {
             "system": {"hostname": "RT-EDGE-01"},
@@ -3282,7 +3289,8 @@ TEMPLATES = {
     },
     "h3c_comware_dhcp_relay": {
         "vendor": "h3c", "os": "comware",
-        "name": "↗️ DHCP Relay",
+        "name": "DHCP Relay",
+        "icon": "send",
         "description": "VLAN with DHCP Relay to central server",
         "data": {
             "vlans": [{"vlan": "50", "name": "BRANCH_USERS", "description": "Branch users"}],
@@ -3295,7 +3303,8 @@ TEMPLATES = {
     # =========== CISCO IOS ===========
     "cisco_ios_access_switch": {
         "vendor": "cisco", "os": "ios",
-        "name": "🏢 Catalyst Access Switch",
+        "name": "Catalyst Access Switch",
+        "icon": "network",
         "description": "Cisco Catalyst 2960-style access switch",
         "data": {
             "system": {"hostname": "SW-ACCESS-01"},
@@ -3311,7 +3320,8 @@ TEMPLATES = {
     },
     "cisco_ios_core_router": {
         "vendor": "cisco", "os": "ios",
-        "name": "🏛️ ISR Core Router",
+        "name": "ISR Core Router",
+        "icon": "router",
         "description": "Cisco ISR with SVI gateways and OSPF",
         "data": {
             "system": {"hostname": "RTR-CORE-01"},
@@ -3334,7 +3344,8 @@ TEMPLATES = {
     },
     "cisco_ios_dhcp_router": {
         "vendor": "cisco", "os": "ios",
-        "name": "📡 DHCP Server Router",
+        "name": "DHCP Server Router",
+        "icon": "server",
         "description": "Router with DHCP pool for VLAN",
         "data": {
             "vlans": [{"vlan": "10", "name": "USERS", "description": "End-user VLAN"}],
@@ -3351,7 +3362,8 @@ TEMPLATES = {
     },
     "cisco_ios_ospf": {
         "vendor": "cisco", "os": "ios",
-        "name": "🧭 OSPF Router",
+        "name": "OSPF Router",
+        "icon": "route",
         "description": "OSPF area 0 setup",
         "data": {
             "system": {"hostname": "RTR-OSPF-01"},
@@ -3367,7 +3379,8 @@ TEMPLATES = {
     # =========== CISCO IOS-XE ===========
     "cisco_iosxe_cat9k": {
         "vendor": "cisco", "os": "iosxe",
-        "name": "🏢 Catalyst 9000 Switch",
+        "name": "Catalyst 9000 Switch",
+        "icon": "network",
         "description": "Modern Catalyst 9k access switch",
         "data": {
             "system": {"hostname": "C9K-ACCESS-01"},
@@ -3383,7 +3396,8 @@ TEMPLATES = {
     },
     "cisco_iosxe_isr4k": {
         "vendor": "cisco", "os": "iosxe",
-        "name": "🏛️ ISR 4000 Router",
+        "name": "ISR 4000 Router",
+        "icon": "router",
         "description": "Modern ISR 4000 with OSPF",
         "data": {
             "system": {"hostname": "ISR4K-01"},
@@ -3403,7 +3417,8 @@ TEMPLATES = {
     },
     "cisco_iosxe_dhcp": {
         "vendor": "cisco", "os": "iosxe",
-        "name": "📡 DHCP Server",
+        "name": "DHCP Server",
+        "icon": "server",
         "description": "DHCP pool with SVI gateway",
         "data": {
             "vlans": [{"vlan": "10", "name": "USERS", "description": "End-user VLAN"}],
@@ -3419,7 +3434,8 @@ TEMPLATES = {
     # =========== CISCO NX-OS ===========
     "cisco_nxos_leaf": {
         "vendor": "cisco", "os": "nxos",
-        "name": "🌱 Nexus 9k Leaf",
+        "name": "Nexus 9k Leaf",
+        "icon": "git-branch",
         "description": "Nexus leaf switch (access)",
         "data": {
             "system": {"hostname": "N9K-LEAF-01"},
@@ -3435,7 +3451,8 @@ TEMPLATES = {
     },
     "cisco_nxos_spine": {
         "vendor": "cisco", "os": "nxos",
-        "name": "🌲 Nexus 9k Spine (L3)",
+        "name": "Nexus 9k Spine (L3)",
+        "icon": "layers",
         "description": "Nexus spine with SVIs and OSPF",
         "data": {
             "system": {"hostname": "N9K-SPINE-01"},
@@ -3458,7 +3475,8 @@ TEMPLATES = {
     },
     "cisco_nxos_dhcp": {
         "vendor": "cisco", "os": "nxos",
-        "name": "📡 Nexus DHCP Server",
+        "name": "Nexus DHCP Server",
+        "icon": "server",
         "description": "Nexus with DHCP pool and SVI",
         "data": {
             "vlans": [{"vlan": "10", "name": "USERS", "description": "End-user VLAN"}],
@@ -3479,7 +3497,8 @@ TEMPLATES = {
 TEMPLATES.update({
     "ruijie_rgos_switch_access": {
         "vendor": "ruijie", "os": "rgos_switch",
-        "name": "🏢 Access Switch",
+        "name": "Access Switch",
+        "icon": "network",
         "description": "User VLAN + management SVI, access ports, trunk uplink, SSH + SNMP",
         "data": {
             "system": {"hostname": "RG-ACCESS-01", "ntp": "time.google.com", "timezone": "WIB 7:00", "admin_user": "admin", "admin_pass": "ChangeMe#2026", "ssh": True, "snmp_community": "CKI-RO", "snmp_location": "Server Room"},
@@ -3495,7 +3514,8 @@ TEMPLATES.update({
     },
     "ruijie_rgos_switch_core": {
         "vendor": "ruijie", "os": "rgos_switch",
-        "name": "🏛️ Core Switch (L3)",
+        "name": "Core Switch (L3)",
+        "icon": "layers",
         "description": "SVI gateways, DHCP server, OSPF and default route",
         "data": {
             "system": {"hostname": "RG-CORE-01"},
@@ -3513,7 +3533,8 @@ TEMPLATES.update({
     },
     "ruijie_rgos_switch_lag": {
         "vendor": "ruijie", "os": "rgos_switch",
-        "name": "🔗 LACP Uplink (AggregatePort)",
+        "name": "LACP Uplink (AggregatePort)",
+        "icon": "cable",
         "description": "Two ports bundled into AggregatePort 1 as an LACP trunk",
         "data": {
             "vlans": [{"vlan": "10", "name": "USERS"}, {"vlan": "20", "name": "SERVERS"}],
@@ -3525,7 +3546,8 @@ TEMPLATES.update({
     },
     "ruijie_rgos_switch_vrrp": {
         "vendor": "ruijie", "os": "rgos_switch",
-        "name": "🛡️ Core Pair (VRRP)",
+        "name": "Core Pair (VRRP)",
+        "icon": "shield-check",
         "description": "Primary core: SVI with VRRP VIP, priority 120, ACL on the user VLAN",
         "data": {
             "system": {"hostname": "RG-CORE-A"},
@@ -3543,7 +3565,8 @@ TEMPLATES.update({
     },
     "ruijie_rgos_router_nat": {
         "vendor": "ruijie", "os": "rgos_router",
-        "name": "🌐 Internet Router (NAT)",
+        "name": "Internet Router (NAT)",
+        "icon": "globe",
         "description": "WAN + LAN, NAT overload, DHCP server and default route",
         "data": {
             "system": {"hostname": "RG-EDGE-01", "ntp": "time.google.com", "timezone": "WIB 7:00"},
@@ -3558,7 +3581,8 @@ TEMPLATES.update({
     },
     "ruijie_rgos_router_vlans": {
         "vendor": "ruijie", "os": "rgos_router",
-        "name": "🔀 Router-on-a-Stick",
+        "name": "Router-on-a-Stick",
+        "icon": "git-fork",
         "description": "Dot1Q sub-interfaces per VLAN, DHCP per VLAN, NAT to the internet",
         "data": {
             "system": {"hostname": "RG-ROAS-01"},
@@ -3578,7 +3602,8 @@ TEMPLATES.update({
     },
     "ruijie_rgos_router_branch": {
         "vendor": "ruijie", "os": "rgos_router",
-        "name": "🏬 Branch Router (OSPF)",
+        "name": "Branch Router (OSPF)",
+        "icon": "building-2",
         "description": "Branch LAN + WAN link to HQ over OSPF, DHCP relay to HQ server",
         "data": {
             "system": {"hostname": "RG-BRANCH-01"},
@@ -3591,7 +3616,8 @@ TEMPLATES.update({
     },
     "ruijie_rgos_wlan_basic": {
         "vendor": "ruijie", "os": "rgos_wlan",
-        "name": "📶 AC + Fit AP (1 SSID)",
+        "name": "AC + Fit AP (1 SSID)",
+        "icon": "wifi",
         "description": "AC with DHCP option 138 for AP discovery and one WPA2-PSK SSID",
         "data": {
             "system": {"hostname": "RG-AC-01"},
@@ -3610,7 +3636,8 @@ TEMPLATES.update({
     },
     "ruijie_rgos_wlan_guest": {
         "vendor": "ruijie", "os": "rgos_wlan",
-        "name": "🎟️ AC + Corp & Guest SSID",
+        "name": "AC + Corp & Guest SSID",
+        "icon": "wifi",
         "description": "Two SSIDs on separate VLANs: staff (WPA2-PSK) and guest, guest VLAN restricted by ACL",
         "data": {
             "system": {"hostname": "RG-AC-02"},
@@ -3647,7 +3674,8 @@ def _too_big(e):
 TEMPLATES.update({
     "mikrotik_routeros_router_office": {
         "vendor": "mikrotik", "os": "routeros_router",
-        "name": "🏠 Office Router",
+        "name": "Office Router",
+        "icon": "router",
         "description": "WAN by DHCP, one LAN with DHCP server, NAT masquerade, admin user + SSH",
         "data": {
             "system": {"hostname": "MT-OFFICE", "ntp": "time.google.com", "timezone": "WIB 7:00", "admin_user": "netadmin", "admin_pass": "ChangeMe#2026", "ssh": True},
@@ -3661,7 +3689,8 @@ TEMPLATES.update({
     },
     "mikrotik_routeros_router_vlans": {
         "vendor": "mikrotik", "os": "routeros_router",
-        "name": "🧩 Router on a stick",
+        "name": "Router on a stick",
+        "icon": "git-fork",
         "description": "Staff, guest and CCTV VLANs on one trunk (dot1Q), DHCP per VLAN, guest isolated, NAT",
         "data": {
             "system": {"hostname": "MT-GW-01", "timezone": "WIB 7:00", "admin_user": "netadmin", "admin_pass": "ChangeMe#2026", "ssh": True},
@@ -3685,7 +3714,8 @@ TEMPLATES.update({
     },
     "mikrotik_routeros_router_ospf": {
         "vendor": "mikrotik", "os": "routeros_router",
-        "name": "🛰️ OSPF Branch",
+        "name": "OSPF Branch",
+        "icon": "route",
         "description": "Branch router with a loopback, OSPF area 0 to the core and a static default route",
         "data": {
             "system": {"hostname": "MT-BRANCH-01", "timezone": "WIB 7:00", "snmp_community": "CKI-RO", "snmp_location": "Branch Office"},
@@ -3700,7 +3730,8 @@ TEMPLATES.update({
     },
     "mikrotik_routeros_switch_access": {
         "vendor": "mikrotik", "os": "routeros_switch",
-        "name": "🏢 CRS Access Switch",
+        "name": "CRS Access Switch",
+        "icon": "network",
         "description": "Bridge VLAN filtering: user and voice VLANs, trunk uplink, management VLAN-interface",
         "data": {
             "system": {"hostname": "CRS-ACCESS-01", "timezone": "WIB 7:00", "admin_user": "netadmin", "admin_pass": "ChangeMe#2026", "ssh": True},
@@ -3717,7 +3748,8 @@ TEMPLATES.update({
     },
     "mikrotik_routeros_switch_core": {
         "vendor": "mikrotik", "os": "routeros_switch",
-        "name": "🏛️ CRS Core (L3)",
+        "name": "CRS Core (L3)",
+        "icon": "layers",
         "description": "VLAN-interfaces as gateways, DHCP server, LACP bond to the access switch",
         "data": {
             "system": {"hostname": "CRS-CORE-01", "timezone": "WIB 7:00"},

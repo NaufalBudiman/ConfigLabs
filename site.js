@@ -118,6 +118,11 @@ window.CL = { version: '7.11.0', wifi: '5.30', topo: '2.1', rack: '1.3' };
   window.clNavRefresh = account;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render); else render();
 })();
+/* Icon helper: clIcon('copy') -> an inline SVG from the shared /icons.svg sprite (Lucide icons, ISC). */
+window.clIcon = function (name, size) {
+  var n = String(name || '').replace(/[^a-z0-9-]/g, '');
+  return '<svg class="cl-ic" aria-hidden="true"' + (size ? ' style="width:' + (+size || 16) + 'px;height:' + (+size || 16) + 'px"' : '') + '><use href="/icons.svg#i-' + n + '"/></svg>';
+};
 /* Google Analytics 4 (gtag.js), loaded once here for every page. */
 (function () {
   var id = 'G-28G67DQ3DL';
