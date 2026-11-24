@@ -1,0 +1,9 @@
+[Unit]
+Description=RackTrack daily email digest (was Vercel Cron)
+After=racktrack.service
+
+[Service]
+Type=oneshot
+User=racktrack
+EnvironmentFile=/etc/racktrack.env
+ExecStart=/bin/sh -c 'curl -fsS -m 180 -o /dev/null -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/digest'

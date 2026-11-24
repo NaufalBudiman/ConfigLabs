@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Pull the latest RackTrack from GitHub, build it and restart. Runs as root
+# (GitHub Actions calls it through sudo as the 'deploy' user; see /etc/sudoers.d/deploy-apps).
+# The build runs before the restart, so the running site stays up while it builds.
+set -euo pipefail
+APP=/srv/racktrack
+runuser -u racktrack -- git -C "$APP" fetch --quiet origin main
+runuser -u racktrack -- git -C "$APP" reset --quiet --hard origin/main
+runuser -u racktrack -- bash -c "cd '$APP' && npm ci --no-audit --no-fund --loglevel=error && set -a && . /etc/racktrack.env && set +a && NODE_ENV=production npm run build"
+systemctl restart racktrack
+for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+  code=$(curl -s -o /dev/null -m 5 -w '%{http_code}' http://127.0.0.1:3000/ || true)
+  if [ "$code" != "000" ] && [ "$code" -lt 500 ]; then
+    echo "RackTrack is up (HTTP $code) at $(git -C "$APP" log --oneline -1)"; exit 0
+  fi
+  sleep 2
+done
+echo "RackTrack did not answer after the restart:" >&2
+journalctl -u racktrack -n 40 --no-pager >&2
+exit 1

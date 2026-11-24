@@ -1,0 +1,9 @@
+[Unit]
+Description=Run the RackTrack digest every day at 00:00 UTC (07:00 WIB), like the old Vercel Cron
+
+[Timer]
+OnCalendar=*-*-* 00:00:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

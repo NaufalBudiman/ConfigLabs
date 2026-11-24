@@ -1,0 +1,20 @@
+[Unit]
+Description=ConfigLabs (Flask via gunicorn)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=configlabs
+Group=configlabs
+WorkingDirectory=/srv/configlabs
+EnvironmentFile=/etc/configlabs.env
+ExecStart=/srv/configlabs/.venv/bin/gunicorn --workers 3 --bind 127.0.0.1:8000 --timeout 30 --access-logfile - ConfigLab:app
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

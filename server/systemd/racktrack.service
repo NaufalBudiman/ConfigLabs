@@ -1,0 +1,21 @@
+[Unit]
+Description=RackTrack (Next.js)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=racktrack
+Group=racktrack
+WorkingDirectory=/srv/racktrack
+EnvironmentFile=/etc/racktrack.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node node_modules/next/dist/bin/next start -p 3000 -H 127.0.0.1
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
