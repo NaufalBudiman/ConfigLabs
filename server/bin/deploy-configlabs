@@ -9,7 +9,7 @@ runuser -u configlabs -- "$APP/.venv/bin/pip" install --quiet -r "$APP/requireme
 systemctl restart configlabs
 for i in 1 2 3 4 5 6 7 8 9 10; do
   if curl -fsS -o /dev/null -m 5 http://127.0.0.1:8000/vendors; then
-    echo "ConfigLabs is up at $(git -C "$APP" log --oneline -1)"; exit 0
+    echo "ConfigLabs is up at $(runuser -u configlabs -- git -C "$APP" log --oneline -1)"; exit 0
   fi
   sleep 2
 done

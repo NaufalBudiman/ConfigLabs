@@ -11,7 +11,7 @@ systemctl restart racktrack
 for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
   code=$(curl -s -o /dev/null -m 5 -w '%{http_code}' http://127.0.0.1:3000/ || true)
   if [ "$code" != "000" ] && [ "$code" -lt 500 ]; then
-    echo "RackTrack is up (HTTP $code) at $(git -C "$APP" log --oneline -1)"; exit 0
+    echo "RackTrack is up (HTTP $code) at $(runuser -u racktrack -- git -C "$APP" log --oneline -1)"; exit 0
   fi
   sleep 2
 done
