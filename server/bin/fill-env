@@ -93,6 +93,19 @@ def generate(kind):
     return secrets.token_hex(32) if kind == "hex" else secrets.token_urlsafe(33)
 
 
+def clean(name, v):
+    """Accept what people really paste: NAME=value, export NAME=value, psql 'url', and quoted values."""
+    v = v.strip()
+    m = re.match(r"^(?:export\s+)?%s\s*=\s*(.*)$" % re.escape(name), v)
+    if m:
+        v = m.group(1).strip()
+    if name == "DATABASE_URL":
+        v = re.sub(r"^psql\s+", "", v).strip()
+    if len(v) >= 2 and v[0] == v[-1] and v[0] in "'\"":
+        v = v[1:-1].strip()
+    return v
+
+
 def valid(name, v):
     if re.search(r"[\s'\x00-\x1f]", v):
         return "must not contain spaces, quotes or line breaks"
@@ -194,7 +207,7 @@ def main():
                             continue
                 while True:
                     label = "  %s%s%s: " % (name, " (%s)" % hint if hint else "", "" if required else " [Enter to skip]")
-                    v = read(label, kind == "secret").strip()
+                    v = clean(name, read(label, kind == "secret"))
                     if not v:
                         if required:
                             print("    this one is required")
