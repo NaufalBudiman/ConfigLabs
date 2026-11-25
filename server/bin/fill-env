@@ -19,6 +19,7 @@ import os
 import re
 import secrets
 import sys
+from urllib.parse import urlsplit
 
 ENV_DIR = os.environ.get("CL_ENV_DIR", "/etc")
 
@@ -114,6 +115,20 @@ def valid(name, v):
             return "should start with postgresql://"
         if re.search(r"USER:PASSWORD|@HOST/|NAMA_DB|user:pass@host", v) or v.count("postgres") > 1:
             return "that is the example text from the instructions (or pasted more than once), not a real connection string"
+        netloc = v.split("://", 1)[1].split("/", 1)[0]
+        if netloc.count("@") != 1:
+            return "the part before the database name must have exactly one @ (user:password@host); a real Neon string looks like postgresql://user:pass@ep-xxxx.neon.tech/dbname"
+        try:
+            u = urlsplit(v)
+            host, db = u.hostname or "", u.path.strip("/")
+        except ValueError:
+            return "this is not a valid connection string"
+        if "." not in host and host != "localhost":
+            return "the host looks wrong (a real one is a domain such as ep-xxxx.region.aws.neon.tech); copy the whole string from the dashboard"
+        if not db:
+            return "the database name after the host is missing (...neon.tech/DBNAME?sslmode=require)"
+        if not u.username or u.password is None:
+            return "user and password are missing (postgresql://user:password@host/db)"
     if name.endswith(("GOOGLE_ID", "CLIENT_ID")):
         if v.startswith("123456789012-"):
             return "that is the example from the instructions, not a real client ID"
