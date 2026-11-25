@@ -96,8 +96,11 @@ def generate(kind):
 def valid(name, v):
     if re.search(r"[\s'\x00-\x1f]", v):
         return "must not contain spaces, quotes or line breaks"
-    if name == "DATABASE_URL" and not re.match(r"^postgres(ql)?://", v):
-        return "should start with postgresql://"
+    if name == "DATABASE_URL":
+        if not re.match(r"^postgres(ql)?://", v):
+            return "should start with postgresql://"
+        if re.search(r"USER:PASSWORD|@HOST/|NAMA_DB|user:pass@host", v) or v.count("postgres") > 1:
+            return "that is the example text from the instructions (or pasted more than once), not a real connection string"
     if name.endswith(("GOOGLE_ID", "CLIENT_ID")):
         if v.startswith("123456789012-"):
             return "that is the example from the instructions, not a real client ID"
@@ -163,8 +166,10 @@ def main():
                 if only is not None and not a.check and name not in only:
                     continue
                 if a.check:
-                    print("  %-22s %s" % (name, "filled" if have else ("MISSING" if required else "empty (optional)")))
-                    missing_total += 1 if (required and not have) else 0
+                    problem = valid(name, have) if (have and kind in ("text", "secret")) else None
+                    state = "MISSING" if (required and not have) else ("empty (optional)" if not have else ("filled" if not problem else "LOOKS WRONG: " + problem))
+                    print("  %-22s %s" % (name, state))
+                    missing_total += 1 if ((required and not have) or problem) else 0
                     continue
                 if kind in ("hex", "urlsafe"):
                     if have:
