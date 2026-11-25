@@ -33,15 +33,19 @@ Script ini memasang nginx, Python, Node.js 20, firewall (hanya port 22, 80, 443)
 
 ## 2. Isi environment variables
 
-Salin nilainya dari Vercel: masing-masing proyek, **Settings → Environment Variables** (dashboard Vercel tetap bisa dibuka meski deploy-nya dinonaktifkan).
+Cara paling mudah, satu perintah:
 
 ```bash
-sudo nano /etc/configlabs.env   # DATABASE_URL, SESSION_SECRET, JWT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, PRO_EMAILS
-sudo nano /etc/racktrack.env    # DATABASE_URL, AUTH_SECRET, AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET, CRON_SECRET, RESEND_API_KEY, DIGEST_FROM
+sudo fill-env
 ```
 
+- Secret buatan aplikasi (`SESSION_SECRET`, `JWT_SECRET`, `AUTH_SECRET`, `CRON_SECRET`) dibuat acak otomatis di server. Hanya dibuat kalau masih kosong, jadi menjalankannya lagi tidak men-logout siapa pun. Konsekuensi satu kali: user yang login di Vercel harus login ulang.
+- Kredensial dari layanan lain ditanyakan satu per satu dengan input tersembunyi (tidak tampil di layar, tidak masuk riwayat shell): `DATABASE_URL`, Google client ID/secret, `RESEND_API_KEY` (opsional). Ambil nilainya dari Neon, Google Cloud Console dan Resend, atau dari Vercel (**Settings → Environment Variables**, ikon mata).
+- Kalau dua aplikasi memakai satu Google client, jawab `y` saat ditanya "use the same Google client".
+- `sudo fill-env --check` menampilkan variabel yang sudah terisi dan yang belum (hanya nama). `sudo fill-env racktrack` hanya satu file. `--force` mengulang pertanyaan kredensial.
 - `AUTH_URL=https://racktrack.online` dan `AUTH_TRUST_HOST=true` sudah terisi di `/etc/racktrack.env`; biarkan.
-- **SESSION_SECRET dan JWT_SECRET harus sama persis dengan di Vercel**, kalau tidak semua user ter-logout.
+
+Mengedit manual juga bisa (`sudo nano /etc/configlabs.env`); tulis nilai sebagai `NAMA='nilai'` supaya karakter seperti `&` aman. Kalau secret diganti manual, `SESSION_SECRET` dan `JWT_SECRET` yang sama dengan di Vercel akan mempertahankan login user.
 - **Database:** RackTrack memakai Neon, jadi datanya tetap di sana. Cek ke mana `DATABASE_URL` ConfigLabs mengarah. Kalau database itu ikut terkunci karena masalah billing Vercel, data perlu di-export (`pg_dump`) ke Postgres lain dulu.
 - Jangan kirim isi file ini lewat chat atau commit ke git.
 

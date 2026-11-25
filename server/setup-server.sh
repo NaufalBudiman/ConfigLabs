@@ -3,7 +3,7 @@
 #   configlabs.online -> nginx (static files) + gunicorn (Flask) on 127.0.0.1:8000
 #   racktrack.online  -> nginx -> next start on 127.0.0.1:3000 (+ daily digest timer)
 # Safe to run more than once. First run installs everything and creates /etc/configlabs.env and
-# /etc/racktrack.env from the examples; fill them in, then run it again to build and start the apps.
+# /etc/racktrack.env from the examples; fill them in with `sudo fill-env`, then run this again to build and start the apps.
 # HTTPS comes after the DNS points here:  certbot --nginx -d configlabs.online -d racktrack.online
 set -euo pipefail
 
@@ -50,7 +50,7 @@ say "Environment files"
 for app in configlabs racktrack; do
   if [ ! -f "/etc/$app.env" ]; then
     install -m 0640 -o root -g "$app" "$KIT/env/$app.env.example" "/etc/$app.env"
-    echo "Created /etc/$app.env: fill it in (sudo nano /etc/$app.env)."
+    echo "Created /etc/$app.env: fill it in with  sudo fill-env  (generates the app secrets, asks for the rest)."
   fi
 done
 filled() { grep -qE "^$2=.+" "/etc/$1.env"; }
@@ -61,7 +61,7 @@ runuser -u configlabs -- /srv/configlabs/.venv/bin/pip install --quiet --upgrade
 runuser -u configlabs -- /srv/configlabs/.venv/bin/pip install --quiet -r /srv/configlabs/requirements.txt
 
 say "Deploy scripts, sudo rule, services"
-install -m 0755 "$KIT/bin/deploy-configlabs" "$KIT/bin/deploy-racktrack" /usr/local/bin/
+install -m 0755 "$KIT/bin/deploy-configlabs" "$KIT/bin/deploy-racktrack" "$KIT/bin/fill-env" /usr/local/bin/
 echo "deploy ALL=(root) NOPASSWD: /usr/local/bin/deploy-configlabs, /usr/local/bin/deploy-racktrack" > /etc/sudoers.d/deploy-apps
 chmod 0440 /etc/sudoers.d/deploy-apps && visudo -cf /etc/sudoers.d/deploy-apps >/dev/null
 install -m 0644 "$KIT"/systemd/*.service "$KIT"/systemd/*.timer /etc/systemd/system/
@@ -98,7 +98,7 @@ fi
 say "Done"
 cat <<'NEXT'
 Next steps (server/README.md has the details):
-  1. Fill /etc/configlabs.env and /etc/racktrack.env, then run this script again.
+  1. Run  sudo fill-env  (fills /etc/configlabs.env and /etc/racktrack.env), then run this script again.
   2. Point the DNS A records of configlabs.online and racktrack.online to this server.
   3. HTTPS:  certbot --nginx -d configlabs.online -d racktrack.online   (add the www names if they have DNS)
   4. Auto-deploy: put the GitHub Actions public key in /home/deploy/.ssh/authorized_keys.
