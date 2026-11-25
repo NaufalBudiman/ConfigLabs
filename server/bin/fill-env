@@ -98,6 +98,13 @@ def valid(name, v):
         return "must not contain spaces, quotes or line breaks"
     if name == "DATABASE_URL" and not re.match(r"^postgres(ql)?://", v):
         return "should start with postgresql://"
+    if name.endswith(("GOOGLE_ID", "CLIENT_ID")):
+        if v.startswith("123456789012-"):
+            return "that is the example from the instructions, not a real client ID"
+        if not v.endswith(".apps.googleusercontent.com"):
+            return "a Google client ID ends with .apps.googleusercontent.com"
+    if name.endswith(("GOOGLE_SECRET", "CLIENT_SECRET")) and not re.fullmatch(r"[A-Za-z0-9_\-]{20,45}", v):
+        return "a Google client secret is about 35 characters (GOCSPX-...); this has a different length or shape, so copy only the secret"
     return None
 
 
@@ -106,12 +113,18 @@ def main():
     ap.add_argument("apps", nargs="*", help="configlabs and/or racktrack (default: both)")
     ap.add_argument("--check", action="store_true", help="only show what is filled / missing")
     ap.add_argument("--force", action="store_true", help="ask again for pasted credentials")
+    ap.add_argument("--only", help="ask again for just these variables, comma separated (e.g. GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET)")
     ap.add_argument("--stdin", action="store_true", help="read answers from stdin (tests only)")
     a = ap.parse_args()
     bad = [x for x in a.apps if x not in SPECS]
     if bad:
         ap.error("unknown app %s (use: %s)" % (", ".join(bad), ", ".join(SPECS)))
     apps = a.apps or list(SPECS)
+    only = {x.strip() for x in a.only.split(",") if x.strip()} if a.only else None
+    if only:
+        known = {n for specs in SPECS.values() for n, *_ in specs}
+        if only - known:
+            ap.error("unknown variable %s" % ", ".join(sorted(only - known)))
 
     if os.geteuid() != 0 and ENV_DIR == "/etc":
         sys.exit("Run it with sudo:  sudo fill-env")
@@ -147,6 +160,8 @@ def main():
             vals, saved = vals_of[app], 0
             for name, kind, required, hint in SPECS[app]:
                 have = vals.get(name, "")
+                if only is not None and not a.check and name not in only:
+                    continue
                 if a.check:
                     print("  %-22s %s" % (name, "filled" if have else ("MISSING" if required else "empty (optional)")))
                     missing_total += 1 if (required and not have) else 0
@@ -158,7 +173,7 @@ def main():
                         put(app, name, generate(kind)); saved += 1
                         print("  + %s generated" % name)
                     continue
-                if have and not a.force:
+                if have and not (a.force or (only is not None and name in only)):
                     print("  = %s already set, kept" % name)
                     continue
                 # one Google client for both apps: offer the other app's ID and secret in one go
@@ -184,8 +199,6 @@ def main():
                     if problem:
                         print("    not saved: " + problem)
                         continue
-                    if name.endswith(("GOOGLE_ID", "CLIENT_ID")) and "apps.googleusercontent.com" not in v:
-                        print("    note: a Google client ID normally ends with .apps.googleusercontent.com")
                     put(app, name, v); saved += 1
                     print("    ok (%d characters)" % len(v))
                     break
